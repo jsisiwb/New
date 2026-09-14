@@ -14,8 +14,23 @@ concurrency:
 
 jobs:
   build-test:
-    name: Typecheck, lint, format, generated types, tests
+    name: Typecheck, lint, format, generated types, tests (with Postgres 16)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: yeonjae
+          POSTGRES_PASSWORD: yeonjae
+          POSTGRES_DB: yeonjae_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U yeonjae -d yeonjae_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://yeonjae:yeonjae@127.0.0.1:5432/yeonjae_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -31,9 +46,17 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format:check
-      - run: pnpm test
+      - name: Unit + Postgres integration tests
+        run: pnpm test
         env:
           CI: 'true'
+      - name: Integration tests actually ran (DATABASE_URL present)
+        run: test -n "$DATABASE_URL"
+      - name: CLI smoke against the migrated database
+        run: |
+          pnpm --silent cli db:migrate
+          pnpm --silent cli project:create "ci smoke" > /tmp/p.json
+          cat /tmp/p.json
       - name: Dependency audit (report; high+ fails)
         run: pnpm audit --audit-level=high || (echo "::warning::pnpm audit reported findings" && exit 0)
 

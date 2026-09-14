@@ -1,9 +1,23 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/prose" },
-    { "path": "packages/domain" },
-    { "path": "packages/gateway" },
-    { "path": "apps/cli" }
+    {
+      "path": "packages/prose"
+    },
+    {
+      "path": "packages/domain"
+    },
+    {
+      "path": "packages/gateway"
+    },
+    {
+      "path": "packages/db"
+    },
+    {
+      "path": "packages/canon"
+    },
+    {
+      "path": "apps/cli"
+    }
   ]
 }

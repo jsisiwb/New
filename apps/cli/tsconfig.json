@@ -1,11 +1,26 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"],
   "references": [
-    { "path": "../../packages/domain" },
-    { "path": "../../packages/gateway" },
-    { "path": "../../packages/prose" }
+    {
+      "path": "../../packages/domain"
+    },
+    {
+      "path": "../../packages/gateway"
+    },
+    {
+      "path": "../../packages/prose"
+    },
+    {
+      "path": "../../packages/db"
+    },
+    {
+      "path": "../../packages/canon"
+    }
   ]
 }

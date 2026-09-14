@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { run } from './commands.js';
+import { DB_COMMANDS, run, runDb } from './commands.js';
 
-const result = run(process.argv.slice(2));
+const argv = process.argv.slice(2);
+const result = DB_COMMANDS.has(argv[0] ?? '') ? await runDb(argv) : run(argv);
 const text =
   typeof result.output === 'string' ? result.output : JSON.stringify(result.output, null, 2);
 if (result.ok) {

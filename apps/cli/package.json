@@ -13,6 +13,8 @@
   "dependencies": {
     "@yeonjae/domain": "workspace:*",
     "@yeonjae/gateway": "workspace:*",
-    "@yeonjae/prose": "workspace:*"
+    "@yeonjae/prose": "workspace:*",
+    "@yeonjae/db": "workspace:*",
+    "@yeonjae/canon": "workspace:*"
   }
 }

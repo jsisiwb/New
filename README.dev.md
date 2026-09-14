@@ -4,7 +4,7 @@
 
 - Node 22 LTS (`.nvmrc`), pnpm 10 (`corepack enable` or `npm i -g pnpm@10`)
 - Python 3.12 with `jsonschema` for the planning validator (`pip install jsonschema`)
-- Postgres 16 (Checkpoint 2 onward; not needed for Checkpoint 1)
+- Postgres 16 with `btree_gist` (bundled) — `DATABASE_URL=postgres://user:pass@127.0.0.1:5432/yeonjae_test`; integration tests skip (visibly) when it is unset
 
 ## Commands
 
@@ -29,6 +29,10 @@ packages/prose      NFC boundary, code-point addressing, evidence verification, 
 packages/domain     schema loader + Ajv validators, generated types, UUIDv7, StoryClock ordering,
                     lifecycle state machines, Production Policy loader
 packages/gateway    gateway request contract, provider interface, MockProvider (Guard/routing/budgets: CP3)
+packages/db         migrations (forward-only, hashed), pool/transaction helpers, typed repository over the canon
+                    schema; canon.commit_delta / canon.rollback_latest are the only canon write paths
+packages/canon      deterministic delta verification (schema, evidence, change-class, frame × timeline, future
+                    validity) and chapter-acceptance orchestration
 tools/              gen-types.ts, validate-planning-package.py
 schemas/ examples/  the contracts and fixture data (validated by CI)
 docs/               the plan; status lives only in docs/08-delivery/09-progress.md
