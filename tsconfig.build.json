@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/prose" },
+    { "path": "packages/domain" },
+    { "path": "packages/gateway" },
+    { "path": "apps/cli" }
+  ]
+}

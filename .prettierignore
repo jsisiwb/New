@@ -1,0 +1,12 @@
+# Never reflow fixture prose, terminology data, planning docs, or generated code (AGENTS.md rule 4)
+examples/
+docs/
+schemas/
+packages/domain/src/generated/
+pnpm-lock.yaml
+dist/
+coverage/
+node_modules/
+.hoplite/
+README.md
+AGENTS.md

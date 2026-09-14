@@ -1,0 +1,24 @@
+{
+  "name": "@yeonjae/domain",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Domain contracts: types generated from schemas/, runtime schema validation (Ajv), ids, StoryClock ordering, lifecycle state machines.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yeonjae/prose": "workspace:*",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

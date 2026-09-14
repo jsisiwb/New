@@ -1,0 +1,44 @@
+{
+  "name": "yeonjae-studio",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Yeonjae Studio \u2014 English manuscripts in the Korean serialized-webnovel tradition. Monorepo root.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "packageManager": "pnpm@10.26.0",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -b tsconfig.build.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gen:types": "tsx tools/gen-types.ts",
+    "check:types-fresh": "tsx tools/gen-types.ts --check",
+    "validate:planning": "python3 tools/validate-planning-package.py --quiet",
+    "cli": "tsx apps/cli/src/main.ts",
+    "check": "pnpm run check:types-fresh && pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run validate:planning"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "json-schema-to-typescript": "^16.0.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.13",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^4.1.11"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

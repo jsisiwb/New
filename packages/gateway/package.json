@@ -1,0 +1,23 @@
+{
+  "name": "@yeonjae/gateway",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Provider-neutral model gateway: request contract, provider interface, MockProvider, audit records. Checkpoint 1 skeleton; Guard, routing, budgets and real adapters arrive in Checkpoint 3.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yeonjae/domain": "workspace:*",
+    "@yeonjae/prose": "workspace:*"
+  }
+}

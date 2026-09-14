@@ -1,0 +1,15 @@
+# gitleaks configuration: default rules plus allowlists for fixture ids that look like tokens.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixture UUIDs and schema hashes are not secrets"
+regexes = [
+  '''0191b2a0-0000-7000-8000-[0-9a-f]{12}''',
+  '''sha256:[0-9a-f]{64}''',
+  '''sha256:placeholder-[a-z0-9-]+''',
+]
+paths = [
+  '''pnpm-lock\.yaml''',
+  '''packages/domain/src/generated/.*''',
+]

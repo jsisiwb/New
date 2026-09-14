@@ -1,0 +1,19 @@
+{
+  "name": "@yeonjae/prose",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "English text primitives: NFC boundary, Unicode code-point addressing, length model, paragraph segmentation, output-language identification (ADR-0030, ADR-0034).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  }
+}
