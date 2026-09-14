@@ -51,7 +51,7 @@ Items marked **[CP7]** were moved out of the first proof of the core loop (API, 
 | B-1-10 | P0 | Commit orchestration + dependency edges (materiality, claim-based promotion) + stale marking + rollback(latest) + retcon diff | FR-7.4, 7.12, 7.15, 7.16, 7.18, ADR-0032 | R1 (material vs contextual)/C1/RB1 | 6d |
 | B-1-11 | P0 | Knowledge ledger service (stances, channels, guards, per-timeline truth queries) | FR-7.7/7.8 | knowledge matrix fixture | 4d |
 | B-1-12 | P0 | Relationship & register tracking; promise ledger service | FR-7.9, FR-3.4 | fixtures | 3d |
-| B-1-13 | P0 | Retrieval: search_documents pipeline (English FTS + registry thesaurus), embedding sets + re-embed job + active flip, hybrid query, ranker | FR-8.3, ADR-0035 | recall@pack targets; set-switch test | 6d |
+| B-1-13 | P0 | Retrieval: search_documents pipeline (English FTS, accepted-only triggers, idempotent indexing; registry thesaurus dictionary later), embedding-set registry now and embeddings + re-embed job + active flip once an embedder exists (ADR-0045), hybrid query, ranker | FR-8.3, ADR-0035, ADR-0045 | recall@pack targets; set-switch test | 6d |
 | B-1-14 | P0 | Context assembler: query plan, tiers, Active Constraint Set consumption, compressors, renderer, validation (both contract hashes), manifest w/ materiality, cache; MVP templates | FR-8.1/8.2/8.4/8.5, ADR-0033 | determinism; T0 validation; degraded paths | 8d |
 | B-1-15 | P0 | Summaries L1–L4 activities (English) | FR-7.11 | fidelity tests | 2d |
 | B-1-16 | P1 | Timelines (prior loop, divergence flags via per-timeline truth) | FR-7.10, ADR-0023/0031 | T8/T15 fixtures | 3d |

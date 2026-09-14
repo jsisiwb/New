@@ -18,6 +18,8 @@
   },
   "dependencies": {
     "@yeonjae/domain": "workspace:*",
-    "@yeonjae/prose": "workspace:*"
+    "@yeonjae/prose": "workspace:*",
+    "@yeonjae/narrative": "workspace:*",
+    "@yeonjae/prompts": "workspace:*"
   }
 }

@@ -1,0 +1,36 @@
+{
+  "family": "canon_extractor",
+  "version": "1.0.0",
+  "role": "canon_extractor",
+  "purpose": "Extract proposed canon items (facts, events, knowledge, relationships, promises, propositions, entities) with exact quotes from an approval-locked chapter; two sweeps (entity-first or event-first) selected by the sweep variable.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "registry",
+    "hypotheses",
+    "pre_pass",
+    "story_clock",
+    "sweep"
+  ],
+  "output_schema": "canon-delta.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 8000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "canon_extractor.fixture.smoke"
+  ],
+  "content_hash": "sha256:8131a2bbf2b9953c1021768a06d1d1d20c5ea553a1f4100bb859354dbe53035f"
+}

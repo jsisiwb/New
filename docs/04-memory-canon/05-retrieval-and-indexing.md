@@ -12,10 +12,12 @@
 | `search_documents` | `tsvector` (English full-text: stemming via `english` dictionary; registry names and romanized terms as exact tokens via a project synonym/thesaurus dictionary) GIN; `embedding` HNSW (cosine) per embedding-model table (see §4) | over: L1/L2/L3 summaries, event summaries, evidence quotes (≤ 60 words), proposition statements, entity descriptions |
 | `edges` | adjacency `(project, from_kind, from_id, rel, to_kind, to_id)` | graph hops |
 
-Document granularity for `search_documents`: one row per event, per evidence-bearing fact (quote), per L1
-summary, per L2/L3 summary, per proposition, per entity description version. Each row carries `story_clock`,
-`chapter_no`, `entity_ids[]`, `kind`, `importance`, `canon_version_added`, `manuscript_version_id`,
-`language` (`en`).
+Document granularity for `search_documents`: one row per accepted-chapter paragraph, per event, per
+evidence quote, per L1 summary, per L2/L3 summary, per non-secret proposition, per entity description version.
+Each row carries `story_clock`, `chapter_no`, `entity_ids[]`, `kind`, `importance`, `canon_version_added`,
+`manuscript_version_id`, `language` (`en`). Rows citing a manuscript version may cite only an `accepted` one
+(BEFORE trigger); de-acceptance deletes the version's rows in the same transaction; indexing is idempotent
+per `(project, kind, ref, key)` (`canon.index_accepted_version`, `canon.reindex_project`; ADR-0045).
 
 ## 2. Query types
 
@@ -66,7 +68,9 @@ and the `believes_false` row. Recall@pack ≥ 0.95 for `core` items; ≥ 0.85 fo
 | Failure | Mitigation |
 | --- | --- |
 | Alias drift (new nickname not registered) | `EP-NAME-01` unknown name variant → extraction proposes alias → entity linking improves |
-| Embedding model outage | lexical + structured only; manifest flags `degraded` |
-| Index lag after commit | commit tx writes `search_documents` rows synchronously (lexical); embeddings async with `embedding_pending` flag; ranker treats pending rows as lexical-only |
+| Embedding model outage / no embedder configured | lexical + structured only; manifest `degradation.vector = unavailable | not_configured` (ADR-0045) |
+| Lexical store outage | structured only; manifest `degradation.lexical = unavailable | timeout`; T2/T3 lexical candidates omitted |
+| Structured canon store outage | no pack (`STRUCTURED_RETRIEVAL_UNAVAILABLE`); generation blocks |
+| Index lag after commit | commit tx writes `search_documents` rows synchronously (lexical); embeddings async with `embedding_pending` flag; ranker treats pending rows as lexical-only; a version that leaves `accepted` loses its rows by trigger |
 | Huge participant sets (academy ensemble) | T1 degradation ladder: full states for POV + top-4 participants, compact rows for others |
 | Embedding model migration mid-project | dual sets; active-set flip only after re-embed completes; recall test gate |

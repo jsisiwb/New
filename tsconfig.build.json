@@ -8,6 +8,12 @@
       "path": "packages/domain"
     },
     {
+      "path": "packages/narrative"
+    },
+    {
+      "path": "packages/prompts"
+    },
+    {
       "path": "packages/gateway"
     },
     {
@@ -15,6 +21,9 @@
     },
     {
       "path": "packages/canon"
+    },
+    {
+      "path": "packages/context"
     },
     {
       "path": "apps/cli"

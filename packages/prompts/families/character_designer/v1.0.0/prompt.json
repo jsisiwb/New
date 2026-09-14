@@ -1,0 +1,33 @@
+{
+  "family": "character_designer",
+  "version": "1.0.0",
+  "role": "character_designer",
+  "purpose": "Design the cast: identity, background, goals, flaws, secrets, arc, voice notes and default dialogue register toward key counterparts.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "cast_brief"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.7,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "character_designer.fixture.smoke"
+  ],
+  "content_hash": "sha256:66705f6fb82739b431ad3ea32a88f7c9d21054c9e69eb6cfc065077c8782be8f"
+}

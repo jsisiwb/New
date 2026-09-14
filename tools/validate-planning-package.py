@@ -49,6 +49,7 @@ QUIET = "--quiet" in sys.argv
 # ----------------------------------------------------------------------------------------------------
 EXAMPLES = [
     ("examples/fixture/story-intake.json", "story-intake.schema.json"),
+    ("examples/fixture/story-spec.v3.json", "story-spec.schema.json"),
     ("examples/fixture/register-profile.seoha.json", "register-profile.schema.json"),
     ("examples/fixture/chapter-contract.ch12.json", "chapter-contract.schema.json"),
     ("examples/fixture/canon-delta.ch09.json", "canon-delta.schema.json"),
@@ -404,6 +405,7 @@ def check_cross_refs(schemas) -> None:
     # ids referenced by fixture files must be declared in ids.json (except call ids / call-scoped ids)
     for rel in ("examples/fixture/canon-delta.ch09.json", "examples/fixture/chapter-contract.ch12.json",
                 "examples/fixture/knowledge-ledger.json", "examples/fixture/register-profile.seoha.json",
+                "examples/fixture/story-spec.v3.json",
                 "examples/narrative-profiles/project-second-awakening.composed.v1.json"):
         used: set[str] = set()
         collect_ids(load_json(rel), used)

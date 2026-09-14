@@ -1,0 +1,32 @@
+{
+  "family": "requirement_interpreter",
+  "version": "1.0.0",
+  "role": "requirement_interpreter",
+  "purpose": "Normalize a user's intake (any language) into Story Spec items classified hard / soft / assumption, with provenance and English working text.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "intake_json",
+    "spelling_locale"
+  ],
+  "output_schema": "story-spec.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "requirement_interpreter.fixture.smoke"
+  ],
+  "content_hash": "sha256:241cc5847a8c441a6f20de0f27039ef26d4c2cadd13c59d2db2c2dd589124da6"
+}

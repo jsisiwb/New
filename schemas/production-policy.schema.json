@@ -102,7 +102,13 @@
         "previous_tail_extend_to_scene_below_words": {"type": "integer", "minimum": 0, "description": "Extend the tail backward to the start of the last scene when that scene is shorter than this"},
         "active_constraints_cap_tokens": {"type": "integer", "minimum": 100},
         "writer_input_budget_tokens": {"type": "integer", "minimum": 1000},
-        "l1_summary_max_words": {"type": "integer", "minimum": 20}
+        "l1_summary_max_words": {"type": "integer", "minimum": 20},
+        "input_budget_tokens": {
+          "type": "object",
+          "description": "Input token budget per pack template other than the writer (which uses writer_input_budget_tokens); keys are template names such as pack.chapter_planner",
+          "propertyNames": {"pattern": "^pack\\.[a-z_]+$"},
+          "additionalProperties": {"type": "integer", "minimum": 1000}
+        }
       }
     },
     "extraction": {

@@ -1,0 +1,22 @@
+{
+  "name": "@yeonjae/narrative",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Narrative Identity: profile store, composition, Block compiler with role variants and both contract hashes (ADR-0026/0027).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yeonjae/domain": "workspace:*"
+  }
+}

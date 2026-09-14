@@ -1,0 +1,28 @@
+{
+  "name": "@yeonjae/context",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Context Packs (ADR-0010): Active Constraint Set compiler, role templates, query planning, structured + lexical retrieval over accepted canon, tiering, deterministic ranking, provenance-preserving rendering, manifests and validation.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yeonjae/db": "workspace:*",
+    "@yeonjae/domain": "workspace:*",
+    "@yeonjae/narrative": "workspace:*",
+    "@yeonjae/prose": "workspace:*"
+  },
+  "devDependencies": {
+    "@yeonjae/gateway": "workspace:*"
+  }
+}

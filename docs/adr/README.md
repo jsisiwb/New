@@ -46,6 +46,7 @@
 | [0042](0042-issue-override-matrix.md) | Issue-override matrix: never / canon-workflow / reviewer / advisory |
 | [0043](0043-planning-baseline-truthfulness.md) | Truthful planning baseline: labeled starter artifacts, one progress document |
 | [0044](0044-modular-monolith-first.md) | Modular monolith first; Temporal and the web app after the core loop is proven |
+| [0045](0045-context-pack-retrieval-implementation.md) | Context packs are pure functions of pinned inputs; lexical retrieval is synchronous and accepted-only (SQL-enforced); vector retrieval is an interface until an embedder exists |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

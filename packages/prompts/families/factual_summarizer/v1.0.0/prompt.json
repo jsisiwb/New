@@ -1,0 +1,33 @@
+{
+  "family": "factual_summarizer",
+  "version": "1.0.0",
+  "role": "factual_summarizer",
+  "purpose": "Factual L1 summary (≤ 120 words, English) of an accepted chapter: plot, state changes, knowledge changes, ending hook; registry names only; no evaluation, no plans.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "summarizer_min",
+  "model_class": "C",
+  "input_variables": [
+    "chapter_text",
+    "registry",
+    "committed_delta"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 600,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "factual_summarizer.fixture.smoke"
+  ],
+  "content_hash": "sha256:36eb259a427d73086d2d7582041954cfaa2919d5fea3bdf85900f55f6d7bd9cd"
+}

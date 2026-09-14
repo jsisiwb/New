@@ -1,0 +1,39 @@
+{
+  "family": "scene_writer",
+  "version": "1.0.0",
+  "role": "scene_writer",
+  "purpose": "Write one scene of English manuscript prose under both contracts, continuing seamlessly from the previous text, with speaker annotations and claims.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "writer_full",
+  "model_class": "P",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plan",
+    "scene_no",
+    "previous_text",
+    "canon_state",
+    "knowledge_lists",
+    "register_digests",
+    "open_promises",
+    "length_target_words"
+  ],
+  "output_schema": "scene-draft.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.85,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "scene_writer.fixture.smoke"
+  ],
+  "content_hash": "sha256:3e0b6fab65304072c3cc596c2b7016bd7a37be1a7b247b1dcc4386e5d849834e"
+}

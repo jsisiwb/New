@@ -1,0 +1,34 @@
+{
+  "family": "concept_comparator",
+  "version": "1.0.0",
+  "role": "concept_comparator",
+  "purpose": "Pairwise comparison of two concept candidates with per-dimension preferences and evidence; run in both presentation orders.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "candidate_a",
+    "candidate_b",
+    "presentation_order"
+  ],
+  "output_schema": "comparison-verdict.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "concept_comparator.fixture.smoke"
+  ],
+  "content_hash": "sha256:03f4c528c8a9ad717a7ed1c3f4023d5cc15131460882379ee5b0cde2cfc005d6"
+}

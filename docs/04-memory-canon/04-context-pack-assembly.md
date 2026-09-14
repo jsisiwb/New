@@ -62,7 +62,9 @@ recency. Items already implied by T1 are deduplicated by ID. Diversity: at most 
 No LLM call is made during assembly (determinism, cost); all summaries are precomputed at commit time.
 
 ### 2.5 Budget fitting
-Budget per role (Standard tier, e.g., writer 24k tokens input): T0 first (must fit or `PACK_T0_OVERFLOW`
+Budget per role comes from the pinned Production Policy: `policy.context.writer_input_budget_tokens` for
+`pack.scene_writer` and `policy.context.input_budget_tokens.<template>` for the other templates (starting
+values, `standard.v1`: writer 24k; chapter_planner 14k; continuity_checker 20k; extractor 18k). T0 first (must fit or `PACK_T0_OVERFLOW`
 error → operator must raise budget/model), T1 next (compress via cheaper renderers; if still over, error
 `PACK_T1_OVERFLOW` — never drop silently; the template may define a T1 **degradation ladder**, e.g., previous
 chapter tail `previous_tail_words` → `previous_tail_floor_words` (starting values 400 → 250), knowledge table limited to contract propositions + secrets only, full states
@@ -98,7 +100,15 @@ constraining content:
 11. Task instruction + `IDENTITY_TAIL` + output schema reminder
 
 Untrusted text (imported feedback/documents) never appears in writer packs; where used (planner soft
-signals) it is wrapped `<<UNTRUSTED>>…<<END UNTRUSTED>>` with a data-role label.
+signals) it is wrapped `<<UNTRUSTED>>…<<END UNTRUSTED>>` with a data-role label and never rendered in the
+system position.
+
+Every rendered line carries a provenance tag `[LABEL · source:ref@version]` where LABEL ∈ HARD, SOFT,
+ASSUMPTION, FACT, EVENT, KNOWLEDGE, RELATIONSHIP, PROMISE, ACCEPTED (manuscript excerpt), SUMMARY, PLANNED,
+UNTRUSTED, IDENTITY, CONTRACT, TIMELINE, EVIDENCE, REGISTRY, DRAFT (job-scoped text under evaluation); the
+manifest stores the same `source` and `provenance` per item. Plan material (the contract, arc slots,
+hypotheses) is rendered under PLANNED headings in the conditional mood and is never emitted as a FACT or
+EVENT line.
 
 ### 2.7 Validation (pre-call)
 - All T0 item IDs present; Active Constraint Set bytes equal the compiled artifact for this contract.
@@ -174,7 +184,10 @@ and runs the retrieval regression tests. Every call records `pack_id`, `pack_has
 
 | Failure | Handling |
 | --- | --- |
-| Retrieval store timeout | retry ×2; fall back to structured-only T2 (flag `degraded_retrieval`; evaluators run with full pack later so misses are caught) |
-| Embedding service down | lexical + structured only; degraded flag |
-| T0 overflow | error → job `needs_attention` with actionable message (contract too long; constraints over cap → consolidate) |
-| Missing previous chapter acceptance | job waits (Temporal signal) or fails fast per batch policy |
+| Retrieval store timeout | retry ×2; fall back to structured-only T2 (manifest `degradation.lexical = timeout`; evaluators run with full pack later so misses are caught) |
+| Embedding service down / not configured | lexical + structured only; manifest `degradation.vector = unavailable | not_configured` (ADR-0045) |
+| Structured (authoritative) canon query fails | `STRUCTURED_RETRIEVAL_UNAVAILABLE` — no pack, no call; never degraded |
+| T0 overflow | `PACK_T0_OVERFLOW` → job `needs_attention` with actionable message (contract too long; constraints over cap → consolidate) |
+| T1 overflow after the ladder | `PACK_T1_OVERFLOW` — T1 is never dropped silently |
+| Missing previous chapter acceptance | `PREVIOUS_CHAPTER_NOT_ACCEPTED`; job waits (Temporal signal) or fails fast per batch policy; a draft is never substituted |
+| Prohibited source reaches a mandatory slot | `PROHIBITED_SOURCE` (quarantined/rejected/working manuscript, untrusted text, another project) |

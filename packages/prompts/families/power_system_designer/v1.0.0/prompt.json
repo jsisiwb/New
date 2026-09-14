@@ -1,0 +1,33 @@
+{
+  "family": "power_system_designer",
+  "version": "1.0.0",
+  "role": "power_system_designer",
+  "purpose": "Progression/power system with ranks, costs, limits, measurable milestones and the cadence at which the protagonist advances.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "world_rules"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "power_system_designer.fixture.smoke"
+  ],
+  "content_hash": "sha256:d396556710b9f11002b207604e1246fa62a358bc79081d782441998cd05cba7e"
+}

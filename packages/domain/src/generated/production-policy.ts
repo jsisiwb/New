@@ -91,6 +91,12 @@ export interface ProductionPolicy {
     active_constraints_cap_tokens: number;
     writer_input_budget_tokens?: number;
     l1_summary_max_words?: number;
+    /**
+     * Input token budget per pack template other than the writer (which uses writer_input_budget_tokens); keys are template names such as pack.chapter_planner
+     */
+    input_budget_tokens?: {
+      [k: string]: number | undefined;
+    };
   };
   extraction: {
     /**

@@ -3,7 +3,7 @@
   "version": 1,
   "quality_tier": "economy",
   "name": "Economy tier production policy (starting values)",
-  "content_hash": "sha256:e30fd50065f43e6cf6ee49a390bd9f14141810a2fc34863cef8fac265b37c9a6",
+  "content_hash": "sha256:dc55ea1993419e8ae98a9fce138be9bf234a4f665ee462df6810aea662442508",
   "revision": {
     "max_rounds": 2,
     "max_patches_per_round": 6,
@@ -54,7 +54,12 @@
     "previous_tail_extend_to_scene_below_words": 600,
     "active_constraints_cap_tokens": 1200,
     "writer_input_budget_tokens": 18000,
-    "l1_summary_max_words": 120
+    "l1_summary_max_words": 120,
+    "input_budget_tokens": {
+      "pack.chapter_planner": 10000,
+      "pack.continuity_checker": 14000,
+      "pack.extractor": 14000
+    }
   },
   "extraction": {
     "passes": 1,

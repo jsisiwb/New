@@ -732,6 +732,16 @@ run('canon core (Postgres integration)', () => {
     });
     await quarantineVersion(pool, draft.id, 'rejected by reviewer: continuity break');
     expect(await getManuscriptVersion(pool, draft.id)).toBeUndefined();
+    // Regression: the next version must not reuse the quarantined version's number.
+    const next = await createManuscriptVersion(pool, {
+      workspaceId: ws,
+      projectId: project,
+      chapterId: ch9,
+      origin: 'candidate',
+      text: 'A later candidate.',
+    });
+    expect(next.version_no).toBe(draft.version_no + 1);
+    await quarantineVersion(pool, next.id, 'cleanup');
     expect(await quarantineContains(pool, project, 'left arm was severed')).toBe(true);
     for (const t of await acceptedCorpus(pool, project))
       expect(t).not.toContain('left arm was severed');

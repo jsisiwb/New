@@ -1,0 +1,32 @@
+{
+  "family": "extraction_reconciler",
+  "version": "1.0.0",
+  "role": "extraction_reconciler",
+  "purpose": "Adjudicate conflicting extraction items using only the provided spans: pick one, merge, or reject both, with quoted evidence.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "conflicts",
+    "context_spans"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.0,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "extraction_reconciler.fixture.smoke"
+  ],
+  "content_hash": "sha256:a61057239d03ac1d3ebe148086d13b34781b41e5784c0b50b662570c69a5858e"
+}

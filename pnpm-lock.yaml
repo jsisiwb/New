@@ -44,6 +44,9 @@ importers:
       '@yeonjae/canon':
         specifier: workspace:*
         version: link:../../packages/canon
+      '@yeonjae/context':
+        specifier: workspace:*
+        version: link:../../packages/context
       '@yeonjae/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -53,6 +56,12 @@ importers:
       '@yeonjae/gateway':
         specifier: workspace:*
         version: link:../../packages/gateway
+      '@yeonjae/narrative':
+        specifier: workspace:*
+        version: link:../../packages/narrative
+      '@yeonjae/prompts':
+        specifier: workspace:*
+        version: link:../../packages/prompts
       '@yeonjae/prose':
         specifier: workspace:*
         version: link:../../packages/prose
@@ -68,6 +77,25 @@ importers:
       '@yeonjae/prose':
         specifier: workspace:*
         version: link:../prose
+
+  packages/context:
+    dependencies:
+      '@yeonjae/db':
+        specifier: workspace:*
+        version: link:../db
+      '@yeonjae/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@yeonjae/narrative':
+        specifier: workspace:*
+        version: link:../narrative
+      '@yeonjae/prose':
+        specifier: workspace:*
+        version: link:../prose
+    devDependencies:
+      '@yeonjae/gateway':
+        specifier: workspace:*
+        version: link:../gateway
 
   packages/db:
     dependencies:
@@ -102,9 +130,27 @@ importers:
       '@yeonjae/domain':
         specifier: workspace:*
         version: link:../domain
+      '@yeonjae/narrative':
+        specifier: workspace:*
+        version: link:../narrative
+      '@yeonjae/prompts':
+        specifier: workspace:*
+        version: link:../prompts
       '@yeonjae/prose':
         specifier: workspace:*
         version: link:../prose
+
+  packages/narrative:
+    dependencies:
+      '@yeonjae/domain':
+        specifier: workspace:*
+        version: link:../domain
+
+  packages/prompts:
+    dependencies:
+      '@yeonjae/narrative':
+        specifier: workspace:*
+        version: link:../narrative
 
   packages/prose: {}
 

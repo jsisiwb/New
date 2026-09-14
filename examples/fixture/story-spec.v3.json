@@ -1,0 +1,306 @@
+{
+  "project_id": "0191b2a0-0000-7000-8000-000000000001",
+  "version": 3,
+  "created_at": "2026-09-13T00:00:00Z",
+  "items": [
+    {
+      "id": "REQ-00001",
+      "kind": "hard",
+      "category": "premise",
+      "text": "F-rank porter Kang Do-yoon dies in the Seoul Collapse ten years from now and wakes on the morning of his awakening measurement at twenty-seven, knowing the Watcher is Chairman Yoon Jae-kyung and unable to prove it.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00002",
+      "kind": "hard",
+      "category": "genre",
+      "text": "Primary genre hunter-gate with a regression overlay; English manuscript in the Korean serialized-webnovel tradition.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00003",
+      "kind": "hard",
+      "category": "content_restriction",
+      "text": "Rating 15+: violence may be shown but not lingered on; no sexual content; no glorified self-harm.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00004",
+      "kind": "hard",
+      "category": "length",
+      "text": "Target 180 chapters of about 2,500 words each.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "structured": {
+        "chapter_count": 180,
+        "words_per_chapter": 2500
+      },
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00021",
+      "kind": "hard",
+      "category": "forbidden_development",
+      "text": "Do-yoon tells no one about the regression before chapter 58.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "chapter_range",
+        "chapter_from": 1,
+        "chapter_to": 57
+      }
+    },
+    {
+      "id": "REQ-00022",
+      "kind": "hard",
+      "category": "forbidden_development",
+      "text": "Park Mu-jin does not die in Season 1.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "season",
+        "season_ids": [
+          "0191b2a0-0000-7000-8000-0000000f0001"
+        ]
+      }
+    },
+    {
+      "id": "REQ-00023",
+      "kind": "hard",
+      "category": "forbidden_development",
+      "text": "Lee Seo-ha's birth secret (that she is Chairman Lee Tae-san's illegitimate daughter) is not revealed to any character other than Lee Tae-san and Choi Hyun-seok before chapter 72.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "chapter_range",
+        "chapter_from": 1,
+        "chapter_to": 71
+      }
+    },
+    {
+      "id": "REQ-00024",
+      "kind": "hard",
+      "category": "romance",
+      "text": "Romance is slow-burn: no confession and no physical intimacy between Do-yoon and Seo-ha before chapter 87.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "chapter_range",
+        "chapter_from": 1,
+        "chapter_to": 86
+      }
+    },
+    {
+      "id": "REQ-00025",
+      "kind": "hard",
+      "category": "forbidden_development",
+      "text": "The Watcher's identity is not revealed before chapter 120.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "chapter_range",
+        "chapter_from": 1,
+        "chapter_to": 119
+      }
+    },
+    {
+      "id": "REQ-00026",
+      "kind": "hard",
+      "category": "forbidden_development",
+      "text": "No harem developments.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00027",
+      "kind": "hard",
+      "category": "forbidden_development",
+      "text": "Do-yoon  tells no one about the regression before chapter 58",
+      "language": "en",
+      "provenance": "system_default",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "chapter_range",
+        "chapter_from": 1,
+        "chapter_to": 57
+      }
+    },
+    {
+      "id": "REQ-00031",
+      "kind": "hard",
+      "category": "character",
+      "text": "Han Yu-ri stays deferential toward Park Mu-jin (\"Mister Park\", \"sir\"); her casual slips are toward peers only.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "character",
+        "entity_ids": [
+          "0191b2a0-0000-7000-8000-0000000c0005"
+        ]
+      }
+    },
+    {
+      "id": "REQ-00032",
+      "kind": "hard",
+      "category": "mandatory_scene",
+      "text": "The Gangnam gate break happens in chapter 19 on March 12 with 12 casualties (divergence from the prior loop's March 14 / 200).",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "chapter_range",
+        "chapter_from": 18,
+        "chapter_to": 20
+      }
+    },
+    {
+      "id": "REQ-00041",
+      "kind": "soft",
+      "category": "tone",
+      "text": "Satisfaction-forward pacing: a clear payoff beat every few chapters; cold, tense tone with intermittent humor.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00042",
+      "kind": "soft",
+      "category": "structure",
+      "text": "Occasional forum interludes (hunter community threads) as a device, at most one per arc.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00043",
+      "kind": "soft",
+      "category": "character",
+      "text": "Light comedy centered on Han Yu-ri's misunderstandings.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "character",
+        "entity_ids": [
+          "0191b2a0-0000-7000-8000-0000000c0005"
+        ]
+      }
+    },
+    {
+      "id": "REQ-00044",
+      "kind": "soft",
+      "category": "direction",
+      "text": "Keep the Poison Fog Dungeon arc grounded: tactical detail over spectacle.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "arc",
+        "arc_ids": [
+          "0191b2a0-0000-7000-8000-0000000e0002"
+        ]
+      }
+    },
+    {
+      "id": "REQ-00051",
+      "kind": "assumption",
+      "category": "world",
+      "text": "Awakened ranks run F through S and are read from measurement devices; there are no status windows.",
+      "language": "en",
+      "provenance": "model_inferred",
+      "confirmed_by_user": true,
+      "confidence": 0.9,
+      "rationale": "The intake says 'no status windows—only measurement-device readings'.",
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00052",
+      "kind": "assumption",
+      "category": "world",
+      "text": "Mana stones are the currency of the hunter economy; grades run from F to S like ranks.",
+      "language": "en",
+      "provenance": "model_inferred",
+      "confirmed_by_user": false,
+      "confidence": 0.7,
+      "rationale": "Inferred from 'mana-stone economy' in the world concept.",
+      "scope": {
+        "level": "series"
+      }
+    },
+    {
+      "id": "REQ-00061",
+      "kind": "hard",
+      "category": "direction",
+      "text": "Season 2 opens with the Association audit; do not foreshadow it before Season 2.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "season",
+        "season_ids": [
+          "0191b2a0-0000-7000-8000-0000000f0002"
+        ]
+      }
+    },
+    {
+      "id": "REQ-00062",
+      "kind": "soft",
+      "category": "style",
+      "text": "Prefer British spelling.",
+      "language": "en",
+      "provenance": "user",
+      "confirmed_by_user": true,
+      "scope": {
+        "level": "series"
+      },
+      "retired_in_spec_version": 2
+    }
+  ],
+  "conflicts": [
+    {
+      "item_ids": [
+        "REQ-00041",
+        "REQ-00044"
+      ],
+      "description": "Satisfaction-forward pacing versus grounded tactical detail in the dungeon arc — resolved: tactical detail delivers the payoff beats.",
+      "status": "resolved",
+      "resolution": "Payoffs in arc 2 come from tactical reads paying off, not spectacle."
+    }
+  ]
+}

@@ -3,6 +3,7 @@ examples/
 docs/
 schemas/
 packages/domain/src/generated/
+packages/prompts/families/
 pnpm-lock.yaml
 dist/
 coverage/

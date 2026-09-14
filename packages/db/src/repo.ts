@@ -227,7 +227,10 @@ export async function setChapterStatus(
     .catch(rethrowCanon);
 }
 
-/** Store a new immutable manuscript version. Text is NFC-normalized at this boundary (ADR-0030). */
+/**
+ * Store a new immutable manuscript version. Text is NFC-normalized at this boundary (ADR-0030). Version
+ * numbers count quarantined versions too, so a rejected v1 and its replacement never share a number.
+ */
 export async function createManuscriptVersion(
   db: Queryable,
   input: {
@@ -246,7 +249,10 @@ export async function createManuscriptVersion(
   const r = await db
     .query<ManuscriptVersionRow>(
       `INSERT INTO manuscript_versions (workspace_id, project_id, chapter_id, version_no, origin, text, length, content_hash, parent_version_id, created_by_job_id)
-       VALUES ($1, $2, $3, (SELECT coalesce(max(version_no), 0) + 1 FROM manuscript_versions WHERE chapter_id = $3), $4, $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3,
+               (SELECT coalesce(max(v), 0) + 1 FROM (SELECT version_no AS v FROM manuscript_versions WHERE chapter_id = $3
+                                                    UNION ALL SELECT version_no FROM quarantine_versions WHERE chapter_id = $3) x),
+               $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         input.workspaceId,

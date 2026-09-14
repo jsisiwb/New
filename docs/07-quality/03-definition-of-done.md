@@ -46,7 +46,7 @@ script for the phase runs end to end on staging.
    contract hashes recorded.
 6. Manuscript-producing roles pass the output-language check; no translation step anywhere.
 7. Prompt version recorded; no ad-hoc prompt strings in code.
-8. Context packs manifested and hashed; T0 validated; Active Constraint Set bytes verified.
+8. Context packs manifested and hashed; T0 validated byte-for-byte; Active Constraint Set bytes verified; every item carries source + version + provenance label; excluded items carry a reason; the previous chapter comes only from the accepted version (never a draft); structured retrieval failure blocks, optional retrieval failure degrades with a flag (ADR-0045).
 9. Activities idempotent; budgets checked pre-call.
 10. Dependency edges carry materiality; only material edges mark stale by default.
 11. Numeric thresholds and workflow limits live in profile data and the pinned Production Policy with calibration status, never in code; gates are per dimension (ADR-0041); overrides follow the override matrix (ADR-0042).

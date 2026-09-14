@@ -86,6 +86,14 @@ so that traps are shared and failures are explainable in story terms. Model-depe
   retrieval never mixes sets.
 - **Pack determinism & validation**: identical inputs → identical hash; T0 byte-equality incl. Active
   Constraint Set bytes; both contract hashes present; prev tail hash; degradation ladder.
+- **Context packs over the real canon** (`packages/context/src/context.integration.test.ts`): chapter k
+  receives chapter k−1's L1 summary, verbatim tail, ending hook and committed deltas with version + canon
+  pins; knowledge is knower-specific and secrets never leak; relationships are directional and time-correct;
+  prior-loop facts stay off the main timeline (memory is labeled); distant accepted events are recovered
+  lexically with provenance; optional retrieval outages degrade with flags; structured failure blocks
+  (`STRUCTURED_RETRIEVAL_UNAVAILABLE`); k−1 not accepted fails (`PREVIOUS_CHAPTER_NOT_ACCEPTED`) and never
+  substitutes a draft; rollback removes the version's search documents and summary; checker/extractor
+  packs accept only job-scoped `working`/`approved` text and refuse quarantined ids.
 - **Dependency edges** (ADR-0032): material vs contextual assignment from T0/T1/T2; promotion from
   writer claims at commit; R1 marks only material dependents stale.
 - **Bitemporal queries**: state at chapter k / as of version v for injuries, locations, ranks (fixture).

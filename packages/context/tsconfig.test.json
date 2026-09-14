@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "rootDir": "src",
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [],
+  "references": [
+    {
+      "path": "../db"
+    },
+    {
+      "path": "../domain"
+    },
+    {
+      "path": "../narrative"
+    },
+    {
+      "path": "../prose"
+    },
+    {
+      "path": "../gateway"
+    }
+  ]
+}

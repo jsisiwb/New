@@ -26,8 +26,9 @@ payloads and API objects.
   category, text, language (code of the original text), text_en (English working paraphrase when the
   original is not English), structured_json, provenance: user|system_default|model_inferred,
   confirmed_by_user bool, scope_json)`
-- `active_constraint_sets(id, project_id, chapter_id, spec_version, content_hash, rendered_text, item_ids[],
-  token_count)` — compiled per chapter (ADR-0033)
+- `active_constraint_sets(id (content-addressed UUIDv8 of content_hash), project_id, chapter_no, spec_version,
+  content_hash, rendered_text, item_ids[], token_count, hard_count)` — compiled per chapter, immutable
+  (ADR-0033, ADR-0045)
 - `directions(id, project_id, text, language, text_en, kind, scope_json, effective_from_chapter, spec_version)`
 - `content_restrictions(project_id, rating, forbidden_themes[], lexicon_ref)`
 
@@ -114,7 +115,8 @@ payloads and API objects.
   asserted…, commit_id)`
 - `relationship_evidence(...)`
 - `summaries(id, project_id, tier: L1|L2|L3|L4, scope_kind, scope_id, chapter_from, chapter_to,
-  text, language 'en', canon_version, prompt_version_id)`
+  manuscript_version_id (L1: required, must be accepted — trigger), text, ending_hook, language 'en',
+  canon_version, prompt_version_id, content_hash)` — one L1 per accepted version
 - `dependency_edges(id, project_id, dependent_kind, dependent_id, canon_item_kind, canon_item_id,
   canon_version_read, materiality: material|contextual, basis: contract_anchor|t0|t1_state|claim_reference|
   retrieved_t2|promoted_by_user)` index on `(project_id, canon_item_kind, canon_item_id, materiality)`
@@ -124,10 +126,13 @@ payloads and API objects.
 
 ## 7. Search & retrieval
 
-- `search_documents(id, project_id, kind, ref_kind, ref_id, chapter_no, clock_ord, entity_ids[], importance,
-  text, language 'en', tsv tsvector, manuscript_version_id|null (must be accepted), canon_version_added)`
-  indexes: GIN(tsv), GIN(entity_ids), btree(project_id, clock_ord). `tsv` uses the `english` configuration
-  plus a per-project thesaurus dictionary for registry names/terms.
+- `search_documents(id, project_id, kind: chapter_paragraph|summary_l1|event|proposition|evidence_quote,
+  ref_kind, ref_id, ref_key, chapter_no, clock_ord, timeline_id, entity_ids[], importance, text, language 'en',
+  tsv tsvector (generated), manuscript_version_id|null (must be accepted — BEFORE trigger; rows are deleted
+  when the version leaves `accepted`), canon_version_added)` unique `(project_id, kind, ref_id, ref_key)`;
+  indexes: GIN(tsv), GIN(entity_ids), btree(project_id, clock_ord). `tsv` uses the `english` configuration;
+  a per-project thesaurus dictionary for registry names/terms follows (ADR-0045). Functions
+  `canon.index_accepted_version(version)` (idempotent) and `canon.reindex_project(project)`.
 - `embedding_sets(id, project_id, model_id, provider, dimension int, status: building|active|retired,
   created_at)` — exactly one `active` per project (partial unique index) (ADR-0035)
 - `search_document_embeddings(embedding_set_id, search_document_id, embedding vector)` — partitioned by
@@ -141,8 +146,9 @@ payloads and API objects.
 - `jobs(id, project_id, workflow_id, run_id, kind, target_kind, target_id, status, progress_json,
   canon_version_read, prompt_set_id, quality_tier, spend_cents, budget_cents, started_at, finished_at,
   failure_json, parent_job_id)`
-- `context_packs(id, project_id, job_id, template_version, role, canon_version, pack_hash, manifest_json,
-  token_counts_json, rendered_ref (object storage key), created_at)`
+- `context_packs(id (UUIDv8 of pack_hash), project_id, job_id, template, template_version, role, canon_version,
+  pack_hash unique, manifest, token_counts, rendered_system_hash, rendered_user_hash, rendered_ref (object
+  storage key), degraded, created_at)` — append-only; rendered text never stored here (ADR-0045)
 - `llm_calls(id, workspace_id, project_id, job_id, activity_id, idempotency_key unique, role,
   prompt_version_id, prompt_hash, pack_id, narrative_identity_version_id, narrative_block_hash,
   output_language_contract_hash, tradition_contract_hash, output_language_check_json, model_id, provider,

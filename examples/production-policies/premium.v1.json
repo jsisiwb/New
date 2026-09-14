@@ -3,7 +3,7 @@
   "version": 1,
   "quality_tier": "premium",
   "name": "Premium tier production policy (starting values)",
-  "content_hash": "sha256:e7471fa7b3b1a6f48627701ee7c3ca630a812b03de6081beedefe232516a5201",
+  "content_hash": "sha256:e0911bfb4b5c4bbe7da208698b7e0caf878e9743c01753a1b50e4b54fa472182",
   "revision": {
     "max_rounds": 4,
     "max_patches_per_round": 6,
@@ -54,7 +54,12 @@
     "previous_tail_extend_to_scene_below_words": 600,
     "active_constraints_cap_tokens": 1200,
     "writer_input_budget_tokens": 32000,
-    "l1_summary_max_words": 120
+    "l1_summary_max_words": 120,
+    "input_budget_tokens": {
+      "pack.chapter_planner": 18000,
+      "pack.continuity_checker": 24000,
+      "pack.extractor": 24000
+    }
   },
   "extraction": {
     "passes": 2,

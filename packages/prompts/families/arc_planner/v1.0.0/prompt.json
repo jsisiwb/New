@@ -1,0 +1,35 @@
+{
+  "family": "arc_planner",
+  "version": "1.0.0",
+  "role": "arc_planner",
+  "purpose": "Plan one arc (major or minor): objective, conflict, beats with chapter estimates, promises opened/advanced/paid, progression and satisfaction cadence.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "blueprint",
+    "season",
+    "arc_brief",
+    "canon_state",
+    "open_promises"
+  ],
+  "output_schema": "arc-plan.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "arc_planner.fixture.smoke"
+  ],
+  "content_hash": "sha256:a7536a37df435bd753bd14fcf7f166ffefd6e762f2779dee607f5da31623451c"
+}

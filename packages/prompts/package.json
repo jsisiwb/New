@@ -1,0 +1,23 @@
+{
+  "name": "@yeonjae/prompts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Prompt registry: immutable, content-hashed prompt versions for every production role; strict template variables; prompt-set pinning (ADR-0016).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "families"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yeonjae/narrative": "workspace:*"
+  }
+}

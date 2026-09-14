@@ -11,6 +11,15 @@ export interface ContextPackManifest {
   pack_id: string;
   pack_hash: string;
   /**
+   * UUIDv7
+   */
+  project_id: string;
+  /**
+   * UUIDv7
+   */
+  workspace_id?: string;
+  chapter_no?: number;
+  /**
    * e.g. pack.scene_writer
    */
   template: string;
@@ -21,6 +30,18 @@ export interface ContextPackManifest {
    */
   job_id?: string;
   pinned: VersionRef;
+  /**
+   * Pinned Production Policy ref, e.g. policy/standard@1 (ADR-0041)
+   */
+  production_policy_version: string;
+  /**
+   * Pinned prompt set id from the registry (set:<hash>)
+   */
+  prompt_set_id?: string;
+  /**
+   * sha256 of the deterministic query plan derived from the contract
+   */
+  query_plan_hash?: string;
   narrative_identity_block?: {
     hash: string;
     /**
@@ -51,17 +72,33 @@ export interface ContextPackManifest {
      */
     estimator?: string;
     cache_prefix_hash?: string;
+    words?: number;
   };
+  /**
+   * Rendered sections in template order; hashes cover the exact bytes placed in the prompt
+   */
+  sections: {
+    name: string;
+    position: 'system' | 'user';
+    hash: string;
+    tokens: number;
+    tier?: 'T0' | 'T1' | 'T2' | 'T3';
+    item_ids?: string[];
+  }[];
+  rendered_system_hash?: string;
+  rendered_user_hash?: string;
   items: {
     kind:
       | 'active_constraint_set'
       | 'chapter_text'
+      | 'committed_delta'
       | 'contract'
       | 'entity'
       | 'event'
       | 'evidence'
       | 'exemplar'
       | 'fact'
+      | 'knowledge_guard'
       | 'knowledge_state'
       | 'lint_report'
       | 'locked_fact'
@@ -70,6 +107,7 @@ export interface ContextPackManifest {
       | 'prev_chapter_hook'
       | 'prev_chapter_tail'
       | 'promise'
+      | 'proposition'
       | 'register_digest'
       | 'registry_slice'
       | 'relationship_state'
@@ -77,21 +115,97 @@ export interface ContextPackManifest {
       | 'scene_plan'
       | 'scene_text'
       | 'summary'
+      | 'timeline'
       | 'untrusted'
-      | 'voice_exemplar';
+      | 'voice_exemplar'
+      | 'world_rule';
     id: string;
     version?: string;
+    /**
+     * Where the item came from and which version of that source
+     */
+    source?: {
+      kind:
+        | 'active_constraint_set'
+        | 'story_spec'
+        | 'narrative_identity'
+        | 'chapter_contract'
+        | 'canon'
+        | 'accepted_manuscript'
+        | 'summary'
+        | 'lexical_index'
+        | 'vector_index'
+        | 'job_input'
+        | 'untrusted_import';
+      ref: string;
+      version?: string;
+      /**
+       * UUIDv7
+       */
+      manuscript_version_id?: string;
+      /**
+       * Manuscript-version lifecycle (ADR-0037): working (draft/candidate/revision under production) → approved (approval-locked for extraction; immutable input to canon extraction) → accepted (set inside the atomic canon commit) → superseded (a regeneration was accepted) | retconned (a retcon version was accepted); rejected versions move to quarantine.
+       */
+      manuscript_status?:
+        'working' | 'approved' | 'accepted' | 'superseded' | 'retconned' | 'rejected';
+      /**
+       * UUIDv7
+       */
+      timeline_id?: string;
+      chapter_no?: number;
+      /**
+       * UUIDv7
+       */
+      project_id?: string;
+    };
+    /**
+     * Provenance label rendered in front of the item
+     */
+    provenance?:
+      | 'hard_requirement'
+      | 'soft_preference'
+      | 'assumption'
+      | 'canon_fact'
+      | 'canon_event'
+      | 'character_knowledge'
+      | 'relationship_state'
+      | 'promise'
+      | 'accepted_manuscript_excerpt'
+      | 'summary'
+      | 'future_plan'
+      | 'untrusted_imported_text'
+      | 'narrative_identity'
+      | 'contract'
+      | 'timeline'
+      | 'evidence'
+      | 'registry'
+      | 'draft_under_evaluation';
+    section?: string;
     tier: 'T0' | 'T1' | 'T2' | 'T3';
     tokens: number;
+    words?: number;
     included: boolean;
     rank_score?: number;
     compression?: 'none' | 'table' | 'one_line' | 'trimmed_quote' | 'degraded';
+    /**
+     * Why an item was excluded: budget | diversity_cap | dedupe_t1 | prohibited_source | source_unavailable | secret_guard | not_accepted | timeline_isolation | degraded
+     */
     drop_reason?: string;
+    /**
+     * Ranking signals (documented per template version)
+     */
+    signals?: {
+      [k: string]: number | undefined;
+    };
     content_hash?: string;
     /**
      * Dependency edge class this item will create (ADR-0032)
      */
     materiality?: 'material' | 'contextual';
+    /**
+     * Render order within the section (deterministic)
+     */
+    order?: number;
   }[];
   degraded?: boolean;
   degradation_notes?: string[];
@@ -103,6 +217,20 @@ export interface ContextPackManifest {
     identity_block_hash_ok: boolean;
     both_contracts_present: boolean;
     active_constraints_hash_ok: boolean;
+    /**
+     * Every canon-sourced item carries the pinned canon version and the contract timeline
+     */
+    pins_ok: boolean;
+    pack_hash_ok: boolean;
+    /**
+     * No quarantined/rejected/working manuscript source (job-scoped chapter_text excepted per template)
+     */
+    no_rejected_sources: boolean;
+    /**
+     * Every source belongs to the pack's project/workspace
+     */
+    project_scope_ok: boolean;
+    notes?: string[];
   };
   /**
    * Object storage key of rendered prompt
@@ -112,6 +240,51 @@ export interface ContextPackManifest {
    * UTC ISO-8601
    */
   created_at?: string;
+  /**
+   * Degradation ladder outcome (docs/04-memory-canon/04 §7): structured retrieval is authoritative and can only be ok — its failure blocks assembly
+   */
+  degradation?: {
+    lexical?: 'ok' | 'unavailable' | 'not_configured' | 'timeout';
+    vector?: 'ok' | 'unavailable' | 'not_configured' | 'timeout';
+    structured?: 'ok';
+    ladder_steps?: string[];
+  };
+  /**
+   * Pins of the previous accepted chapter (k−1) whose summary, verbatim tail, hook and committed deltas the pack carries (docs/04-memory-canon/04 §4)
+   */
+  previous_chapter?: {
+    chapter_no: number;
+    /**
+     * UUIDv7
+     */
+    manuscript_version_id: string;
+    version_no: number;
+    accepted_canon_version: number;
+    content_hash?: string;
+    tail_hash: string;
+    tail_words: number;
+    tail_start_cp?: number;
+    tail_end_cp?: number;
+    l1_summary_hash?: string;
+    ending_hook_hash?: string;
+    committed_item_count?: number;
+  };
+  /**
+   * Compiled Active Constraint Set pinned by the pack (ADR-0033)
+   */
+  active_constraint_set?: {
+    /**
+     * UUIDv7
+     */
+    id: string;
+    content_hash: string;
+    token_count: number;
+    hard_count: number;
+    soft_count?: number;
+    assumption_count?: number;
+    conflict_count?: number;
+    spec_version?: number;
+  };
 }
 /**
  * Pinned input versions for reproducibility.

@@ -7,12 +7,15 @@
   "required": [
     "pack_id",
     "pack_hash",
+    "project_id",
     "template",
     "template_version",
     "role",
     "pinned",
+    "production_policy_version",
     "budget_tokens",
     "token_counts",
+    "sections",
     "items",
     "validation"
   ],
@@ -23,6 +26,16 @@
     },
     "pack_hash": {
       "type": "string"
+    },
+    "project_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "workspace_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "chapter_no": {
+      "type": "integer",
+      "minimum": 1
     },
     "template": {
       "type": "string",
@@ -39,6 +52,18 @@
     },
     "pinned": {
       "$ref": "common.schema.json#/$defs/versionRef"
+    },
+    "production_policy_version": {
+      "type": "string",
+      "description": "Pinned Production Policy ref, e.g. policy/standard@1 (ADR-0041)"
+    },
+    "prompt_set_id": {
+      "type": "string",
+      "description": "Pinned prompt set id from the registry (set:<hash>)"
+    },
+    "query_plan_hash": {
+      "type": "string",
+      "description": "sha256 of the deterministic query plan derived from the contract"
     },
     "narrative_identity_block": {
       "type": "object",
@@ -109,8 +134,66 @@
         },
         "cache_prefix_hash": {
           "type": "string"
+        },
+        "words": {
+          "type": "integer",
+          "minimum": 0
         }
       }
+    },
+    "sections": {
+      "type": "array",
+      "description": "Rendered sections in template order; hashes cover the exact bytes placed in the prompt",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "position",
+          "hash",
+          "tokens"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user"
+            ]
+          },
+          "hash": {
+            "type": "string"
+          },
+          "tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "T0",
+              "T1",
+              "T2",
+              "T3"
+            ]
+          },
+          "item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "rendered_system_hash": {
+      "type": "string"
+    },
+    "rendered_user_hash": {
+      "type": "string"
     },
     "items": {
       "type": "array",
@@ -130,12 +213,14 @@
             "enum": [
               "active_constraint_set",
               "chapter_text",
+              "committed_delta",
               "contract",
               "entity",
               "event",
               "evidence",
               "exemplar",
               "fact",
+              "knowledge_guard",
               "knowledge_state",
               "lint_report",
               "locked_fact",
@@ -144,6 +229,7 @@
               "prev_chapter_hook",
               "prev_chapter_tail",
               "promise",
+              "proposition",
               "register_digest",
               "registry_slice",
               "relationship_state",
@@ -151,14 +237,92 @@
               "scene_plan",
               "scene_text",
               "summary",
+              "timeline",
               "untrusted",
-              "voice_exemplar"
+              "voice_exemplar",
+              "world_rule"
             ]
           },
           "id": {
             "type": "string"
           },
           "version": {
+            "type": "string"
+          },
+          "source": {
+            "type": "object",
+            "description": "Where the item came from and which version of that source",
+            "required": [
+              "kind",
+              "ref"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "active_constraint_set",
+                  "story_spec",
+                  "narrative_identity",
+                  "chapter_contract",
+                  "canon",
+                  "accepted_manuscript",
+                  "summary",
+                  "lexical_index",
+                  "vector_index",
+                  "job_input",
+                  "untrusted_import"
+                ]
+              },
+              "ref": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "manuscript_version_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "manuscript_status": {
+                "$ref": "common.schema.json#/$defs/manuscriptStatus"
+              },
+              "timeline_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "chapter_no": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "project_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              }
+            }
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "hard_requirement",
+              "soft_preference",
+              "assumption",
+              "canon_fact",
+              "canon_event",
+              "character_knowledge",
+              "relationship_state",
+              "promise",
+              "accepted_manuscript_excerpt",
+              "summary",
+              "future_plan",
+              "untrusted_imported_text",
+              "narrative_identity",
+              "contract",
+              "timeline",
+              "evidence",
+              "registry",
+              "draft_under_evaluation"
+            ],
+            "description": "Provenance label rendered in front of the item"
+          },
+          "section": {
             "type": "string"
           },
           "tier": {
@@ -171,6 +335,10 @@
             ]
           },
           "tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "words": {
             "type": "integer",
             "minimum": 0
           },
@@ -191,7 +359,15 @@
             ]
           },
           "drop_reason": {
-            "type": "string"
+            "type": "string",
+            "description": "Why an item was excluded: budget | diversity_cap | dedupe_t1 | prohibited_source | source_unavailable | secret_guard | not_accepted | timeline_isolation | degraded"
+          },
+          "signals": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Ranking signals (documented per template version)"
           },
           "content_hash": {
             "type": "string"
@@ -199,6 +375,10 @@
           "materiality": {
             "$ref": "common.schema.json#/$defs/materiality",
             "description": "Dependency edge class this item will create (ADR-0032)"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Render order within the section (deterministic)"
           }
         }
       }
@@ -222,7 +402,11 @@
         "active_constraints_hash_ok",
         "prev_tail_hash_ok",
         "sources_allowlisted",
-        "within_budget"
+        "within_budget",
+        "pins_ok",
+        "pack_hash_ok",
+        "no_rejected_sources",
+        "project_scope_ok"
       ],
       "additionalProperties": false,
       "properties": {
@@ -246,6 +430,27 @@
         },
         "active_constraints_hash_ok": {
           "type": "boolean"
+        },
+        "pins_ok": {
+          "type": "boolean",
+          "description": "Every canon-sourced item carries the pinned canon version and the contract timeline"
+        },
+        "pack_hash_ok": {
+          "type": "boolean"
+        },
+        "no_rejected_sources": {
+          "type": "boolean",
+          "description": "No quarantined/rejected/working manuscript source (job-scoped chapter_text excepted per template)"
+        },
+        "project_scope_ok": {
+          "type": "boolean",
+          "description": "Every source belongs to the pack's project/workspace"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -255,6 +460,144 @@
     },
     "created_at": {
       "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "degradation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lexical": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "unavailable",
+            "not_configured",
+            "timeout"
+          ]
+        },
+        "vector": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "unavailable",
+            "not_configured",
+            "timeout"
+          ]
+        },
+        "structured": {
+          "type": "string",
+          "enum": [
+            "ok"
+          ]
+        },
+        "ladder_steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Degradation ladder outcome (docs/04-memory-canon/04 §7): structured retrieval is authoritative and can only be ok — its failure blocks assembly"
+    },
+    "previous_chapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chapter_no",
+        "manuscript_version_id",
+        "version_no",
+        "accepted_canon_version",
+        "tail_hash",
+        "tail_words"
+      ],
+      "properties": {
+        "chapter_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "manuscript_version_id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "version_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "accepted_canon_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_hash": {
+          "type": "string"
+        },
+        "tail_hash": {
+          "type": "string"
+        },
+        "tail_words": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tail_start_cp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tail_end_cp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "l1_summary_hash": {
+          "type": "string"
+        },
+        "ending_hook_hash": {
+          "type": "string"
+        },
+        "committed_item_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Pins of the previous accepted chapter (k−1) whose summary, verbatim tail, hook and committed deltas the pack carries (docs/04-memory-canon/04 §4)"
+    },
+    "active_constraint_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "content_hash",
+        "token_count",
+        "hard_count"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "content_hash": {
+          "type": "string"
+        },
+        "token_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hard_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "soft_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assumption_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "conflict_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "spec_version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "description": "Compiled Active Constraint Set pinned by the pack (ADR-0033)"
     }
   }
 }

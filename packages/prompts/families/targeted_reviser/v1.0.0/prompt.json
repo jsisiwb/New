@@ -1,0 +1,38 @@
+{
+  "family": "targeted_reviser",
+  "version": "1.0.0",
+  "role": "targeted_reviser",
+  "purpose": "Repair the named issues inside one span (sentence / paragraph / dialogue / opening / ending / scene) for one quality dimension; preserve every must-preserve fact and return a patch.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "editor_full",
+  "model_class": "P",
+  "input_variables": [
+    "dimension",
+    "issues",
+    "span_text",
+    "context_before",
+    "context_after",
+    "must_preserve",
+    "register_digests",
+    "length_budget_words"
+  ],
+  "output_schema": "patch.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 3000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "targeted_reviser.fixture.smoke"
+  ],
+  "content_hash": "sha256:ad073c06d4e37569551bfadd11690211da8d0809f28f5a674d21fbdf3865d8e2"
+}

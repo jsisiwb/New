@@ -1,0 +1,33 @@
+{
+  "family": "structure_judge",
+  "version": "1.0.0",
+  "role": "structure_judge",
+  "purpose": "Score Korean-webnovel structural adherence (dimension B): hook, episode payoff, pacing, exposition control, dialogue-forwardness, ending pull, cadence and devices; evidence first; drift flags.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_structure",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "structure_lint_report",
+    "contract_shape"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "structure_judge.fixture.smoke"
+  ],
+  "content_hash": "sha256:413e75a067dca98050c92a7307a61914cc6ebf3f56ab38058533eeeb12a3dc5c"
+}

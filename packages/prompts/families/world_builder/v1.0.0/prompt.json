@@ -1,0 +1,32 @@
+{
+  "family": "world_builder",
+  "version": "1.0.0",
+  "role": "world_builder",
+  "purpose": "World rules, institutions, geography, factions and locations as entity proposals with locked-fact candidates and a terminology list.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.7,
+    "max_tokens": 5000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "world_builder.fixture.smoke"
+  ],
+  "content_hash": "sha256:5e6ec66e43db35626a384209bf49b96426fd6818a2ec9bfbf7ff6081147f0a38"
+}

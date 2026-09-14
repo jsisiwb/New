@@ -1,0 +1,31 @@
+{
+  "family": "assumption_explainer",
+  "version": "1.0.0",
+  "role": "assumption_explainer",
+  "purpose": "One-line English rationale per inferred assumption so the user can confirm, edit or reject it.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "C",
+  "input_variables": [
+    "assumptions_json"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 1000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "assumption_explainer.fixture.smoke"
+  ],
+  "content_hash": "sha256:081193afc015b89595241073cd735db4f66e018dfa02cea6fb4f319724736322"
+}

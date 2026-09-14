@@ -1,0 +1,38 @@
+{
+  "family": "chapter_planner",
+  "version": "1.0.0",
+  "role": "chapter_planner",
+  "purpose": "Write the Chapter Contract for chapter N: purpose, must/must-not, participants, story time, knowledge/state/relationship deltas with channels, setups/payoffs, hook, opening, local satisfaction, ending, acceptance criteria, length target in words.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "arc_plan",
+    "chapter_number",
+    "previous_chapter_summary",
+    "canon_state",
+    "knowledge_state",
+    "open_promises",
+    "active_constraints",
+    "length_target_words"
+  ],
+  "output_schema": "chapter-contract.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 5000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "chapter_planner.fixture.smoke"
+  ],
+  "content_hash": "sha256:2ea5196f92cd682a58300c36be10f8228552c11e4c7a2b1d6ec2f5ce96ea95eb"
+}

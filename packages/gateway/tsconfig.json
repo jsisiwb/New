@@ -1,7 +1,23 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"],
-  "references": [{ "path": "../domain" }, { "path": "../prose" }]
+  "references": [
+    {
+      "path": "../domain"
+    },
+    {
+      "path": "../prose"
+    },
+    {
+      "path": "../narrative"
+    },
+    {
+      "path": "../prompts"
+    }
+  ]
 }

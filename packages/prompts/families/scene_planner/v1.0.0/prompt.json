@@ -1,0 +1,33 @@
+{
+  "family": "scene_planner",
+  "version": "1.0.0",
+  "role": "scene_planner",
+  "purpose": "Break a Chapter Contract into 2–4 scenes with objectives, beats, POV, participants, speaker pairs with pre-resolved English register, and per-scene word targets.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_contract",
+    "register_digests",
+    "previous_chapter_tail"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.0.0 — initial production prompt (Checkpoint 3). English-only instructions; no translation step; provenance-tagged context; evidence-first outputs.",
+  "regression_cases": [
+    "scene_planner.fixture.smoke"
+  ],
+  "content_hash": "sha256:7ac57bfaa5dd6678d8b74d92f7eb4a346944d1708f5b6856bb965a6cdc16bb0a"
+}
