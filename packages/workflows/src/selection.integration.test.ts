@@ -311,18 +311,39 @@ run('N-candidate selection with three candidates (B-6-4)', () => {
     expect(await countComparatorCalls(pool, h.projectId)).toBe(4);
   }, 300_000);
 
-  it('two concurrent selections agree on one winner and one artifact', async () => {
-    const [a, b] = await Promise.all([
+  it('two simultaneous selections never produce two winners', async () => {
+    // A genuine race: both callers start before either has persisted anything, so the durable
+    // short-circuit cannot help and they contend on the gateway's per-activity idempotency key. The
+    // invariant is NOT that both succeed — one may lose the insert race and fail loudly. The invariant is
+    // that the race can never produce a second winner or a second selection record.
+    const [a, b] = await Promise.allSettled([
       selectWinner(p.ctx, inputFor(p)),
       selectWinner(p.ctx, inputFor(p)),
     ]);
-    expect(a.winnerId).toBe(b.winnerId);
+    const fulfilled = [a, b].filter(
+      (r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof selectWinner>>> =>
+        r.status === 'fulfilled',
+    );
+    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+    // Every caller that succeeded agrees on the same winner.
+    const winners = new Set(fulfilled.map((r) => r.value.winnerId));
+    expect(winners.size).toBe(1);
+
+    // Exactly one selection record exists, and a later read returns that same decision.
     const artifacts = await pool.query<{ n: string }>(
       `SELECT count(*)::text AS n FROM workflow_artifacts WHERE project_id = $1 AND kind = 'candidate_selection'`,
       [h.projectId],
     );
-    // Content-addressed and keyed by chapter: concurrent writers converge on one row.
     expect(artifacts.rows[0]?.n).toBe('1');
+    const settled = await selectWinner(p.ctx, inputFor(p));
+    expect(settled.winnerId).toBe([...winners][0]);
+    // And exactly one candidate remains live: the winner.
+    const live = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM manuscript_versions
+        WHERE chapter_id = $1 AND origin = 'candidate' AND status = 'working'`,
+      [p.chapterId],
+    );
+    expect(live.rows[0]?.n).toBe('1');
   }, 300_000);
 });
 
