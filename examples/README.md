@@ -21,8 +21,10 @@ examples/
                                       expected leak detections
     contrast-sets.seed.json           40 contrast sets in the repo, five classes each (kwn_english /
                                       western_english / translation_like / literary / weak_serial) + register
-                                      cases; five genres × eight narrative functions; meets the ≥ 40
-                                      pre-calibration target (B-6-3), no filler (ADR-0043)
+                                      cases; the four MVP genre profiles plus system-progression (a Beta
+                                      overlay carried here as extra test coverage, not an MVP profile) ×
+                                      eight narrative functions; meets the ≥ 40 pre-calibration target
+                                      (B-6-3), no filler (ADR-0043)
   narrative-profiles/
     lang-en.v1.json                   English output-language profile (contract, punctuation, translation markers,
                                       prose lint thresholds, Prose Judge rubric)
