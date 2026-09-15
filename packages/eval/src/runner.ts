@@ -50,7 +50,14 @@ import {
   type DimensionName,
   type Expectation,
 } from './expectations.js';
-import { activityIdFor, recordingsFor } from './recordings.js';
+import { activityIdFor } from './recordings.js';
+import {
+  loadFixtures,
+  recordingsFromFixtures,
+  verifyFixtureIntegrity,
+  type FixtureFile,
+} from './fixtures.js';
+import { checkCoverage, checkExpectationConsistency, checkPins, type LiveWorld } from './drift.js';
 
 type ProductionPolicy = Generated.ProductionPolicySchema.ProductionPolicy;
 
@@ -138,6 +145,9 @@ export interface ContrastReport {
     readonly prompt_hashes: Readonly<Record<string, string>>;
     readonly provider: string;
     readonly recordings_hash: string;
+    readonly fixture_format: string;
+    readonly fixture_hash: string;
+    readonly fixture_provenance: string;
   };
   readonly totals: {
     readonly sets: number;
@@ -179,6 +189,9 @@ export interface ContrastReport {
 export interface RunOptions {
   readonly corpus?: Corpus | undefined;
   readonly corpusPath?: string | undefined;
+  /** Frozen baseline. Defaults to the committed fixture file; never derived from expectations. */
+  readonly fixtures?: FixtureFile | undefined;
+  readonly fixturePath?: string | undefined;
   /** Override recordings to exercise failure paths (missing, malformed, wrong identity). */
   readonly recordings?: Map<string, Recording> | undefined;
   readonly dimensions?: readonly DimensionName[] | undefined;
@@ -239,8 +252,14 @@ export async function runContrastRegression(options: RunOptions = {}): Promise<C
   const profiles = ProfileStore.fromDirectory();
   const identity = composeIdentity(profiles, IDENTITY_REF, IDENTITY_VERSION);
 
-  const recordings =
-    options.recordings ?? recordingsFor(corpus.sets, thresholds, dimensions, variants);
+  // Frozen baseline: validation LOADS committed fixtures and never derives a score. `recordings` is a
+  // test-only seam for exercising failure paths; the default path reads bytes from disk.
+  // An injected fixture file is verified exactly like one read from disk: the test seam must not be a way
+  // around the baseline's integrity guarantees.
+  const fixtures = options.fixtures
+    ? verifyFixtureIntegrity(options.fixtures, '(supplied fixture file)')
+    : loadFixtures(options.fixturePath);
+  const recordings = options.recordings ?? recordingsFromFixtures(fixtures);
   const recordingsHash = stableHash(
     [...recordings.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => [k, v]),
   );
@@ -270,6 +289,26 @@ export async function runContrastRegression(options: RunOptions = {}): Promise<C
     promptVersions[family] = pv.id;
     promptHashes[family] = pv.content_hash;
   }
+
+  // ---- Drift: the fixtures are only an independent baseline if a change on EITHER side is detected.
+  // Pin, coverage and expectation-consistency divergences are refusals, not re-derivations.
+  const live: LiveWorld = {
+    corpusHash: corpus.hash,
+    policyId: policy.id,
+    policyVersion: policy.version,
+    policyHash: policy.content_hash,
+    thresholds,
+    identityRef: IDENTITY_REF,
+    identityVersionId: IDENTITY_VERSION,
+    promptVersionIds: promptVersions,
+    promptContentHashes: promptHashes,
+  };
+  const drift = [
+    ...checkPins(fixtures, live),
+    ...checkCoverage(fixtures, corpus, dimensions, variants),
+    ...checkExpectationConsistency(fixtures, corpus),
+  ];
+  failures.push(...drift);
 
   const expectedEvaluations = corpus.sets.length * variants.length * dimensions.length;
   const seen = new Set<string>();
@@ -302,6 +341,9 @@ export async function runContrastRegression(options: RunOptions = {}): Promise<C
           dimension,
           threshold: thresholds[dimension],
           recordings,
+          pinnedPromptVersionId:
+            fixtures.pins.prompt_version_ids[DIMENSION_JUDGES[dimension].family],
+          pinnedPromptHash: fixtures.pins.prompt_content_hashes[DIMENSION_JUDGES[dimension].family],
         });
         if ('failure' in outcome) {
           if (outcome.failure.code === 'MISSING_RECORDING')
@@ -356,6 +398,7 @@ export async function runContrastRegression(options: RunOptions = {}): Promise<C
     promptVersions,
     promptHashes,
     recordingsHash,
+    fixtures,
     dimensions,
     variants,
     expectedEvaluations,
@@ -379,6 +422,8 @@ interface EvaluateInput {
   dimension: DimensionName;
   threshold: number;
   recordings: Map<string, Recording>;
+  pinnedPromptVersionId?: string | undefined;
+  pinnedPromptHash?: string | undefined;
 }
 
 async function evaluateOne(
@@ -453,6 +498,35 @@ async function evaluateOne(
       return { failure: { code: 'MISSING_RECORDING', detail: recordingKey, ...where } };
     return { failure: { code: 'EVALUATOR_CALL_FAILED', detail: message, ...where } };
   }
+
+  // Requirements 9 & 10: activity-key replay must never conceal prompt drift. The recording is keyed by
+  // activity id (needed for workflow resumability), so the rendered-prompt identity is verified here,
+  // independently: the prompt version and content hash the fixture pinned must equal the ones actually
+  // rendered for this call, and the prompt must actually embed this variant's text.
+  if (input.pinnedPromptVersionId !== undefined && input.pinnedPromptVersionId !== pv.id)
+    return {
+      failure: {
+        code: 'PROMPT_IDENTITY_MISMATCH',
+        detail: `rendered prompt is ${pv.id}, fixture pinned ${input.pinnedPromptVersionId}`,
+        ...where,
+      },
+    };
+  if (input.pinnedPromptHash !== undefined && input.pinnedPromptHash !== pv.content_hash)
+    return {
+      failure: {
+        code: 'PROMPT_IDENTITY_MISMATCH',
+        detail: `rendered prompt hashes to ${pv.content_hash}, fixture pinned ${input.pinnedPromptHash}`,
+        ...where,
+      },
+    };
+  if (!rendered.user.includes(text.slice(0, 40)))
+    return {
+      failure: {
+        code: 'PROMPT_IDENTITY_MISMATCH',
+        detail: 'the rendered prompt does not contain this variant’s prose',
+        ...where,
+      },
+    };
 
   const verdict = response.output.json as JudgeVerdict | undefined;
   if (!verdict || typeof verdict !== 'object' || Array.isArray(verdict))
@@ -549,6 +623,7 @@ interface AssembleInput {
   promptVersions: Record<string, string>;
   promptHashes: Record<string, string>;
   recordingsHash: string;
+  fixtures: FixtureFile;
   dimensions: readonly DimensionName[];
   variants: readonly VariantClass[];
   expectedEvaluations: number;
@@ -622,6 +697,9 @@ function assemble(input: AssembleInput): ContrastReport {
       prompt_hashes: sortObject(input.promptHashes),
       provider: 'replay',
       recordings_hash: input.recordingsHash,
+      fixture_format: input.fixtures.format,
+      fixture_hash: input.fixtures.fixture_hash,
+      fixture_provenance: input.fixtures.provenance,
     },
     totals: {
       sets: input.corpus.sets.length,

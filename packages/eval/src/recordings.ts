@@ -1,16 +1,18 @@
 /**
- * Deterministic judge recordings for the contrast corpus (B-6-3).
+ * Fixture DERIVATION — used only by `pnpm generate:contrast-recordings` (maintainer-only).
  *
- * These are FIXTURES, not model output. They are derived from each set's own authored expectations — its
- * rank order and its `min_gap_*` values — so every recording encodes the distinction that set was written to
- * demonstrate, and a set whose gaps change produces different recordings. They are generated rather than
- * stored as 200 hand-written blobs because a generated table cannot drift out of step with the corpus it
- * describes, and because the derivation itself is the reviewable artifact.
+ * Nothing in the validation path imports this module. `pnpm validate:contrast` loads frozen bytes from
+ * packages/eval/fixtures/ via fixtures.ts and never recomputes a score: deriving expected judge output at
+ * validation time was the circularity this split removes, because the recording then moved together with
+ * the expectation it was being compared against.
  *
- * What these recordings DO prove: the evaluator boundary, the prompt/identity pinning, the replay integrity
- * and the separation rule are wired correctly and behave deterministically.
- * What they DO NOT prove: that a live model would score this way. Thresholds stay `uncalibrated`
- * (ADR-0029); live calibration is B-4-5 and has not happened.
+ * Scores for prose and structure are RANK-DRIVEN from each set's own authored `*_rank` and `min_gap_*`, so
+ * a proposal honours the corpus as authored rather than imposing one fixed per-class curve (the corpus does
+ * not use a single order for every set). Genre and voice have their own independent curves, so a genre or
+ * register verdict is never a restatement of the structure verdict.
+ *
+ * Output is PROPOSED fixture data: reviewed synthetic replay fixtures, not recorded model judgments and not
+ * calibration evidence (ADR-0029). Live judge calibration is B-4-5 and has not happened.
  */
 import { createHash } from 'node:crypto';
 import { type Recording } from '@yeonjae/gateway';
@@ -40,52 +42,64 @@ export interface ScoreInputs {
  */
 export function scoreFor(input: ScoreInputs): number {
   const { set, variant, dimension, threshold } = input;
-  const key = `${set.id}|${variant}|${dimension}`;
-  const jitter = spread(key, 5);
 
-  if (dimension === 'prose') {
-    // The positive target's score is the anchor: failing classes are derived FROM it so each set's own
-    // authored gap holds by construction rather than by coincidence of two independent jitters.
-    const anchor = Math.min(97, threshold + 10 + spread(`${set.id}|kwn_english|prose`, 5));
-    switch (variant) {
-      // The positive target and fluent Western prose are both good ENGLISH: both clear the prose gate.
-      case 'kwn_english':
-        return anchor;
-      case 'western_english':
-        return Math.min(95, threshold + 6 + jitter);
-      // Calqued English fails prose by at least the set's authored gap below the positive target.
-      case 'translation_like':
-        return Math.max(1, anchor - set.expected.min_gap_prose_vs_translation_like);
-      // Over-written literary prose is grammatical but heavy: low-mid, per the corpus header.
-      case 'literary':
-        return Math.max(1, threshold - 6 - jitter);
-      // Serially inert prose stays grammatically fluent: it is not a prose failure, and no prose
-      // expectation is asserted for it.
-      case 'weak_serial':
-        return Math.min(93, threshold + 2 + jitter);
+  // prose and structure are RANK-DRIVEN: the set's own authored rank order decides the ordering of every
+  // class, and the authored `min_gap_*` decides how far the named pair must be apart. A fixed per-class
+  // curve cannot do this, because the corpus does not use one order for every set (36 sets rank literary
+  // above weak_serial on prose, 4 rank it below; 39 rank literary above western_english on structure,
+  // 1 ranks it below). Deriving from the rank is what lets the frozen fixtures satisfy the corpus.
+  if (dimension === 'prose' || dimension === 'structure') {
+    const rank = dimension === 'prose' ? set.expected.prose_rank : set.expected.structure_rank;
+    const gap =
+      dimension === 'prose'
+        ? set.expected.min_gap_prose_vs_translation_like
+        : set.expected.min_gap_structure_vs_western_english;
+    // The class the authored gap is measured against, and which classes must clear the gate.
+    const gapPartner = dimension === 'prose' ? 'translation_like' : 'western_english';
+    // Classes the separation rule requires to clear their gate. NOTE on prose: only kwn_english and
+    // western_english are listed. `weak_serial` is NOT, because the corpus's own authored prose rank puts
+    // `literary` above `weak_serial` in 36 of 40 sets while requiring `literary` to score only low-mid —
+    // so in those sets the authored ranking itself places weak_serial below the prose gate. The corpus
+    // rank is authoritative over any intuition that "serially inert prose is still fluent", and the
+    // corpus asserts no prose expectation for weak_serial (`any`), so nothing is being waved through.
+    const mustPass: readonly string[] =
+      dimension === 'prose'
+        ? ['kwn_english', 'western_english']
+        : ['kwn_english', 'translation_like'];
+
+    const top = Math.min(96, threshold + 9 + spread(`${set.id}|${dimension}|top`, 4));
+    const bottom = Math.max(2, top - gap);
+    const position = rank.indexOf(variant);
+    const partnerPosition = rank.indexOf(gapPartner);
+    if (position < 0) return bottom;
+
+    // Place the ranked classes on a strictly descending ladder from `top` down to `bottom`, so the
+    // authored order holds exactly and the named pair is at least `gap` apart.
+    const last = rank.length - 1;
+    const span = top - bottom;
+    const step = span / Math.max(1, last);
+    let score = Math.round(top - step * position);
+
+    // The gap partner sits at or below `top - gap`, whatever its rank position.
+    if (variant === gapPartner) score = Math.min(score, bottom);
+    // Classes the separation rule requires to clear their gate must not be dragged under it by the
+    // ladder; classes it requires to fail must not be lifted over it.
+    if (mustPass.includes(variant)) score = Math.max(score, threshold + 2);
+    else if (partnerPosition >= 0) score = Math.min(score, threshold - 2);
+
+    // Re-assert strict descent against the class ranked immediately above, so no two classes tie and the
+    // authored order is never violated by the clamps above.
+    if (position > 0) {
+      const above = rank[position - 1];
+      if (above !== undefined) {
+        const aboveScore = scoreFor({ ...input, variant: above as VariantClass });
+        if (score >= aboveScore) score = aboveScore - 1;
+      }
     }
+    return Math.max(1, Math.min(99, score));
   }
 
-  if (dimension === 'structure') {
-    const anchor = Math.min(96, threshold + 9 + spread(`${set.id}|kwn_english|structure`, 5));
-    switch (variant) {
-      // Only the positive target clears the structure gate.
-      case 'kwn_english':
-        return anchor;
-      // Western pacing fails structure by at least the set's authored structure gap.
-      case 'western_english':
-        return Math.max(1, anchor - set.expected.min_gap_structure_vs_western_english);
-      // The calque keeps the webnovel beats: structure stays ABOVE the gate. This is the separation rule —
-      // bad English must not drag down an unrelated dimension.
-      case 'translation_like':
-        return Math.min(94, threshold + 5 + jitter);
-      case 'literary':
-        return Math.max(1, threshold - 14 - jitter);
-      case 'weak_serial':
-        return Math.max(1, threshold - 20 - jitter);
-    }
-  }
-
+  const jitter = spread(`${set.id}|${variant}|${dimension}`, 5);
   if (dimension === 'genre') {
     switch (variant) {
       case 'kwn_english':

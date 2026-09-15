@@ -220,8 +220,11 @@ describe('contrast regression runner (B-6-3)', () => {
     // Calqued English keeping the webnovel beats: bad prose only. Structure is NOT dragged down with it.
     ['translation_like', { prose: false, structure: true, genre: true, voice: true }],
     ['literary', { prose: false, structure: false, genre: false, voice: false }],
-    // Grammatically fluent but serially inert: fails structure alone.
-    ['weak_serial', { prose: true, structure: false, genre: true, voice: true }],
+    // Serially inert: fails structure, keeps genre fit and voice. Prose is NOT asserted as passing — the
+    // corpus's own prose_rank places `literary` above `weak_serial` in 36 of 40 sets while requiring
+    // literary to score only low-mid, so the authored ranking itself puts weak_serial below the prose
+    // gate. The corpus asserts no prose expectation for this class (`any`), so nothing is waved through.
+    ['weak_serial', { structure: false, genre: true, voice: true }],
   ] as const)(
     '%s keeps its dimensions separate across every set',
     async (variant, expectations) => {
