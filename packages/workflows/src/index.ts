@@ -4,5 +4,6 @@ export * from './planning.js';
 export * from './drafting.js';
 export * from './evaluation.js';
 export * from './revision.js';
+export * from './comparison.js';
 export * from './acceptance.js';
 export * from './chapter-production.js';

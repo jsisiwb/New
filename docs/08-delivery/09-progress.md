@@ -144,7 +144,13 @@ Checkpoint 3 (gateway + judges) and Checkpoint 6 (contrast-set regression on liv
 | B-6-1 multi-chapter continuity (≥ 3 consecutive accepted chapters on the fixture) | not started |
 | B-6-2 failure-recovery tests (commit fault, stale canon, provider fault, resume) | not started |
 | B-6-3 contrast corpus 4 → ≥ 40 original sets with expectations | **done in this change**: 40 sets in `examples/fixture/contrast-sets.seed.json` (5 genres × 8 narrative functions; 36 authored here), validator count/structure checks green; the judge calibration *run* is B-4-5 and has not happened |
-| B-6-4 candidate comparison + patch regression suites on replay | not started |
+| B-6-4 candidate comparison + patch regression suites on replay | **in progress**: `chapter_comparator` prompt family (25th) and `packages/workflows/src/comparison.ts` landed — position-swapped pairwise judging with the shuffled-rubric retry and the deterministic tie ladder (ADR-0015), per-dimension patch-regression and smoke-check rules (ADR-0014), 10 unit tests. The replay-driven integration proof of `compareCandidates` is still outstanding |
+
+Known mismatch surfaced by B-6-4 (recorded, not fixed here): `standard.v1` gates four dimensions
+(`prose`, `structure`, `genre`, `voice`) but the Checkpoint 5 evaluator scores only the first two, so no
+candidate can satisfy the ADR-0015 early stop under that policy. `earlyStopDecision` therefore refuses to
+stop and names the missing dimensions rather than treating an absent judge as a silent pass; a test asserts
+exactly that. Wiring the genre and voice judges (or narrowing the policy) is a separate decision.
 
 B-6-3 scope note (truthfulness, ADR-0043): the corpus is now large enough for the calibration round, but
 nothing in this change measures judge behavior. Every `expected` block is an authored starting expectation
