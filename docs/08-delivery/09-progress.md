@@ -35,7 +35,7 @@ merge bottom-up. No PR is merged without explicit user authorization.
 | Command | Purpose | Last result |
 | --- | --- | --- |
 | `pip install jsonschema && python3 tools/validate-planning-package.py` | schemas, examples, canon-delta union, evidence offsets against fixture manuscripts, cross-file refs, stale terms, truthfulness | **ALL OK** (32 schemas; 14 examples + 1 bundle; 0 contradiction hits) |
-| `DATABASE_URL=postgres://… CI=true pnpm check` | types-fresh → typecheck → lint → format:check → unit + Postgres integration tests → validator | **local green** (this branch: 26 test files, 216 tests passed — 22 chapter-production integration incl. T19b collision proof + 14 failure-recovery integration + 9 candidate-comparison/patch-regression integration + 10 comparison unit + 5 CLI chapter-surface tests; Postgres 16, Node 24.19.0, pnpm 10.26.0, Python 3.12.3). Local green is not GitHub green: see the PR's Actions runs for CI evidence |
+| `DATABASE_URL=postgres://… CI=true pnpm check` | types-fresh → typecheck → lint → format:check → unit + Postgres integration tests → validator | **local green** (this branch: 27 test files, 227 tests passed — 22 chapter-production integration incl. T19b collision proof + 11 multi-chapter continuity integration + 14 failure-recovery integration + 9 candidate-comparison/patch-regression integration + 10 comparison unit + 5 CLI chapter-surface tests; Postgres 16, Node 24.19.0, pnpm 10.26.0, Python 3.12.3). Local green is not GitHub green: see the PR's Actions runs for CI evidence |
 | `pnpm cli identity:compile project/…@1 writer_full 2000` | compiles the fixture identity block: both contracts first, 11 sections, 1,272 est. tokens, deterministic hash | ok |
 | `pnpm cli prompts:list` | 25 immutable prompt versions + active prompt set id | ok |
 | `pnpm cli verify-evidence examples/fixture/manuscripts/ch09.accepted.txt examples/fixture/canon-delta.ch09.json` | code-point evidence verification via the CLI | ok: 8 spans verified |
@@ -141,7 +141,7 @@ Checkpoint 3 (gateway + judges) and Checkpoint 6 (contrast-set regression on liv
 
 | Item | State |
 | --- | --- |
-| B-6-1 multi-chapter continuity (≥ 3 consecutive accepted chapters on the fixture) | not started |
+| B-6-1 multi-chapter continuity | **done for chapters 1 → 2 (two consecutive accepted chapters), not yet 3**: `examples/fixture/ch02` (authored scenes + generated recordings) and 11 Postgres/Replay tests — both chapters accepted in one project with one canon bump each (v3, v4), chapter 2 remembering chapter 1 from accepted state only, a fact/relationship transition across the chapter boundary, the ch.1 promise paid in ch.2, both chapters summarized and indexed accepted-only, dependency edges at the canon version read, and export carrying both in order. A third chapter is **not** produced: chapter 3 has no fixture recordings, and the suite asserts that the previous-chapter gate refuses it rather than improvising |
 | B-6-2 failure-recovery tests (commit fault, stale canon, provider fault, resume) | **done**: 14 Postgres/Replay tests — failure after each of 8 pre-commit steps leaves no chapter commit/accepted version/summary/index, resume from three different steps completes and replays every prior step with a third run adding no spend, a racing canon commit fails `CANON_STALE` with nothing half-committed, a provider fault fails closed without substituting a draft, and a blocked gate reports `needs_attention` rather than `failed`. **This suite found and fixed a real defect** (see decisions log) |
 | B-6-3 contrast corpus 4 → ≥ 40 original sets with expectations | **done in this change**: 40 sets in `examples/fixture/contrast-sets.seed.json` (5 genres × 8 narrative functions; 36 authored here), validator count/structure checks green; the judge calibration *run* is B-4-5 and has not happened |
 | B-6-4 candidate comparison + patch regression suites on replay | **done**: `chapter_comparator` prompt family (25th), `packages/workflows/src/comparison.ts` (position-swapped pairwise judging, shuffled-rubric retry, deterministic tie ladder — ADR-0015; per-dimension patch regression and smoke checks — ADR-0014), 10 unit tests + 9 Postgres/Replay integration tests proving consistent winner, position-bias detection and resolution, tie fallthrough, fail-closed on a mis-named verdict, comparator audit pins, and the real chapter-1 patch improving prose without regressing structure |
@@ -151,6 +151,11 @@ Known mismatch surfaced by B-6-4 (recorded, not fixed here): `standard.v1` gates
 candidate can satisfy the ADR-0015 early stop under that policy. `earlyStopDecision` therefore refuses to
 stop and names the missing dimensions rather than treating an absent judge as a silent pass; a test asserts
 exactly that. Wiring the genre and voice judges (or narrowing the policy) is a separate decision.
+
+B-6-1 scope note (truthfulness, ADR-0043): the backlog wording for B-6-1 is "ch.1 → ch.2 → …" and the
+checkpoint blurb says "multi-chapter". What exists is a **two-chapter** chain, proved end to end. Chapter 3
+would need another authored chapter of fixture prose and its own recordings; the compressed 120-chapter
+long-form run remains B-4-1. Nothing here is evidence about live-model prose over many chapters.
 
 B-6-3 scope note (truthfulness, ADR-0043): the corpus is now large enough for the calibration round, but
 nothing in this change measures judge behavior. Every `expected` block is an authored starting expectation
