@@ -3,9 +3,11 @@
  * standard policy, a ReplayProvider over the chapter recordings, and a Gateway wired to the Postgres audit
  * store with the artifact-backed output store. No live provider is ever configured.
  *
- * Chapters 1 and 2 live in one project and one recording table (Checkpoint 6, B-6-1): chapter 1's fixture
- * already carries chapter 2's locked contract, and `replay.ch02.json` adds chapter 2's own plan, drafts,
- * evaluators, extraction and summary. Loading both is what lets the continuity chain run end to end.
+ * Chapters 1, 2 and 3 live in one project and one recording table (Checkpoint 6, B-6-1): chapter 1's fixture
+ * already carries chapter 2's locked contract, `replay.ch02.json` adds chapter 2's own plan, drafts,
+ * evaluators, extraction and summary, and `replay.ch03.json` adds chapter 3's OWN contract as well as its
+ * plan, drafts, evaluators, extraction and summary. Loading all three is what lets the 1 → 2 → 3 continuity
+ * chain run end to end.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +26,7 @@ import { ArtifactLlmOutputStore } from './runtime.js';
 export const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 export const FIXTURE_DIR = `${ROOT}examples/fixture/ch01/`;
 export const FIXTURE_DIR_CH02 = `${ROOT}examples/fixture/ch02/`;
+export const FIXTURE_DIR_CH03 = `${ROOT}examples/fixture/ch03/`;
 
 export const IDS = JSON.parse(readFileSync(`${FIXTURE_DIR}ids.ch01.json`, 'utf8')) as Record<
   string,
@@ -38,6 +41,20 @@ export const BIBLE = JSON.parse(
 export const EXPECTED_CH02 = JSON.parse(
   readFileSync(`${FIXTURE_DIR_CH02}expected.ch02.json`, 'utf8'),
 ) as {
+  assembled_code_points: number;
+  assembled_paragraphs: number;
+  words: number;
+  scene_words: number[];
+  ending_hook: string;
+  summary_l1: string;
+  delta_items: number;
+  item_counts: Record<string, number>;
+};
+
+export const EXPECTED_CH03 = JSON.parse(
+  readFileSync(`${FIXTURE_DIR_CH03}expected.ch03.json`, 'utf8'),
+) as {
+  contract_id: string;
   assembled_code_points: number;
   assembled_paragraphs: number;
   words: number;
@@ -96,8 +113,12 @@ export function replayProvider(bindings: () => Readonly<Record<string, string>>)
     string,
     Recording
   >;
+  const ch03 = JSON.parse(readFileSync(`${FIXTURE_DIR_CH03}replay.ch03.json`, 'utf8')) as Record<
+    string,
+    Recording
+  >;
   const merged = new Map<string, Recording>(Object.entries(ch01));
-  for (const [key, value] of Object.entries(ch02)) {
+  for (const [key, value] of [...Object.entries(ch02), ...Object.entries(ch03)]) {
     if (merged.has(key)) throw new Error(`duplicate replay recording key across fixtures: ${key}`);
     merged.set(key, value);
   }
@@ -157,7 +178,12 @@ export async function createHarness(pool: Pool, title = 'Second Awakening'): Pro
         ids: {
           arcId: IDS.arc1 ?? '',
           seasonId: IDS.season1 ?? '',
-          contractId: chapterNo === 1 ? (IDS.contract1 ?? '') : (IDS.contract2 ?? ''),
+          contractId:
+            chapterNo === 1
+              ? (IDS.contract1 ?? '')
+              : chapterNo === 2
+                ? (IDS.contract2 ?? '')
+                : (IDS.contract3 ?? ''),
         },
         ...extra,
       };

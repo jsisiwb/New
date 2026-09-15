@@ -36,10 +36,13 @@ IDS = {
     "promise_compass": "0191b2a0-0000-7000-8000-0000000d0001",
     "promise_gate_run": "0191b2a0-0000-7000-8000-0000000d0011",
     "promise_watcher": "0191b2a0-0000-7000-8000-0000000d0003",
+    # Chapter 3 plants the Association's Thursday reinspection as the next promise in the chain.
+    "promise_survey": "0191b2a0-0000-7000-8000-0000000d0012",
     "arc1": "0191b2a0-0000-7000-8000-0000000e0001",
     "season1": "0191b2a0-0000-7000-8000-0000000f0001",
     "contract1": "0191b2a0-0000-7000-8000-000000070001",
     "contract2": "0191b2a0-0000-7000-8000-000000070002",
+    "contract3": "0191b2a0-0000-7000-8000-000000070003",
 }
 
 
