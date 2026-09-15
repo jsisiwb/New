@@ -581,10 +581,22 @@ def main() -> None:
         "hypothesis_results": [],
         "summary_l1": "x",
     }
-    # ---- Planned-frame variant: a future plan smuggled as canon.
+    # ---- Planned-frame variant (T11): plans never become realized canon. Two separate smuggling attempts
+    # in one delta — a plan-framed event, and a canonical fact dated after this chapter's story time — so
+    # the test proves the frame rule and the future-validity rule independently (ADR-0039, FR-7.6).
+    plan_evidence = ev("Red letters. The same red letters as ten years ago.")
     plan_delta = {
         **envelope,
-        "items": [dict(delta_items[1], local_id="f-plan", frame="plan", payload=dict(delta_items[1]["payload"], value="E", value_text="E-rank (planned for ch.8)", valid_from=clock(8, 0, "D+7")))],
+        "items": [
+            {"local_id": "f-plan", "type": "event", "op": "assert", "frame": "plan", "confidence": 1, "importance": "core", "story_clock": clock(1, 2, "D+0"),
+             "payload": {"type": "revelation", "summary": "Do-yoon plans to reach E-rank by ch.8 (a plan, not yet happened).", "location_id": IDS["hall"],
+                         "participants": [{"entity_id": IDS["doyoon"], "role": "agent"}], "importance": "core"},
+             "evidence": plan_evidence},
+            {"local_id": "f-future", "type": "fact", "op": "assert", "frame": "canonical", "confidence": 1, "importance": "core", "story_clock": clock(1, 2, "D+0"),
+             "payload": {"entity_id": IDS["doyoon"], "attribute": "power.rank", "value": "E", "value_text": "E-rank (dated after this chapter's story time)",
+                         "valid_from": clock(1, 100, "D+0"), "valid_to": None},
+             "evidence": plan_evidence},
+        ],
         "unresolved_questions": [],
         "hypothesis_results": [],
         "summary_l1": "x",
@@ -592,6 +604,31 @@ def main() -> None:
 
     def rec(json_obj):
         return {"json": json_obj, "modelId": "replay-model", "usage": {"input": 1000, "output": 500, "cached": 0}}
+
+    def verdict(a_id: str, b_id: str, order: str, overall: str) -> dict:
+        """A comparison-verdict.schema.json instance: evidence first, then a per-dimension preference.
+
+        `overall` is 'a', 'b' or 'tie' in the CURRENT presentation order, which is what the judge returns
+        and what the workflow maps back to candidate ids. english_prose_quality and serialized_structure
+        deliberately disagree so the fixture also exercises EVAL-SEPARATION-001: one candidate can win the
+        English prose dimension while losing the serialized-structure dimension.
+        """
+        pro = "a" if overall == "a" else ("b" if overall == "b" else "tie")
+        anti = "b" if pro == "a" else ("a" if pro == "b" else "tie")
+        return {
+            "candidate_a_id": a_id,
+            "candidate_b_id": b_id,
+            "presentation_order": order,
+            "dimensions": [
+                {"dimension": "contract_fit", "evidence_a": "[p1] opens on the F reading, as the contract requires.", "evidence_b": "[p1] opens on the same beat.", "preference": "tie"},
+                {"dimension": "hook", "evidence_a": "[p1] first line is the device screaming.", "evidence_b": "[p2] the hook arrives a paragraph later.", "preference": pro, "margin": "clear"},
+                {"dimension": "english_prose_quality", "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.", "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.", "preference": pro, "margin": "clear"},
+                {"dimension": "serialized_structure", "evidence_a": "[p20] ending turns outward but softly.", "evidence_b": "[p20] ending lands the forward pull harder.", "preference": anti, "margin": "slight"},
+            ],
+            "overall_preference": overall,
+            "confidence": 0.8,
+            "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such.",
+        }
 
     A = "activity:"
     recordings = {
@@ -617,7 +654,23 @@ def main() -> None:
         A + "extract:1": rec(extraction),
         A + "summarize:1": rec(summary),
         A + "chapter_contract:2": rec(contract2),
+        # ---- B-6-4 candidate comparison (ADR-0015). Slots 1 and 2 of chapter 1; the comparator sees the
+        # candidates as A/B by presentation order only, so each order has its own recording. The ids are
+        # bound at replay time from the run's manuscript version ids.
+        A + "compare:1:s1s2:ab": rec(verdict("{{candidate.1}}", "{{candidate.2}}", "ab", "a")),
+        A + "compare:1:s1s2:ba": rec(verdict("{{candidate.2}}", "{{candidate.1}}", "ba", "b")),
         # test-only variants (selected by tests through ReplayProvider.override)
+        # Position bias: both orders prefer whichever text is shown first. The shuffled-rubric third run
+        # decides; here it picks candidate 1.
+        "variant:compare:1:s1s2:ab:biased": rec(verdict("{{candidate.1}}", "{{candidate.2}}", "ab", "a")),
+        "variant:compare:1:s1s2:ba:biased": rec(verdict("{{candidate.2}}", "{{candidate.1}}", "ba", "a")),
+        "variant:compare:1:s1s2:shuffled:decides_1": rec(verdict("{{candidate.1}}", "{{candidate.2}}", "ab", "a")),
+        "variant:compare:1:s1s2:shuffled:tie": rec(verdict("{{candidate.1}}", "{{candidate.2}}", "ab", "tie")),
+        # Both orders tie: no position bias, straight to the deterministic ladder.
+        "variant:compare:1:s1s2:ab:tie": rec(verdict("{{candidate.1}}", "{{candidate.2}}", "ab", "tie")),
+        "variant:compare:1:s1s2:ba:tie": rec(verdict("{{candidate.2}}", "{{candidate.1}}", "ba", "tie")),
+        # A judge that renames the pair must fail closed rather than have its verdict accepted.
+        "variant:compare:1:s1s2:ab:wrong_ids": rec(verdict(IDS["doyoon"], "{{candidate.2}}", "ab", "a")),
         "variant:extract:1:unsupported": rec(bad_delta),
         "variant:extract:1:planned": rec(plan_delta),
         "variant:prose_judge:1:r1:still_failing": rec(prose_r0),

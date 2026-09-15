@@ -161,7 +161,13 @@ export function workflowIdFor(projectId: string, chapterNo: number): string {
 export const ROUTING_FAMILY_NOTE =
   'Routing for the slice is supplied by the caller (ReplayProvider in tests and the CLI); no live provider is configured.';
 
-async function makeContext(
+/**
+ * Build (or rejoin) the checkpointed workflow context for one chapter: pins, policy, identity, job row and
+ * the project-scoped replay bindings. Exported so callers that drive a single stage — the comparison and
+ * regression suites of Checkpoint 6 — run against the same pinned context the full loop uses, rather than a
+ * hand-built stub that could drift from it.
+ */
+export async function makeContext(
   deps: ChapterProductionDeps,
   projectId: string,
   chapterNo: number,

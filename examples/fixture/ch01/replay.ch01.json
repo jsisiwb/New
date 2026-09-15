@@ -2333,6 +2333,411 @@
    "cached": 0
   }
  },
+ "activity:compare:1:s1s2:ab": {
+  "json": {
+   "candidate_a_id": "{{candidate.1}}",
+   "candidate_b_id": "{{candidate.2}}",
+   "presentation_order": "ab",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "b",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "a",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "activity:compare:1:s1s2:ba": {
+  "json": {
+   "candidate_a_id": "{{candidate.2}}",
+   "candidate_b_id": "{{candidate.1}}",
+   "presentation_order": "ba",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "b",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "b",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "a",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "b",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:compare:1:s1s2:ab:biased": {
+  "json": {
+   "candidate_a_id": "{{candidate.1}}",
+   "candidate_b_id": "{{candidate.2}}",
+   "presentation_order": "ab",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "b",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "a",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:compare:1:s1s2:ba:biased": {
+  "json": {
+   "candidate_a_id": "{{candidate.2}}",
+   "candidate_b_id": "{{candidate.1}}",
+   "presentation_order": "ba",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "b",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "a",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:compare:1:s1s2:shuffled:decides_1": {
+  "json": {
+   "candidate_a_id": "{{candidate.1}}",
+   "candidate_b_id": "{{candidate.2}}",
+   "presentation_order": "ab",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "b",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "a",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:compare:1:s1s2:shuffled:tie": {
+  "json": {
+   "candidate_a_id": "{{candidate.1}}",
+   "candidate_b_id": "{{candidate.2}}",
+   "presentation_order": "ab",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "tie",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "tie",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "tie",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "tie",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:compare:1:s1s2:ab:tie": {
+  "json": {
+   "candidate_a_id": "{{candidate.1}}",
+   "candidate_b_id": "{{candidate.2}}",
+   "presentation_order": "ab",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "tie",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "tie",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "tie",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "tie",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:compare:1:s1s2:ba:tie": {
+  "json": {
+   "candidate_a_id": "{{candidate.2}}",
+   "candidate_b_id": "{{candidate.1}}",
+   "presentation_order": "ba",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "tie",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "tie",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "tie",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "tie",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:compare:1:s1s2:ab:wrong_ids": {
+  "json": {
+   "candidate_a_id": "0191b2a0-0000-7000-8000-0000000c0001",
+   "candidate_b_id": "{{candidate.2}}",
+   "presentation_order": "ab",
+   "dimensions": [
+    {
+     "dimension": "contract_fit",
+     "evidence_a": "[p1] opens on the F reading, as the contract requires.",
+     "evidence_b": "[p1] opens on the same beat.",
+     "preference": "tie"
+    },
+    {
+     "dimension": "hook",
+     "evidence_a": "[p1] first line is the device screaming.",
+     "evidence_b": "[p2] the hook arrives a paragraph later.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "english_prose_quality",
+     "evidence_a": "[p12] 'It felt exactly the way it had ten years ago.' reads as natural English.",
+     "evidence_b": "[p12] the same sentence keeps a transfer-grammar shape.",
+     "preference": "a",
+     "margin": "clear"
+    },
+    {
+     "dimension": "serialized_structure",
+     "evidence_a": "[p20] ending turns outward but softly.",
+     "evidence_b": "[p20] ending lands the forward pull harder.",
+     "preference": "b",
+     "margin": "slight"
+    }
+   ],
+   "overall_preference": "a",
+   "confidence": 0.8,
+   "rationale": "Hook timing and English prose decide it; the structure dimension goes the other way and is reported as such."
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
  "variant:extract:1:unsupported": {
   "json": {
    "project_id": "{{project}}",
