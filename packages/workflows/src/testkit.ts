@@ -132,7 +132,7 @@ export interface Harness {
   readonly mainTimelineId: string;
   readonly provider: ReplayProvider;
   readonly bindings: Record<string, string>;
-  gateway(jobScope?: { jobId?: string | undefined }): Gateway;
+  gateway(options?: { budgetCents?: number | undefined }): Gateway;
   input(chapterNo: number, extra?: Partial<ChapterProductionInput>): ChapterProductionInput;
 }
 
@@ -155,11 +155,13 @@ export async function createHarness(pool: Pool, title = 'Second Awakening'): Pro
     mainTimelineId,
     provider,
     bindings,
-    gateway() {
+    gateway(options = {}) {
       return new Gateway({
         providers: new Map([['replay', provider]]),
         routing: REPLAY_ROUTING,
-        budget: new MemoryBudget(1_000_000),
+        // A test that proves the budget boundary needs to set a real limit; the default is effectively
+        // unlimited so every other fixture run is unaffected.
+        budget: new MemoryBudget(options.budgetCents ?? 1_000_000),
         audit: new PgAuditStore(
           pool,
           { workspaceId, projectId },

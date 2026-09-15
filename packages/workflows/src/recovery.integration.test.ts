@@ -348,3 +348,242 @@ run('failure recovery and resume (B-6-2, NFR-B)', () => {
     expect(c.commits).toBe(3);
   }, 180_000);
 });
+
+/**
+ * The remaining B-6-2 durable boundaries. Each proves the same invariants the suite above proves for the
+ * step boundaries — no partial canon, one acceptance after recovery, no repeated successful spend — for a
+ * fault class that is NOT simply "the step threw": budget refusal before the provider, malformed and
+ * truncated structured output, a non-English draft, an in-transaction canon rejection, and the ambiguous
+ * post-commit failure where the commit landed but the checkpoint did not.
+ */
+run(
+  'failure recovery: provider, budget, contract and post-commit boundaries (B-6-2, NFR-B)',
+  () => {
+    let pool: Pool;
+    let h: Harness;
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+    }, 60_000);
+    beforeEach(async () => {
+      await resetDatabase(pool);
+      await migrate(pool);
+      h = await createHarness(pool);
+    });
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    it('budget exhaustion is refused BEFORE the provider and leaves canon untouched', async () => {
+      // A hard limit low enough that the run cannot finish. The gateway reserves before calling, so the
+      // refusal happens without a provider round trip and without partial canon.
+      const err = await produceChapter(
+        { pool, gateway: h.gateway({ budgetCents: 1 }), bindings: h.bindings },
+        h.input(1),
+      ).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(WorkflowError);
+      const wf = err as WorkflowError;
+      expect(wf.code).toBe('MODEL_CALL_FAILED');
+      expect(wf.options.data).toMatchObject({ gateway_error: 'BUDGET_EXHAUSTED' });
+      expect(wf.options.recommendedActions).toContain('raise_budget');
+      const after = await counts(pool, h.projectId);
+      expect(after.accepted).toBe(0);
+      expect(after.summaries).toBe(0);
+      expect(after.searchDocs).toBe(0);
+      expect((await listCommits(pool, h.projectId)).every((c) => c.source === 'bible')).toBe(true);
+      // The blocked call is recorded as budget_blocked, so the refusal is auditable rather than silent.
+      const blocked = await pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM llm_calls WHERE project_id = $1 AND status = 'budget_blocked'`,
+        [h.projectId],
+      );
+      expect(Number(blocked.rows[0]?.n)).toBeGreaterThan(0);
+    }, 180_000);
+
+    it('a resumed run after budget exhaustion completes without re-spending the completed steps', async () => {
+      const failed = await produceChapter(
+        { pool, gateway: h.gateway({ budgetCents: 2 }), bindings: h.bindings },
+        h.input(1),
+      ).catch((e: unknown) => e);
+      expect(failed).toBeInstanceOf(WorkflowError);
+      const before = await counts(pool, h.projectId);
+
+      // Raise the budget and resume: completed steps replay, and the chapter reaches acceptance once.
+      const resumed = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(1),
+      );
+      expect(resumed.status).toBe('completed');
+      const after = await counts(pool, h.projectId);
+      expect(after.accepted).toBe(1);
+      expect(after.summaries).toBe(1);
+      expect(after.llmCalls).toBeGreaterThanOrEqual(before.llmCalls);
+      const duplicates = await pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM (
+         SELECT idempotency_key FROM llm_calls
+          WHERE project_id = $1 AND status NOT IN ('failed', 'budget_blocked')
+          GROUP BY idempotency_key HAVING count(*) > 1) d`,
+        [h.projectId],
+      );
+      expect(duplicates.rows[0]?.n).toBe('0');
+    }, 300_000);
+
+    it.each([
+      ['malformed structured output', { json: { scene_no: 1 } }],
+      ['a truncated response', { text: '{"scene_no": 1, "language": "en", "text": "The gate' }],
+      ['an empty response', {}],
+    ])(
+      '%s fails the step closed and commits nothing',
+      async (_label, recording) => {
+        h.provider.override({
+          'activity:scene_draft:1:1': recording,
+        });
+        const err = await produceChapter(
+          { pool, gateway: h.gateway(), bindings: h.bindings },
+          h.input(1),
+        ).catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(WorkflowError);
+        const wf = err as WorkflowError;
+        // Either the gateway refuses the shape or the workflow refuses the plan: both are closed failures at
+        // the drafting boundary, and neither may invent text.
+        expect(['MODEL_CALL_FAILED', 'SCENE_DRAFT_INVALID']).toContain(wf.code);
+        expect(wf.options.step).toBe('scene_draft');
+        const after = await counts(pool, h.projectId);
+        expect(after.accepted).toBe(0);
+        expect(after.versions).toBe(0);
+        expect(after.summaries).toBe(0);
+        expect((await listCommits(pool, h.projectId)).every((c) => c.source === 'bible')).toBe(
+          true,
+        );
+        const status = await workflowStatus(pool, workflowIdFor(h.projectId, 1));
+        expect(status.status).toBe('failed');
+        expect((status.error as { step?: unknown }).step).toBe('scene_draft');
+      },
+      180_000,
+    );
+
+    it('a non-English draft fails the output-language boundary and never reaches canon', async () => {
+      h.provider.alias('activity:scene_draft:1:3', 'variant:scene_draft:1:3:korean');
+      const err = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(1),
+      ).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(WorkflowError);
+      const wf = err as WorkflowError;
+      // English is a contract, not a preference: the failure is closed, named, and pre-canon.
+      expect(['OUTPUT_LANGUAGE_FAILED', 'MODEL_CALL_FAILED', 'EVALUATION_FAILED']).toContain(
+        wf.code,
+      );
+      const after = await counts(pool, h.projectId);
+      expect(after.accepted).toBe(0);
+      expect(after.summaries).toBe(0);
+      expect(after.searchDocs).toBe(0);
+      expect((await listCommits(pool, h.projectId)).every((c) => c.source === 'bible')).toBe(true);
+    }, 180_000);
+
+    it.each([
+      ['an unsupported claim', 'variant:extract:1:unsupported'],
+      ['a planned-frame item', 'variant:extract:1:planned'],
+    ])(
+      '%s is rejected in-transaction: canon does not move and nothing is half-written',
+      async (_l, variant) => {
+        h.provider.alias('activity:extract:1', variant);
+        const err = await produceChapter(
+          { pool, gateway: h.gateway(), bindings: h.bindings },
+          h.input(1),
+        ).catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(WorkflowError);
+        const wf = err as WorkflowError;
+        expect(['EXTRACTION_REJECTED', 'EXTRACTION_ENVELOPE_MISMATCH']).toContain(wf.code);
+        const after = await counts(pool, h.projectId);
+        // The verifier refused inside the commit path: the only commits are the two the bible legitimately
+        // makes before drafting, canon sits exactly at their version, and no fact came from a chapter.
+        expect(after.accepted).toBe(0);
+        expect(after.summaries).toBe(0);
+        expect(after.searchDocs).toBe(0);
+        const commits = await listCommits(pool, h.projectId);
+        expect(commits.every((c) => c.source === 'bible')).toBe(true);
+        expect((await getProject(pool, h.projectId)).canon_version).toBe(commits.length);
+        const fromChapters = await pool.query<{ n: string }>(
+          `SELECT count(*)::text AS n FROM facts f JOIN canon_commits c ON c.id = f.commit_id
+            WHERE f.project_id = $1 AND c.source <> 'bible'`,
+          [h.projectId],
+        );
+        expect(fromChapters.rows[0]?.n).toBe('0');
+      },
+      180_000,
+    );
+
+    it('an ambiguous post-commit failure is recognized on retry: the commit is reused, not repeated', async () => {
+      // The hardest case: the acceptance transaction COMMITTED, then the process died before the step
+      // checkpoint was written. On retry the step has no completed record, so it runs again — and must
+      // recognize the existing commit instead of committing a second time.
+      const first = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(1),
+      );
+      expect(first.status).toBe('completed');
+      const commitId = first.accepted?.commit_id;
+      const canonVersion = first.accepted?.canon_version;
+      const before = await counts(pool, h.projectId);
+
+      // Simulate the lost checkpoint: erase the `accept` step record while the commit stays in place.
+      const erased = await pool.query(
+        `DELETE FROM job_steps WHERE step = 'accept' AND idempotency_key LIKE $1`,
+        [`%${h.projectId}%`],
+      );
+      expect(erased.rowCount ?? 0).toBeGreaterThanOrEqual(0);
+      await pool.query(
+        `DELETE FROM job_steps WHERE step IN ('accept', 'summarize', 'dependency_edges')
+        AND job_id IN (SELECT id FROM jobs WHERE project_id = $1)`,
+        [h.projectId],
+      );
+
+      const retried = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(1),
+      );
+      expect(retried.status).toBe('completed');
+      // The SAME commit and the SAME canon version: the retry recognized the committed acceptance.
+      expect(retried.accepted?.commit_id).toBe(commitId);
+      expect(retried.accepted?.canon_version).toBe(canonVersion);
+      // Recognition is proved from durable state rather than a flag: the accepted version still points at
+      // the SAME commit row, and no second commit exists at any version above it.
+      const version = await pool.query<{ accepted_commit_id: string | null }>(
+        'SELECT accepted_commit_id FROM manuscript_versions WHERE id = $1',
+        [retried.accepted?.manuscript_version_id ?? ''],
+      );
+      expect(version.rows[0]?.accepted_commit_id).toBe(commitId);
+
+      const after = await counts(pool, h.projectId);
+      // No second commit, no second accepted version, no duplicate summary or index document.
+      expect(after.commits).toBe(before.commits);
+      expect(after.accepted).toBe(before.accepted);
+      expect(after.summaries).toBe(before.summaries);
+      expect(after.searchDocs).toBe(before.searchDocs);
+      expect(after.facts).toBe(before.facts);
+      expect((await getProject(pool, h.projectId)).canon_version).toBe(canonVersion);
+    }, 300_000);
+
+    it("a failure in one project never touches another project's canon", async () => {
+      const other = await createHarness(pool, 'Isolated Project');
+      const ok = await produceChapter(
+        { pool, gateway: other.gateway(), bindings: other.bindings },
+        other.input(1),
+      );
+      expect(ok.status).toBe('completed');
+      const otherBefore = await counts(pool, other.projectId);
+
+      // The first project fails hard at drafting.
+      h.provider.override({ 'activity:scene_draft:1:2': { text: undefined, json: undefined } });
+      const err = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(1),
+      ).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(WorkflowError);
+
+      // The other project is untouched: same canon version, same counts.
+      const otherAfter = await counts(pool, other.projectId);
+      expect(otherAfter).toEqual(otherBefore);
+    }, 300_000);
+  },
+);
