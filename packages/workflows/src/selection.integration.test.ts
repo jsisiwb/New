@@ -317,11 +317,13 @@ run('N-candidate selection with three candidates (B-6-4)', () => {
     expect(await countComparatorCalls(pool, h.projectId)).toBe(4);
   }, 300_000);
 
-  it('two simultaneous selections never produce two winners', async () => {
-    // A genuine race: both callers start before either has persisted anything, so the durable
-    // short-circuit cannot help and they contend on the gateway's per-activity idempotency key. The
-    // invariant is NOT that both succeed — one may lose the insert race and fail loudly. The invariant is
-    // that the race can never produce a second winner or a second selection record.
+  it('two simultaneous selections converge or fail with a TYPED retriable conflict', async () => {
+    // A genuine race: both callers start before either has committed, so the durable short-circuit cannot
+    // help and they contend on the (project, chapter) uniqueness that owns the decision.
+    //
+    // The allowed outcomes are exactly two, and both are asserted rather than tolerated:
+    //   * both return the same winner, or
+    //   * one succeeds and the other receives a typed SELECTION_CONFLICT — never a raw database error.
     const [a, b] = await Promise.allSettled([
       selectWinner(p.ctx, inputFor(p)),
       selectWinner(p.ctx, inputFor(p)),
@@ -330,10 +332,40 @@ run('N-candidate selection with three candidates (B-6-4)', () => {
       (r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof selectWinner>>> =>
         r.status === 'fulfilled',
     );
+    const rejected = [a, b].filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    expect(fulfilled.length + rejected.length).toBe(2);
     expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+
+    // Any caller that failed must have failed in the controlled way. A raw duplicate-key error escaping
+    // here is precisely the defect this assertion exists to catch.
+    for (const r of rejected) {
+      expect(r.reason).toBeInstanceOf(WorkflowError);
+      const wf = r.reason as WorkflowError;
+      expect(wf.code).toBe('SELECTION_CONFLICT');
+      expect(wf.options.recommendedActions).toContain('retry_step');
+      expect(wf.detail).not.toContain('duplicate key');
+      // And its retry converges on the committed decision.
+      const retried = await selectWinner(p.ctx, inputFor(p));
+      expect(retried.status).toBe('selected');
+    }
     // Every caller that succeeded agrees on the same winner.
     const winners = new Set(fulfilled.map((r) => r.value.winnerId));
     expect(winners.size).toBe(1);
+
+    // Exactly one committed decision, and no duplicate successful comparator judgment.
+    const decisions = await pool.query<{ n: string }>(
+      'SELECT count(*)::text AS n FROM candidate_selections WHERE project_id = $1',
+      [h.projectId],
+    );
+    expect(decisions.rows[0]?.n).toBe('1');
+    const duplicateJudgments = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM (
+         SELECT idempotency_key FROM llm_calls
+          WHERE project_id = $1 AND role = 'chapter_comparator' AND status <> 'failed'
+          GROUP BY idempotency_key HAVING count(*) > 1) d`,
+      [h.projectId],
+    );
+    expect(duplicateJudgments.rows[0]?.n).toBe('0');
 
     // Exactly one selection record exists, and a later read returns that same decision.
     const artifacts = await pool.query<{ n: string }>(

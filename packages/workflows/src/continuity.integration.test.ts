@@ -491,7 +491,9 @@ run('chapter 3 resumes from every durable boundary without duplicating work (B-6
       const err = await produceChapter(deps, h.input(3, { failAfterStep: step })).catch(
         (e: unknown) => e,
       );
-      expect(err).toBeInstanceOf(Error);
+      // The injected fault is a typed workflow failure naming the boundary it stopped at, not a bare throw.
+      expect(err).toBeInstanceOf(WorkflowError);
+      expect((err as WorkflowError).options.step).toBe(step);
       const interrupted = await counts(pool, h.projectId);
       // Every boundary here precedes the acceptance commit, so canon must still be chapter 2's v4.
       expect((await getProject(pool, h.projectId)).canon_version).toBe(4);
