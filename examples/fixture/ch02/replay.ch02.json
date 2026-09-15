@@ -1102,5 +1102,43 @@
    "output": 500,
    "cached": 0
   }
+ },
+ "activity:genre_judge:2:r0": {
+  "json": {
+   "dimension_scores": {
+      "reader_fantasy": 5,
+      "device_correctness": 4,
+      "vocabulary_register": 4,
+      "taboo_restraint": 5
+   },
+   "judge_score": 88,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "activity:voice_judge:2:r0": {
+  "json": {
+   "dimension_scores": {
+      "distinguishability": 4,
+      "verbal_habits": 4,
+      "register_naturalness": 5,
+      "register_consistency": 5
+   },
+   "judge_score": 86,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
  }
 }

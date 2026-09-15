@@ -3093,5 +3093,196 @@
    "output": 500,
    "cached": 0
   }
+ },
+ "activity:genre_judge:1:r0": {
+  "json": {
+   "dimension_scores": {
+      "reader_fantasy": 5,
+      "device_correctness": 4,
+      "vocabulary_register": 4,
+      "taboo_restraint": 5
+   },
+   "judge_score": 84,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "activity:voice_judge:1:r0": {
+  "json": {
+   "dimension_scores": {
+      "distinguishability": 4,
+      "verbal_habits": 4,
+      "register_naturalness": 5,
+      "register_consistency": 5
+   },
+   "judge_score": 82,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "activity:genre_judge:1:r1": {
+  "json": {
+   "dimension_scores": {
+      "reader_fantasy": 5,
+      "device_correctness": 4,
+      "vocabulary_register": 4,
+      "taboo_restraint": 5
+   },
+   "judge_score": 84,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "activity:voice_judge:1:r1": {
+  "json": {
+   "dimension_scores": {
+      "distinguishability": 4,
+      "verbal_habits": 4,
+      "register_naturalness": 5,
+      "register_consistency": 5
+   },
+   "judge_score": 82,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:genre_judge:1:r0:below_gate": {
+  "json": {
+   "dimension_scores": {
+      "reader_fantasy": 2,
+      "device_correctness": 4,
+      "vocabulary_register": 4,
+      "taboo_restraint": 5
+   },
+   "judge_score": 60,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:voice_judge:1:r0:below_gate": {
+  "json": {
+   "dimension_scores": {
+      "distinguishability": 4,
+      "verbal_habits": 4,
+      "register_naturalness": 5,
+      "register_consistency": 2
+   },
+   "judge_score": 64,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:voice_judge:1:r1:register_violation": {
+  "json": {
+   "dimension_scores": {
+      "distinguishability": 4,
+      "verbal_habits": 4,
+      "register_naturalness": 5,
+      "register_consistency": 5
+   },
+   "judge_score": 70,
+   "drift_flags": [],
+   "issues": [
+    {
+     "kind": "register_error",
+     "severity": "major",
+     "confidence": 0.88,
+     "claim": "Do-yoon addresses the officer with a deference level the register digest reserves for superiors.",
+     "chapter_span": {
+      "paragraph_ids": [
+       "p42"
+      ],
+      "start": 3212,
+      "end": 3259,
+      "quote": "It was exactly same feeling with ten years ago."
+     },
+     "repair": {
+      "scope": "sentence",
+      "suggestion": "Restore the neutral-polite register the digest specifies for a stranger in authority.",
+      "must_preserve_fact_ids": []
+     }
+    }
+   ]
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:genre_judge:1:r1:below_gate": {
+  "json": {
+   "dimension_scores": {
+      "reader_fantasy": 2,
+      "device_correctness": 4,
+      "vocabulary_register": 4,
+      "taboo_restraint": 5
+   },
+   "judge_score": 60,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
+ },
+ "variant:voice_judge:1:r1:below_gate": {
+  "json": {
+   "dimension_scores": {
+      "distinguishability": 4,
+      "verbal_habits": 4,
+      "register_naturalness": 5,
+      "register_consistency": 2
+   },
+   "judge_score": 64,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
  }
 }

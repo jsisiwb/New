@@ -322,6 +322,7 @@ export interface DimensionDelta {
 export type RegressionFailure =
   | 'targeted_not_improved'
   | 'targeted_worsened'
+  | 'gated_dimension_missing'
   | 'dimension_dropped'
   | 'protected_dimension_regressed'
   | 'new_blocking_or_major_issue'
@@ -438,6 +439,8 @@ function kindsMatching(scorecard: Scorecard, kinds: ReadonlySet<string>): readon
  * `passed` is the conjunction of ALL of:
  *   - the targeted issues resolved or the targeted dimension's score materially improved;
  *   - the targeted dimension did not worsen;
+ *   - every dimension the pinned policy gates is present in BOTH scorecards — required evidence, so an
+ *     unwired judge fails the check rather than passing silently;
  *   - no dimension the parent scorecard carried disappeared (a patch may not delete its own evidence);
  *   - no protected (non-targeted) gated dimension fell by more than the pinned tolerance;
  *   - no new blocking/major issue kind appeared;
@@ -445,7 +448,8 @@ function kindsMatching(scorecard: Scorecard, kinds: ReadonlySet<string>): readon
  *     voice, register, prose and structure, plus the westernization and translation-like kind guards.
  *
  * Numbers come only from the pinned Production Policy (ADR-0041); an absent tolerance means zero, never
- * unlimited. `missingGatedDimensions` records gates no scorecard carries so an unwired judge stays visible.
+ * unlimited. `missingGatedDimensions` records which gate was unavailable, in sorted order, for the audit
+ * trail — it is both reported and fatal.
  */
 export function patchRegression(
   policy: ProductionPolicy,
@@ -515,19 +519,25 @@ export function patchRegression(
     .sort();
 
   const protections: ProtectionOutcome[] = [];
+  const missingGated = new Set(missing);
   for (const [protection, section] of PROTECTION_SECTIONS) {
     const beforePassed = sectionPassed(input.before, section);
     const afterPassed = sectionPassed(input.after, section);
     if (afterPassed === undefined) {
-      // No evidence on the revised version: applicable only if the parent had it, and then it fails closed.
+      // A dimension the POLICY GATES is required evidence: absent on both scorecards it fails closed as
+      // an applicable protection, never as `applicable: false, passed: true` — an unavailable required
+      // gate must not read as a pass. Absent only on the revision is the `dimension_dropped` case.
+      const gated = missingGated.has(protection) || dropped.includes(protection);
       protections.push({
         protection,
-        applicable: beforePassed !== undefined,
-        passed: beforePassed === undefined,
+        applicable: beforePassed !== undefined || gated,
+        passed: beforePassed === undefined && !gated,
         detail:
-          beforePassed === undefined
-            ? `no ${section} section on either scorecard`
-            : `the revised scorecard dropped the ${section} section the parent carried`,
+          beforePassed !== undefined
+            ? `the revised scorecard dropped the ${section} section the parent carried`
+            : gated
+              ? `policy gates ${section} but neither scorecard carries it`
+              : `no ${section} section on either scorecard`,
       });
       continue;
     }
@@ -564,6 +574,9 @@ export function patchRegression(
   const failures: RegressionFailure[] = [];
   if (!materiallyImproved) failures.push('targeted_not_improved');
   if (worsened) failures.push('targeted_worsened');
+  // Required policy-gated evidence that no scorecard carries fails the report rather than only being
+  // recorded: a gate whose judge is unwired must never let a patch through (ADR-0041).
+  if (missing.length > 0) failures.push('gated_dimension_missing');
   if (dropped.length > 0) failures.push('dimension_dropped');
   if (regressions.length > 0) failures.push('protected_dimension_regressed');
   if (newIssueKinds.length > 0) failures.push('new_blocking_or_major_issue');

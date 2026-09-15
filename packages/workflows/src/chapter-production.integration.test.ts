@@ -174,7 +174,7 @@ run('chapter production vertical slice (Postgres + ReplayProvider)', () => {
       expect(c.output_language_check).toMatchObject({ performed: true, passed: true });
   });
 
-  it('T4 prose and structure are separate evaluation dimensions with separate gates', async () => {
+  it('T4 prose, structure, genre and voice are separate evaluation dimensions with separate gates', async () => {
     const first = result.scorecards[0];
     const second = result.scorecards[1];
     expect(first).toMatchObject({ prose: 74, structure: 88, auto_approvable: false, major: 1 });
@@ -191,17 +191,31 @@ run('chapter production vertical slice (Postgres + ReplayProvider)', () => {
     expect(sc?.sections.prose.passed).toBe(false);
     expect(sc?.sections.structure.passed).toBe(true);
     expect(sc?.sections.prose.evaluator_call_id).not.toBe(sc?.sections.structure.evaluator_call_id);
+    // Every gated dimension of the pinned policy has its own score, threshold and outcome — fluent
+    // English, webnovel structure, genre fit and voice are never folded together (EVAL-SEPARATION-001).
     expect(sc?.acceptance.dimension_results).toEqual([
       { dimension: 'prose', score: 74, threshold: 78, passed: false },
       { dimension: 'structure', score: 88, threshold: 78, passed: true },
+      { dimension: 'genre', score: 84, threshold: 72, passed: true },
+      { dimension: 'voice', score: 82, threshold: 76, passed: true },
     ]);
-    // Two judges, two identity variants.
+    // Four separate evaluator calls, each with its own call id.
+    const callIds = (['prose', 'structure', 'genre', 'voice'] as const).map(
+      (d) => sc?.sections[d]?.evaluator_call_id,
+    );
+    expect(new Set(callIds).size).toBe(4);
+
+    // Four judges; the prose and structure rubrics are distinct identity variants.
     const judges = await pool.query<{ role: string; narrative_block_hash: string }>(
-      `SELECT role, narrative_block_hash FROM llm_calls WHERE project_id = $1 AND role IN ('prose_judge','structure_judge') ORDER BY role`,
+      `SELECT role, narrative_block_hash FROM llm_calls WHERE project_id = $1 AND role IN ('prose_judge','structure_judge','genre_judge','voice_judge') ORDER BY role`,
       [h.projectId],
+    );
+    expect(new Set(judges.rows.map((r) => r.role))).toEqual(
+      new Set(['prose_judge', 'structure_judge', 'genre_judge', 'voice_judge']),
     );
     const hashes = new Map(judges.rows.map((r) => [r.role, r.narrative_block_hash]));
     expect(hashes.get('prose_judge')).not.toBe(hashes.get('structure_judge'));
+    expect(hashes.get('genre_judge')).not.toBe(hashes.get('structure_judge'));
   });
 
   it('T6 the targeted revision created a new immutable version with the parent link and the exact code-point patch', async () => {
@@ -861,8 +875,9 @@ run('chapter production — failure paths (each on a fresh project)', () => {
         )
       ).rows[0]?.n,
     );
-    // Only the post-failure calls were added: reviser + 5 evaluators of round 1 + extractor + summarizer.
-    expect(calls2 - calls1).toBe(8);
+    // Only the post-failure calls were added: reviser + 7 evaluators of round 1 + extractor + summarizer.
+    // The 7 evaluators are contract, continuity, knowledge-leak, prose, structure, genre and voice.
+    expect(calls2 - calls1).toBe(10);
     const versions2 = Number(
       (
         await pool.query<{ n: string }>(

@@ -248,6 +248,64 @@ run('failure recovery and resume (B-6-2, NFR-B)', () => {
     expect(after.summaries).toBe(0);
   }, 120_000);
 
+  it.each([['genre'], ['voice']])(
+    'the newly wired %s dimension is a protected dimension in the regression check',
+    async (dim) => {
+      // r0 keeps the passing recording so the prose revision round proceeds; the post-patch round scores
+      // this dimension far below its pre-patch value. Repairing prose at the cost of genre or voice is
+      // exactly what ADR-0014 forbids, so the patch is refused at `revise` — before approval, before canon.
+      h.provider.alias(`activity:${dim}_judge:1:r1`, `variant:${dim}_judge:1:r1:below_gate`);
+      const err = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(1),
+      ).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(WorkflowError);
+      const wf = err as WorkflowError;
+      expect(wf.code).toBe('PATCH_REGRESSED');
+      expect(wf.options.step).toBe('revise');
+      expect(wf.options.data?.failures).toContain('protected_dimension_regressed');
+      // The regressed dimension is named, and it is the newly wired one — not prose or structure.
+      const regressed = (wf.options.data?.regressions ?? []) as { dimension: string }[];
+      expect(regressed.map((r) => r.dimension)).toContain(dim);
+      const after = await counts(pool, h.projectId);
+      expect(after.accepted).toBe(0);
+      expect(after.commits).toBe(2); // the two bible commits only
+      expect(after.summaries).toBe(0);
+    },
+    120_000,
+  );
+
+  it.each([['genre'], ['voice']])(
+    'a %s score below its pinned gate blocks approval on a chapter with no revision round',
+    async (dim) => {
+      // Chapter 2's fixture is approvable as written (no revision round), so a below-threshold score with
+      // no repairable issue isolates the GATE itself: the run fails closed at the approval lock and
+      // chapter 2 commits no canon on top of chapter 1's.
+      const ch1 = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(1),
+      );
+      expect(ch1.status).toBe('completed');
+      const afterCh1 = await counts(pool, h.projectId);
+      h.provider.alias(`activity:${dim}_judge:2:r0`, `variant:${dim}_judge:1:r0:below_gate`);
+      const err = await produceChapter(
+        { pool, gateway: h.gateway(), bindings: h.bindings },
+        h.input(2),
+      ).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(WorkflowError);
+      const wf = err as WorkflowError;
+      expect(wf.code).toBe('APPROVAL_BLOCKED');
+      expect(wf.options.step).toBe('approve');
+      expect(wf.detail).toContain(dim);
+      const after = await counts(pool, h.projectId);
+      // Chapter 1 stays accepted; chapter 2 added no acceptance, no commit and no summary.
+      expect(after.accepted).toBe(afterCh1.accepted);
+      expect(after.commits).toBe(afterCh1.commits);
+      expect(after.summaries).toBe(afterCh1.summaries);
+    },
+    240_000,
+  );
+
   it('the regression artifact of a passing patch is written once and is idempotent across a retry', async () => {
     // Chapter 1's fixture takes the revision path and its patch DOES repair prose, so the regression check
     // passes and the chapter reaches acceptance. Re-running must not add a second report or re-spend.

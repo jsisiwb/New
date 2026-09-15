@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yeonjae.studio/schemas/regression-report.schema.json",
   "title": "Patch regression report",
-  "description": "The auditable outcome of the ADR-0014 patch-regression check for one targeted revision. A patch may pass only when the targeted issue materially improved or resolved, the targeted dimension did not worsen, every dimension the parent scorecard carried is still present, no protected dimension regressed beyond the pinned tolerance, no new blocking/major issue appeared, and every applicable protection (output language, contract, continuity, knowledge, genre, voice/register, prose, structure) still passes. A failed report blocks approval and therefore canon acceptance.",
+  "description": "The auditable outcome of the ADR-0014 patch-regression check for one targeted revision. A patch may pass only when the targeted issue materially improved or resolved, the targeted dimension did not worsen, every dimension the pinned policy gates is present in BOTH the pre-patch and post-patch scorecards, no protected dimension regressed beyond the pinned tolerance, no new blocking/major issue appeared, and every applicable protection (output language, contract, continuity, knowledge, genre, voice/register, prose, structure) still passes. A failed report blocks approval and therefore canon acceptance.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -51,7 +51,7 @@
     },
     "missing_gated_dimensions": {
       "type": "array",
-      "description": "Dimensions the pinned policy gates that neither scorecard carries. Recorded so an unwired judge is visible in the audit trail and can never read as a silent pass.",
+      "description": "Dimensions the pinned policy gates that neither scorecard carries, in sorted order. Required policy-gated evidence: a non-empty list fails the report with `gated_dimension_missing`, so an unwired judge can never read as a silent pass. Kept for auditability of which gate was unavailable.",
       "items": { "$ref": "common.schema.json#/$defs/qualityDimension" }
     },
     "dropped_dimensions": {
@@ -133,6 +133,7 @@
         "enum": [
           "targeted_not_improved",
           "targeted_worsened",
+          "gated_dimension_missing",
           "dimension_dropped",
           "protected_dimension_regressed",
           "new_blocking_or_major_issue",

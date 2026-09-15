@@ -204,6 +204,9 @@ describe('patch regression (ADR-0014)', () => {
   function card(input: {
     prose: number;
     structure: number;
+    /** Omit to supply passing genre/voice evidence; set explicitly to exercise a gate. */
+    genre?: number | null;
+    voice?: number | null;
     issues?: {
       id: string;
       dimension: Scorecard['issues'][number]['dimension'];
@@ -212,6 +215,8 @@ describe('patch regression (ADR-0014)', () => {
     }[];
     sections?: Record<string, { score: number; passed: boolean }>;
   }): Scorecard {
+    const genre = input.genre === undefined ? 85 : input.genre;
+    const voice = input.voice === undefined ? 85 : input.voice;
     const base: Record<string, { score: number; passed: boolean }> = {
       prose: { score: input.prose, passed: input.prose >= 78 },
       structure: { score: input.structure, passed: input.structure >= 78 },
@@ -219,6 +224,10 @@ describe('patch regression (ADR-0014)', () => {
       contract_compliance: { score: 100, passed: true },
       continuity: { score: 100, passed: true },
       knowledge: { score: 100, passed: true },
+      // standard.v1 gates genre and voice, so complete evidence includes them. `null` drops the section,
+      // which is how the "required gate unavailable" cases below are built.
+      ...(genre === null ? {} : { genre: { score: genre, passed: genre >= 72 } }),
+      ...(voice === null ? {} : { voice: { score: voice, passed: voice >= 76 } }),
       ...(input.sections ?? {}),
     };
     const issues = (input.issues ?? []).map((i) => ({
@@ -367,7 +376,85 @@ describe('patch regression (ADR-0014)', () => {
     expect(report.regressions.map((r) => r.dimension)).toEqual(['structure']);
   });
 
-  it('records gated dimensions no scorecard carries instead of treating them as cleared', () => {
+  it('a gated dimension absent from BOTH scorecards fails the report, it is not merely recorded', () => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 80,
+        genre: null,
+        voice: null,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 85, structure: 80, genre: null, voice: null }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    // Only the dimensions actually carried are scored...
+    expect(report.deltas.map((d) => d.dimension)).toEqual(['prose', 'structure']);
+    // ...and the two gates standard.v1 requires but nothing supplied are both reported AND fatal.
+    expect(report.missingGatedDimensions).toEqual(['genre', 'voice']);
+    expect(report.failures).toContain('gated_dimension_missing');
+    expect(report.passed).toBe(false);
+    // An unavailable required gate must never present as "inapplicable, therefore fine".
+    for (const name of ['genre', 'voice'] as const) {
+      expect(report.protections.find((p) => p.protection === name)).toMatchObject({
+        applicable: true,
+        passed: false,
+      });
+    }
+    expect(report.failures).toContain('protection_failed');
+  });
+
+  it.each(['genre', 'voice'] as const)('a missing %s gate alone fails the report', (dimension) => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 80,
+        [dimension]: null,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 85, structure: 80, [dimension]: null }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    expect(report.missingGatedDimensions).toEqual([dimension]);
+    expect(report.failures).toContain('gated_dimension_missing');
+    expect(report.passed).toBe(false);
+    expect(report.protections.find((p) => p.protection === dimension)).toMatchObject({
+      applicable: true,
+      passed: false,
+    });
+    // The other gate was supplied, so it is not implicated.
+    const other = dimension === 'genre' ? 'voice' : 'genre';
+    expect(report.protections.find((p) => p.protection === other)).toMatchObject({
+      applicable: true,
+      passed: true,
+    });
+  });
+
+  it('multiple missing gates are reported deterministically, in sorted order', () => {
+    const build = () =>
+      patchRegression(POLICY, {
+        before: card({
+          prose: 70,
+          structure: 80,
+          genre: null,
+          voice: null,
+          issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+        }),
+        after: card({ prose: 85, structure: 80, genre: null, voice: null }),
+        dimension: 'prose',
+        targetedIssueIds: [ISSUE_A],
+      });
+    const a = build();
+    const b = build();
+    expect(a.missingGatedDimensions).toEqual(['genre', 'voice']);
+    expect(b.missingGatedDimensions).toEqual(a.missingGatedDimensions);
+    // The failure list itself is stable, so a persisted artifact is byte-identical across runs.
+    expect(b.failures).toEqual(a.failures);
+  });
+
+  it('complete required evidence can still pass: the rule tightens the gate, it does not close it', () => {
     const report = patchRegression(POLICY, {
       before: card({
         prose: 70,
@@ -378,11 +465,62 @@ describe('patch regression (ADR-0014)', () => {
       dimension: 'prose',
       targetedIssueIds: [ISSUE_A],
     });
-    // standard.v1 gates prose, structure, genre and voice; only the two the scorecard carries are scored.
-    expect(report.deltas.map((d) => d.dimension)).toEqual(['prose', 'structure']);
-    expect(report.missingGatedDimensions).toEqual(['genre', 'voice']);
-    // Missing gates are reported, not counted as failures: wiring them is the separate genre/voice task.
+    expect(report.missingGatedDimensions).toEqual([]);
+    expect(report.deltas.map((d) => d.dimension)).toEqual(['genre', 'prose', 'structure', 'voice']);
+    expect(report.failures).toEqual([]);
     expect(report.passed).toBe(true);
+  });
+
+  it('a dropped dimension stays distinguishable from one missing in both versions', () => {
+    // genre present before and gone after = dropped. voice absent throughout = missing.
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 80,
+        voice: null,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 85, structure: 80, genre: null, voice: null }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    expect(report.droppedDimensions).toEqual(['genre']);
+    expect(report.missingGatedDimensions).toEqual(['voice']);
+    // Two distinct reasons, both fatal, neither collapsed into the other.
+    expect(report.failures).toContain('dimension_dropped');
+    expect(report.failures).toContain('gated_dimension_missing');
+    expect(report.passed).toBe(false);
+    expect(report.protections.find((p) => p.protection === 'genre')?.detail).toMatch(/dropped/);
+    expect(report.protections.find((p) => p.protection === 'voice')?.detail).toMatch(
+      /policy gates voice/,
+    );
+  });
+
+  it('a report failed only by a missing gate is schema-valid when persisted', () => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 80,
+        genre: null,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 85, structure: 80, genre: null }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    const artifact = regressionArtifact(report, {
+      id: regressionReportId('wf-1', '0191b2a0-0000-7000-8000-00000000b002', 1),
+      manuscriptVersionId: '0191b2a0-0000-7000-8000-00000000b002',
+      parentVersionId: '0191b2a0-0000-7000-8000-00000000b001',
+      round: 1,
+      productionPolicyVersion: 'policy/standard@1',
+    });
+    const v = validatorFor('regression-report.schema.json')(artifact);
+    expect(v.ok, JSON.stringify('errors' in v ? v.errors : [])).toBe(true);
+    expect(artifact.passed).toBe(false);
+    expect(artifact.failures).toContain('gated_dimension_missing');
+    // Retained for auditability: which gate was unavailable is recoverable from the stored artifact.
+    expect(artifact.missing_gated_dimensions).toEqual(['genre']);
   });
 
   it('a patch may not pass by deleting the dimension evidence it is judged on', () => {
@@ -392,16 +530,17 @@ describe('patch regression (ADR-0014)', () => {
       before: card({
         prose: 70,
         structure: 88,
-        sections: { genre: { score: 80, passed: true } },
         issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
       }),
-      after: card({ prose: 90, structure: 88 }),
+      after: card({ prose: 90, structure: 88, genre: null }),
       dimension: 'prose',
       targetedIssueIds: [ISSUE_A],
     });
     expect(report.droppedDimensions).toEqual(['genre']);
+    expect(report.missingGatedDimensions).toEqual([]);
     expect(report.passed).toBe(false);
     expect(report.failures).toContain('dimension_dropped');
+    expect(report.failures).not.toContain('gated_dimension_missing');
     expect(report.failures).toContain('protection_failed');
     expect(report.protections.find((p) => p.protection === 'genre')).toMatchObject({
       applicable: true,
