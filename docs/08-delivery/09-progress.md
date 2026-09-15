@@ -35,7 +35,7 @@ merge bottom-up. No PR is merged without explicit user authorization.
 | Command | Purpose | Last result |
 | --- | --- | --- |
 | `pip install jsonschema && python3 tools/validate-planning-package.py` | schemas, examples, canon-delta union, evidence offsets against fixture manuscripts, cross-file refs, stale terms, truthfulness | **ALL OK** (32 schemas; 14 examples + 1 bundle; 0 contradiction hits) |
-| `DATABASE_URL=postgres://… CI=true pnpm check` | types-fresh → typecheck → lint → format:check → unit + Postgres integration tests → validator | **local green** (this branch: 25 test files, 202 tests passed — 22 chapter-production integration incl. T19b collision proof + 9 candidate-comparison/patch-regression integration + 10 comparison unit + 5 CLI chapter-surface tests; Postgres 16, Node 24.19.0, pnpm 10.26.0, Python 3.12.3). Local green is not GitHub green: see the PR's Actions runs for CI evidence |
+| `DATABASE_URL=postgres://… CI=true pnpm check` | types-fresh → typecheck → lint → format:check → unit + Postgres integration tests → validator | **local green** (this branch: 26 test files, 216 tests passed — 22 chapter-production integration incl. T19b collision proof + 14 failure-recovery integration + 9 candidate-comparison/patch-regression integration + 10 comparison unit + 5 CLI chapter-surface tests; Postgres 16, Node 24.19.0, pnpm 10.26.0, Python 3.12.3). Local green is not GitHub green: see the PR's Actions runs for CI evidence |
 | `pnpm cli identity:compile project/…@1 writer_full 2000` | compiles the fixture identity block: both contracts first, 11 sections, 1,272 est. tokens, deterministic hash | ok |
 | `pnpm cli prompts:list` | 25 immutable prompt versions + active prompt set id | ok |
 | `pnpm cli verify-evidence examples/fixture/manuscripts/ch09.accepted.txt examples/fixture/canon-delta.ch09.json` | code-point evidence verification via the CLI | ok: 8 spans verified |
@@ -142,7 +142,7 @@ Checkpoint 3 (gateway + judges) and Checkpoint 6 (contrast-set regression on liv
 | Item | State |
 | --- | --- |
 | B-6-1 multi-chapter continuity (≥ 3 consecutive accepted chapters on the fixture) | not started |
-| B-6-2 failure-recovery tests (commit fault, stale canon, provider fault, resume) | not started |
+| B-6-2 failure-recovery tests (commit fault, stale canon, provider fault, resume) | **done**: 14 Postgres/Replay tests — failure after each of 8 pre-commit steps leaves no chapter commit/accepted version/summary/index, resume from three different steps completes and replays every prior step with a third run adding no spend, a racing canon commit fails `CANON_STALE` with nothing half-committed, a provider fault fails closed without substituting a draft, and a blocked gate reports `needs_attention` rather than `failed`. **This suite found and fixed a real defect** (see decisions log) |
 | B-6-3 contrast corpus 4 → ≥ 40 original sets with expectations | **done in this change**: 40 sets in `examples/fixture/contrast-sets.seed.json` (5 genres × 8 narrative functions; 36 authored here), validator count/structure checks green; the judge calibration *run* is B-4-5 and has not happened |
 | B-6-4 candidate comparison + patch regression suites on replay | **done**: `chapter_comparator` prompt family (25th), `packages/workflows/src/comparison.ts` (position-swapped pairwise judging, shuffled-rubric retry, deterministic tie ladder — ADR-0015; per-dimension patch regression and smoke checks — ADR-0014), 10 unit tests + 9 Postgres/Replay integration tests proving consistent winner, position-bias detection and resolution, tie fallthrough, fail-closed on a mis-named verdict, comparator audit pins, and the real chapter-1 patch improving prose without regressing structure |
 
@@ -159,6 +159,8 @@ policy thresholds remain `uncalibrated`. Deterministic replay in CI is not evide
 quality, and synthetic contrast sets are not a substitute for the bilingual reviewer panel (B-4-5).
 
 ## Important decisions log
+
+| 2026-09-15 | Acceptance repair found by B-6-2: `acceptChapter` passed the project's *current* `canon_version` as the commit's parent, so the optimistic check compared a value with itself and a commit landing between extraction and acceptance was absorbed silently instead of raising `STALE_CANON`. The parent is now the delta's own `base_canon_version` (the version extraction was performed against), and a delta without an integer `base_canon_version` is rejected rather than committed unpinned | `packages/canon/src/accept.ts`, `packages/workflows/src/recovery.integration.test.ts` |
 
 | Date | Decision | Where |
 | --- | --- | --- |
