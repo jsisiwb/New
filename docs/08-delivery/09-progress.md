@@ -85,7 +85,10 @@ version numbering across quarantined versions.
 
 ## Known failures / gaps
 
-- Contrast sets: 4 starter sets in the repo (target ≥ 40 before calibration; B-6-3).
+- Contrast sets: 40 sets in the repo (5 genres × 8 narrative functions), meeting the ≥ 40 pre-calibration
+  target of B-6-3. The judge calibration run itself is still outstanding: the expectations in
+  `contrast-sets.seed.json` are authored starting expectations, not measured judge output, and thresholds
+  stay `uncalibrated` until B-4-5 runs them against live judges with bilingual reviewers.
 - Fixture manuscripts: only ch.9 (accepted) and its rejected draft exist as text; ch.12/ch.14 evidence is
   described, not addressable, until Checkpoint 5 produces them.
 - Thresholds in profiles and policies are `uncalibrated`.
@@ -133,6 +136,21 @@ Checkpoint 3 (gateway + judges) and Checkpoint 6 (contrast-set regression on liv
    hashes/sizes); 5 CLI chapter-surface tests (success, idempotent repeat, failure, interrupt→resume, export).
    Remaining follow-ups (not in this change): per-project name thesaurus (B-1-13); Checkpoint 6
    quality/long-form scope.
+
+## Checkpoint 6 — quality and long-form validation (in progress on this branch)
+
+| Item | State |
+| --- | --- |
+| B-6-1 multi-chapter continuity (≥ 3 consecutive accepted chapters on the fixture) | not started |
+| B-6-2 failure-recovery tests (commit fault, stale canon, provider fault, resume) | not started |
+| B-6-3 contrast corpus 4 → ≥ 40 original sets with expectations | **done in this change**: 40 sets in `examples/fixture/contrast-sets.seed.json` (5 genres × 8 narrative functions; 36 authored here), validator count/structure checks green; the judge calibration *run* is B-4-5 and has not happened |
+| B-6-4 candidate comparison + patch regression suites on replay | not started |
+
+B-6-3 scope note (truthfulness, ADR-0043): the corpus is now large enough for the calibration round, but
+nothing in this change measures judge behavior. Every `expected` block is an authored starting expectation
+(rank orders, illustrative lint ids from the EP-*/ST-*/RG-*/TRN-* catalog, two gap thresholds); profile and
+policy thresholds remain `uncalibrated`. Deterministic replay in CI is not evidence of live-model prose
+quality, and synthetic contrast sets are not a substitute for the bilingual reviewer panel (B-4-5).
 
 ## Important decisions log
 
