@@ -20,6 +20,25 @@
 | `pnpm check`                                                                                                    | everything CI runs                                                                |
 | `pnpm cli <command>`                                                                                            | the CLI (`pnpm cli` prints usage)                                                 |
 | `pnpm cli pack:build <project> <ch> <role> <contract.json> <spec.json> [--identity=<ref>] [--full] [--persist]` | build a Context Pack and print its manifest (no manuscript text unless `--full`)  |
+| `pnpm cli chapter:produce <project> <ch>`                                                                       | run (or resume) chapter production through the Postgres-checkpointed workflow     |
+| `pnpm cli chapter:status <workflow-id>`                                                                         | job status, pins, steps and llm call count (`chapter:<project>:<ch>`)             |
+| `pnpm cli chapter:resume <workflow-id>`                                                                         | resume a started workflow (same entrypoint as re-running produce)                 |
+| `pnpm cli export:accepted <project> [--chapters=1,2] [--format=markdown\|text] [--full]`                        | export accepted manuscripts only (never working/approved/quarantined)             |
+
+Chapter production runs replay-only in this checkpoint: `chapter:produce` pins the fixture Narrative
+Identity on the project, replays `examples/fixture/ch01/replay.ch01.json` (no live provider, no spend),
+and prints a JSON summary with workflow/job ids and status (nonzero exit on failure). The workflow id is
+deterministic (`chapter:<project>:<ch>`), so repeating `chapter:produce` — or calling `chapter:resume` —
+replays completed steps from `job_steps` without re-spending. Example:
+
+```
+export DATABASE_URL=postgres://yeonjae:yeonjae@127.0.0.1:5432/yeonjae_test
+pnpm cli db:migrate
+pnpm cli project:create "Second Awakening"          # -> { projectId }
+pnpm cli chapter:produce <projectId> 1              # -> { workflow_id, job_id, status: completed, accepted }
+pnpm cli chapter:status chapter:<projectId>:1       # persisted job, steps, llm_calls
+pnpm cli export:accepted <projectId>                # accepted chapter 1 summary (add --full for text)
+```
 
 ## Layout (ADR-0021, ADR-0044)
 
@@ -32,7 +51,7 @@ packages/domain     schema loader + Ajv validators, generated types, UUIDv7, Sto
 packages/gateway    fail-closed Narrative Identity Guard, routing table, budget guard, bounded structured-output
                     repair, truncation handling, output-language discard→regenerate→reroute, idempotent audit;
                     MockProvider (fault injection) and ReplayProvider (no silent live calls)
-packages/db         migrations (forward-only, hashed; 0003 = summaries, search_documents, active constraint sets,
+packages/db         migrations (forward-only, hashed; 0004 = jobs workflow_id/idempotency/pins, workflow_artifacts,
                     context packs, embedding sets), pool/transaction helpers, typed repository over the canon
                     schema; canon.commit_delta / canon.rollback_latest are the only canon write paths;
                     retrieval.ts = accepted-only reads for context assembly

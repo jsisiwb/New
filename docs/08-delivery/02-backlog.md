@@ -57,7 +57,7 @@ Items marked **[CP7]** were moved out of the first proof of the core loop (API, 
 | B-1-16 | P1 | Timelines (prior loop, divergence flags via per-timeline truth) | FR-7.10, ADR-0023/0031 | T8/T15 fixtures | 3d |
 | B-1-17 | P0 | Active Constraint Set compiler (scope filter, dedupe, cap, overflow error) | FR-1.8, ADR-0033 | cap tests | 3d |
 
-## Phase 2 — Planning & production pipeline
+## Phase 2 — Planning & production pipeline (Checkpoint 5 delivered slices marked below; remainder stays open)
 
 | ID | P | Item | Refs | Acceptance | Est |
 | --- | --- | --- | --- | --- | --- |
@@ -65,19 +65,19 @@ Items marked **[CP7]** were moved out of the first proof of the core loop (API, 
 | B-2-2 | P0 | Concept workflow (N candidates, pairwise both orders, tie rules) | FR-2.1, ADR-0015 | position-bias tests | 3d |
 | B-2-3 | P0 | StoryBible workflow (specialists, register profiles, naming registry, terminology policy, identity binder, consistency checker, bible commit v1) | FR-2.2–2.8 | fixture bible reproduced structurally | 7d |
 | B-2-4 | P0 | SeriesPlanning + PlanningHorizon workflows; promise scheduling; plan validators; cadence checks; Active Constraint Set per chapter | FR-3.1–3.8 | contracts validate; stale on material commits | 8d |
-| B-2-5 | P0 | ChapterProduction workflow: preflight, scene plan (register pre-resolution), scene writer loop with **output-language gate**, assembler, deterministic checks | FR-4.1–4.4, FR-4.10 | happy path w/ mock; Korean-output mock rejected | 6d |
+| B-2-5 | P0 | ChapterProduction workflow: preflight (previous-chapter gate before spend, ADR-0046), scene plan (register pre-resolution), scene writer loop with **output-language gate**, assembler, deterministic checks — delivered slice (remainder: Concept/SeriesPlanning/broader evaluator set stay open) | FR-4.1–4.4, FR-4.10 | happy path w/ mock; Korean-output mock rejected | 6d |
 | B-2-6 | P0 | Evaluators (contract, continuity, knowledge, promise, **prose**, **structure**, genre, voice, repetition) + scorecard sections + severity policy + clustering by dimension | FR-5.1–5.4, FR-5.7 | trap detections incl. T23–T29 | 9d |
 | B-2-7 | P0 | RevisionWorkflow: dimension-targeted revisers, patch application, regression re-checks (no cross-dimension regression), limits, escalation | FR-5.5/5.6, FR-6.8 | T1–T6, T18, T23–T25 repaired at spec'd scope; T17 escalates | 6d |
-| B-2-8 | P0 | CanonCommit child workflow (extract ∥, reconcile, adjudicate, verify, commit, edge promotion, post-commit) | FR-7.2–7.4 | fixture deltas | 4d |
+| B-2-8 | P0 | CanonCommit child workflow (extract ∥, reconcile, adjudicate, verify, commit, edge promotion, post-commit) — delivered slice: single-path extract → deterministic verify → atomic commit → L1 summary/index/edges (parallel reconcile/adjudicate/post-commit orchestration stays open) | FR-7.2–7.4 | fixture deltas | 4d |
 | B-2-9 | P0 | Gates per mode with per-dimension policy approval; signals approve/reject/request-changes/override constrained by the override matrix; change_request_interpreter | FR-4.9, ADR-0019/0041/0042 | workflow tests; `never`-class cannot be approved | 4d |
-| B-2-10 | P0 | Batch workflow; pause/cancel/resume; leases; stale-canon re-validation | FR-4.7, FR-7.12/7.13, NFR-B | chaos cases | 4d |
+| B-2-10 | P0 | Batch workflow; pause/cancel/resume; leases; stale-canon re-validation — delivered slice: deterministic `workflowId`, `runStep`/`job_steps` idempotent resume, `failAfterStep` proof (T19), global-identity collision proof (T19b); broader jobs/pause/resume belongs to Checkpoint 7 where the roadmap places it | FR-4.7, FR-7.12/7.13, NFR-B | chaos cases | 4d |
 | B-2-11 | P0 | Regeneration/Retcon/Correction workflows (MVP scope) + dependency report (material/contextual) | FR-4.8, FR-7.14/7.15 | R1/C1 | 4d |
 | B-2-12 | P0 | Budgets & cost prediction v1 (words); quality tiers; usage aggregation | FR-9.1–9.3 | hard-limit tests | 4d |
 | B-2-13 | P0 | **[CP7]** API endpoints for plans/production/canon/jobs/costs; SSE (ADR-0044) | API plan | contract tests | 6d |
 | B-2-14 | P0 | Prompt regression golden cases from fixture (all MVP roles) incl. contrast sets + output-language assertions | NFR-I.2 | suite runs in CI (replay) | 5d |
 | B-2-15 | P0 | P-class model benchmark harness (English-under-KWN) and routing table publication | gateway §3 | benchmark report recorded | 3d |
 | B-2-16 | P1 | Candidate comparison for chapters (mechanism; off by default) + early stop | FR-4.5 | tests | 3d |
-| B-2-17 | P1 | Export TXT/DOCX workflow (locale typography, romanized-term glossary) | FR-10.1 | typography check | 3d |
+| B-2-17 | P1 | Export accepted-only core (`exportAccepted`: accepted manuscripts only; quarantine/working never export) — delivered; TXT/DOCX profiles + typography checks remain follow-up | FR-10.1 | accepted-only export tests; typography check open | 3d |
 
 ## Phase 3 — UI **[CP7]** (after the core loop is proven, ADR-0044)
 

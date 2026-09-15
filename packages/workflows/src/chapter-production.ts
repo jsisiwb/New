@@ -312,6 +312,9 @@ export async function produceChapter(
   try {
     // ---- planning
     await ensureChapter(ctx, chapterNo);
+    // Chapter k > 1 must fail before any canon writes or model spend: the bible step
+    // substitutes {{chapter.k-1}} bindings created only when chapter k-1 was produced.
+    const previousSummary = await previousChapterSummary(ctx, chapterNo);
     const spec = await interpretRequirements(ctx, intake, specVersion);
     guard('story_spec');
     const bible = await buildStoryBible(ctx, input.bible, mainTimelineId);
@@ -325,7 +328,6 @@ export async function produceChapter(
     });
     const knownProps = new Set(Object.values(bible.propositionIds));
     const knownEntities = new Set(input.bible.entities.map((e) => e.id));
-    const previousSummary = await previousChapterSummary(ctx, chapterNo);
     const contract = await generateContract(
       ctx,
       {

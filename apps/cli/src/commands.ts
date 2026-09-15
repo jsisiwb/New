@@ -3,6 +3,7 @@
  * tested without a TTY; main.ts only parses argv and prints. Later checkpoints add project/chapter commands.
  */
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   checkOutputLanguage,
   measure,
@@ -47,6 +48,79 @@ import {
   type StorySpec,
 } from '@yeonjae/context';
 import { loadPolicies as loadPolicyMap, type PolicyRef } from '@yeonjae/domain';
+import {
+  exportAccepted,
+  produceChapter,
+  workflowIdFor,
+  workflowStatus,
+  type ChapterProductionInput,
+} from '@yeonjae/workflows';
+import { Gateway, MemoryBudget, ReplayProvider, type RoutingTable } from '@yeonjae/gateway';
+import { PgAuditStore } from '@yeonjae/db';
+import { ArtifactLlmOutputStore } from '@yeonjae/workflows';
+import { WorkflowError } from '@yeonjae/workflows';
+
+/** Chapter-1 fixture paths and identity pins (mirrors packages/workflows/src/testkit.ts, the test-only harness). */
+const FIXTURE_ROOT = new URL('../../../', import.meta.url);
+const FIXTURE_REPLAY = new URL('examples/fixture/ch01/replay.ch01.json', FIXTURE_ROOT);
+const FIXTURE_INTAKE = new URL('examples/fixture/story-intake.json', FIXTURE_ROOT);
+const FIXTURE_BIBLE = new URL('examples/fixture/ch01/story-bible.ch01.json', FIXTURE_ROOT);
+const FIXTURE_IDS = JSON.parse(
+  readFileSync(new URL('examples/fixture/ch01/ids.ch01.json', FIXTURE_ROOT), 'utf8'),
+) as { arc1: string; season1: string; contract1: string; contract2: string };
+const IDENTITY_REF = 'project/0191b2a0-0000-7000-8000-000000000001@1';
+const IDENTITY_VERSION = '0191b2a0-0000-7000-8000-000000060001';
+const REPLAY_ROUTING: RoutingTable = {
+  R: [
+    {
+      modelId: 'replay-r',
+      provider: 'replay',
+      priority: 1,
+      family: 'alpha',
+      priceInPerMTokCents: 100,
+      priceOutPerMTokCents: 400,
+      maxContextTokens: 200_000,
+      supportsJsonSchema: true,
+    },
+  ],
+  P: [
+    {
+      modelId: 'replay-p',
+      provider: 'replay',
+      priority: 1,
+      family: 'alpha',
+      priceInPerMTokCents: 100,
+      priceOutPerMTokCents: 400,
+      maxContextTokens: 200_000,
+      supportsJsonSchema: true,
+    },
+  ],
+  M: [
+    {
+      modelId: 'replay-m',
+      provider: 'replay',
+      priority: 1,
+      family: 'beta',
+      priceInPerMTokCents: 100,
+      priceOutPerMTokCents: 400,
+      maxContextTokens: 200_000,
+      supportsJsonSchema: true,
+    },
+  ],
+  C: [
+    {
+      modelId: 'replay-c',
+      provider: 'replay',
+      priority: 1,
+      family: 'beta',
+      priceInPerMTokCents: 100,
+      priceOutPerMTokCents: 400,
+      maxContextTokens: 200_000,
+      supportsJsonSchema: true,
+    },
+  ],
+  E: [],
+};
 
 export interface CommandResult {
   readonly ok: boolean;
@@ -342,6 +416,73 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
           lexical: !flags.includes('--no-lexical'),
         });
       }
+      case 'chapter:produce': {
+        const [projectId, chapterNo, ...flags] = rest;
+        return await cmdChapterProduce(pool, {
+          projectId,
+          chapterNo: chapterNo === undefined ? Number.NaN : Number(chapterNo),
+          stage: flags.includes('--stage=contract_and_pack') ? 'contract_and_pack' : 'full',
+          failAfterStep: flags
+            .find((f) => f.startsWith('--fail-after='))
+            ?.slice('--fail-after='.length),
+          replayFile: flags.find((f) => f.startsWith('--replay='))?.slice('--replay='.length),
+        });
+      }
+      case 'chapter:status': {
+        const [workflowId] = rest;
+        if (!workflowId) return { ok: false, output: USAGE };
+        try {
+          return { ok: true, output: await workflowStatus(pool, workflowId) };
+        } catch (err) {
+          if (err instanceof WorkflowError)
+            return { ok: false, output: { error: err.code, detail: err.detail } };
+          throw err;
+        }
+      }
+      case 'chapter:resume': {
+        const [workflowId, ...flags] = rest;
+        if (!workflowId) return { ok: false, output: USAGE };
+        return await cmdChapterResume(pool, {
+          workflowId,
+          replayFile: flags.find((f) => f.startsWith('--replay='))?.slice('--replay='.length),
+        });
+      }
+      case 'export:accepted': {
+        const [projectId, ...flags] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        const chaptersFlag = flags.find((f) => f.startsWith('--chapters='));
+        const formatFlag = flags.find((f) => f.startsWith('--format='));
+        const format = formatFlag?.slice('--format='.length);
+        if (format !== undefined && format !== 'markdown' && format !== 'text')
+          return { ok: false, output: USAGE };
+        const chapters = chaptersFlag
+          ? chaptersFlag
+              .slice('--chapters='.length)
+              .split(',')
+              .map((s) => Number(s.trim()))
+          : undefined;
+        if (
+          chapters !== undefined &&
+          (chapters.length === 0 || chapters.some((n) => !Number.isInteger(n) || n < 1))
+        )
+          return { ok: false, output: USAGE };
+        try {
+          const result = await exportAccepted(pool, {
+            projectId,
+            chapters,
+            ...(format === undefined ? {} : { format }),
+          });
+          const full = flags.includes('--full');
+          return {
+            ok: true,
+            output: full ? result : { ...result, text: undefined, text_bytes: result.text.length },
+          };
+        } catch (err) {
+          if (err instanceof WorkflowError)
+            return { ok: false, output: { error: err.code, detail: err.detail } };
+          throw err;
+        }
+      }
       default:
         return { ok: false, output: USAGE };
     }
@@ -499,6 +640,255 @@ export function cmdConstraintsCompile(
   }
 }
 
+/**
+ * Resolve a project to the fixture replay harness: pins the fixture Narrative Identity on the project,
+ * builds a ReplayProvider over the fixture recordings, and wires the artifact-backed audit store.
+ * Refuses live providers: the only routing is the replay provider, so an unrecorded prompt fails
+ * closed (`ReplayProvider` throws) instead of spending on a live model.
+ */
+async function replayDeps(
+  pool: Pool,
+  projectId: string,
+  replayFile: string | undefined,
+): Promise<{ gateway: Gateway; bindings: Record<string, string> }> {
+  const project = await getProject(pool, projectId);
+  const settings = project.settings;
+  if (
+    settings.narrative_identity_ref !== IDENTITY_REF ||
+    settings.narrative_identity_version_id !== IDENTITY_VERSION
+  ) {
+    await pool.query('UPDATE projects SET settings = $2 WHERE id = $1', [
+      projectId,
+      JSON.stringify({
+        ...settings,
+        narrative_identity_ref: IDENTITY_REF,
+        narrative_identity_version_id: IDENTITY_VERSION,
+      }),
+    ]);
+  }
+  const bindings: Record<string, string> = {};
+  const provider = ReplayProvider.fromFile(replayFile ?? fileURLToPath(FIXTURE_REPLAY), {
+    name: 'replay',
+    bindings: () => bindings,
+  });
+  const gateway = new Gateway({
+    providers: new Map([['replay', provider]]),
+    routing: REPLAY_ROUTING,
+    budget: new MemoryBudget(1_000_000),
+    audit: new PgAuditStore(
+      pool,
+      { workspaceId: project.workspace_id, projectId },
+      new ArtifactLlmOutputStore(pool, { workspaceId: project.workspace_id, projectId }),
+    ),
+    guardContext: { pinnedIdentityVersionId: IDENTITY_VERSION },
+    minEnglishConfidence: 0.99,
+  });
+  return { gateway, bindings };
+}
+
+/** Shape-check the caller-facing produce args before touching the database. */
+function invalidProduceArgs(args: {
+  projectId: string | undefined;
+  chapterNo: number;
+  failAfterStep: string | undefined;
+}): string | undefined {
+  if (!args.projectId?.length || !Number.isInteger(args.chapterNo) || args.chapterNo < 1)
+    return 'usage: chapter:produce <project> <chapter#> [--replay=<file>] [--stage=contract_and_pack] [--fail-after=<step>]';
+  if (args.failAfterStep !== undefined && args.failAfterStep.length < 1)
+    return '--fail-after requires a step name';
+  return undefined;
+}
+
+export interface ChapterProduceArgs {
+  readonly projectId: string | undefined;
+  readonly chapterNo: number;
+  readonly stage: 'full' | 'contract_and_pack';
+  readonly failAfterStep: string | undefined;
+  readonly replayFile: string | undefined;
+}
+
+/**
+ * Run (or resume) the production workflow for one chapter. The workflow id is deterministic
+ * (`chapter:<project>:<chapter>`), so a repeated invocation replays completed steps from `job_steps`
+ * and never re-spends; `chapter:resume` is the same entrypoint made explicit. No live provider is
+ * configured: `--replay` selects a recordings file (default: the chapter-1 fixture), and any prompt
+ * without a recording fails closed. Returns nonzero exit on workflow failure with the actionable
+ * `WorkflowError` code, step and recommended actions.
+ */
+export async function cmdChapterProduce(
+  pool: Pool,
+  args: ChapterProduceArgs,
+): Promise<AsyncCommandResult> {
+  const invalid = invalidProduceArgs(args);
+  if (invalid) return { ok: false, output: invalid };
+  const projectId = args.projectId;
+  if (!projectId) return { ok: false, output: USAGE };
+  try {
+    await getProject(pool, projectId);
+  } catch {
+    return {
+      ok: false,
+      output: { error: 'PROJECT_NOT_FOUND', detail: `project ${projectId} not found` },
+    };
+  }
+  let deps;
+  try {
+    deps = await replayDeps(pool, projectId, args.replayFile);
+  } catch (err) {
+    return {
+      ok: false,
+      output: {
+        error: 'REPLAY_UNAVAILABLE',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+    };
+  }
+  let intake: unknown;
+  let bible: ChapterProductionInput['bible'];
+  let ids: ChapterProductionInput['ids'];
+  try {
+    ({ intake, bible, ids } = await loadFixtureInputs(args.replayFile));
+  } catch (err) {
+    return {
+      ok: false,
+      output: {
+        error: 'REPLAY_UNAVAILABLE',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+    };
+  }
+  try {
+    const result = await produceChapter(
+      { pool, gateway: deps.gateway, bindings: deps.bindings },
+      {
+        projectId,
+        chapterNo: args.chapterNo,
+        intake,
+        bible,
+        ids: args.chapterNo === 1 ? ids : { ...ids, contractId: FIXTURE_IDS.contract2 },
+        stage: args.stage,
+        ...(args.failAfterStep === undefined ? {} : { failAfterStep: args.failAfterStep }),
+      },
+    );
+    return { ok: true, output: summarizeChapterResult(result) };
+  } catch (err) {
+    if (err instanceof WorkflowError)
+      return {
+        ok: false,
+        output: {
+          error: err.code,
+          detail: err.detail,
+          step: err.options.step,
+          recommended_actions: err.options.recommendedActions ?? [],
+          data: err.options.data ?? null,
+          workflow_id: workflowIdFor(projectId, args.chapterNo),
+        },
+      };
+    throw err;
+  }
+}
+
+async function loadFixtureInputs(replayFile: string | undefined): Promise<{
+  intake: unknown;
+  bible: ChapterProductionInput['bible'];
+  ids: ChapterProductionInput['ids'];
+}> {
+  if (replayFile !== undefined)
+    throw new WorkflowError(
+      'INTERNAL',
+      `--replay ${replayFile}: custom replay inputs are not supported in this checkpoint; omit --replay to use the chapter-1 fixture`,
+      {
+        step: 'init',
+      },
+    );
+  const { readFileSync: read } = await import('node:fs');
+  return {
+    intake: JSON.parse(read(fileURLToPath(FIXTURE_INTAKE), 'utf8')) as unknown,
+    bible: JSON.parse(
+      read(fileURLToPath(FIXTURE_BIBLE), 'utf8'),
+    ) as ChapterProductionInput['bible'],
+    ids: {
+      arcId: FIXTURE_IDS.arc1,
+      seasonId: FIXTURE_IDS.season1,
+      contractId: FIXTURE_IDS.contract1,
+    },
+  };
+}
+
+/** Operator summary of a production run: ids, status and hashes — never manuscript text. */
+function summarizeChapterResult(
+  result: Awaited<ReturnType<typeof produceChapter>>,
+): Record<string, unknown> {
+  return {
+    workflow_id: result.workflow_id,
+    job_id: result.job_id,
+    chapter_no: result.chapter_no,
+    chapter_id: result.chapter_id,
+    status: result.status,
+    stage: result.accepted ? 'full' : 'contract_and_pack',
+    spec: result.spec,
+    bible_canon_version: result.bible_canon_version,
+    arc_plan_id: result.arc_plan_id,
+    contract: result.contract,
+    packs: result.packs,
+    scenes: result.scenes.map((s) => ({
+      scene_no: s.scene_no,
+      artifact_id: s.artifact_id,
+      content_hash: s.content_hash,
+      words: s.words,
+    })),
+    versions: result.versions,
+    scorecards: result.scorecards,
+    revision: result.revision,
+    accepted: result.accepted,
+    steps: result.steps,
+  };
+}
+
+export interface ChapterResumeArgs {
+  readonly workflowId: string;
+  readonly replayFile: string | undefined;
+}
+
+/** Resume a started workflow by id: parses `chapter:<project>:<chapter>` and re-runs `produceChapter`. */
+export async function cmdChapterResume(
+  pool: Pool,
+  args: ChapterResumeArgs,
+): Promise<AsyncCommandResult> {
+  const match = /^chapter:(.+):(\d+)$/.exec(args.workflowId);
+  if (!match?.[1]?.length || !match[2]) return { ok: false, output: USAGE };
+  const chapterNo = Number(match[2]);
+  if (!Number.isInteger(chapterNo) || chapterNo < 1) return { ok: false, output: USAGE };
+  if (args.replayFile !== undefined)
+    return {
+      ok: false,
+      output: {
+        error: 'REPLAY_UNAVAILABLE',
+        detail: `--replay ${args.replayFile}: custom replay inputs are not supported in this checkpoint`,
+      },
+    };
+  const status = await workflowStatus(pool, args.workflowId).catch(() => undefined);
+  if (!status)
+    return {
+      ok: false,
+      output: { error: 'WORKFLOW_NOT_FOUND', detail: `no job for workflow ${args.workflowId}` },
+    };
+  return cmdChapterProduce(pool, {
+    projectId: status.job_id ? await projectForJob(pool, status.job_id) : undefined,
+    chapterNo,
+    stage: 'full',
+    failAfterStep: undefined,
+    replayFile: undefined,
+  });
+}
+
+async function projectForJob(pool: Pool, jobId: string): Promise<string | undefined> {
+  const r = await pool.query<{ project_id: string }>('SELECT project_id FROM jobs WHERE id = $1', [
+    jobId,
+  ]);
+  return r.rows[0]?.project_id;
+}
+
 export const DB_COMMANDS = new Set([
   'db:migrate',
   'project:create',
@@ -513,6 +903,10 @@ export const DB_COMMANDS = new Set([
   'summary:set',
   'search:index',
   'pack:build',
+  'chapter:produce',
+  'chapter:status',
+  'chapter:resume',
+  'export:accepted',
 ]);
 
 export function cmdIdentityCompile(
@@ -596,6 +990,13 @@ Database commands (DATABASE_URL required):
                                                included/excluded items and degradation flags; the composed
                                                identity defaults to project/<project>@1; --full prints the
                                                rendered prompt (manuscript excerpts) — local development only
+  chapter:produce <project> <chapter#> [--replay=<file>] [--stage=contract_and_pack] [--fail-after=<step>]
+                                               run (or resume) chapter production through the Postgres-checkpointed
+                                               workflow; deterministic workflow id, replay only, JSON summary
+  chapter:status <workflow-id>                 job status, pins, steps and llm call count for a workflow
+  chapter:resume <workflow-id>                 resume a started workflow (same entrypoint as re-running produce)
+  export:accepted <project> [--chapters=1,2] [--format=markdown|text] [--full]
+                                               export accepted manuscripts only (never working/approved/quarantined)
   constraints:compile <chapter#> <spec.json> [cap]
                                                compile the Active Constraint Set for a chapter (no database)
 `;

@@ -2402,9 +2402,46 @@
    "items": [
     {
      "local_id": "f-plan",
-     "type": "fact",
+     "type": "event",
      "op": "assert",
      "frame": "plan",
+     "confidence": 1,
+     "importance": "core",
+     "story_clock": {
+      "chapter_no": 1,
+      "ordinal": 2,
+      "precision": "exact",
+      "calendar": "relative_days",
+      "world_date": "D+0"
+     },
+     "payload": {
+      "type": "revelation",
+      "summary": "Do-yoon plans to reach E-rank by ch.8 (a plan, not yet happened).",
+      "location_id": "0191b2a0-0000-7000-8000-000000010001",
+      "participants": [
+       {
+        "entity_id": "0191b2a0-0000-7000-8000-0000000c0001",
+        "role": "agent"
+       }
+      ],
+      "importance": "core"
+     },
+     "evidence": [
+      {
+       "manuscript_version_id": "{{version.1.approved}}",
+       "chapter_no": 1,
+       "paragraph_id": "p3",
+       "start": 39,
+       "end": 90,
+       "quote": "Red letters. The same red letters as ten years ago."
+      }
+     ]
+    },
+    {
+     "local_id": "f-future",
+     "type": "fact",
+     "op": "assert",
+     "frame": "canonical",
      "confidence": 1,
      "importance": "core",
      "story_clock": {
@@ -2418,13 +2455,13 @@
       "entity_id": "0191b2a0-0000-7000-8000-0000000c0001",
       "attribute": "power.rank",
       "value": "E",
-      "value_text": "E-rank (planned for ch.8)",
+      "value_text": "E-rank (dated after this chapter's story time)",
       "valid_from": {
-       "chapter_no": 8,
-       "ordinal": 0,
+       "chapter_no": 1,
+       "ordinal": 100,
        "precision": "exact",
        "calendar": "relative_days",
-       "world_date": "D+7"
+       "world_date": "D+0"
       },
       "valid_to": null
      },

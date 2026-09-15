@@ -17,6 +17,7 @@ import {
   type Pool,
 } from '@yeonjae/db';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
+import { migrate, resetDatabase } from '@yeonjae/db';
 import { checkOutputLanguage, sliceCodePoints, toNfcText } from '@yeonjae/prose';
 import {
   exportAccepted,
@@ -313,30 +314,40 @@ run('chapter production vertical slice (Postgres + ReplayProvider)', () => {
     const before = {
       commits: (await listCommits(pool, h.projectId)).length,
       versions: (
-        await pool.query('SELECT count(*) FROM manuscript_versions WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM manuscript_versions WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       calls: (
-        await pool.query('SELECT count(*) FROM llm_calls WHERE project_id = $1', [h.projectId])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM llm_calls WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       artifacts: (
-        await pool.query('SELECT count(*) FROM workflow_artifacts WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM workflow_artifacts WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       summaries: (
-        await pool.query('SELECT count(*) FROM summaries WHERE project_id = $1', [h.projectId])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM summaries WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       docs: (
-        await pool.query('SELECT count(*) FROM search_documents WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM search_documents WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       edges: (
-        await pool.query('SELECT count(*) FROM dependency_edges WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM dependency_edges WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
     };
     const again = await produceChapter(
@@ -349,30 +360,40 @@ run('chapter production vertical slice (Postgres + ReplayProvider)', () => {
     const after = {
       commits: (await listCommits(pool, h.projectId)).length,
       versions: (
-        await pool.query('SELECT count(*) FROM manuscript_versions WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM manuscript_versions WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       calls: (
-        await pool.query('SELECT count(*) FROM llm_calls WHERE project_id = $1', [h.projectId])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM llm_calls WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       artifacts: (
-        await pool.query('SELECT count(*) FROM workflow_artifacts WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM workflow_artifacts WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       summaries: (
-        await pool.query('SELECT count(*) FROM summaries WHERE project_id = $1', [h.projectId])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM summaries WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       docs: (
-        await pool.query('SELECT count(*) FROM search_documents WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM search_documents WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
       edges: (
-        await pool.query('SELECT count(*) FROM dependency_edges WHERE project_id = $1', [
-          h.projectId,
-        ])
+        await pool.query<{ count: string }>(
+          'SELECT count(*) FROM dependency_edges WHERE project_id = $1',
+          [h.projectId],
+        )
       ).rows[0],
     };
     expect(after).toEqual(before);
@@ -475,9 +496,7 @@ run('chapter production vertical slice (Postgres + ReplayProvider)', () => {
     // Current state for chapter 2 comes from the accepted commit.
     expect(r2.pack_variables?.canon_state).toContain('power.rank = F-rank (ch.1 measurement)');
     expect(r2.pack_variables?.canon_state).toContain(
-      'evidence: ch.1 p5 ““F-rank. Porter registration is the window on your left.””'
-        .replace('““', '“')
-        .replace('””', '”'),
+      'evidence: ch.1 p3 “Red letters. The same red letters as ten years ago.”',
     );
   });
 
@@ -553,6 +572,8 @@ run('chapter production — failure paths (each on a fresh project)', () => {
     pool = await freshDatabase();
   }, 60_000);
   beforeEach(async () => {
+    await resetDatabase(pool);
+    await migrate(pool);
     h = await createHarness(pool);
   });
   afterAll(async () => {
@@ -732,6 +753,9 @@ run('chapter production — failure paths (each on a fresh project)', () => {
   });
 
   it('T19 workflow resume skips completed idempotent steps and re-spends nothing', async () => {
+    // NOTE (ADR-0046): resume reuses one project's job: the same project id, the same deterministic
+    // workflow id, no database reset between the interrupted run and its resume. Per-test resets isolate
+    // *tests* from each other (fixed fixture UUIDs); they never substitute for this in-test resume proof.
     const first = await produceChapter(
       { pool, gateway: h.gateway(), bindings: h.bindings },
       h.input(1, { failAfterStep: 'evaluate' }),
@@ -827,6 +851,39 @@ run('chapter production — failure paths (each on a fresh project)', () => {
         (s) => s.step === 'evaluate' && s.key.endsWith(second.versions[0]?.id ?? ''),
       )?.attempt,
     ).toBe(1);
+  });
+
+  it('T19b a second project reusing the same deterministic fixture UUIDs fails loudly (global canon identity)', async () => {
+    // The fixture's entity/promise ids are global primary keys (ADR-0046): two live projects cannot hold
+    // the same deterministic ids. Produce chapter 1 on this test's project first, then attempt the same
+    // fixture on a second live project: the bible step must surface the PK violation rather than silently
+    // sharing or forking canon rows.
+    const first = await produceChapter(
+      { pool, gateway: h.gateway(), bindings: h.bindings },
+      h.input(1),
+    );
+    expect(first.status).toBe('completed');
+    const h2 = await createHarness(pool, 'Second Awakening (collision)');
+    let err: unknown;
+    try {
+      await produceChapter({ pool, gateway: h2.gateway(), bindings: h2.bindings }, h2.input(1));
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(WorkflowError);
+    const wf = err as WorkflowError;
+    // Loud and terminal: either the global PK violation surfaces, or the run fails closed downstream
+    // (extraction cites entities the second project does not own). Either way the second project must
+    // never complete with canon borrowed from the first.
+    expect(['INTERNAL', 'EXTRACTION_REJECTED', 'ACCEPTANCE_FAILED']).toContain(wf.code);
+    expect(JSON.stringify({ code: wf.code, detail: wf.detail })).toMatch(
+      /duplicate key|entities_pkey|not a known entity|UNKNOWN_ENTITY/i,
+    );
+    const secondAccepted = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM manuscript_versions WHERE project_id = $1 AND status = 'accepted'`,
+      [h2.projectId],
+    );
+    expect(secondAccepted.rows[0]?.n).toBe('0');
   });
 
   it('T21 a Korean-prose writer output is discarded by the gateway and the step fails closed', async () => {

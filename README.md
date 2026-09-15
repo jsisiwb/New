@@ -1,6 +1,6 @@
 # Yeonjae Studio (연재 스튜디오) — Planning Package
 
-**Status:** Planning baseline corrected and validated (Checkpoint 0); implementation begins with Checkpoint 1.
+**Status:** Checkpoint 5 chapter-production vertical slice implemented; local verification green (see `docs/08-delivery/09-progress.md` for the current test inventory and CI evidence per PR).
 Live status: `docs/08-delivery/09-progress.md`.
 **Purpose of this repository state:** a complete, internally consistent, production-level plan for an AI
 serialized-fiction production studio, written so that an engineering agent can implement it without
@@ -95,6 +95,4 @@ python3 tools/validate-planning-package.py        # exit 0 = green; --quiet hide
 
 ## Non-goals of this repository state
 
-- No application code yet (Checkpoint 1 adds the pnpm workspace; see `docs/08-delivery/01-implementation-roadmap.md` §0).
-  Prompt *specifications* and *example* templates appear in docs and `examples/` as design artifacts only.
 - No secrets, keys, or credentials. Provider configuration is described, never populated.

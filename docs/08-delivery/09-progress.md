@@ -8,11 +8,11 @@ Everything else in `docs/` describes design; only this file claims what exists a
 | Item | Value |
 | --- | --- |
 | Project | Yeonjae Studio — English manuscripts in the Korean serialized-webnovel tradition |
-| Phase | **Checkpoint 4 — context and retrieval** (complete pending review); Checkpoints 0–3 in PRs #1–#4 |
-| Default branch | `hoplite/ainos-1ac771f8` (baseline commit `2823bb9`) |
-| Working branch | `…--build-03-identity-gateway--build-04-context-retrieval` (stacked on Checkpoint 3, PR #4, head `0a01e80`) |
-| Application code | pnpm workspace: `packages/prose`, `packages/domain`, `packages/db` (migrations 0001–0003, `canon.commit_delta`, `canon.rollback_latest`, bitemporal helpers, `retrieval.ts` accepted-only reads, lexical search, summaries, ACS/pack persistence), `packages/canon` (deterministic verifier + acceptance), `packages/narrative` (profile store, composition, Block compiler), `packages/prompts` (24 immutable prompt families v1.0.0, registry, prompt sets), `packages/gateway` (Guard, routing, budget, repair, output-language path, audit; Mock/Replay providers), `packages/context` (Active Constraint Set compiler, 4 pack templates, query plan, structured fetch, Postgres FTS retriever + vector interface, T0–T3 assembler with ladder, provenance renderer, manifest + pack hash, validation, `buildPack`), `apps/cli`; 156 tests incl. 31 Postgres integration tests |
-| CI | `planning-validation.yml` (validator) + `ci.yml` (Postgres 16 service; types-fresh, typecheck, lint, format, unit + integration tests, CLI smoke, audit, gitleaks) on every push/PR |
+| Phase | **Checkpoint 5 — chapter-production vertical slice** (this change, review pending); Checkpoint 4 complete pending review; Checkpoints 0–3 in PRs #1–#4 |
+| Default branch | `hoplite/ainos-1ac771f8` (this branch's base: PR #7 merge `4ea8ecd`; the earlier `2823bb9` baseline predates the WIP slice and is superseded for this line of work) |
+| Working branch | `hoplite/kos-969b8d7e--checkpoint-05-completion` (Checkpoint 5 completion; fork PR `huuuiuh/New#1` for staging/audit; upstream integration PR targets `jsisiwb/New:hoplite/ainos-1ac771f8` — see PR row for checkpoint 5 below) |
+| Application code | pnpm workspace: `packages/prose`, `packages/domain`, `packages/db` (migrations 0001–0004 — 0004 adds `workflow_id`/idempotency/`pins` on `jobs`, `workflow_artifacts` content-addressed store, `dependency_edges`; `canon.commit_delta`, `canon.rollback_latest`, bitemporal helpers, `retrieval.ts` accepted-only reads, lexical search, summaries, ACS/pack persistence), `packages/canon` (deterministic verifier + acceptance), `packages/narrative` (profile store, composition, Block compiler), `packages/prompts` (24 immutable prompt families v1.0.0, registry, prompt sets), `packages/gateway` (Guard, routing, budget, repair, output-language path, audit; Mock/Replay providers — Replay gains `activity:<id>` binding), `packages/context` (Active Constraint Set compiler, 4 pack templates, query plan, structured fetch, Postgres FTS retriever + vector interface, T0–T3 assembler with ladder, provenance renderer, manifest + pack hash, validation, `buildPack`), `packages/workflows` (Postgres-checkpointed `runStep` runtime, planning/drafting/evaluation/revision/acceptance stages, `produceChapter` core loop with previous-chapter gate before spend, `workflowStatus`, `exportAccepted`; Replay fixture `examples/fixture/ch01`), `apps/cli` (incl. `chapter:produce` / `chapter:status` / `chapter:resume` / `export:accepted` operator surface over the production workflow, replay-only) |
+| CI | `planning-validation.yml` (validator) + `ci.yml` (Postgres 16 service; types-fresh, typecheck, lint, format, unit + integration tests, CLI smoke, audit, gitleaks) on every push/PR. Local `pnpm check` is the same sequence; GitHub Actions results are reported per-PR (fork PR shows the fork's runs, upstream PR the upstream's) — a PR with zero check runs is unverified, never "green" |
 
 ## Checkpoints
 
@@ -23,7 +23,7 @@ Everything else in `docs/` describes design; only this file claims what exists a
 | 2 | Domain, database and canon core (migration 0001; immutable versions; code-point evidence trigger; frame × timeline rule; `canon.commit_delta` with change classes + complete `inverse`; `canon.rollback_latest`; quarantine; bitemporal helpers; verifier; CLI DB commands) | `…--build-01-foundation--build-02-domain-canon` (stacked on 1) | done, awaiting review | [#3](https://github.com/jsisiwb/New/pull/3) |
 | 3 | Narrative identity (profiles as data, composition, Block compiler with role variants, both contract hashes, shedding, overflow error), prompt registry (24 families, immutable content-hashed versions, strict variables, prompt sets), gateway (fail-closed Guard, routing, budget guard, bounded repair, truncation, output-language discard→regenerate→reroute, idempotent audit; Mock/Replay/fault providers), migration 0002 (append-only `llm_calls` with both contract hashes, immutable `prompt_versions`, `jobs`/`job_steps`) | `…--build-02-domain-canon--build-03-identity-gateway` (stacked on 2) | done, awaiting review | [#4](https://github.com/jsisiwb/New/pull/4) |
 | 4 | Context and retrieval (Active Constraint Set compiler with `CONSTRAINTS_OVERFLOW`; templates `pack.scene_writer` / `pack.chapter_planner` / `pack.continuity_checker` / `pack.extractor` v1.0.0; deterministic query plan; structured canon fetch at the pinned canon version on the contract timeline — states with evidence, knower-specific knowledge with secrets and prior-loop/source-story memory labels, directional relationships + register, promises, events, world rules; previous accepted chapter L1 + verbatim tail + hook + committed deltas + elapsed time; migration 0003 `summaries` / `search_documents` (accepted-only triggers, idempotent indexing, de-acceptance cleanup) / `active_constraint_sets` / `context_packs` / `embedding_sets`; Postgres FTS retriever + `VectorRetriever` interface; T0–T3 with `PACK_T0_OVERFLOW` / `PACK_T1_OVERFLOW` and the ladder; provenance-tagged rendering; manifest with sections, sources, versions, rank scores, drop reasons, degradation flags, pack hash; pre-call validation; `pack:build` CLI; ADR-0045) | `…--build-03-identity-gateway--build-04-context-retrieval` (stacked on 3) | done, awaiting review | stacked on #4 |
-| 5 | Chapter-production vertical slice (ch.1 → ch.2 remembers ch.1 → export) | stacked on 4 | planned | — |
+| 5 | Chapter-production vertical slice (deterministic Postgres-checkpointed core loop: intake → spec → bible → arc → locked contract → scene plan → draft → checks → bounded revision → approval-lock → extraction → verification → atomic commit → L1 summary + accepted-only index + dependency edges; ch.1 → ch.2 carries summary/tail/hook/deltas; `exportAccepted`; migration 0004 `jobs.workflow_id`/idempotency/`pins` + `workflow_artifacts`; Replay `activity:<id>` binding; CLI `chapter:produce` / `chapter:status` / `chapter:resume` / `export:accepted` operator surface with replay-only routing, JSON output, nonzero exit on failure; ADR-0046) | `hoplite/kos-969b8d7e--checkpoint-05-completion` | done, awaiting review | fork staging `huuuiuh/New#1` + upstream integration PR targeting `jsisiwb/New:hoplite/ainos-1ac771f8` |
 | 6 | Quality and long-form validation | stacked on 5 | planned | — |
 | 7 | Interface and hardening | stacked on 6 | planned | — |
 
@@ -35,7 +35,7 @@ merge bottom-up. No PR is merged without explicit user authorization.
 | Command | Purpose | Last result |
 | --- | --- | --- |
 | `pip install jsonschema && python3 tools/validate-planning-package.py` | schemas, examples, canon-delta union, evidence offsets against fixture manuscripts, cross-file refs, stale terms, truthfulness | **ALL OK** (32 schemas; 14 examples + 1 bundle; 0 contradiction hits) |
-| `DATABASE_URL=postgres://… CI=true pnpm check` | types-fresh → typecheck → lint → format:check → unit + Postgres integration tests → validator | **green**: 21 test files, 156 tests passed (Checkpoint 4 head; 31 of them integration tests on Postgres 16.14; Node 22.23.2, pnpm 10.26.0, Python 3.12.3) |
+| `DATABASE_URL=postgres://… CI=true pnpm check` | types-fresh → typecheck → lint → format:check → unit + Postgres integration tests → validator | **local green** (this branch: 23 test files, 183 tests passed — 22 chapter-production integration incl. T19b collision proof + 5 CLI chapter-surface tests; Postgres 16, Node 24.19.0, pnpm 10.26.0, Python 3.12.3). Local green is not GitHub green: see the PR's Actions runs for CI evidence |
 | `pnpm cli identity:compile project/…@1 writer_full 2000` | compiles the fixture identity block: both contracts first, 11 sections, 1,272 est. tokens, deterministic hash | ok |
 | `pnpm cli prompts:list` | 24 immutable prompt versions + active prompt set id | ok |
 | `pnpm cli verify-evidence examples/fixture/manuscripts/ch09.accepted.txt examples/fixture/canon-delta.ch09.json` | code-point evidence verification via the CLI | ok: 8 spans verified |
@@ -110,20 +110,29 @@ Checkpoint 3 (gateway + judges) and Checkpoint 6 (contrast-set regression on liv
 - The three Production Policies gained `context.input_budget_tokens` and new content hashes at `version: 1`
   (no project pins them yet).
 
-## Next exact tasks (Checkpoint 5 — chapter-production vertical slice)
+## Next exact tasks (Checkpoint 5 — chapter-production vertical slice): done in this change
 
-1. `git checkout -b …--build-04-context-retrieval--build-05-chapter-vertical-slice` from the Checkpoint 4 head.
-2. `packages/workflows` (Postgres-checkpointed idempotent steps, ADR-0044): intake → `requirement_interpreter`
-   → Story Spec (`story-spec.schema.json`) → assumptions → bible commit → arc → `chapter_planner` with
-   `pack.chapter_planner` → Chapter Contract (validate, lock) → `pack.scene_writer` → `scene_planner` →
-   `scene_writer` per scene through `ReplayProvider` → assembly → deterministic checks (length, output language,
-   evidence) → `continuity_checker` with `pack.continuity_checker` → targeted revision → approval-lock →
-   `canon_extractor` with `pack.extractor` → `verifyDelta` → `acceptChapter` (+ `upsertL1Summary` from
-   `factual_summarizer`, `indexAcceptedVersion`, dependency edges) → Chapter 2 pack proving it carries
-   Chapter 1's summary/tail/hook/deltas → export.
-3. Replay recordings for every fixture call (no live provider); CLI `chapter:produce <project> <ch>`.
-4. Tests: full ch.1 → ch.2 loop on Postgres; idempotent resume after a fault mid-step; T16 never enters the
-   ch.2 pack; export contains only accepted text.
+1. ~~`git checkout -b …--build-04-context-retrieval--build-05-chapter-vertical-slice` from the Checkpoint 4 head.~~
+   Landed as `hoplite/kos-969b8d7e--checkpoint-05-completion` (repair of
+   the WIP slice merged as PR #7 at `4ea8ecd`; fork staging PR `huuuiuh/New#1`, upstream integration PR
+   targeting `jsisiwb/New:hoplite/ainos-1ac771f8`).
+2. `packages/workflows` (Postgres-checkpointed idempotent steps, ADR-0044/ADR-0046): intake →
+   `requirement_interpreter` → Story Spec → assumptions → bible commit → arc → `chapter_planner` with
+   `pack.chapter_planner` → Chapter Contract (validated, locked) → `pack.scene_writer` → `scene_planner` →
+   `scene_writer` per scene through `ReplayProvider` → assembly → deterministic checks → replayed evaluators
+   → targeted revision → approval-lock → `canon_extractor` with `pack.extractor` → `verifyDelta` →
+   `acceptChapter` (+ `factual_summarizer` L1, `indexAcceptedVersion`, dependency edges) → Chapter 2 pack
+   proving it carries Chapter 1's summary/tail/hook/deltas → export. Done; 22/22 integration tests
+   (incl. T19b global-identity collision proof).
+3. Replay recordings for every fixture call (no live provider). Done (`examples/fixture/ch01/replay.ch01.json`,
+   prompt-hash + `activity:<id>` binding, `misses == []`).
+4. CLI operator surface over the production workflow. Done in this change: `chapter:produce <project> <ch>`
+   (runs/resumes `produceChapter` with replay-only routing, deterministic workflow id, JSON summary, nonzero
+   exit on failure), `chapter:status <workflow-id>`, `chapter:resume <workflow-id>` (same resume entrypoint,
+   explicit), `export:accepted <project>` (accepted manuscripts only; `--full` prints text, default prints
+   hashes/sizes); 5 CLI chapter-surface tests (success, idempotent repeat, failure, interrupt→resume, export).
+   Remaining follow-ups (not in this change): per-project name thesaurus (B-1-13); Checkpoint 6
+   quality/long-form scope.
 
 ## Important decisions log
 
@@ -143,3 +152,5 @@ Checkpoint 3 (gateway + judges) and Checkpoint 6 (contrast-set regression on liv
 | 2026-09-14 | Toolchain: TypeScript 5.9 (typescript-eslint peer range), Vitest 4, ESLint 10 flat config, Prettier 3, `json-schema-to-typescript` for types with a freshness check in CI, Ajv 2020-12 at runtime; UUIDv7 implemented in-house (no dependency); deterministic script/lexicon output-language check (no statistical language-id dependency) | README.dev.md |
 | 2026-09-14 | Context packs are pure functions of pinned inputs (pack id = UUIDv8 of the pack hash; ACS id = UUIDv8 of its content hash); lexical index is accepted-only by SQL trigger, synchronous with acceptance, removed on de-acceptance; vector retrieval is an interface until an embedder exists; structured failure blocks, optional failure degrades with flags; per-template input budgets live in the Production Policy | ADR-0045 |
 | 2026-09-14 | Repair: `createManuscriptVersion` numbers versions across `manuscript_versions ∪ quarantine_versions` so a quarantined draft and its replacement never share a `version_no` (found while seeding the fixture; regression test in `canon.integration.test.ts`) | `packages/db/src/repo.ts` |
+| 2026-09-15 | Chapter-production repair: previous-chapter gate runs before any model spend or canon write (T17); Replay `activity:<id>` binding with prompt-hash priority (no live calls); canon identity stays global, failure-paths tests isolate per-test via DB reset (T19/T19b); T11 extract-variant fixture carries schema-valid plan-frame + future-dated items | ADR-0046, `packages/workflows`, `examples/fixture/ch01/replay.ch01.json` |
+| 2026-09-15 | CLI chapter surface over the production workflow (no parallel orchestration): `chapter:produce` runs/resumes `produceChapter` with replay-only routing and deterministic workflow ids, `chapter:status` reads the persisted job, `chapter:resume` re-runs the same workflow id explicitly, `export:accepted` exports accepted text only; nonzero exit on failure; T19b proves two live projects cannot share deterministic fixture UUIDs | `apps/cli`, `apps/cli/src/chapter.test.ts` |
