@@ -15,6 +15,7 @@ import {
   createManuscriptVersion,
   getManuscriptVersion,
   migrate,
+  putArtifact,
   resetDatabase,
   type ManuscriptVersionRow,
   type Pool,
@@ -25,15 +26,15 @@ import {
   makeContext,
   orderCandidates,
   produceChapter,
+  requireSelectedWinner,
   selectWinner,
-  verifySelectedWinner,
   WorkflowError,
   type CandidateSubmission,
   type SelectionInput,
   type WorkflowContext,
 } from './index.js';
 import { type Scorecard } from './evaluation.js';
-import { createHarness, type Harness } from './testkit.js';
+import { createHarness, IDS, type Harness } from './testkit.js';
 
 const run = databaseUrl() ? describe : describe.skip;
 
@@ -105,9 +106,12 @@ async function prepare(pool: Pool, h: Harness): Promise<Prepared> {
     id: row.id,
     manuscriptVersionId: row.id,
     text: row.text,
-    scorecard: passingScorecard(row.id),
+    scorecard: passingScorecard(row.id, false, expect_.baseCanonVersion),
     patchCount: i === 0 ? 1 : 0,
   }));
+  // Eligibility reads DURABLE evidence, so each candidate's scorecard is stored exactly as
+  // `evaluateVersion` stores it. A submission alone proves nothing.
+  for (const c of candidates) await persistScorecard(pool, h, c.manuscriptVersionId, c.scorecard);
   for (const c of candidates) h.bindings[`candidate.${c.slot}`] = c.id;
   const { ctx } = await makeContext(
     { pool, gateway: h.gateway(), bindings: h.bindings },
@@ -122,13 +126,13 @@ async function prepare(pool: Pool, h: Harness): Promise<Prepared> {
  * early-stop margin (threshold + `early_stop_margin_points`), so comparison is what decides the winner.
  * `clearsMargin` lifts every dimension above the margin to exercise the early-stop path instead.
  */
-function passingScorecard(versionId: string, clearsMargin = false): Scorecard {
+function passingScorecard(versionId: string, clearsMargin = false, canonVersion = 3): Scorecard {
   const lift = clearsMargin ? 10 : 2;
   const section = (gate: number) => ({ score: gate + lift, passed: true });
   return {
     id: versionId,
     manuscript_version_id: versionId,
-    canon_version: 3,
+    canon_version: canonVersion,
     overall: { score: 80 + lift, blocking_count: 0, major_count: 0, minor_count: 0 },
     sections: {
       prose: section(78),
@@ -157,6 +161,7 @@ function inputFor(p: Prepared, overrides: Partial<SelectionInput> = {}): Selecti
   return {
     chapterNo: 1,
     chapterId: p.chapterId,
+    contractId: IDS.contract1 ?? '',
     contractShape: CONTRACT_SHAPE,
     candidates: p.candidates,
     expect: p.expect,
@@ -393,24 +398,114 @@ run('candidate eligibility is decided before any comparison (B-6-4)', () => {
   it('a candidate failing a blocking gate is eliminated before comparison, not out-compared', async () => {
     const failing = p.candidates[0];
     if (!failing) throw new Error('no candidate');
-    const broken: CandidateSubmission = {
-      ...failing,
-      scorecard: {
-        ...failing.scorecard,
-        sections: {
-          ...failing.scorecard.sections,
-          prose: { score: 10, passed: false },
-        },
-        overall: { ...failing.scorecard.overall, blocking_count: 1 },
+    // The failure is recorded in the STORED scorecard, which is the only evidence eligibility reads.
+    const broken: Scorecard = {
+      ...failing.scorecard,
+      sections: {
+        ...failing.scorecard.sections,
+        prose: { score: 10, passed: false },
       },
+      overall: { ...failing.scorecard.overall, blocking_count: 1 },
     };
+    await replaceScorecard(pool, h, failing.manuscriptVersionId, broken);
     const result = await selectWinner(
       p.ctx,
-      inputFor(p, { candidates: [broken, ...p.candidates.slice(1)] }),
+      inputFor(p, { candidates: [{ ...failing, scorecard: broken }, ...p.candidates.slice(1)] }),
     );
-    const decision = result.eligibility.find((e) => e.candidateId === broken.id);
+    const decision = result.eligibility.find((e) => e.candidateId === failing.id);
     expect(decision?.codes).toContain('BLOCKING_GATE_FAILED');
-    expect(result.winnerId).not.toBe(broken.id);
+    expect(result.winnerId).not.toBe(failing.id);
+  }, 300_000);
+
+  it('a fabricated passing scorecard cannot override the stored failure', async () => {
+    const candidate = p.candidates[0];
+    if (!candidate) throw new Error('no candidate');
+    // Durable truth: this candidate failed its prose gate with a blocking issue.
+    await replaceScorecard(pool, h, candidate.manuscriptVersionId, {
+      ...candidate.scorecard,
+      sections: { ...candidate.scorecard.sections, prose: { score: 12, passed: false } },
+      overall: { ...candidate.scorecard.overall, blocking_count: 2 },
+    });
+    // The caller submits the original, passing scorecard anyway.
+    const result = await selectWinner(p.ctx, inputFor(p));
+    const decision = result.eligibility.find((e) => e.candidateId === candidate.id);
+    expect(decision?.eligible).toBe(false);
+    // Refused for BOTH reasons: the submission disagrees with durable evidence, and that evidence fails.
+    expect(decision?.codes).toContain('SCORECARD_NOT_AUTHENTIC');
+    expect(result.winnerId).not.toBe(candidate.id);
+  }, 300_000);
+
+  it.each([
+    [
+      'a scorecard belonging to another manuscript',
+      (c: CandidateSubmission, other: string): Scorecard => ({
+        ...c.scorecard,
+        manuscript_version_id: other,
+      }),
+    ],
+    [
+      'a scorecard produced against a stale canon version',
+      (c: CandidateSubmission): Scorecard => ({ ...c.scorecard, canon_version: 1 }),
+    ],
+  ])(
+    'refuses %s as evaluation evidence',
+    async (_label, mutate) => {
+      const candidate = p.candidates[0];
+      const other = p.candidates[1];
+      if (!candidate || !other) throw new Error('no candidate');
+      await replaceScorecard(
+        pool,
+        h,
+        candidate.manuscriptVersionId,
+        mutate(candidate, other.manuscriptVersionId),
+      );
+      const result = await selectWinner(p.ctx, inputFor(p));
+      const decision = result.eligibility.find((e) => e.candidateId === candidate.id);
+      expect(decision?.eligible).toBe(false);
+      expect(decision?.codes).toContain('SCORECARD_NOT_AUTHENTIC');
+      expect(result.winnerId).not.toBe(candidate.id);
+    },
+    300_000,
+  );
+
+  it('refuses a candidate with no persisted scorecard at all', async () => {
+    const candidate = p.candidates[0];
+    if (!candidate) throw new Error('no candidate');
+    await pool.query(
+      'ALTER TABLE workflow_artifacts DISABLE TRIGGER workflow_artifacts_append_only',
+    );
+    await pool.query(
+      `DELETE FROM workflow_artifacts WHERE project_id = $1 AND step = 'evaluate' AND kind = 'scorecard' AND key = $2`,
+      [h.projectId, candidate.manuscriptVersionId],
+    );
+    await pool.query(
+      'ALTER TABLE workflow_artifacts ENABLE TRIGGER workflow_artifacts_append_only',
+    );
+    const result = await selectWinner(p.ctx, inputFor(p));
+    const decision = result.eligibility.find((e) => e.candidateId === candidate.id);
+    expect(decision?.codes).toContain('SCORECARD_NOT_PERSISTED');
+    expect(result.winnerId).not.toBe(candidate.id);
+  }, 300_000);
+
+  it('refuses a malformed persisted scorecard artifact', async () => {
+    const candidate = p.candidates[0];
+    if (!candidate) throw new Error('no candidate');
+    await pool.query(
+      'ALTER TABLE workflow_artifacts DISABLE TRIGGER workflow_artifacts_append_only',
+    );
+    await pool.query(
+      `UPDATE workflow_artifacts SET payload = '{"id":"broken"}'::jsonb
+        WHERE project_id = $1 AND step = 'evaluate' AND kind = 'scorecard' AND key = $2`,
+      [h.projectId, candidate.manuscriptVersionId],
+    );
+    await pool.query(
+      'ALTER TABLE workflow_artifacts ENABLE TRIGGER workflow_artifacts_append_only',
+    );
+    const result = await selectWinner(p.ctx, inputFor(p));
+    const decision = result.eligibility.find((e) => e.candidateId === candidate.id);
+    // A payload that is not a scorecard is not evidence: it reads as no persisted scorecard at all.
+    expect(decision?.codes).toContain('SCORECARD_NOT_PERSISTED');
+    expect(result.winnerId).not.toBe(candidate.id);
   }, 300_000);
 
   it('a candidate missing a required gate is excluded: a missing judge is never a silent pass', async () => {
@@ -418,15 +513,15 @@ run('candidate eligibility is decided before any comparison (B-6-4)', () => {
     if (!candidate) throw new Error('no candidate');
     const sections = { ...candidate.scorecard.sections } as Record<string, unknown>;
     delete sections.genre;
-    const stripped: CandidateSubmission = {
-      ...candidate,
-      scorecard: { ...candidate.scorecard, sections } as typeof candidate.scorecard,
-    };
+    const stripped = { ...candidate.scorecard, sections } as Scorecard;
+    await replaceScorecard(pool, h, candidate.manuscriptVersionId, stripped);
     const result = await selectWinner(
       p.ctx,
-      inputFor(p, { candidates: [stripped, ...p.candidates.slice(1)] }),
+      inputFor(p, {
+        candidates: [{ ...candidate, scorecard: stripped }, ...p.candidates.slice(1)],
+      }),
     );
-    const decision = result.eligibility.find((e) => e.candidateId === stripped.id);
+    const decision = result.eligibility.find((e) => e.candidateId === candidate.id);
     expect(decision?.codes).toContain('GATE_EVIDENCE_MISSING');
     expect(decision?.detail).toContain('genre');
   }, 300_000);
@@ -551,48 +646,83 @@ run('bias, budget and winner-only propagation (B-6-4)', () => {
     }
   }, 300_000);
 
-  it('approval verifies the PERSISTED winner and refuses a caller-supplied loser', async () => {
+  it('approval enforcement reads the PERSISTED decision and refuses a caller-supplied loser', async () => {
     const result = await selectWinner(p.ctx, inputFor(p));
     const loser = result.excluded[0];
     if (!loser) throw new Error('no loser');
     const loserSubmission = p.candidates.find((c) => c.id === loser.candidateId);
 
-    // The winner is accepted by the guard.
+    // The winner passes the guard.
     await expect(
-      verifySelectedWinner(p.ctx, {
+      requireSelectedWinner(p.ctx, {
         chapterNo: 1,
+        chapterId: p.chapterId,
         manuscriptVersionId: result.winnerManuscriptVersionId ?? '',
+        step: 'approve',
       }),
     ).resolves.toMatchObject({
+      enforced: true,
       winnerManuscriptVersionId: result.winnerManuscriptVersionId,
     });
 
     // A loser is refused, even though the caller supplied it directly.
-    const err = await verifySelectedWinner(p.ctx, {
+    const err = await requireSelectedWinner(p.ctx, {
       chapterNo: 1,
+      chapterId: p.chapterId,
       manuscriptVersionId: loserSubmission?.manuscriptVersionId ?? '',
+      step: 'approve',
     }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(WorkflowError);
     expect((err as WorkflowError).code).toBe('APPROVAL_BLOCKED');
     expect((err as WorkflowError).detail).toContain('is not the selected winner');
   }, 300_000);
 
-  it('approval is refused entirely when no selection was persisted or it needs attention', async () => {
-    // No selection at all.
-    const none = await verifySelectedWinner(p.ctx, {
+  it('canon acceptance enforces the winner independently of approval', async () => {
+    const result = await selectWinner(p.ctx, inputFor(p));
+    const loser = result.excluded[0];
+    if (!loser) throw new Error('no loser');
+    const loserSubmission = p.candidates.find((c) => c.id === loser.candidateId);
+    const err = await requireSelectedWinner(p.ctx, {
       chapterNo: 1,
+      chapterId: p.chapterId,
+      manuscriptVersionId: loserSubmission?.manuscriptVersionId ?? '',
+      step: 'accept',
+    }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(WorkflowError);
+    expect((err as WorkflowError).code).toBe('APPROVAL_BLOCKED');
+    expect((err as WorkflowError).options.step).toBe('accept');
+    // No canon moved: the refusal happens before anything is committed.
+    const commits = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM canon_commits WHERE project_id = $1 AND source <> 'bible'`,
+      [h.projectId],
+    );
+    expect(commits.rows[0]?.n).toBe('0');
+  }, 300_000);
+
+  it('a required selection that is missing or needs attention refuses approval entirely', async () => {
+    // Three live candidate versions exist, so a selection is REQUIRED by durable state — no caller flag.
+    const none = await requireSelectedWinner(p.ctx, {
+      chapterNo: 1,
+      chapterId: p.chapterId,
       manuscriptVersionId: p.candidates[0]?.manuscriptVersionId ?? '',
+      step: 'approve',
     }).catch((e: unknown) => e);
     expect((none as WorkflowError).code).toBe('APPROVAL_BLOCKED');
-    expect((none as WorkflowError).detail).toContain('no persisted candidate selection');
+    expect((none as WorkflowError).detail).toContain('requires candidate selection');
 
-    // A needs_attention selection cannot authorize an approval either.
-    const candidates = p.candidates.map((c) => ({ ...c, baseCanonVersion: 999 }));
-    const blocked = await selectWinner(p.ctx, inputFor(p, { candidates }));
+    // A needs_attention decision cannot authorize an approval either.
+    for (const c of p.candidates)
+      await replaceScorecard(pool, h, c.manuscriptVersionId, {
+        ...c.scorecard,
+        canon_version: 999,
+      });
+    const blocked = await selectWinner(p.ctx, inputFor(p));
     expect(blocked.status).toBe('needs_attention');
-    const err = await verifySelectedWinner(p.ctx, {
+    const err = await requireSelectedWinner(p.ctx, {
       chapterNo: 1,
+      chapterId: p.chapterId,
       manuscriptVersionId: p.candidates[0]?.manuscriptVersionId ?? '',
+      step: 'approve',
     }).catch((e: unknown) => e);
     expect((err as WorkflowError).code).toBe('APPROVAL_BLOCKED');
     expect((err as WorkflowError).detail).toContain('needs_attention');
@@ -602,8 +732,11 @@ run('bias, budget and winner-only propagation (B-6-4)', () => {
     // ADR-0015: the first candidate is auto-approvable, carries every gated dimension, and clears each by
     // the policy's margin — so later candidates are not compared at all and no judgment is spent.
     const lifted = p.candidates.map((c, i) =>
-      i === 0 ? { ...c, scorecard: passingScorecard(c.id, true) } : c,
+      i === 0 ? { ...c, scorecard: passingScorecard(c.id, true, p.expect.baseCanonVersion) } : c,
     );
+    const leader = lifted[0];
+    if (!leader) throw new Error('no candidate');
+    await replaceScorecard(pool, h, leader.manuscriptVersionId, leader.scorecard);
     const result = await selectWinner(p.ctx, inputFor(p, { candidates: lifted }));
     expect(result.status).toBe('selected');
     expect(result.earlyStop.applied).toBe(true);
@@ -628,19 +761,55 @@ run('bias, budget and winner-only propagation (B-6-4)', () => {
     delete sections.voice;
     // Voice evidence removed on the leading candidate: early stop must refuse and name the gap. The
     // candidate is also ineligible for the same reason, so selection proceeds on the others.
+    const stripped = { ...candidate.scorecard, sections } as Scorecard;
+    await replaceScorecard(pool, h, candidate.manuscriptVersionId, stripped);
     const result = await selectWinner(
       p.ctx,
       inputFor(p, {
-        candidates: [
-          { ...candidate, scorecard: { ...candidate.scorecard, sections } } as CandidateSubmission,
-          ...p.candidates.slice(1),
-        ],
+        candidates: [{ ...candidate, scorecard: stripped }, ...p.candidates.slice(1)],
       }),
     );
     expect(result.earlyStop.applied).toBe(false);
     expect(result.earlyStop.detail).toMatch(/refused|not applied/);
   }, 300_000);
 });
+
+/**
+ * Store a scorecard exactly where and how `evaluateVersion` stores it, so eligibility reads real durable
+ * evidence. Tests that need a candidate to be judged differently change THIS row, not the submission.
+ */
+async function persistScorecard(
+  pool: Pool,
+  h: Harness,
+  manuscriptVersionId: string,
+  scorecard: Scorecard,
+): Promise<void> {
+  await putArtifact(pool, {
+    workspaceId: h.workspaceId,
+    projectId: h.projectId,
+    step: 'evaluate',
+    kind: 'scorecard',
+    key: manuscriptVersionId,
+    schema: 'scorecard.schema.json',
+    payload: scorecard,
+  });
+}
+
+/** Replace a persisted scorecard (append-only artifacts cannot be updated: delete, then re-store). */
+async function replaceScorecard(
+  pool: Pool,
+  h: Harness,
+  manuscriptVersionId: string,
+  scorecard: Scorecard,
+): Promise<void> {
+  await pool.query('ALTER TABLE workflow_artifacts DISABLE TRIGGER workflow_artifacts_append_only');
+  await pool.query(
+    `DELETE FROM workflow_artifacts WHERE project_id = $1 AND step = 'evaluate' AND kind = 'scorecard' AND key = $2`,
+    [h.projectId, manuscriptVersionId],
+  );
+  await pool.query('ALTER TABLE workflow_artifacts ENABLE TRIGGER workflow_artifacts_append_only');
+  await persistScorecard(pool, h, manuscriptVersionId, scorecard);
+}
 
 async function countComparatorCalls(pool: Pool, projectId: string): Promise<number> {
   const row = await pool.query<{ n: string }>(

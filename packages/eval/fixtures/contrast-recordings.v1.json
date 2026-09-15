@@ -5,7 +5,7 @@
     "corpus_hash": "sha256:ba75bf8e46386375c988eeea202dd3466c004d6edfeef5b5a7d91ca84ce63ef0",
     "policy_id": "policy/standard",
     "policy_version": 1,
-    "policy_hash": "sha256:3edf124e9040417cf8403c5c9667d5e07e6dcf876d180b51a002d8b500296c35",
+    "policy_hash": "sha256:54d8e9ece695727db761981483f34a15230746a538504105ce70da4ae3ad779a",
     "policy_thresholds": {
       "genre": 72,
       "prose": 78,
@@ -9475,5 +9475,5 @@
       "drift_flags": []
     }
   ],
-  "fixture_hash": "sha256:64af56d20a13c36beb36d3412ef0145b853b8f26757a4123a734601a94e001d8"
+  "fixture_hash": "sha256:654e24bbf1fcab5aa353e4937077ec272f7be7e4119537c57b9f756f02aa3ca5"
 }
