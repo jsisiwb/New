@@ -13,6 +13,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   createManuscriptVersion,
+  getSelection,
   getManuscriptVersion,
   migrate,
   putArtifact,
@@ -615,16 +616,211 @@ run('bias, budget and winner-only propagation (B-6-4)', () => {
     expect((err as WorkflowError).detail).toContain('comparison verdict names candidates');
   }, 300_000);
 
-  it('fails closed on a missing replay recording rather than calling a live provider', async () => {
-    const fresh = await createHarness(pool, 'Missing Recording');
-    // A project whose comparator recording for the s1s3 pair does not exist.
-    const err = await selectWinner(p.ctx, inputFor(p, { chapterNo: 1 }))
-      .then(() => undefined)
-      .catch((e: unknown) => e);
-    // The base path has recordings, so assert the provider never missed instead.
-    expect(err).toBeUndefined();
-    expect(h.provider.misses).toEqual([]);
-    expect(fresh.projectId).toBeTruthy();
+  it('a genuinely missing comparator recording fails closed, then resumes without re-judging', async () => {
+    // A REAL miss on the context that actually executes: the recording for the second pair is removed from
+    // the very provider this selection uses, not from a different harness.
+    const key = 'activity:compare:1:s1s3:ab';
+    const removed = h.provider.remove(key);
+    expect(removed).toBeDefined();
+
+    const err = await selectWinner(p.ctx, inputFor(p)).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(WorkflowError);
+    const wf = err as WorkflowError;
+    expect(wf.code).toBe('MODEL_CALL_FAILED');
+    expect(wf.detail).toContain('ReplayProvider');
+    // The provider recorded exactly one miss and served nothing for it: no live fallback was attempted.
+    expect(h.provider.misses).toHaveLength(1);
+    expect(h.provider.served.some((x) => x.activityId === 'compare:1:s1s3')).toBe(false);
+
+    // Nothing was decided: no committed selection, no winner, no terminal loser.
+    expect(await getSelection(pool, { projectId: h.projectId, chapterNo: 1 })).toBeUndefined();
+    const live = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM manuscript_versions
+        WHERE chapter_id = $1 AND origin = 'candidate' AND status = 'working'`,
+      [p.chapterId],
+    );
+    expect(live.rows[0]?.n).toBe('3');
+    // The FIRST pair did complete: 2 SUCCESSFUL judgments were spent before the miss. The missed call is
+    // audited as failed, which is the record of a refusal — not a judgment and not spend.
+    const spentBefore = await countComparatorCalls(pool, h.projectId);
+    expect(spentBefore).toBe(2);
+    const failedCalls = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM llm_calls
+        WHERE project_id = $1 AND role = 'chapter_comparator' AND status = 'failed'`,
+      [h.projectId],
+    );
+    expect(failedCalls.rows[0]?.n).toBe('1');
+
+    // Restore the recording and resume: the completed pair replays instead of being re-judged.
+    if (removed) h.provider.restore(key, removed);
+    const resumed = await selectWinner(p.ctx, inputFor(p));
+    expect(resumed.status).toBe('selected');
+    expect(resumed.schedule).toHaveLength(2);
+    // Only the pair that had not completed was judged: 2 more calls, not 4.
+    expect(await countComparatorCalls(pool, h.projectId)).toBe(spentBefore + 2);
+  }, 300_000);
+
+  it('a committed decision is returned only for the identical request; a changed one is refused', async () => {
+    const first = await selectWinner(p.ctx, inputFor(p));
+    expect(first.status).toBe('selected');
+
+    // Same request, candidates supplied in a different array order: the fingerprint is order-insensitive.
+    const reordered = [p.candidates[2], p.candidates[0], p.candidates[1]].filter(
+      (c): c is CandidateSubmission => c !== undefined,
+    );
+    const again = await selectWinner(p.ctx, inputFor(p, { candidates: reordered }));
+    expect(again.winnerId).toBe(first.winnerId);
+    expect(again.artifactId).toBe(first.artifactId);
+  }, 300_000);
+
+  it.each([
+    [
+      'a changed slot assignment',
+      (c: readonly CandidateSubmission[]): Partial<SelectionInput> => ({
+        candidates: c.map((x, i) => (i === 0 ? { ...x, slot: 9 } : x)),
+      }),
+    ],
+    [
+      'a dropped candidate',
+      (c: readonly CandidateSubmission[]): Partial<SelectionInput> => ({ candidates: c.slice(1) }),
+    ],
+    [
+      'a different chapter contract',
+      (): Partial<SelectionInput> => ({ contractId: IDS.contract2 ?? '' }),
+    ],
+    [
+      'a different contract shape',
+      (): Partial<SelectionInput> => ({ contractShape: JSON.stringify({ chapter_number: 1 }) }),
+    ],
+    [
+      'a different canon base',
+      (
+        _c: readonly CandidateSubmission[],
+        base: SelectionInput['expect'],
+      ): Partial<SelectionInput> => ({
+        expect: { ...base, baseCanonVersion: base.baseCanonVersion + 1 },
+      }),
+    ],
+    [
+      'a different pinned identity',
+      (
+        _c: readonly CandidateSubmission[],
+        base: SelectionInput['expect'],
+      ): Partial<SelectionInput> => ({
+        expect: { ...base, narrativeIdentityVersionId: 'other-identity' },
+      }),
+    ],
+    [
+      'a different pinned policy',
+      (
+        _c: readonly CandidateSubmission[],
+        base: SelectionInput['expect'],
+      ): Partial<SelectionInput> => ({
+        expect: { ...base, productionPolicyVersion: 'policy/economy@1' },
+      }),
+    ],
+    [
+      'a different pinned prompt set',
+      (
+        _c: readonly CandidateSubmission[],
+        base: SelectionInput['expect'],
+      ): Partial<SelectionInput> => ({
+        expect: { ...base, promptSetId: 'set:other' },
+      }),
+    ],
+  ])(
+    'refuses to answer %s with the committed decision',
+    async (_label, mutate) => {
+      await selectWinner(p.ctx, inputFor(p));
+      const err = await selectWinner(p.ctx, inputFor(p, mutate(p.candidates, p.expect))).catch(
+        (e: unknown) => e,
+      );
+      expect(err).toBeInstanceOf(WorkflowError);
+      expect((err as WorkflowError).code).toBe('SELECTION_REQUEST_CHANGED');
+    },
+    300_000,
+  );
+
+  it('refuses the committed decision when a candidate scorecard was re-judged', async () => {
+    await selectWinner(p.ctx, inputFor(p));
+    const candidate = p.candidates[0];
+    if (!candidate) throw new Error('no candidate');
+    // The stored evidence changes (a re-judgement), so the request is no longer the same question.
+    await replaceScorecard(pool, h, candidate.manuscriptVersionId, {
+      ...candidate.scorecard,
+      overall: { ...candidate.scorecard.overall, minor_count: 3 },
+    });
+    const err = await selectWinner(p.ctx, inputFor(p)).catch((e: unknown) => e);
+    expect((err as WorkflowError).code).toBe('SELECTION_REQUEST_CHANGED');
+  }, 300_000);
+
+  it('losers can never reach canon, summaries, indexing, dependency edges or export', async () => {
+    const result = await selectWinner(p.ctx, inputFor(p));
+    expect(result.status).toBe('selected');
+    const winnerId = result.winnerManuscriptVersionId ?? '';
+    const loserIds = p.candidates.map((c) => c.manuscriptVersionId).filter((id) => id !== winnerId);
+    expect(loserIds).toHaveLength(2);
+
+    // 1. The REAL approval entry point refuses each loser, and 2. so does the REAL acceptance entry point.
+    for (const step of ['approve', 'accept'] as const)
+      for (const loserId of loserIds) {
+        const err = await requireSelectedWinner(p.ctx, {
+          chapterNo: 1,
+          chapterId: p.chapterId,
+          manuscriptVersionId: loserId,
+          step,
+        }).catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(WorkflowError);
+        expect((err as WorkflowError).code).toBe('APPROVAL_BLOCKED');
+      }
+
+    // 3. No canon moved, and every loser is terminal and excluded from every downstream surface.
+    const chapterCommits = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM canon_commits WHERE project_id = $1 AND source <> 'bible'`,
+      [h.projectId],
+    );
+    expect(chapterCommits.rows[0]?.n).toBe('0');
+
+    for (const loserId of loserIds) {
+      const row = await getManuscriptVersion(pool, loserId);
+      expect(row?.status).toBe('rejected');
+      // Never summarized, never indexed, never a dependency source, never accepted.
+      const summaries = await pool.query<{ n: string }>(
+        'SELECT count(*)::text AS n FROM summaries WHERE manuscript_version_id = $1',
+        [loserId],
+      );
+      expect(summaries.rows[0]?.n).toBe('0');
+      const docs = await pool.query<{ n: string }>(
+        'SELECT count(*)::text AS n FROM search_documents WHERE project_id = $1',
+        [h.projectId],
+      );
+      expect(docs.rows[0]?.n).toBe('0');
+      const edges = await pool.query<{ n: string }>(
+        'SELECT count(*)::text AS n FROM dependency_edges WHERE dependent_id = $1',
+        [loserId],
+      );
+      expect(edges.rows[0]?.n).toBe('0');
+    }
+
+    // Exactly one candidate remains live: the winner.
+    const live = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM manuscript_versions
+        WHERE chapter_id = $1 AND origin = 'candidate' AND status = 'working'`,
+      [p.chapterId],
+    );
+    expect(live.rows[0]?.n).toBe('1');
+  }, 300_000);
+
+  it('a cross-project decision never authorizes this project', async () => {
+    await selectWinner(p.ctx, inputFor(p));
+    const other = await getSelection(pool, { projectId: h.projectId, chapterNo: 1 });
+    expect(other?.project_id).toBe(h.projectId);
+    // A different project has no decision of its own, so nothing leaks across the boundary.
+    const foreign = await getSelection(pool, {
+      projectId: '0191b2a0-0000-7000-8000-00000000dead',
+      chapterNo: 1,
+    });
+    expect(foreign).toBeUndefined();
   }, 300_000);
 
   it('losers become terminal and immutable; only the winner stays live', async () => {
@@ -811,9 +1007,11 @@ async function replaceScorecard(
   await persistScorecard(pool, h, manuscriptVersionId, scorecard);
 }
 
+/** SUCCESSFUL comparator judgments. A failed call is the audit trail of a refusal, never a judgment. */
 async function countComparatorCalls(pool: Pool, projectId: string): Promise<number> {
   const row = await pool.query<{ n: string }>(
-    `SELECT count(*)::text AS n FROM llm_calls WHERE project_id = $1 AND role = 'chapter_comparator'`,
+    `SELECT count(*)::text AS n FROM llm_calls
+      WHERE project_id = $1 AND role = 'chapter_comparator' AND status <> 'failed'`,
     [projectId],
   );
   return Number(row.rows[0]?.n ?? '0');

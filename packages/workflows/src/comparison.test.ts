@@ -9,6 +9,7 @@ import { requirePolicy } from '@yeonjae/domain';
 import { validatorFor } from '@yeonjae/domain';
 import {
   breakTie,
+  detectPreferenceCycle,
   earlyStop,
   earlyStopDecision,
   patchRegression,
@@ -703,5 +704,89 @@ describe('patch regression (ADR-0014)', () => {
     expect(smokeCheckDue(POLICY, every)).toBe(true);
     expect(smokeCheckDue(POLICY, every * 2)).toBe(true);
     expect(smokeCheckDue(POLICY, every + 1)).toBe(false);
+  });
+});
+
+/**
+ * Cycle honesty (B-6-4, ADR-0015). A pairwise comparator that decides every pair is not thereby
+ * transitive. `detectPreferenceCycle` is what keeps the winner claim defensible: it reports a cycle in the
+ * judgments ACTUALLY made, so selection can return needs_attention instead of presenting a schedule
+ * artifact as a schedule-independent winner.
+ */
+describe('comparator preference cycles are detected, not hidden (B-6-4)', () => {
+  const entry = (winnerId: string, loserId: string) => ({
+    pair: `${winnerId}${loserId}`,
+    aId: winnerId,
+    bId: loserId,
+    winnerId,
+    loserId,
+    reason: 'consistent' as const,
+    positionBiasDetected: false,
+    judgments: 2,
+    verdictArtifactIds: [],
+  });
+
+  it('reports no cycle for transitive preferences', () => {
+    // A beats B, A beats C, B beats C: a strict order, nothing to refuse.
+    expect(
+      detectPreferenceCycle([entry('A', 'B'), entry('A', 'C'), entry('B', 'C')]),
+    ).toBeUndefined();
+  });
+
+  it('reports no cycle for a plain single-elimination chain', () => {
+    expect(detectPreferenceCycle([entry('A', 'B'), entry('A', 'C')])).toBeUndefined();
+  });
+
+  it('detects the three-way cycle A>B, B>C, C>A', () => {
+    const cycle = detectPreferenceCycle([entry('A', 'B'), entry('B', 'C'), entry('C', 'A')]);
+    expect(cycle).toBeDefined();
+    // The reported path closes on itself, which is what makes it a cycle rather than a chain.
+    expect(cycle?.[0]).toBe(cycle?.[cycle.length - 1]);
+    expect(new Set(cycle)).toEqual(new Set(['A', 'B', 'C']));
+  });
+
+  it('detects a two-way disagreement A>B, B>A', () => {
+    const cycle = detectPreferenceCycle([entry('A', 'B'), entry('B', 'A')]);
+    expect(cycle).toBeDefined();
+    expect(new Set(cycle)).toEqual(new Set(['A', 'B']));
+  });
+
+  it('is independent of the order the judgments were recorded in', () => {
+    const edges = [entry('A', 'B'), entry('B', 'C'), entry('C', 'A')];
+    const forward = detectPreferenceCycle(edges);
+    const reversed = detectPreferenceCycle([...edges].reverse());
+    expect(forward).toBeDefined();
+    expect(reversed).toBeDefined();
+    // The same cycle is found whichever order the rows arrived in.
+    expect(new Set(forward)).toEqual(new Set(reversed));
+  });
+
+  it('the empty schedule has no cycle', () => {
+    expect(detectPreferenceCycle([])).toBeUndefined();
+  });
+});
+
+/**
+ * Tie-fallback authorization is an EXPLICIT policy field (B-6-4). The previous implementation inferred
+ * permission from an unrelated field merely existing, which authorized nothing in reality.
+ */
+describe('tie fallback requires explicit policy authorization (B-6-4)', () => {
+  it('the shipped policies authorize the ADR-0015 ladder explicitly', () => {
+    for (const ref of ['policy/standard@1', 'policy/premium@1', 'policy/economy@1'] as const) {
+      const policy = requirePolicy(ref);
+      expect(policy.candidates.tie_fallback_ladder_authorized).toBe(true);
+      expect(policy.candidates.selection_schedule).toBe('stable_slot_single_elimination');
+    }
+  });
+
+  it('authorization is a real boolean, not the presence of some other field', () => {
+    const withheld: ProductionPolicy = {
+      ...POLICY,
+      candidates: { ...POLICY.candidates, tie_fallback_ladder_authorized: false },
+    };
+    // The unrelated field the old implementation keyed on is still present and still true...
+    expect(withheld.candidates.judge_families_differ_from_writer).toBe(true);
+    // ...and authorization is nevertheless withheld.
+    expect(withheld.candidates.tie_fallback_ladder_authorized).toBe(false);
   });
 });
