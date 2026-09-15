@@ -341,7 +341,10 @@ run('N-candidate selection with three candidates (B-6-4)', () => {
     for (const r of rejected) {
       expect(r.reason).toBeInstanceOf(WorkflowError);
       const wf = r.reason as WorkflowError;
-      expect(wf.code).toBe('SELECTION_CONFLICT');
+      // Both losing paths are typed and retriable: CONCURRENT_CALL when the race is decided at the
+      // gateway's per-activity idempotency index, SELECTION_CONFLICT when it is decided at the selection
+      // decision row. Neither is an opaque INTERNAL, and neither leaks a raw database message.
+      expect(['CONCURRENT_CALL', 'SELECTION_CONFLICT']).toContain(wf.code);
       expect(wf.options.recommendedActions).toContain('retry_step');
       expect(wf.detail).not.toContain('duplicate key');
       // And its retry converges on the committed decision.
