@@ -194,15 +194,52 @@ run('failure recovery and resume (B-6-2, NFR-B)', () => {
     expect((await listCommits(pool, h.projectId)).every((c) => c.source === 'bible')).toBe(true);
   }, 120_000);
 
-  it('a blocked approval leaves the chapter working and reports needs_attention, not failed', async () => {
-    // The evaluator keeps reporting a major prose issue, so the single revision round cannot clear it.
+  it('a patch that does not repair its targeted dimension is stopped by the regression check before approval', async () => {
+    // The evaluator keeps reporting the same major prose issue after the patch, so the round-1 patch
+    // repaired nothing. ADR-0014: that fails the regression check at `revise` — it must never reach the
+    // approval lock, let alone canon. Before the B-6-4 correction this passed the regression helper
+    // (no OTHER dimension had regressed) and only failed later, at approval.
     h.provider.alias('activity:prose_judge:1:r1', 'variant:prose_judge:1:r1:still_failing');
     const err = await produceChapter(
       { pool, gateway: h.gateway(), bindings: h.bindings },
       h.input(1),
     ).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(WorkflowError);
+    const wf = err as WorkflowError;
+    expect(wf.code).toBe('PATCH_REGRESSED');
+    expect(wf.options.step).toBe('revise');
+    expect(wf.options.data).toMatchObject({ targeted_dimension: 'prose' });
+    expect(wf.options.data?.failures).toContain('targeted_not_improved');
+    const status = await workflowStatus(pool, workflowIdFor(h.projectId, 1));
+    // A quality gate is an attention state for a human, not an engineering failure.
+    expect(status.status).toBe('needs_attention');
+    const after = await counts(pool, h.projectId);
+    expect(after.accepted).toBe(0);
+    expect(after.commits).toBe(2); // the two bible commits only
+    expect(after.summaries).toBe(0);
+    expect(after.searchDocs).toBe(0);
+    // The failed regression is persisted as an auditable artifact rather than discarded.
+    const artifacts = await pool.query<{ payload: { passed: boolean; failures: string[] } }>(
+      `SELECT payload FROM workflow_artifacts
+        WHERE project_id = $1 AND kind = 'regression_report'`,
+      [h.projectId],
+    );
+    expect(artifacts.rows).toHaveLength(1);
+    expect(artifacts.rows[0]?.payload.passed).toBe(false);
+    expect(artifacts.rows[0]?.payload.failures).toContain('targeted_not_improved');
+  }, 120_000);
+
+  it('a blocked approval leaves the chapter working and reports needs_attention, not failed', async () => {
+    // A gate-only block: the prose judge reports no issue at all but scores below the pinned threshold, so
+    // there is nothing to revise and the run fails closed at the approval lock itself.
+    h.provider.alias('activity:prose_judge:1:r0', 'variant:prose_judge:1:r0:low_score_no_issues');
+    const err = await produceChapter(
+      { pool, gateway: h.gateway(), bindings: h.bindings },
+      h.input(1),
+    ).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(WorkflowError);
     expect((err as WorkflowError).code).toBe('APPROVAL_BLOCKED');
+    expect((err as WorkflowError).options.step).toBe('approve');
     const status = await workflowStatus(pool, workflowIdFor(h.projectId, 1));
     // A quality gate is an attention state for a human, not an engineering failure.
     expect(status.status).toBe('needs_attention');
@@ -210,4 +247,46 @@ run('failure recovery and resume (B-6-2, NFR-B)', () => {
     expect(after.accepted).toBe(0);
     expect(after.summaries).toBe(0);
   }, 120_000);
+
+  it('the regression artifact of a passing patch is written once and is idempotent across a retry', async () => {
+    // Chapter 1's fixture takes the revision path and its patch DOES repair prose, so the regression check
+    // passes and the chapter reaches acceptance. Re-running must not add a second report or re-spend.
+    const first = await produceChapter(
+      { pool, gateway: h.gateway(), bindings: h.bindings },
+      h.input(1),
+    );
+    expect(first.status).toBe('completed');
+    expect(first.revision?.rounds).toBe(1);
+    expect(first.revision?.regression).toMatchObject({ passed: true, targeted_resolved: true });
+    expect(first.revision?.regression?.failures).toEqual([]);
+
+    const reports = async () =>
+      (
+        await pool.query<{ id: string; content_hash: string; payload: { passed: boolean } }>(
+          `SELECT id, content_hash, payload FROM workflow_artifacts
+            WHERE project_id = $1 AND kind = 'regression_report'`,
+          [h.projectId],
+        )
+      ).rows;
+    const before = await reports();
+    expect(before).toHaveLength(1);
+    expect(before[0]?.payload.passed).toBe(true);
+    const spendBefore = (await counts(pool, h.projectId)).llmCalls;
+
+    const second = await produceChapter(
+      { pool, gateway: h.gateway(), bindings: h.bindings },
+      h.input(1),
+    );
+    expect(second.status).toBe('completed');
+    const afterRows = await reports();
+    // Same artifact id and same content hash: the deterministic report id makes the retry a no-op.
+    expect(afterRows).toHaveLength(1);
+    expect(afterRows[0]?.id).toBe(before[0]?.id);
+    expect(afterRows[0]?.content_hash).toBe(before[0]?.content_hash);
+    expect((await counts(pool, h.projectId)).llmCalls).toBe(spendBefore);
+    // Exactly one acceptance commit on top of the two bible commits, and one accepted version.
+    const c = await counts(pool, h.projectId);
+    expect(c.accepted).toBe(1);
+    expect(c.commits).toBe(3);
+  }, 180_000);
 });

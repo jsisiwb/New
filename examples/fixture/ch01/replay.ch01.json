@@ -3074,5 +3074,24 @@
    "output": 500,
    "cached": 0
   }
+ },
+ "variant:prose_judge:1:r0:low_score_no_issues": {
+  "json": {
+   "dimension_scores": {
+    "idiomatic_english": 3,
+    "readability": 4,
+    "register_fidelity": 4,
+    "translation_markers": 3
+   },
+   "judge_score": 74,
+   "drift_flags": [],
+   "issues": []
+  },
+  "modelId": "replay-model",
+  "usage": {
+   "input": 1000,
+   "output": 500,
+   "cached": 0
+  }
  }
 }

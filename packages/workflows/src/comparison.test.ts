@@ -1,7 +1,8 @@
 /**
  * B-6-4 unit proofs for the deterministic half of candidate comparison and patch regression: the pinned
  * policy supplies every number (ADR-0041), the tie ladder of ADR-0015 is total and order-independent, and
- * the regression rule of ADR-0014 is per gated dimension with the targeted dimension exempt.
+ * the ADR-0014 regression rule only passes a patch that actually repaired what it targeted without paying
+ * for it elsewhere.
  */
 import { describe, expect, it } from 'vitest';
 import { requirePolicy } from '@yeonjae/domain';
@@ -11,6 +12,8 @@ import {
   earlyStop,
   earlyStopDecision,
   patchRegression,
+  regressionArtifact,
+  regressionReportId,
   smokeCheckDue,
   type Candidate,
   type ProductionPolicy,
@@ -194,39 +197,154 @@ describe('candidate comparison determinism (ADR-0015)', () => {
 describe('patch regression (ADR-0014)', () => {
   const tolerance = POLICY.revision.regression_tolerance_points ?? 0;
 
-  it('passes when the targeted dimension improves and the other holds within tolerance', () => {
+  /**
+   * A scorecard with explicit issues and per-section pass flags, so the regression rule can be exercised on
+   * the evidence it actually reads: issue resolution, protected sections and new issue kinds — not scores alone.
+   */
+  function card(input: {
+    prose: number;
+    structure: number;
+    issues?: {
+      id: string;
+      dimension: Scorecard['issues'][number]['dimension'];
+      kind: Scorecard['issues'][number]['kind'];
+      severity?: 'blocking' | 'major' | 'minor';
+    }[];
+    sections?: Record<string, { score: number; passed: boolean }>;
+  }): Scorecard {
+    const base: Record<string, { score: number; passed: boolean }> = {
+      prose: { score: input.prose, passed: input.prose >= 78 },
+      structure: { score: input.structure, passed: input.structure >= 78 },
+      output_language: { score: 100, passed: true },
+      contract_compliance: { score: 100, passed: true },
+      continuity: { score: 100, passed: true },
+      knowledge: { score: 100, passed: true },
+      ...(input.sections ?? {}),
+    };
+    const issues = (input.issues ?? []).map((i) => ({
+      id: i.id,
+      source: 'prose_judge',
+      dimension: i.dimension,
+      kind: i.kind,
+      severity: i.severity ?? ('major' as const),
+      override_class: 'reviewer' as const,
+      confidence: 0.9,
+      claim: `${i.kind} on ${i.dimension}`,
+      status: 'open' as const,
+    }));
+    const blocking = issues.filter((i) => i.severity === 'blocking').length;
+    const major = issues.filter((i) => i.severity === 'major').length;
+    const candidateCard = {
+      id: '0191b2a0-0000-7000-8000-00000000a001',
+      manuscript_version_id: '0191b2a0-0000-7000-8000-00000000b001',
+      canon_version: 3,
+      overall: {
+        score: (input.prose + input.structure) / 2,
+        blocking_count: blocking,
+        major_count: major,
+        minor_count: 0,
+      },
+      sections: base,
+      issues,
+      acceptance: {
+        criteria_results: [],
+        dimension_results: [],
+        auto_approvable: blocking === 0 && major === 0,
+        production_policy_version: 'policy/standard@1',
+        gate_outcome: blocking === 0 && major === 0 ? 'approved' : 'rejected',
+      },
+    };
+    const v = validatorFor<Scorecard>('scorecard.schema.json')(candidateCard);
+    if (!v.ok) throw new Error(`test scorecard invalid: ${JSON.stringify(v.errors)}`);
+    return v.value;
+  }
+
+  const ISSUE_A = '0191b2a0-0000-7000-8000-00000000e001';
+  const ISSUE_B = '0191b2a0-0000-7000-8000-00000000e002';
+
+  it('passes only when the targeted issue resolves, the target holds and nothing else regresses', () => {
     const report = patchRegression(POLICY, {
-      before: scorecard({ prose: 70, structure: 88 }),
-      after: scorecard({ prose: 84, structure: 88 - tolerance }),
+      before: card({
+        prose: 70,
+        structure: 88,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 84, structure: 88 - tolerance }),
       dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
     });
     expect(report.passed).toBe(true);
-    expect(report.targetedImproved).toBe(true);
+    expect(report.failures).toEqual([]);
+    expect(report.targeted.resolved).toBe(true);
+    expect(report.targeted.materiallyImproved).toBe(true);
+    expect(report.targeted.resolvedIssueIds).toEqual([ISSUE_A]);
     expect(report.regressions).toEqual([]);
     expect(report.tolerancePoints).toBe(tolerance);
   });
 
-  it('fails when repairing prose costs structure more than the pinned tolerance', () => {
+  it('THE DEFECT: a patch whose targeted dimension did not improve can no longer pass', () => {
+    // Before this fix `passed` was `regressions.length === 0`, so a patch that dropped its own targeted
+    // dimension 30 points while leaving every other dimension untouched reported passed: true.
     const report = patchRegression(POLICY, {
-      before: scorecard({ prose: 70, structure: 88 }),
-      after: scorecard({ prose: 90, structure: 88 - tolerance - 1 }),
+      before: card({
+        prose: 90,
+        structure: 85,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({
+        prose: 60,
+        structure: 85,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
       dimension: 'prose',
-    });
-    expect(report.passed).toBe(false);
-    expect(report.regressions.map((r) => r.dimension)).toEqual(['structure']);
-    expect(report.regressions[0]?.delta).toBe(-(tolerance + 1));
-  });
-
-  it('never reports the targeted dimension as a regression, but shows a patch that repaired nothing', () => {
-    const report = patchRegression(POLICY, {
-      before: scorecard({ prose: 90, structure: 85 }),
-      after: scorecard({ prose: 60, structure: 85 }),
-      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
     });
     expect(report.regressions).toEqual([]);
-    expect(report.passed).toBe(true);
-    expect(report.targetedImproved).toBe(false);
+    expect(report.passed).toBe(false);
+    expect(report.failures).toContain('targeted_not_improved');
+    expect(report.failures).toContain('targeted_worsened');
+    expect(report.targeted.resolved).toBe(false);
+    expect(report.targeted.unresolvedIssueIds).toEqual([ISSUE_A]);
     expect(report.deltas.find((d) => d.dimension === 'prose')?.delta).toBe(-30);
+  });
+
+  it('a flat targeted dimension with the targeted issue still open does not pass', () => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 88,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({
+        prose: 70,
+        structure: 88,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    expect(report.passed).toBe(false);
+    expect(report.failures).toContain('targeted_not_improved');
+    // The calque the patch was asked to remove is still present, so the translation-like guard also fails.
+    expect(report.failures).toContain('protection_failed');
+    expect(report.targeted.worsened).toBe(false);
+  });
+
+  it('fails when repairing prose costs structure more than the pinned tolerance', () => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 88,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 90, structure: 88 - tolerance - 1 }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    expect(report.passed).toBe(false);
+    expect(report.failures).toContain('protected_dimension_regressed');
+    expect(report.regressions.map((r) => r.dimension)).toEqual(['structure']);
+    expect(report.regressions[0]?.delta).toBe(-(tolerance + 1));
   });
 
   it('a policy without a tolerance treats any drop as a regression rather than unlimited', () => {
@@ -235,23 +353,208 @@ describe('patch regression (ADR-0014)', () => {
       revision: { ...POLICY.revision, regression_tolerance_points: undefined },
     } as ProductionPolicy;
     const report = patchRegression(noTolerance, {
-      before: scorecard({ prose: 70, structure: 88 }),
-      after: scorecard({ prose: 84, structure: 87 }),
+      before: card({
+        prose: 70,
+        structure: 88,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 84, structure: 87 }),
       dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
     });
     expect(report.tolerancePoints).toBe(0);
     expect(report.passed).toBe(false);
     expect(report.regressions.map((r) => r.dimension)).toEqual(['structure']);
   });
 
-  it('ignores dimensions the policy does not gate', () => {
+  it('records gated dimensions no scorecard carries instead of treating them as cleared', () => {
     const report = patchRegression(POLICY, {
-      before: scorecard({ prose: 80, structure: 80 }),
-      after: scorecard({ prose: 80, structure: 80 }),
+      before: card({
+        prose: 70,
+        structure: 80,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 85, structure: 80 }),
       dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
     });
-    // standard.v1 gates prose, structure, genre and voice; only the two the scorecard carries appear.
+    // standard.v1 gates prose, structure, genre and voice; only the two the scorecard carries are scored.
     expect(report.deltas.map((d) => d.dimension)).toEqual(['prose', 'structure']);
+    expect(report.missingGatedDimensions).toEqual(['genre', 'voice']);
+    // Missing gates are reported, not counted as failures: wiring them is the separate genre/voice task.
+    expect(report.passed).toBe(true);
+  });
+
+  it('a patch may not pass by deleting the dimension evidence it is judged on', () => {
+    // `genre` is gated by standard.v1 and is not schema-required, so it can be present on the parent and
+    // absent on the revision — exactly the "patch deleted its own evidence" shape.
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 88,
+        sections: { genre: { score: 80, passed: true } },
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 90, structure: 88 }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    expect(report.droppedDimensions).toEqual(['genre']);
+    expect(report.passed).toBe(false);
+    expect(report.failures).toContain('dimension_dropped');
+    expect(report.failures).toContain('protection_failed');
+    expect(report.protections.find((p) => p.protection === 'genre')).toMatchObject({
+      applicable: true,
+      passed: false,
+    });
+  });
+
+  it('a new blocking or major issue kind fails the patch even when every score improved', () => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 80,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({
+        prose: 95,
+        structure: 95,
+        issues: [{ id: ISSUE_B, dimension: 'continuity', kind: 'canon_contradiction' }],
+      }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    expect(report.newIssueKinds).toEqual(['canon_contradiction']);
+    expect(report.passed).toBe(false);
+    expect(report.failures).toContain('new_blocking_or_major_issue');
+  });
+
+  it.each([
+    ['western_novel_drift', 'westernization'],
+    ['literary_drift', 'westernization'],
+    ['serial_drift', 'westernization'],
+    ['translation_like_english', 'translation_like'],
+    ['non_english_output', 'translation_like'],
+    ['register_error', 'register'],
+    ['voice_drift', 'register'],
+    ['address_term_error', 'register'],
+  ] as const)('%s fails the %s protection closed', (kind, protection) => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 80,
+        issues: [{ id: ISSUE_A, dimension: 'structure', kind: 'weak_pacing' }],
+      }),
+      after: card({
+        prose: 95,
+        structure: 95,
+        issues: [{ id: ISSUE_B, dimension: 'prose', kind }],
+      }),
+      dimension: 'structure',
+      targetedIssueIds: [ISSUE_A],
+    });
+    expect(report.protections.find((p) => p.protection === protection)).toMatchObject({
+      applicable: true,
+      passed: false,
+    });
+    expect(report.passed).toBe(false);
+    expect(report.failures).toContain('protection_failed');
+  });
+
+  it.each(['output_language', 'contract_compliance', 'continuity', 'knowledge'] as const)(
+    'a failing %s section fails the regression closed',
+    (section) => {
+      const report = patchRegression(POLICY, {
+        before: card({
+          prose: 70,
+          structure: 80,
+          issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+        }),
+        after: card({
+          prose: 90,
+          structure: 80,
+          sections: { [section]: { score: 0, passed: false } },
+        }),
+        dimension: 'prose',
+        targetedIssueIds: [ISSUE_A],
+      });
+      expect(report.passed).toBe(false);
+      expect(report.failures).toContain('protection_failed');
+      expect(report.protections.filter((p) => p.applicable && !p.passed).length).toBeGreaterThan(0);
+    },
+  );
+
+  it('the persisted artifact validates against its schema and is deterministic per version+round', () => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 70,
+        structure: 88,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({ prose: 84, structure: 88 }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    const versionId = '0191b2a0-0000-7000-8000-00000000b002';
+    const id = regressionReportId('wf-1', versionId, 1);
+    expect(regressionReportId('wf-1', versionId, 1)).toBe(id);
+    expect(regressionReportId('wf-1', versionId, 2)).not.toBe(id);
+    const artifact = regressionArtifact(report, {
+      id,
+      manuscriptVersionId: versionId,
+      parentVersionId: '0191b2a0-0000-7000-8000-00000000b001',
+      round: 1,
+      productionPolicyVersion: 'policy/standard@1',
+    });
+    const v = validatorFor('regression-report.schema.json')(artifact);
+    expect(v.ok, JSON.stringify('errors' in v ? v.errors : [])).toBe(true);
+    expect(artifact.passed).toBe(true);
+    expect(artifact.failures).toEqual([]);
+    expect(artifact.targeted.resolved).toBe(true);
+    // The artifact is a pure projection of the report: serializing twice yields identical bytes.
+    expect(
+      JSON.stringify(
+        regressionArtifact(report, {
+          id,
+          manuscriptVersionId: versionId,
+          parentVersionId: '0191b2a0-0000-7000-8000-00000000b001',
+          round: 1,
+          productionPolicyVersion: 'policy/standard@1',
+        }),
+      ),
+    ).toBe(JSON.stringify(artifact));
+  });
+
+  it('a failed report serializes its failures and failed protections for the audit trail', () => {
+    const report = patchRegression(POLICY, {
+      before: card({
+        prose: 90,
+        structure: 85,
+        issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'translation_like_english' }],
+      }),
+      after: card({
+        prose: 60,
+        structure: 85,
+        issues: [{ id: ISSUE_B, dimension: 'prose', kind: 'western_novel_drift' }],
+      }),
+      dimension: 'prose',
+      targetedIssueIds: [ISSUE_A],
+    });
+    const artifact = regressionArtifact(report, {
+      id: regressionReportId('wf-1', '0191b2a0-0000-7000-8000-00000000b002', 1),
+      manuscriptVersionId: '0191b2a0-0000-7000-8000-00000000b002',
+      parentVersionId: '0191b2a0-0000-7000-8000-00000000b001',
+      round: 1,
+      productionPolicyVersion: 'policy/standard@1',
+    });
+    const v = validatorFor('regression-report.schema.json')(artifact);
+    expect(v.ok, JSON.stringify('errors' in v ? v.errors : [])).toBe(true);
+    expect(artifact.passed).toBe(false);
+    // The targeted issue id is gone, so "resolved" holds — but the dimension's score fell 30 points, and a
+    // patch that pays for its own repair with its own dimension must still fail.
+    expect(artifact.failures).toContain('targeted_worsened');
+    expect(artifact.failures).toContain('protection_failed');
+    expect(artifact.new_issue_kinds).toEqual(['western_novel_drift']);
   });
 
   it('smoke checks fall due on every Nth patch from the pinned policy', () => {

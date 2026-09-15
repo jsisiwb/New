@@ -16,6 +16,7 @@
  * The predicates take the pinned Production Policy rather than the whole workflow context: they are pure
  * functions of policy + scorecards, and the numbers always come from the policy (ADR-0041).
  */
+import { createHash } from 'node:crypto';
 import { type Generated } from '@yeonjae/domain';
 import { type Issue, type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
@@ -318,44 +319,363 @@ export interface DimensionDelta {
   readonly delta: number;
 }
 
+export type RegressionFailure =
+  | 'targeted_not_improved'
+  | 'targeted_worsened'
+  | 'dimension_dropped'
+  | 'protected_dimension_regressed'
+  | 'new_blocking_or_major_issue'
+  | 'protection_failed';
+
+export type ProtectionName =
+  | 'output_language'
+  | 'contract'
+  | 'continuity'
+  | 'knowledge'
+  | 'genre'
+  | 'voice'
+  | 'register'
+  | 'prose'
+  | 'structure'
+  | 'westernization'
+  | 'translation_like'
+  | 'no_new_blocking_major';
+
+export interface ProtectionOutcome {
+  readonly protection: ProtectionName;
+  /** False when neither scorecard carries the evidence this protection reads. */
+  readonly applicable: boolean;
+  readonly passed: boolean;
+  readonly detail?: string | undefined;
+  readonly issueKinds?: readonly string[] | undefined;
+}
+
+export interface TargetedOutcome {
+  readonly scoreBefore?: number | undefined;
+  readonly scoreAfter?: number | undefined;
+  readonly delta?: number | undefined;
+  readonly blockingMajorBefore: number;
+  readonly blockingMajorAfter: number;
+  /** Every targeted blocking/major issue is gone from the revised version. */
+  readonly resolved: boolean;
+  /** The targeted issues resolved, or the targeted dimension's score rose. */
+  readonly materiallyImproved: boolean;
+  readonly worsened: boolean;
+  readonly resolvedIssueIds: readonly string[];
+  readonly unresolvedIssueIds: readonly string[];
+}
+
 export interface RegressionReport {
   readonly targetedDimension: Issue['dimension'];
   readonly tolerancePoints: number;
   readonly deltas: readonly DimensionDelta[];
   /** Non-targeted gated dimensions that fell by more than the tolerance. */
   readonly regressions: readonly DimensionDelta[];
+  /** Gated dimensions no scorecard carries — an unwired judge, never a silent pass. */
+  readonly missingGatedDimensions: readonly string[];
+  /** Dimensions the parent carried that the revision no longer carries. */
+  readonly droppedDimensions: readonly string[];
+  readonly targeted: TargetedOutcome;
+  readonly protections: readonly ProtectionOutcome[];
+  readonly newIssueKinds: readonly string[];
+  readonly failures: readonly RegressionFailure[];
+  /** Kept for callers that only need "did the target move"; never sufficient on its own. */
   readonly targetedImproved: boolean;
   readonly passed: boolean;
 }
 
 /**
- * ADR-0014 regression check: a patch targeting one dimension must not degrade another beyond the pinned
- * tolerance. The targeted dimension is exempt from the regression list (it is the one being repaired) but
- * its own movement is reported, so a patch that repairs nothing is visible rather than silently accepted.
+ * Westernization / translation-like drift is protected by ISSUE KIND, not by a dimension score: a patch can
+ * leave `prose` numerically flat while introducing a calque or an English-epic cadence. These kinds are in
+ * the policy's `never`/`reviewer` override classes and must fail the regression closed.
+ */
+const WESTERNIZATION_KINDS: ReadonlySet<string> = new Set([
+  'western_novel_drift',
+  'literary_drift',
+  'serial_drift',
+]);
+const TRANSLATION_KINDS: ReadonlySet<string> = new Set([
+  'translation_like_english',
+  'non_english_output',
+]);
+const REGISTER_KINDS: ReadonlySet<string> = new Set([
+  'register_error',
+  'address_term_error',
+  'voice_drift',
+]);
+
+/** Sections whose `passed` flag is a fail-closed protection, mapped to the scorecard section that carries it. */
+const PROTECTION_SECTIONS: readonly (readonly [ProtectionName, string])[] = [
+  ['output_language', 'output_language'],
+  ['contract', 'contract_compliance'],
+  ['continuity', 'continuity'],
+  ['knowledge', 'knowledge'],
+  ['genre', 'genre'],
+  ['voice', 'voice'],
+  ['prose', 'prose'],
+  ['structure', 'structure'],
+];
+
+function sectionPassed(scorecard: Scorecard, name: string): boolean | undefined {
+  const sections = scorecard.sections as Record<string, { passed?: boolean } | undefined>;
+  return sections[name]?.passed;
+}
+
+function openBlockingMajor(scorecard: Scorecard): readonly Issue[] {
+  return scorecard.issues.filter(
+    (i) => (i.severity === 'blocking' || i.severity === 'major') && i.status === 'open',
+  );
+}
+
+function kindsMatching(scorecard: Scorecard, kinds: ReadonlySet<string>): readonly string[] {
+  return [...new Set(openBlockingMajor(scorecard).map((i) => i.kind))].filter((k) => kinds.has(k));
+}
+
+/**
+ * ADR-0014 regression check. A patch targeting one dimension must earn its approval: it must actually repair
+ * what it targeted, must not pay for that repair with another dimension, and must not smuggle in new damage.
+ *
+ * `passed` is the conjunction of ALL of:
+ *   - the targeted issues resolved or the targeted dimension's score materially improved;
+ *   - the targeted dimension did not worsen;
+ *   - no dimension the parent scorecard carried disappeared (a patch may not delete its own evidence);
+ *   - no protected (non-targeted) gated dimension fell by more than the pinned tolerance;
+ *   - no new blocking/major issue kind appeared;
+ *   - every applicable protection still passes — output language, contract, continuity, knowledge, genre,
+ *     voice, register, prose and structure, plus the westernization and translation-like kind guards.
+ *
+ * Numbers come only from the pinned Production Policy (ADR-0041); an absent tolerance means zero, never
+ * unlimited. `missingGatedDimensions` records gates no scorecard carries so an unwired judge stays visible.
  */
 export function patchRegression(
   policy: ProductionPolicy,
-  input: { before: Scorecard; after: Scorecard; dimension: Issue['dimension'] },
+  input: {
+    before: Scorecard;
+    after: Scorecard;
+    dimension: Issue['dimension'];
+    /** The blocking/major issues the patch was asked to repair. Defaults to the parent's issues on the dimension. */
+    targetedIssueIds?: readonly string[] | undefined;
+  },
 ): RegressionReport {
-  // An absent tolerance means zero tolerance (any drop regresses), never "unlimited": a missing number
-  // must not silently widen a gate (ADR-0041).
   const tolerance = policy.revision.regression_tolerance_points ?? 0;
   const deltas: DimensionDelta[] = [];
+  const missing: string[] = [];
+  const dropped: string[] = [];
   for (const dimension of gatedDimensions(policy)) {
     const before = sectionScore(input.before, dimension);
     const after = sectionScore(input.after, dimension);
+    if (before === undefined && after === undefined) {
+      missing.push(dimension);
+      continue;
+    }
+    // The parent scored it and the revision does not: the patch removed the evidence it is judged on.
+    if (before !== undefined && after === undefined) {
+      dropped.push(dimension);
+      continue;
+    }
     if (before === undefined || after === undefined) continue;
     deltas.push({ dimension, before, after, delta: after - before });
   }
   const regressions = deltas.filter((d) => d.dimension !== input.dimension && d.delta < -tolerance);
-  const targeted = deltas.find((d) => d.dimension === input.dimension);
+  const targetedDelta = deltas.find((d) => d.dimension === input.dimension);
+
+  const beforeOpen = openBlockingMajor(input.before);
+  const afterOpen = openBlockingMajor(input.after);
+  const targetedIds =
+    input.targetedIssueIds ??
+    beforeOpen.filter((i) => i.dimension === input.dimension).map((i) => i.id);
+  const targetedIdSet = new Set(targetedIds);
+  const targetedIssues = beforeOpen.filter((i) => targetedIdSet.has(i.id));
+  // Issue ids are derived per manuscript version (`workflow|version|source|index`), so the SAME unrepaired
+  // finding comes back from the judge under a NEW id. Resolution is therefore decided on the issue's
+  // signature — dimension + kind — never on the id, which would read every patch as having resolved
+  // everything it targeted.
+  const signature = (i: Issue) => `${i.dimension}|${i.kind}`;
+  const afterSignatures = new Set(afterOpen.map(signature));
+  const resolvedIssueIds = targetedIssues
+    .filter((i) => !afterSignatures.has(signature(i)))
+    .map((i) => i.id);
+  const unresolvedIssueIds = targetedIssues
+    .filter((i) => afterSignatures.has(signature(i)))
+    .map((i) => i.id);
+  const targetedBlockingBefore = beforeOpen.filter((i) => i.dimension === input.dimension).length;
+  const targetedBlockingAfter = afterOpen.filter((i) => i.dimension === input.dimension).length;
+  const allTargetedResolved = targetedIssues.length > 0 && unresolvedIssueIds.length === 0;
+  const scoreRose = (targetedDelta?.delta ?? 0) > 0;
+  const worsened = (targetedDelta?.delta ?? 0) < 0;
+  // "Materially improved" = the targeted issues are gone, or the score rose and no targeted issue remains
+  // that the patch was asked to repair. A flat score with unresolved targeted issues is NOT an improvement.
+  const materiallyImproved =
+    allTargetedResolved ||
+    (scoreRose && targetedBlockingAfter < Math.max(targetedBlockingBefore, 1));
+
+  const beforeKinds = new Set(beforeOpen.map((i) => i.kind));
+  const newIssueKinds = [...new Set(afterOpen.map((i) => i.kind))]
+    .filter((k) => !beforeKinds.has(k))
+    .sort();
+
+  const protections: ProtectionOutcome[] = [];
+  for (const [protection, section] of PROTECTION_SECTIONS) {
+    const beforePassed = sectionPassed(input.before, section);
+    const afterPassed = sectionPassed(input.after, section);
+    if (afterPassed === undefined) {
+      // No evidence on the revised version: applicable only if the parent had it, and then it fails closed.
+      protections.push({
+        protection,
+        applicable: beforePassed !== undefined,
+        passed: beforePassed === undefined,
+        detail:
+          beforePassed === undefined
+            ? `no ${section} section on either scorecard`
+            : `the revised scorecard dropped the ${section} section the parent carried`,
+      });
+      continue;
+    }
+    protections.push({ protection, applicable: true, passed: afterPassed });
+  }
+  const westernization = kindsMatching(input.after, WESTERNIZATION_KINDS);
+  protections.push({
+    protection: 'westernization',
+    applicable: true,
+    passed: westernization.length === 0,
+    ...(westernization.length ? { issueKinds: westernization } : {}),
+  });
+  const translationLike = kindsMatching(input.after, TRANSLATION_KINDS);
+  protections.push({
+    protection: 'translation_like',
+    applicable: true,
+    passed: translationLike.length === 0,
+    ...(translationLike.length ? { issueKinds: translationLike } : {}),
+  });
+  const registerKinds = kindsMatching(input.after, REGISTER_KINDS);
+  protections.push({
+    protection: 'register',
+    applicable: true,
+    passed: registerKinds.length === 0,
+    ...(registerKinds.length ? { issueKinds: registerKinds } : {}),
+  });
+  protections.push({
+    protection: 'no_new_blocking_major',
+    applicable: true,
+    passed: newIssueKinds.length === 0,
+    ...(newIssueKinds.length ? { issueKinds: newIssueKinds } : {}),
+  });
+
+  const failures: RegressionFailure[] = [];
+  if (!materiallyImproved) failures.push('targeted_not_improved');
+  if (worsened) failures.push('targeted_worsened');
+  if (dropped.length > 0) failures.push('dimension_dropped');
+  if (regressions.length > 0) failures.push('protected_dimension_regressed');
+  if (newIssueKinds.length > 0) failures.push('new_blocking_or_major_issue');
+  if (protections.some((p) => p.applicable && !p.passed)) failures.push('protection_failed');
+
   return {
     targetedDimension: input.dimension,
     tolerancePoints: tolerance,
     deltas,
     regressions,
-    targetedImproved: (targeted?.delta ?? 0) > 0,
-    passed: regressions.length === 0,
+    missingGatedDimensions: missing,
+    droppedDimensions: dropped,
+    targeted: {
+      scoreBefore: targetedDelta?.before,
+      scoreAfter: targetedDelta?.after,
+      delta: targetedDelta?.delta,
+      blockingMajorBefore: targetedBlockingBefore,
+      blockingMajorAfter: targetedBlockingAfter,
+      resolved: allTargetedResolved,
+      materiallyImproved,
+      worsened,
+      resolvedIssueIds,
+      unresolvedIssueIds,
+    },
+    protections,
+    newIssueKinds,
+    failures,
+    targetedImproved: scoreRose,
+    passed: failures.length === 0,
+  };
+}
+
+export type RegressionReportArtifact = Generated.RegressionReportSchema.PatchRegressionReport;
+
+/** Stable v8 UUID for a regression report, so a replayed revision persists the same artifact id. */
+export function regressionReportId(workflowId: string, versionId: string, round: number): string {
+  const hex = createHash('sha256')
+    .update(`${workflowId}|regression|${versionId}|${round}`)
+    .digest('hex')
+    .slice(0, 32);
+  const b = Buffer.from(hex, 'hex');
+  b[6] = ((b[6] ?? 0) & 0x0f) | 0x80;
+  b[8] = ((b[8] ?? 0) & 0x3f) | 0x80;
+  const h = b.toString('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+/**
+ * Serialize a report to its schema shape for persistence. Kept separate from `patchRegression` so the
+ * predicate stays a pure function of policy + scorecards and the stored artifact stays a validated contract.
+ */
+export function regressionArtifact(
+  report: RegressionReport,
+  input: {
+    id: string;
+    manuscriptVersionId: string;
+    parentVersionId: string;
+    patchId?: string | undefined;
+    round: number;
+    productionPolicyVersion: string;
+  },
+): RegressionReportArtifact {
+  type Dim = RegressionReportArtifact['targeted_dimension'];
+  return {
+    id: input.id,
+    manuscript_version_id: input.manuscriptVersionId,
+    parent_version_id: input.parentVersionId,
+    ...(input.patchId ? { patch_id: input.patchId } : {}),
+    targeted_dimension: report.targetedDimension,
+    round: input.round,
+    tolerance_points: report.tolerancePoints,
+    production_policy_version: input.productionPolicyVersion,
+    deltas: report.deltas.map((d) => ({
+      dimension: d.dimension as Dim,
+      before: d.before,
+      after: d.after,
+      delta: d.delta,
+    })),
+    regressions: report.regressions.map((d) => ({
+      dimension: d.dimension as Dim,
+      before: d.before,
+      after: d.after,
+      delta: d.delta,
+    })),
+    missing_gated_dimensions: report.missingGatedDimensions.map((d) => d as Dim),
+    dropped_dimensions: report.droppedDimensions.map((d) => d as Dim),
+    targeted: {
+      ...(report.targeted.scoreBefore !== undefined
+        ? { score_before: report.targeted.scoreBefore }
+        : {}),
+      ...(report.targeted.scoreAfter !== undefined
+        ? { score_after: report.targeted.scoreAfter }
+        : {}),
+      ...(report.targeted.delta !== undefined ? { delta: report.targeted.delta } : {}),
+      blocking_major_before: report.targeted.blockingMajorBefore,
+      blocking_major_after: report.targeted.blockingMajorAfter,
+      resolved: report.targeted.resolved,
+      materially_improved: report.targeted.materiallyImproved,
+      worsened: report.targeted.worsened,
+      resolved_issue_ids: [...report.targeted.resolvedIssueIds],
+      unresolved_issue_ids: [...report.targeted.unresolvedIssueIds],
+    },
+    protections: report.protections.map((p) => ({
+      protection: p.protection,
+      applicable: p.applicable,
+      passed: p.passed,
+      ...(p.detail ? { detail: p.detail } : {}),
+      ...(p.issueKinds ? { issue_kinds: [...p.issueKinds] } : {}),
+    })),
+    new_issue_kinds: [...report.newIssueKinds],
+    failures: [...report.failures],
+    passed: report.passed,
   };
 }
 

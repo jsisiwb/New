@@ -613,25 +613,53 @@ run('chapter production — failure paths (each on a fresh project)', () => {
   });
 
   it('T5 blocking evaluation issues prevent approval and leave the version working', async () => {
-    h.provider.alias('activity:prose_judge:1:r1', 'variant:prose_judge:1:r1:still_failing');
+    // The prose judge scores below the pinned gate with no repairable issue, so there is nothing to revise
+    // and the run fails closed at the approval lock. (The "patch repaired nothing" variant now fails one
+    // step earlier, at the ADR-0014 regression check — proved in recovery.integration.test.ts.)
+    h.provider.alias('activity:prose_judge:1:r0', 'variant:prose_judge:1:r0:low_score_no_issues');
     const err = await expectWorkflowError(
       produceChapter({ pool, gateway: h.gateway(), bindings: h.bindings }, h.input(1)),
       'APPROVAL_BLOCKED',
     );
     expect(err.options.step).toBe('approve');
-    expect(err.options.data).toMatchObject({
-      issues: [{ kind: 'translation_like_english', severity: 'major', dimension: 'prose' }],
-    });
     expect(err.options.recommendedActions).toContain('regenerate');
+    const versions = await pool.query<{ status: string }>(
+      'SELECT status FROM manuscript_versions WHERE project_id = $1',
+      [h.projectId],
+    );
+    // No revision round ran (no issue to target), so the assembled version is the only one.
+    expect(versions.rows.map((v) => v.status)).toEqual(['working']);
+    expect((await listCommits(pool, h.projectId)).map((c) => c.source)).toEqual(['bible', 'bible']);
+    const status = await workflowStatus(pool, workflowIdFor(h.projectId, 1));
+    expect(status.status).toBe('needs_attention');
+    expect(status.error).toMatchObject({ code: 'APPROVAL_BLOCKED' });
+  });
+
+  it('T5b a patch that repairs nothing is refused by the regression check, before approval', async () => {
+    // ADR-0014 integrated into the real path: the judge reports the same major prose issue after the patch,
+    // so the patch did not repair its targeted dimension and cannot proceed to approval or canon.
+    h.provider.alias('activity:prose_judge:1:r1', 'variant:prose_judge:1:r1:still_failing');
+    const err = await expectWorkflowError(
+      produceChapter({ pool, gateway: h.gateway(), bindings: h.bindings }, h.input(1)),
+      'PATCH_REGRESSED',
+    );
+    expect(err.options.step).toBe('revise');
+    expect(err.options.data).toMatchObject({ targeted_dimension: 'prose' });
+    expect(err.options.data?.failures).toContain('targeted_not_improved');
+    // Both versions stay working: nothing was approved and nothing was accepted.
     const versions = await pool.query<{ status: string }>(
       'SELECT status FROM manuscript_versions WHERE project_id = $1',
       [h.projectId],
     );
     expect(versions.rows.map((v) => v.status)).toEqual(['working', 'working']);
     expect((await listCommits(pool, h.projectId)).map((c) => c.source)).toEqual(['bible', 'bible']);
-    const status = await workflowStatus(pool, workflowIdFor(h.projectId, 1));
-    expect(status.status).toBe('needs_attention');
-    expect(status.error).toMatchObject({ code: 'APPROVAL_BLOCKED' });
+    const report = await pool.query<{ payload: { passed: boolean; targeted: unknown } }>(
+      `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'regression_report'`,
+      [h.projectId],
+    );
+    expect(report.rows).toHaveLength(1);
+    expect(report.rows[0]?.payload.passed).toBe(false);
+    expect(report.rows[0]?.payload.targeted).toMatchObject({ resolved: false, worsened: false });
   });
 
   it('T7 extraction rejects a working manuscript at every layer', async () => {
