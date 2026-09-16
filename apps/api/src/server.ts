@@ -68,6 +68,7 @@ import {
 import { type CorrectionResult } from './canon-deps.js';
 import { logLine, METRIC, METRIC_HELP, Metrics, traceIdFrom } from './observability.js';
 import { clientIdentity, rateLimited, RateLimiter, scopeFor } from './rate-limit.js';
+import { corsFor, corsPolicyFrom, corsPreflightDenied, type CorsPolicy } from './cors.js';
 import { parseLastEventId, SSE_HEADERS, streamJobEvents, type SseSink } from './sse.js';
 import { ApiError, PROBLEM_CONTENT_TYPE, toProblem } from './problem.js';
 import {
@@ -104,6 +105,13 @@ export interface ApiOptions {
    * this gets limits keyed on the socket address, never on attacker-controlled header content.
    */
   readonly trustedProxies?: readonly string[] | undefined;
+  /**
+   * Exact origins permitted to make credentialed cross-origin requests.
+   *
+   * Absent or empty means DENY ALL cross-origin requests, which leaves same-origin traffic untouched. A
+   * deployment that forgets to configure this is strict rather than broken.
+   */
+  readonly corsOrigins?: readonly string[] | undefined;
 }
 
 /** Maximum JSON body. A bounded body is the cheapest defence against memory-exhaustion requests. */
@@ -137,8 +145,27 @@ export function buildApi(options: ApiOptions): FastifyInstance {
   const observed = new Map<string, ObservedRequest>();
   const limiter = options.rateLimiter ?? new RateLimiter();
   const trustedProxies = options.trustedProxies ?? [];
+  // Validated at construction, so an invalid origin fails at startup naming the exact value rather than
+  // being silently dropped into a deployment that denies everything and looks configured.
+  const corsPolicy: CorsPolicy = corsPolicyFrom(options.corsOrigins ?? []);
 
   app.addHook('onRequest', async (req, reply) => {
+    /**
+     * CORS first, because a preflight carries no credentials and must be answerable before authentication.
+     *
+     * A denied cross-origin request is not failed here: it is answered WITHOUT CORS headers, and the
+     * browser refuses it. That is the right layer — a 403 from this hook would be indistinguishable from
+     * an authorization failure and would confirm that the origin was evaluated at all. Only a denied
+     * PREFLIGHT gets an explicit 403, because a preflight has no other purpose and a silent 200 would be
+     * more confusing than a clear refusal in dev tools.
+     */
+    const cors = corsFor(corsPolicy, { method: req.method, origin: headerOf(req, 'origin') });
+    for (const [name, value] of Object.entries(cors.headers)) reply.header(name, value);
+    if (cors.denied)
+      metrics.increment(METRIC.corsDenied, METRIC_HELP[METRIC.corsDenied] ?? '', {
+        method: req.method,
+      });
+
     // Security headers on every response, including errors.
     reply.header('x-content-type-options', 'nosniff');
     reply.header('x-frame-options', 'DENY');
@@ -231,6 +258,20 @@ export function buildApi(options: ApiOptions): FastifyInstance {
 
   // ---- health and readiness -------------------------------------------------------------------------
   // Liveness answers "is the process up"; readiness answers "can it serve", which requires the database.
+  /**
+   * Preflight.
+   *
+   * A wildcard OPTIONS route, because a browser preflights the exact path it intends to call and those
+   * paths are all of `/v1/*`. It answers 204 with the allow headers the hook already set for a permitted
+   * origin, and 403 when the origin is not allowlisted — a preflight has no other purpose, so an explicit
+   * refusal is more legible in dev tools than a silent 204 the browser then rejects.
+   */
+  app.options('/*', async (req, reply) => {
+    const cors = corsFor(corsPolicy, { method: 'OPTIONS', origin: headerOf(req, 'origin') });
+    if (cors.denied) throw corsPreflightDenied();
+    return reply.status(204).send();
+  });
+
   app.get('/health', async () => ({ status: 'ok' }));
 
   /**

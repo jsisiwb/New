@@ -419,6 +419,7 @@ export const METRIC = {
   exports: 'yeonjae_exports_total',
   budgetBlocks: 'yeonjae_budget_blocks_total',
   providerAttempts: 'yeonjae_provider_attempts_total',
+  corsDenied: 'yeonjae_cors_denied_total',
 } as const;
 
 export const METRIC_HELP: Readonly<Record<string, string>> = {
@@ -434,4 +435,5 @@ export const METRIC_HELP: Readonly<Record<string, string>> = {
   [METRIC.exports]: 'Export requests by format and status.',
   [METRIC.budgetBlocks]: 'Calls refused by the budget guard.',
   [METRIC.providerAttempts]: 'Provider attempts by model class and status.',
+  [METRIC.corsDenied]: 'Cross-origin requests refused by the origin allowlist.',
 };
