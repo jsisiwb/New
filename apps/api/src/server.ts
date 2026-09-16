@@ -55,6 +55,17 @@ import {
   type ExportRow,
 } from './export.js';
 import { requireVerb } from './verbs.js';
+import {
+  correct as correctCanonOp,
+  correctionView,
+  impactView,
+  parseCorrectionBody,
+  parseRollbackBody,
+  regeneration as regenerationCanonOp,
+  retcon as retconCanonOp,
+  rollback as rollbackCanonOp,
+} from './canon-ops.js';
+import { type CorrectionResult } from './canon-deps.js';
 import { parseLastEventId, SSE_HEADERS, streamJobEvents, type SseSink } from './sse.js';
 import { ApiError, PROBLEM_CONTENT_TYPE, toProblem } from './problem.js';
 import {
@@ -415,6 +426,171 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     });
   });
 
+  // ---- canon operator actions: correction, retcon, regeneration preview, rollback -------------------
+  //
+  // The API plan specifies these as colon verbs on the canon resource. They are the authorized HTTP
+  // surface over `packages/canon`'s already-tested services; this layer validates, authorizes, audits and
+  // serializes, and enforces no canon rule of its own.
+  //
+  // ONE route for all three verbs, dispatched through `requireVerb`, for the reason `verbs.ts` documents:
+  // Fastify reads `/v1/projects/:projectId/canon:retcon` as a parameter literally named `projectId:retcon`,
+  // so registering `:correct`, `:retcon` and `:rollback` separately makes the second and third collide —
+  // and before that error surfaces the FIRST registration silently answers all three. A request to
+  // `:rollback` executing the correction handler would be an authorization hazard (rollback is owner-only),
+  // which is precisely why the verb is parsed and matched against a closed allowlist instead.
+  //
+  // Role policy: a dry run is a READ of consequences and needs `viewer`. Committing a correction needs
+  // `editor`. A retcon rewrites established history and a rollback retracts a commit, so both need
+  // `owner` — the bar the UI plan's "destructive actions require confirmation" principle implies.
+  const CANON_VERBS = ['correct', 'retcon', 'rollback'] as const;
+
+  app.post('/v1/projects/:projectId/:canonAction', async (req, reply) => {
+    const params = req.params as { projectId?: string; canonAction?: string };
+    const { id, verb } = requireVerb(params.canonAction, CANON_VERBS);
+    // The captured segment is `canon:<verb>`; anything else on this pattern is a different resource and
+    // must not be served here. A static sibling route (`/exports`) still wins in Fastify's router, so this
+    // guard only rejects genuinely unknown paths.
+    if (id !== 'canon') throw new ApiError('NOT_FOUND', 'No such route.');
+    const scope = await scoped(pool, req);
+    const projectId = requireUuid(params.projectId, 'params.projectId');
+
+    // Rollback takes a different body shape from correction/retcon, so it is parsed separately.
+    if (verb === 'rollback') {
+      const { expectedCanonVersion, dryRun } = parseRollbackBody(req.body);
+      requireRole(scope, dryRun ? 'viewer' : 'owner');
+      await inScope(pool, scope, async (c) => projectOr404(c, projectId));
+
+      if (dryRun) {
+        const result = await rollbackCanonOp(
+          { pool },
+          {
+            projectId,
+            expectedCanonVersion,
+            dryRun: true,
+            actor: actorOf(scope, 'api:canon:rollback'),
+          },
+        );
+        return reply.status(200).send({
+          ...correctionView(result),
+          // Whether the latest commit CAN be rolled back, and why not when it cannot. MVP policy is
+          // latest-only and a rollback of a rollback is refused; both decisions live in SQL.
+          rollbackable: result.rollbackable,
+          reason: result.reason ?? null,
+        });
+      }
+
+      const outcome = await inScope(pool, scope, async (c) =>
+        withIdempotency(
+          c,
+          {
+            workspaceId: scope.workspaceId,
+            key: headerOf(req, 'idempotency-key'),
+            method: 'POST',
+            route: '/v1/projects/:projectId/canon:rollback',
+            body: req.body,
+          },
+          async () => {
+            const result = await rollbackCanonOp(
+              { pool },
+              {
+                projectId,
+                expectedCanonVersion,
+                dryRun: false,
+                actor: actorOf(scope, 'api:canon:rollback'),
+              },
+            );
+            await audit(c, scope, {
+              action: 'canon.rollback',
+              targetKind: 'canon_commit',
+              targetId: result.commitId ?? undefined,
+              projectId,
+              requestId: req.id,
+              detail: {
+                canon_version: result.canonVersion,
+                stale_marked: result.staleMarked.length,
+                review_suggested: result.reviewSuggested.length,
+              },
+            });
+            return {
+              status: 200,
+              body: { ...correctionView(result), rollbackable: result.rollbackable },
+            };
+          },
+        ),
+      );
+      return reply.status(outcome.status).send(outcome.body);
+    }
+
+    const request = parseCorrectionBody(req.body);
+    const isRetcon = verb === 'retcon';
+    requireRole(scope, request.dryRun ? 'viewer' : isRetcon ? 'owner' : 'editor');
+    // The project is resolved through an RLS-scoped read FIRST, so a cross-workspace project id is a 404
+    // before any service call, and the service never sees another tenant's identifier.
+    await inScope(pool, scope, async (c) => projectOr404(c, projectId));
+
+    const via = isRetcon ? 'api:canon:retcon' : 'api:canon:correct';
+    const runOp = async (): Promise<CorrectionResult> =>
+      isRetcon
+        ? retconCanonOp({ pool }, { projectId, request, actor: actorOf(scope, via) })
+        : correctCanonOp({ pool }, { projectId, request, actor: actorOf(scope, via) });
+
+    if (request.dryRun) {
+      // A dry run writes nothing: no idempotency record, and no audit entry for a change that did not
+      // happen. `planned ≠ happened` is an invariant of this system, and the audit log is where it shows.
+      const result = await runOp();
+      return reply.status(200).send(correctionView(result));
+    }
+
+    const outcome = await inScope(pool, scope, async (c) =>
+      withIdempotency(
+        c,
+        {
+          workspaceId: scope.workspaceId,
+          key: headerOf(req, 'idempotency-key'),
+          method: 'POST',
+          route: isRetcon
+            ? '/v1/projects/:projectId/canon:retcon'
+            : '/v1/projects/:projectId/canon:correct',
+          body: req.body,
+        },
+        async () => {
+          const result = await runOp();
+          await audit(c, scope, {
+            action: isRetcon ? 'canon.retcon' : 'canon.correct',
+            targetKind: request.itemKind,
+            targetId: request.itemId,
+            projectId,
+            requestId: req.id,
+            // Safe metadata only: what changed and how far it reached, never the corrected value itself.
+            detail: {
+              canon_version: result.canonVersion,
+              commit_id: result.commitId ?? null,
+              stale_marked: result.staleMarked.length,
+              review_suggested: result.reviewSuggested.length,
+              ...(isRetcon
+                ? { affected_accepted_chapters: result.impact.affectedAcceptedChapters.length }
+                : {}),
+            },
+          });
+          return { status: 200, body: correctionView(result) };
+        },
+      ),
+    );
+    return reply.status(outcome.status).send(outcome.body);
+  });
+
+  // Regeneration preview is a pure read: it reports which later chapters were written against the canon
+  // this chapter committed, and marks nothing. A GET is therefore the honest method.
+  app.get('/v1/projects/:projectId/chapters/:number/regeneration-preview', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const params = req.params as { projectId?: string; number?: string };
+    const projectId = requireUuid(params.projectId, 'params.projectId');
+    const chapterNo = requireInt(params.number, 'params.number', { min: 1, max: 10_000 });
+    await inScope(pool, scope, async (c) => projectOr404(c, projectId));
+    const report = await regenerationCanonOp({ pool }, { projectId, chapterNo });
+    return { chapter_no: chapterNo, impact: impactView(report) };
+  });
   // ---- jobs -----------------------------------------------------------------------------------------
   app.get('/v1/projects/:projectId/jobs', async (req) => {
     const scope = await scoped(pool, req);
@@ -873,8 +1049,18 @@ async function createProjectScoped(
   return { projectId, mainTimelineId };
 }
 
-/** Append a privileged/destructive action to the audit log. Safe metadata only. */
-async function audit(
+/**
+ * The actor a canon operation is attributed to.
+ *
+ * The user id comes from the authenticated principal, never from the request body: provenance that a caller
+ * could set would make the canon commit's actor record worthless as an audit trail. `via` names the exact
+ * route so a commit can be traced back to the surface that produced it (API vs CLI vs workflow).
+ */
+function actorOf(scope: WorkspaceScope, via: string): { userId: string; via: string } {
+  return { userId: scope.principal.user.id, via };
+}
+
+/** Append a privileged/destructive action to the audit log. Safe metadata only. */ async function audit(
   c: Client,
   scope: WorkspaceScope,
   input: {
