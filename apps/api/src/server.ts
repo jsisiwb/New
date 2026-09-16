@@ -66,6 +66,7 @@ import {
   rollback as rollbackCanonOp,
 } from './canon-ops.js';
 import { type CorrectionResult } from './canon-deps.js';
+import { logLine, METRIC, METRIC_HELP, Metrics, traceIdFrom } from './observability.js';
 import { parseLastEventId, SSE_HEADERS, streamJobEvents, type SseSink } from './sse.js';
 import { ApiError, PROBLEM_CONTENT_TYPE, toProblem } from './problem.js';
 import {
@@ -86,10 +87,20 @@ export interface ApiOptions {
    */
   readonly secureCookies?: boolean | undefined;
   readonly logger?: boolean | undefined;
+  /** Shared metric registry. Injectable so a test can read counters and a deployment can share one. */
+  readonly metrics?: Metrics | undefined;
+  /** Where structured JSON log lines go. Defaults to stdout. */
+  readonly logSink?: ((line: string) => void) | undefined;
 }
 
 /** Maximum JSON body. A bounded body is the cheapest defence against memory-exhaustion requests. */
 const BODY_LIMIT_BYTES = 1_000_000;
+
+/** Per-request observability state, keyed by Fastify's request id and deleted when the response ends. */
+interface ObservedRequest {
+  readonly traceId: string | undefined;
+  readonly startedAt: bigint;
+}
 
 export function buildApi(options: ApiOptions): FastifyInstance {
   const app = Fastify({
@@ -102,6 +113,15 @@ export function buildApi(options: ApiOptions): FastifyInstance {
   });
   const pool = options.pool;
   const secure = options.secureCookies ?? true;
+  const metrics = options.metrics ?? new Metrics();
+  /**
+   * Where structured log lines go.
+   *
+   * Injectable so the redaction tests can capture exactly what would be written rather than inferring it,
+   * and so a deployment can ship lines somewhere other than stdout without the log format changing.
+   */
+  const emit = options.logSink ?? ((line: string) => process.stdout.write(`${line}\n`));
+  const observed = new Map<string, ObservedRequest>();
 
   app.addHook('onRequest', async (req, reply) => {
     // Security headers on every response, including errors.
@@ -111,6 +131,53 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     reply.header('cache-control', 'no-store');
     reply.header('content-security-policy', "default-src 'none'; frame-ancestors 'none'");
     reply.header('x-request-id', req.id);
+    // Correlation: an inbound W3C `traceparent` is adopted only if it genuinely parses, so a client
+    // cannot inject arbitrary text into logs or the `llm_calls` audit through the header. A request with
+    // no usable trace id gets none rather than a fabricated one.
+    const traceId = traceIdFrom(headerOf(req, 'traceparent'));
+    if (traceId) reply.header('x-trace-id', traceId);
+    observed.set(req.id, { traceId, startedAt: process.hrtime.bigint() });
+  });
+
+  /**
+   * One structured line per completed request, plus latency and outcome metrics.
+   *
+   * The fields go through `logFields`, which is default-deny: a field nobody allowlisted is dropped rather
+   * than logged. `routeOptions.url` is the route PATTERN (`/v1/projects/:projectId`), never the resolved
+   * path — a resolved path would put tenant identifiers into a metric label and explode its cardinality.
+   */
+  app.addHook('onResponse', async (req, reply) => {
+    const seen = observed.get(req.id);
+    observed.delete(req.id);
+    const route = req.routeOptions.url ?? 'unmatched';
+    const durationNs = seen ? Number(process.hrtime.bigint() - seen.startedAt) : 0;
+    const durationMs = Math.round(durationNs / 1e6);
+    metrics.increment(METRIC.requests, METRIC_HELP[METRIC.requests] ?? '', {
+      route,
+      method: req.method,
+      status: String(reply.statusCode),
+    });
+    metrics.observe(
+      METRIC.requestLatency,
+      METRIC_HELP[METRIC.requestLatency] ?? '',
+      durationNs / 1e9,
+      { route },
+    );
+    if (reply.statusCode === 401 || reply.statusCode === 403)
+      metrics.increment(METRIC.authFailures, METRIC_HELP[METRIC.authFailures] ?? '', {
+        status: String(reply.statusCode),
+      });
+    emit(
+      logLine(
+        {
+          level: reply.statusCode >= 500 ? 'error' : 'info',
+          msg: 'request completed',
+          request_id: req.id,
+          ...(seen?.traceId ? { trace_id: seen.traceId } : {}),
+        },
+        { route, method: req.method, status_code: reply.statusCode, duration_ms: durationMs },
+      ),
+    );
   });
 
   app.setErrorHandler((err, req, reply) => {
@@ -128,6 +195,21 @@ export function buildApi(options: ApiOptions): FastifyInstance {
   // ---- health and readiness -------------------------------------------------------------------------
   // Liveness answers "is the process up"; readiness answers "can it serve", which requires the database.
   app.get('/health', async () => ({ status: 'ok' }));
+
+  /**
+   * Prometheus metrics.
+   *
+   * Deliberately unauthenticated and deliberately safe to be so: the registry renders metric names, the
+   * label allowlist's output and numbers, with no identifiers of tenants, users or manuscripts. It is a
+   * scrape target, and requiring a session on it would mean shipping credentials to the scraper.
+   *
+   * SCOPE, stated honestly: these are PER-PROCESS counters. They reset when the process restarts and are
+   * scraped per instance, so a multi-instance deployment relies on the scraper to aggregate. Nothing here
+   * is a distributed counter.
+   */
+  app.get('/metrics', async (_req, reply) =>
+    reply.type('text/plain; version=0.0.4; charset=utf-8').send(metrics.render()),
+  );
   app.get('/ready', async (_req, reply) => {
     try {
       await pool.query('SELECT 1');
