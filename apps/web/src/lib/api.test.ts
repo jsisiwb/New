@@ -8,7 +8,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApiClient, ApiProblem, asProblem, messageFor } from './api';
 
 /** The shape of a `vi.fn()` standing in for `fetch`, so the assertions below need no casts. */
-type FetchMock = { mock: { calls: [url: string, init?: RequestInit | undefined][] } };
+interface FetchMock {
+  mock: { calls: [url: string, init?: RequestInit | undefined][] };
+}
 
 /** The init of the n-th call. */
 function sentInit(fetchImpl: FetchMock, index: number): RequestInit {

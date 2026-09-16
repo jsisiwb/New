@@ -109,10 +109,13 @@ function makeServer(overrides: Partial<ServerState> = {}) {
     }
     if (path.endsWith('/v1/me')) {
       if (!state.signedIn) return problem(401, 'UNAUTHENTICATED', 'No session.');
+      // The EXACT shape apps/api returns: memberships under `workspaces`, and deliberately no CSRF token
+      // (a GET that minted one would hand a cross-site attacker half the double-submit pair). Pinning the
+      // real shape here is what makes these journeys evidence about the product rather than about the fake.
       return ok({
-        csrf_token: 'csrf-1',
         user: { id: 'u1', email: 'operator@example.com', display_name: 'Operator' },
-        items: [{ workspace_id: 'ws-1', name: 'Studio', role: state.role }],
+        via: 'session',
+        workspaces: [{ workspace_id: 'ws-1', name: 'Studio', role: state.role }],
       });
     }
     if (!state.signedIn) return problem(401, 'UNAUTHENTICATED', 'No session.');

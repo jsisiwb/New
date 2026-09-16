@@ -10,24 +10,24 @@
 
 ## Commands
 
-| Command                                                                                                         | What it does                                                                      |
-| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `pnpm install`                                                                                                  | install the workspace                                                             |
-| `pnpm gen:types`                                                                                                | regenerate `packages/domain/src/generated` from `schemas/` (commit the result)    |
-| `pnpm check:types-fresh`                                                                                        | fail if generated types are stale (CI)                                            |
-| `pnpm typecheck`                                                                                                | `tsc -b` over all packages (strict)                                               |
-| `pnpm lint` / `pnpm format` / `pnpm format:check`                                                               | ESLint (type-aware) / Prettier — never touches `examples/`, `docs/`, `schemas/`   |
-| `pnpm test`                                                                                                     | Vitest unit tests                                                                 |
-| `pnpm validate:planning`                                                                                        | planning-package validator (schemas, examples, evidence, references, stale terms) |
-| `pnpm check`                                                                                                    | everything CI runs                                                                |
-| `pnpm build:web`                                                                                                | production build of the operator web app                                          |
+| Command                                                                                                         | What it does                                                                       |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `pnpm install`                                                                                                  | install the workspace                                                              |
+| `pnpm gen:types`                                                                                                | regenerate `packages/domain/src/generated` from `schemas/` (commit the result)     |
+| `pnpm check:types-fresh`                                                                                        | fail if generated types are stale (CI)                                             |
+| `pnpm typecheck`                                                                                                | `tsc -b` over all packages (strict)                                                |
+| `pnpm lint` / `pnpm format` / `pnpm format:check`                                                               | ESLint (type-aware) / Prettier — never touches `examples/`, `docs/`, `schemas/`    |
+| `pnpm test`                                                                                                     | Vitest unit tests                                                                  |
+| `pnpm validate:planning`                                                                                        | planning-package validator (schemas, examples, evidence, references, stale terms)  |
+| `pnpm check`                                                                                                    | everything CI runs                                                                 |
+| `pnpm build:web`                                                                                                | production build of the operator web app                                           |
 | `pnpm --filter @yeonjae/web dev`                                                                                | run the operator web app against a local API (see the environment variables below) |
-| `pnpm cli <command>`                                                                                            | the CLI (`pnpm cli` prints usage)                                                 |
-| `pnpm cli pack:build <project> <ch> <role> <contract.json> <spec.json> [--identity=<ref>] [--full] [--persist]` | build a Context Pack and print its manifest (no manuscript text unless `--full`)  |
-| `pnpm cli chapter:produce <project> <ch>`                                                                       | run (or resume) chapter production through the Postgres-checkpointed workflow     |
-| `pnpm cli chapter:status <workflow-id>`                                                                         | job status, pins, steps and llm call count (`chapter:<project>:<ch>`)             |
-| `pnpm cli chapter:resume <workflow-id>`                                                                         | resume a started workflow (same entrypoint as re-running produce)                 |
-| `pnpm cli export:accepted <project> [--chapters=1,2] [--format=markdown\|text] [--full]`                        | export accepted manuscripts only (never working/approved/quarantined)             |
+| `pnpm cli <command>`                                                                                            | the CLI (`pnpm cli` prints usage)                                                  |
+| `pnpm cli pack:build <project> <ch> <role> <contract.json> <spec.json> [--identity=<ref>] [--full] [--persist]` | build a Context Pack and print its manifest (no manuscript text unless `--full`)   |
+| `pnpm cli chapter:produce <project> <ch>`                                                                       | run (or resume) chapter production through the Postgres-checkpointed workflow      |
+| `pnpm cli chapter:status <workflow-id>`                                                                         | job status, pins, steps and llm call count (`chapter:<project>:<ch>`)              |
+| `pnpm cli chapter:resume <workflow-id>`                                                                         | resume a started workflow (same entrypoint as re-running produce)                  |
+| `pnpm cli export:accepted <project> [--chapters=1,2] [--format=markdown\|text] [--full]`                        | export accepted manuscripts only (never working/approved/quarantined)              |
 
 Chapter production runs replay-only in this checkpoint: `chapter:produce` pins the fixture Narrative
 Identity on the project, replays `examples/fixture/ch01/replay.ch01.json` (no live provider, no spend),
@@ -105,14 +105,14 @@ docs/               the plan; status lives only in docs/08-delivery/09-progress.
 
 ## Environment variables
 
-| Variable | Used by | Meaning |
-| --- | --- | --- |
-| `DATABASE_URL` | cli, api, worker, tests | PostgreSQL 16 connection string. Integration tests skip visibly when unset |
-| `YEONJAE_PROVIDER_MODE` | worker | `replay` or `mock`. The worker REFUSES to start without it, so it can never default to a paid provider |
-| `YEONJAE_INSECURE_COOKIES` | api | Local HTTP development only. Cookies are `Secure` by default; forgetting to configure a deployment cannot downgrade them |
-| `YEONJAE_CORS_ORIGINS` | api | Comma-separated exact origins permitted to make credentialed cross-origin requests. **Absent or empty means deny all cross-origin requests**, which leaves same-origin traffic untouched. Validated at startup: `*` and malformed entries are refused by name |
-| `YEONJAE_TRUSTED_PROXIES` | api | Addresses whose `X-Forwarded-For` may be believed. **Empty by default**: an unconfigured deployment keys rate limits on the socket address, never on attacker-controlled header content |
-| `NEXT_PUBLIC_API_BASE_URL` | web | Base URL of the `/v1` API. **Empty by default, meaning same-origin** — the configuration that needs no CORS at all. Set it only when the web app is served from a different origin, and add that origin to `YEONJAE_CORS_ORIGINS` |
+| Variable                   | Used by                 | Meaning                                                                                                                                                                                                                                                       |
+| -------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`             | cli, api, worker, tests | PostgreSQL 16 connection string. Integration tests skip visibly when unset                                                                                                                                                                                    |
+| `YEONJAE_PROVIDER_MODE`    | worker                  | `replay` or `mock`. The worker REFUSES to start without it, so it can never default to a paid provider                                                                                                                                                        |
+| `YEONJAE_INSECURE_COOKIES` | api                     | Local HTTP development only. Cookies are `Secure` by default; forgetting to configure a deployment cannot downgrade them                                                                                                                                      |
+| `YEONJAE_CORS_ORIGINS`     | api                     | Comma-separated exact origins permitted to make credentialed cross-origin requests. **Absent or empty means deny all cross-origin requests**, which leaves same-origin traffic untouched. Validated at startup: `*` and malformed entries are refused by name |
+| `YEONJAE_TRUSTED_PROXIES`  | api                     | Addresses whose `X-Forwarded-For` may be believed. **Empty by default**: an unconfigured deployment keys rate limits on the socket address, never on attacker-controlled header content                                                                       |
+| `NEXT_PUBLIC_API_BASE_URL` | web                     | Base URL of the `/v1` API. **Empty by default, meaning same-origin** — the configuration that needs no CORS at all. Set it only when the web app is served from a different origin, and add that origin to `YEONJAE_CORS_ORIGINS`                             |
 
 ## Running the operator web app
 

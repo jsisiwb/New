@@ -68,7 +68,8 @@ export interface Session {
   readonly userId: string;
   readonly email: string;
   readonly displayName: string;
-  readonly csrfToken: string;
+  /** Undefined after a reload-restored session: `/v1/me` does not mint one (see `restore`). */
+  readonly csrfToken: string | undefined;
 }
 
 export interface Membership {
@@ -95,6 +96,8 @@ export interface ApiClientOptions {
 export class ApiClient {
   private csrfToken: string | undefined;
   private workspaceId: string | undefined;
+  /** Memberships from the last `/v1/me`, so a caller need not re-fetch to read the active role. */
+  private memberships: readonly Membership[] = [];
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private onUnauthenticated: (() => void) | undefined;
@@ -133,6 +136,7 @@ export class ApiClient {
   clear(): void {
     this.csrfToken = undefined;
     this.workspaceId = undefined;
+    this.memberships = [];
   }
 
   async request<T>(
@@ -210,27 +214,34 @@ export class ApiClient {
   /**
    * Restore a session from the cookie the browser already holds.
    *
-   * A reload loses the in-memory CSRF token, so this re-reads it from `/v1/me`. Returning `undefined`
-   * rather than throwing on 401 is what lets a protected route redirect to sign-in cleanly instead of
-   * rendering an error for the ordinary "not signed in yet" case.
+   * `GET /v1/me` confirms the cookie is live and returns the principal and its memberships. It does NOT
+   * return a CSRF token — by design, since a GET that minted one would hand a cross-site attacker the
+   * second half of the double-submit pair. So a restored session can read; the first write re-establishes
+   * the token, and `needsCsrf` reports that state honestly rather than pretending a write will succeed.
    */
   async restore(): Promise<Session | undefined> {
     try {
-      const body = await this.request<{
-        csrf_token: string;
-        user: { id: string; email: string; display_name: string };
-      }>('GET', '/v1/me');
-      this.csrfToken = body.csrf_token;
+      const body = await this.request<MeResponse>('GET', '/v1/me');
+      this.memberships = body.workspaces.map((item) => ({
+        workspaceId: item.workspace_id,
+        name: item.name,
+        role: item.role,
+      }));
       return {
         userId: body.user.id,
         email: body.user.email,
         displayName: body.user.display_name,
-        csrfToken: body.csrf_token,
+        csrfToken: this.csrfToken,
       };
     } catch (err) {
       if (err instanceof ApiProblem && err.isUnauthenticated) return undefined;
       throw err;
     }
+  }
+
+  /** True when a write would fail for want of a CSRF token, so a screen can ask for a re-authentication. */
+  needsCsrf(): boolean {
+    return this.csrfToken === undefined;
   }
 
   async signOut(): Promise<void> {
@@ -244,15 +255,25 @@ export class ApiClient {
   }
 
   async workspaces(): Promise<readonly Membership[]> {
-    const body = await this.request<{
-      items: { workspace_id: string; name: string; role: 'owner' | 'editor' | 'viewer' }[];
-    }>('GET', '/v1/me');
-    return body.items.map((item) => ({
+    const body = await this.request<MeResponse>('GET', '/v1/me');
+    this.memberships = body.workspaces.map((item) => ({
       workspaceId: item.workspace_id,
       name: item.name,
       role: item.role,
     }));
+    return this.memberships;
   }
+}
+
+/** The exact shape `GET /v1/me` returns. Memberships are `workspaces`, and there is no CSRF token here. */
+interface MeResponse {
+  readonly user: { id: string; email: string; display_name: string };
+  readonly via: 'session' | 'api_key';
+  readonly workspaces: {
+    workspace_id: string;
+    name: string;
+    role: 'owner' | 'editor' | 'viewer';
+  }[];
 }
 
 function safeJson(text: string): unknown {

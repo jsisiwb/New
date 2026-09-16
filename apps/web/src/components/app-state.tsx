@@ -22,7 +22,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -84,30 +83,33 @@ export function AppStateProvider({
     }
   }, [api]);
 
-  // A ref rather than a closure flag: the restore is asynchronous, and a response that arrives after this
-  // provider unmounted must not set state on it. (A plain `let` is also correct but its mutation happens
-  // in a cleanup the type-flow analysis cannot see, so it reads as a constant.)
-  const restoreCancelled = useRef(false);
-
+  /**
+   * Restore the session from the cookie the browser already holds.
+   *
+   * The cancellation flag is an OBJECT owned by this effect invocation, not a shared ref: React runs an
+   * effect's cleanup before re-running it, so a single shared flag would let one invocation's cleanup
+   * cancel a different invocation's in-flight restore and leave the app stuck on "checking your session".
+   * A per-invocation token cannot do that, and it reads as mutable state to the type-flow analysis.
+   */
   useEffect(() => {
-    restoreCancelled.current = false;
+    const token = { cancelled: false };
     void (async () => {
       try {
         const restored = await api.restore();
-        if (restoreCancelled.current) return;
+        if (token.cancelled) return;
         if (restored) {
           setSession(restored);
           await loadMemberships();
         }
       } catch {
         // A restore failure is not an error state for a signed-out visitor: they simply see sign-in.
-        if (!restoreCancelled.current) setSession(undefined);
+        if (!token.cancelled) setSession(undefined);
       } finally {
-        if (!restoreCancelled.current) setRestoring(false);
+        if (!token.cancelled) setRestoring(false);
       }
     })();
     return () => {
-      restoreCancelled.current = true;
+      token.cancelled = true;
     };
   }, [api, loadMemberships]);
 

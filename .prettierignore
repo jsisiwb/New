@@ -12,3 +12,6 @@ node_modules/
 README.md
 AGENTS.md
 packages/eval/fixtures/
+# Next's build output is generated, not source.
+**/.next/
+apps/web/next-env.d.ts
