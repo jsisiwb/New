@@ -82,15 +82,6 @@ jobs:
         run: pnpm test:replay-120
         env:
           CI: 'true'
-      - name: Deterministic chaos and provider-fallback drills actually ran (B-4-2)
-        # The fallback matrix is the only evidence that fallback is AUTHORIZED rather than merely possible:
-        # a rejected request, an auth failure or an unknown fault must not be rerouted to a second paid
-        # model. A silent skip would turn that into an unverified claim.
-        run: |
-          grep -q "B-4-2 gateway fault matrix" coverage/junit.xml || {
-            echo "::error::the gateway fault matrix did not run"; exit 1; }
-          grep -q "B-4-2 workflow and control-plane fault matrix" coverage/junit.xml || {
-            echo "::error::the workflow fault matrix did not run"; exit 1; }
       - name: Chaos and fallback drills, explicit run with its no-skip guard
         # `pnpm test:chaos` refuses to start without DATABASE_URL and fails unless the chaos report records
         # every declared scenario as passed, with no duplicate ids and no live provider call. Deterministic
@@ -98,6 +89,26 @@ jobs:
         run: pnpm test:chaos
         env:
           CI: 'true'
+      - name: Deterministic chaos and provider-fallback drills actually ran (B-4-2)
+        # The fallback matrix is the only evidence that fallback is AUTHORIZED rather than merely possible:
+        # a rejected request, an auth failure or an unknown fault must not be rerouted to a second paid
+        # model. A silent skip would turn that into an unverified claim.
+        #
+        # This guard reads the suite's OWN durable report rather than coverage/junit.xml, because every
+        # vitest invocation rewrites junit.xml — so a grep here would only ever see the last suite that
+        # ran, which is exactly how the first version of this guard failed. The report is written by the
+        # suites themselves and verified independently by the runner above.
+        run: |
+          node -e '
+            const r = require("./coverage/chaos-report.json");
+            const ids = (r.scenarios ?? []).map((s) => s.id);
+            const gw = ids.filter((i) => i.startsWith("GW-")).length;
+            const wf = ids.filter((i) => i.startsWith("WF-")).length;
+            if (gw < 22) { console.error(`::error::gateway fault matrix reported ${gw} scenarios, expected >= 22`); process.exit(1); }
+            if (wf < 11) { console.error(`::error::workflow fault matrix reported ${wf} scenarios, expected >= 11`); process.exit(1); }
+            if ((r.scenarios ?? []).some((s) => s.outcome !== "passed")) { console.error("::error::a chaos scenario did not pass"); process.exit(1); }
+            console.log(`chaos matrices ran: ${gw} gateway + ${wf} workflow scenarios`);
+          '
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
