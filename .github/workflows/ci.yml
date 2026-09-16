@@ -82,6 +82,22 @@ jobs:
         run: pnpm test:replay-120
         env:
           CI: 'true'
+      - name: Deterministic chaos and provider-fallback drills actually ran (B-4-2)
+        # The fallback matrix is the only evidence that fallback is AUTHORIZED rather than merely possible:
+        # a rejected request, an auth failure or an unknown fault must not be rerouted to a second paid
+        # model. A silent skip would turn that into an unverified claim.
+        run: |
+          grep -q "B-4-2 gateway fault matrix" coverage/junit.xml || {
+            echo "::error::the gateway fault matrix did not run"; exit 1; }
+          grep -q "B-4-2 workflow and control-plane fault matrix" coverage/junit.xml || {
+            echo "::error::the workflow fault matrix did not run"; exit 1; }
+      - name: Chaos and fallback drills, explicit run with its no-skip guard
+        # `pnpm test:chaos` refuses to start without DATABASE_URL and fails unless the chaos report records
+        # every declared scenario as passed, with no duplicate ids and no live provider call. Deterministic
+        # faults only: no credentials and no paid provider are involved.
+        run: pnpm test:chaos
+        env:
+          CI: 'true'
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
