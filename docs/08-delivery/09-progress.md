@@ -197,6 +197,13 @@ ordering and passed in isolation and on re-run; it is timing-sensitive, not a re
 on it.) After the remaining `/v1` write families and `apps/web`: **55 files / 772 tests** (674 inherited + 98
 new), with every other gate re-run green. No live paid-provider calls occurred.
 
+Tool limitation, recorded once (not an implementation blocker): the continuation brief asks for a comment on
+`sigma25web/New#1` pointing at the replacement. The available source-control tools are bound to this thread's
+repository (`sigma26web/New`) and the local `gh` CLI is unauthenticated, so a cross-repository comment could
+not be posted. `sigma25web/New#1` remains **open and unmerged**, and this file plus the sigma26 staging PR
+body carry the pointer instead: the continuation moved without history rewriting to `sigma26web/New` from
+exact source commit `0880de679ab453de2080fc1058c9a70014a68449`.
+
 Earlier continuation provenance (third session, 2026-09-16). Work moved to the writable fork
 `sigma25web/New` after the previous fork's credits were exhausted. The partial head
 `a3072ae40e6944462d598fe27409ef57f3d9fa43` was recovered **unchanged** — same commit objects, same SHAs, no
