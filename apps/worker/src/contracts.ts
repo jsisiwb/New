@@ -151,8 +151,13 @@ export interface ChapterWorkflowProgress extends Versioned {
 
 /** Final workflow result. */
 export interface ChapterWorkflowResult extends Versioned {
+  /**
+   * `too_late` means a cancel was requested but lost the race with the atomic canon commit. It is a
+   * distinct outcome from `cancelled` on purpose: the chapter IS accepted and canon HAS advanced, and
+   * labelling that `cancelled` would describe a state the database does not contain.
+   */
   readonly outcome:
-    'accepted' | 'planned' | 'needs_attention' | 'paused' | 'cancelled' | 'lease_held';
+    'accepted' | 'planned' | 'needs_attention' | 'paused' | 'cancelled' | 'too_late' | 'lease_held';
   readonly jobId: string | undefined;
   readonly acceptedCanonVersion: number | undefined;
   readonly heldBy?: string | undefined;

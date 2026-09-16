@@ -14,7 +14,7 @@
  * Temporal supplies what Postgres checkpoints cannot — a durable timer, retry policy, signal delivery,
  * history replay and worker-restart recovery for the run as a whole.
  */
-import { Context } from '@temporalio/activity';
+import { ApplicationFailure, Context } from '@temporalio/activity';
 import {
   acquireTargetLease,
   checkpointControl,
@@ -28,6 +28,7 @@ import {
   jobControlOf,
   JobControlStop,
   LEASE_TTL_SECONDS,
+  leaseOwnership,
   liveTargetLease,
   listJobSteps,
   releaseTargetLease,
@@ -124,23 +125,66 @@ export function createActivities(deps: ActivityDeps) {
     async produceChapterActivity(input: ProduceActivityInput): Promise<ProduceActivityResult> {
       assertVersion(input.v);
       const ctx = Context.current();
-      const heartbeat = setInterval(() => {
-        ctx.heartbeat({ chapterNo: input.chapterNo });
-        void renewTargetLease(pool, {
-          leaseId: input.lease.leaseId,
-          holderWorkflowId: input.lease.holderWorkflowId,
-          fence: input.lease.fence,
-        }).catch(() => false);
-      }, HEARTBEAT_MS);
+      /**
+       * Heartbeat and lease renewal.
+       *
+       * Renewal failure is NEVER ignored. The previous version swallowed both a `false` result and a
+       * thrown error, which meant a worker could keep drafting, evaluating and committing canon after its
+       * lease had expired or been stolen at a higher fence — exactly the zombie this lease exists to
+       * prevent. Now the outcome is recorded and the *step boundary* enforces it: `runStep` re-verifies
+       * ownership before every unit of work, so a fenced-out run stops before its next durable side
+       * effect rather than at some arbitrary point inside one.
+       *
+       * The callback is deliberately not `void`-discarded: an interval callback that returns a rejected
+       * promise is an unhandled rejection, so the async work is wrapped and its failure captured.
+       */
+      let renewalError: unknown;
+      const beat = (): void => {
+        void (async () => {
+          try {
+            ctx.heartbeat({ chapterNo: input.chapterNo });
+            await renewTargetLease(pool, {
+              leaseId: input.lease.leaseId,
+              holderWorkflowId: input.lease.holderWorkflowId,
+              fence: input.lease.fence,
+            });
+          } catch (err) {
+            // Recorded, not thrown: throwing from a timer cannot be caught by the activity. The
+            // authoritative check is the ownership read at the next step boundary.
+            renewalError = err;
+          }
+        })();
+      };
+      const heartbeat = setInterval(beat, HEARTBEAT_MS);
 
       try {
         // The intake and bible come from the content-addressed artifact store, addressed by the ids in
         // the workflow input. History therefore carries a hash-derived reference rather than the
         // documents, and a replay loads byte-identical inputs.
         const { intake, bible } = await loadProductionInputs(pool, input.inputsRef);
+        // Verify ownership before the run starts as well as at each step: an activity retried after a
+        // long backoff may already have lost its target.
+        const owner = await leaseOwnership(pool, {
+          leaseId: input.lease.leaseId,
+          holderWorkflowId: input.lease.holderWorkflowId,
+          fence: input.lease.fence,
+        });
+        if (!owner.owned)
+          throw ApplicationFailure.nonRetryable(
+            `target lease lost before production (${owner.reason}); another run owns this chapter`,
+            'LEASE_LOST',
+            { reason: owner.reason, current_holder: owner.currentHolder ?? null },
+          );
         const result = await produceChapter(
           deps.makeDeps({ workspaceId: input.workspaceId, projectId: input.projectId }),
           {
+            // The lease travels into the workflow context so `runStep` can re-verify it at every step
+            // boundary; that is what stops a zombie mid-pipeline rather than only at the edges.
+            lease: {
+              leaseId: input.lease.leaseId,
+              holderWorkflowId: input.lease.holderWorkflowId,
+              fence: input.lease.fence,
+            },
             projectId: input.projectId,
             chapterNo: input.chapterNo,
             intake,
@@ -169,6 +213,13 @@ export function createActivities(deps: ActivityDeps) {
         });
       } finally {
         clearInterval(heartbeat);
+        // Surface a renewal fault that never became a lost lease, so an operator sees the degradation
+        // instead of it being silently discarded.
+        if (renewalError !== undefined)
+          ctx.log.warn('target lease renewal failed during production', {
+            chapter_no: input.chapterNo,
+            lease_id: input.lease.leaseId,
+          });
       }
     },
 

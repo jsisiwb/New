@@ -94,6 +94,7 @@ const TITLES: Record<ProblemCode, string> = {
   SUMMARY_INVALID: 'Summary is invalid',
   CHAPTER_NOT_ACCEPTED: 'Chapter is not accepted',
   WORKFLOW_NOT_FOUND: 'Workflow not found',
+  LEASE_LOST: 'Target lease lost to another run',
   STEP_NONDETERMINISTIC: 'Workflow step is nondeterministic',
   INTERNAL: 'Internal error',
 };
@@ -119,6 +120,8 @@ const STATUS: Partial<Record<ProblemCode, number>> = {
   SELECTION_REQUEST_CHANGED: 409,
   CONCURRENT_CALL: 409,
   CANON_STALE: 409,
+  // Another run owns the target now: a conflict the operator resolves, not a server fault.
+  LEASE_LOST: 409,
   APPROVAL_BLOCKED: 409,
   PREVIOUS_CHAPTER_NOT_ACCEPTED: 409,
   CHAPTER_NOT_ACCEPTED: 409,

@@ -89,8 +89,12 @@ jobs:
           fi
           grep -q "YEONJAE_PROVIDER_MODE" /tmp/worker.err || {
             echo "::error::worker failure did not name the missing provider mode"; cat /tmp/worker.err; exit 1; }
-      - name: Dependency audit (report; high+ fails)
-        run: pnpm audit --audit-level=high || (echo "::warning::pnpm audit reported findings" && exit 0)
+      - name: Dependency audit (high and critical advisories fail the build)
+        # The previous form ended in `|| (echo ... && exit 0)`, so despite its name it converted every
+        # finding into a success and the gate never existed. High/critical advisories now fail. A finding
+        # that must be tolerated goes in .audit-allowlist.json with a justification, scope and expiry, so
+        # the exception is reviewable and cannot outlive its review.
+        run: node tools/audit-gate.mjs
 
   secrets:
     name: Secret scanning (gitleaks)

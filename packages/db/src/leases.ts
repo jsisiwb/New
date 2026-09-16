@@ -115,6 +115,74 @@ export async function releaseTargetLease(
   return r.rows[0]?.released ?? false;
 }
 
+export interface LeaseOwnership {
+  readonly owned: boolean;
+  /** Why ownership was lost, for a typed error an operator can act on. */
+  readonly reason: 'held' | 'released' | 'expired' | 'fenced_out' | 'missing';
+  /** The workflow that holds the lease now, when someone else does. */
+  readonly currentHolder?: string | undefined;
+  readonly currentFence?: string | undefined;
+}
+
+/**
+ * Report whether a holder still owns a lease, and if not, why.
+ *
+ * This is a READ, deliberately separate from `renewTargetLease`. Renewal answers "extend my deadline",
+ * which conflates "I no longer own this" with "the database is unreachable" into a single boolean — and a
+ * caller that cannot tell those apart must either abort healthy runs on a blip or keep producing after
+ * being fenced out. Reporting the reason lets the caller fail closed on lost ownership and retry on a
+ * transport fault.
+ */
+export async function leaseOwnership(
+  db: Queryable,
+  input: { leaseId: string; holderWorkflowId: string; fence: string | number },
+): Promise<LeaseOwnership> {
+  const r = await db.query<{
+    holder_workflow_id: string;
+    fence: string;
+    released_at: Date | null;
+    expired: boolean;
+  }>(
+    `SELECT holder_workflow_id, fence::text AS fence, released_at, (expires_at <= now()) AS expired
+       FROM target_leases WHERE id = $1`,
+    [input.leaseId],
+  );
+  const row = r.rows[0];
+  if (!row) return { owned: false, reason: 'missing' };
+
+  // Who owns the target NOW. A holder whose own row says `released` may still have been superseded by a
+  // different worker, and the caller needs to know that a rival is live — "released" alone would suggest
+  // the target is free when it is not.
+  const live = await db.query<{ holder_workflow_id: string; fence: string }>(
+    `SELECT holder_workflow_id, fence::text AS fence FROM target_leases
+      WHERE project_id = (SELECT project_id FROM target_leases WHERE id = $1)
+        AND target_kind = (SELECT target_kind FROM target_leases WHERE id = $1)
+        AND target_id = (SELECT target_id FROM target_leases WHERE id = $1)
+        AND released_at IS NULL AND expires_at > now()
+      ORDER BY fence DESC LIMIT 1`,
+    [input.leaseId],
+  );
+  const current = live.rows[0];
+  const supersededByRival =
+    current !== undefined &&
+    (current.holder_workflow_id !== input.holderWorkflowId ||
+      current.fence !== String(input.fence));
+  if (supersededByRival)
+    return {
+      owned: false,
+      reason: 'fenced_out',
+      currentHolder: current.holder_workflow_id,
+      currentFence: current.fence,
+    };
+
+  if (row.holder_workflow_id !== input.holderWorkflowId || row.fence !== String(input.fence))
+    return { owned: false, reason: 'fenced_out' };
+
+  if (row.released_at !== null) return { owned: false, reason: 'released' };
+  if (row.expired) return { owned: false, reason: 'expired' };
+  return { owned: true, reason: 'held' };
+}
+
 /** The live lease on a target, if any. Used to tell an operator which run is in the way. */
 export async function liveTargetLease(
   db: Queryable,

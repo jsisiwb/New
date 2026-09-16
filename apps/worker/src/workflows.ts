@@ -228,9 +228,38 @@ export async function chapterProductionWorkflow(
     acceptedCanonVersion = produced.accepted?.canonVersion;
     lastStep = produced.steps.at(-1)?.step;
 
-    // A control intent that arrived while the activity ran is observed here, at the boundary AFTER the
-    // unit of work completed. Canon either advanced (the commit is atomic) or it did not; nothing partial
-    // exists to undo, which is exactly why the check belongs between steps and not inside one.
+    // A cancel that arrives while the activity is running is observed INSIDE the run, at the next
+    // `runStep` boundary, so it stops before the following unit of work. Reaching this point with an
+    // accepted chapter therefore means the cancel lost the race with an atomic commit.
+    //
+    // That race has exactly one honest outcome. Canon has advanced, the chapter is accepted, and the
+    // commit cannot be un-made by a control flag; reporting `cancelled` here would produce a state that
+    // contradicts itself — a cancelled job whose canon is committed and whose chapter is accepted — and
+    // an operator reading the job would believe no chapter exists. So a late cancel is reported as
+    // `too_late`, the job settles as completed, and the accepted canon keeps its meaning.
+    if (acceptedCanonVersion !== undefined) {
+      phase = 'completed';
+      await quick.finishJobActivity(
+        versioned({
+          jobId,
+          status: 'completed' as const,
+          detail: {
+            chapter_no: input.chapterNo,
+            canon_version: acceptedCanonVersion,
+            llm_calls: produced.llmCalls,
+            // Recorded so the late cancel is visible in the job's history rather than silently dropped.
+            late_cancel_ignored: cancelRequested(),
+          },
+        }),
+      );
+      return versioned({
+        outcome: cancelRequested() ? ('too_late' as const) : ('accepted' as const),
+        jobId,
+        acceptedCanonVersion,
+      });
+    }
+
+    // Nothing was accepted, so a cancel observed here is safe to honour.
     const after = await quick.checkControl(versioned({ jobId, step: 'post_production' }));
     if (after.stopped && after.control === 'cancel') {
       phase = 'cancelled';
@@ -239,16 +268,14 @@ export async function chapterProductionWorkflow(
     }
 
     if (produced.status === 'completed') {
+      // Completed without an accepted canon version: a staged run (`contract_and_pack`) rather than a
+      // full production.
       phase = 'completed';
       await quick.finishJobActivity(
         versioned({
           jobId,
           status: 'completed' as const,
-          detail: {
-            chapter_no: input.chapterNo,
-            canon_version: acceptedCanonVersion ?? 0,
-            llm_calls: produced.llmCalls,
-          },
+          detail: { chapter_no: input.chapterNo, llm_calls: produced.llmCalls },
         }),
       );
       return versioned({ outcome: 'accepted' as const, jobId, acceptedCanonVersion });
