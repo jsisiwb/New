@@ -7,12 +7,15 @@
 import { createHash } from 'node:crypto';
 import {
   beginJobStep,
+  checkpointControl,
   completeJobStep,
   failJobStep,
   getArtifactById,
   getJobStep,
+  leaseOwnership,
   putArtifact,
   updateJob,
+  withFencedTransaction,
   type GatewayAuditLike,
   type JobRow,
   type LlmOutputStore,
@@ -41,6 +44,28 @@ export interface WorkflowPins {
   readonly canonVersionRead: number;
 }
 
+/**
+ * The lease a run holds over its target, when it is running under the durable orchestrator.
+ *
+ * Optional because the CLI path runs without one: a single local operator invocation has no second worker
+ * to race. When present, every step boundary re-verifies it.
+ */
+export interface HeldLease {
+  readonly leaseId: string;
+  readonly holderWorkflowId: string;
+  readonly fence: string;
+  /**
+   * Optional local verdict that ownership is already known to be lost.
+   *
+   * The orchestrator's heartbeat renews the lease, and a `false` renewal is the database stating that this
+   * holder/fence pair is no longer live. That verdict arrives between step boundaries, so exposing it as a
+   * predicate lets the very next boundary fail closed on knowledge it already has, instead of issuing
+   * another ownership read that can only confirm the same thing. It is an accelerator, never the guarantee:
+   * the guarantee is `canon.assert_lease_fence` inside each protected transaction.
+   */
+  readonly lostLocally?: (() => string | undefined) | undefined;
+}
+
 export interface WorkflowContext {
   readonly pool: Pool;
   readonly gateway: Gateway;
@@ -57,6 +82,8 @@ export interface WorkflowContext {
   readonly trace: StepTrace[];
   /** Bindings the replay provider may substitute into recordings (ids created during the run). */
   readonly bindings: Record<string, string>;
+  /** Target lease held by this run, re-verified at every step boundary. */
+  readonly lease?: HeldLease | undefined;
 }
 
 export interface StepTrace {
@@ -114,6 +141,18 @@ export function stepKey(workflowId: string, step: string, suffix?: string): stri
 /**
  * Run `fn` once per idempotency key. A completed step returns its persisted result without running again;
  * a failed step is retried as a new attempt. Failures are persisted with an actionable code before rethrow.
+ *
+ * THIS IS THE CONTROL BOUNDARY. Before a step begins — and only before, never inside one — the run observes
+ * the operator's persisted pause/cancel intent and, when it holds a target lease, re-checks that it still
+ * owns it. Both checks happen here rather than in the orchestration layer because this is the only place
+ * that knows a unit of work has not yet started:
+ *
+ *  * a pause or cancel requested at any moment during drafting, evaluation, revision or extraction is
+ *    honoured at the next step, so nothing is torn in half and no partial canon exists;
+ *  * a step that is already `completed` replays without consulting control, because replay performs no
+ *    work and no spend — stopping there would strand a resumable run;
+ *  * a worker that has lost its lease (expired, or stolen by a higher fence) stops BEFORE the next durable
+ *    side effect, so a zombie cannot draft, evaluate, accept or commit after being fenced out.
  */
 export async function runStep<T>(
   ctx: WorkflowContext,
@@ -127,8 +166,25 @@ export async function runStep<T>(
     ctx.trace.push({ step, idempotencyKey: key, status: 'replayed', attempt: prior.attempt });
     return prior.result as T;
   }
-  const row = await beginJobStep(ctx.pool, { jobId: ctx.job.id, step, idempotencyKey: key });
-  await updateJob(ctx.pool, ctx.job.id, { status: 'running', currentStep: step, error: null });
+  // Ownership first: a fenced-out worker must not even record that it began a step.
+  await assertStillOwner(ctx, step);
+  // Then the operator's intent. `checkpointControl` throws JobControlStop, which the caller translates
+  // into a clean, resumable halt.
+  await checkpointControl(ctx.pool, { jobId: ctx.job.id, step });
+  /**
+   * The step's own durable bookkeeping is FENCED, not merely preceded by a check.
+   *
+   * `assertStillOwner` above is a separate transaction, so on its own it leaves a time-of-check/time-of-use
+   * gap: the lease can be stolen between that read and these writes. Performing the step-begin row and the
+   * job's running-status update inside one fenced transaction means a worker that lost its lease in that
+   * window rolls back instead of claiming the step — so a rival never finds a zombie's `running` step, and
+   * the zombie's own attempt counter does not advance.
+   */
+  const row = await withFencedTransaction(ctx.pool, ctx.lease, async (c) => {
+    const begun = await beginJobStep(c, { jobId: ctx.job.id, step, idempotencyKey: key });
+    await updateJob(c, ctx.job.id, { status: 'running', currentStep: step, error: null });
+    return begun;
+  });
   try {
     const result = await fn();
     await completeJobStep(ctx.pool, key, result);
@@ -145,6 +201,70 @@ export async function runStep<T>(
     ctx.trace.push({ step, idempotencyKey: key, status: 'failed', attempt: row.attempt });
     throw wf;
   }
+}
+
+/**
+ * Verify the run still owns its target lease before starting a step.
+ *
+ * The distinction that matters is transient failure versus definitive loss of ownership, because the two
+ * demand opposite responses:
+ *
+ *  * DEFINITIVELY LOST (released, expired, or a higher fence now holds it) — another worker may already be
+ *    producing this chapter. Continuing risks two runs drafting, accepting and committing the same target,
+ *    so the run stops here, before any further durable side effect, with a typed non-retryable error.
+ *  * TRANSIENTLY UNKNOWN (the database could not be reached) — this says nothing about ownership. Failing
+ *    closed would abort a healthy run on a blip, so it is raised as a retryable error and the orchestrator
+ *    retries the step; the lease's own TTL is what protects the target if the outage outlasts it.
+ */
+async function assertStillOwner(ctx: WorkflowContext, step: string): Promise<void> {
+  const lease = ctx.lease;
+  if (!lease) return;
+  // A renewal the database already refused needs no second opinion: fail closed on it immediately.
+  const localLoss = lease.lostLocally?.();
+  if (localLoss !== undefined)
+    throw new WorkflowError(
+      'LEASE_LOST',
+      `lease renewal was refused (${localLoss}); stopping before ${step}`,
+      {
+        step,
+        recommendedActions: ['review_conflicts'],
+        data: { lease_id: lease.leaseId, fence: lease.fence, reason: localLoss },
+      },
+    );
+  let state;
+  try {
+    state = await leaseOwnership(ctx.pool, {
+      leaseId: lease.leaseId,
+      holderWorkflowId: lease.holderWorkflowId,
+      fence: lease.fence,
+    });
+  } catch {
+    throw new WorkflowError(
+      'CONCURRENT_CALL',
+      `lease ownership could not be verified before ${step}`,
+      {
+        step,
+        retriable: true,
+        recommendedActions: ['retry_step'],
+        data: { lease_id: lease.leaseId, cause: 'lease_check_failed' },
+      },
+    );
+  }
+  if (state.owned) return;
+  throw new WorkflowError(
+    'LEASE_LOST',
+    `this run no longer holds the lease on its target (${state.reason}); stopping before ${step}`,
+    {
+      step,
+      recommendedActions: ['review_conflicts'],
+      data: {
+        lease_id: lease.leaseId,
+        fence: lease.fence,
+        reason: state.reason,
+        current_holder: state.currentHolder ?? null,
+      },
+    },
+  );
 }
 
 /** Store a step artifact (content-addressed, append-only) and return its reference for the step result. */

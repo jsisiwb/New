@@ -9,6 +9,8 @@ export default tseslint.config(
       '**/dist/**',
       '**/node_modules/**',
       '**/coverage/**',
+      // Next's build output is generated code, not source.
+      '**/.next/**',
       'packages/domain/src/generated/**',
       '.hoplite/**',
     ],
@@ -46,8 +48,17 @@ export default tseslint.config(
     rules: { 'no-console': 'off' },
   },
   {
-    files: ['**/*.js'],
+    // Plain script files are not part of a TypeScript project, so type-aware rules cannot run on them.
+    files: ['**/*.js', '**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    // Node tool scripts: they run under Node's globals and print to stdout by design.
+    files: ['tools/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+    },
+    rules: { 'no-console': 'off' },
   },
   prettier,
 );

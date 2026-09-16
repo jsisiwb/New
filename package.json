@@ -24,7 +24,8 @@
     "validate:contrast": "tsx packages/eval/src/main.ts",
     "generate:contrast-recordings": "tsx packages/eval/src/generate.ts",
     "cli": "tsx apps/cli/src/main.ts",
-    "check": "pnpm run check:types-fresh && pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run validate:planning && pnpm run validate:contrast"
+    "check": "pnpm run check:types-fresh && pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build:web && pnpm run validate:planning && pnpm run validate:contrast",
+    "build:web": "pnpm --filter @yeonjae/web build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -36,7 +37,8 @@
     "tsx": "^4.23.13",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "@vitejs/plugin-react": "^5.1.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -18,7 +18,7 @@ import {
   setChapterStatus,
   timelinesOf,
   upsertL1Summary,
-  withTransaction,
+  withFencedTransaction,
   type DependencyEdgeInput,
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
@@ -84,8 +84,14 @@ export async function approveVersion(
       const current = await getManuscriptVersion(ctx.pool, input.version.id);
       if (!current) throw new WorkflowError('INTERNAL', 'version not found', { step: 'approve' });
       if (current.status === 'working') {
-        await setChapterStatus(ctx.pool, input.chapterId, 'review_pending');
-        await approveManuscriptVersion(ctx.pool, input.version.id, input.approvedBy);
+        // Approval locking is a durable, lease-protected mutation: once a version is `approved` it is the
+        // only thing extraction will read, so a fenced-out worker approving its own draft would hand a
+        // zombie's text to whoever holds the chapter next. The fence is asserted inside this transaction,
+        // so the two status writes and the ownership check commit or roll back as one unit.
+        await withFencedTransaction(ctx.pool, ctx.lease, async (c) => {
+          await setChapterStatus(c, input.chapterId, 'review_pending');
+          await approveManuscriptVersion(c, input.version.id, input.approvedBy);
+        });
       } else if (current.status !== 'approved' && current.status !== 'accepted') {
         throw new WorkflowError('NOT_EXTRACTABLE', `version is ${current.status}; cannot approve`, {
           step: 'approve',
@@ -264,6 +270,7 @@ export async function acceptDelta(
           timelines,
           mainTimelineId: input.mainTimelineId,
           knownEntityIds: new Set(entities.rows.map((e) => e.id)),
+          ...(ctx.lease ? { lease: ctx.lease } : {}),
         });
         await bind(
           ctx,
@@ -377,7 +384,10 @@ export async function summarizeAndIndex(
           'ending hook is not a verbatim excerpt of the accepted text',
           { step: 'summarize', recommendedActions: ['regenerate'] },
         );
-      const stored = await withTransaction(ctx.pool, async (c) => {
+      // Summaries and the accepted-only lexical index are what the NEXT chapter reads as established
+      // fact, so they are lease-protected too: a fenced-out worker writing them would feed a rival's run
+      // stale continuity. One fenced transaction covers the summary row and the indexing together.
+      const stored = await withFencedTransaction(ctx.pool, ctx.lease, async (c) => {
         const row = await upsertL1Summary(c, {
           workspaceId: ctx.workspaceId,
           projectId: ctx.projectId,
@@ -466,10 +476,11 @@ export async function persistDependencyEdges(
           });
         }
       }
-      const inserted = await insertDependencyEdges(
-        ctx.pool,
-        { workspaceId: ctx.workspaceId, projectId: ctx.projectId },
-        edges,
+      // Dependency edges record what the accepted version depended on, and the impact reports that drive
+      // correction/retcon read them. A fenced-out worker adding edges would misattribute another run's
+      // manuscript, so this write is fenced like the rest of the acceptance tail.
+      const inserted = await withFencedTransaction(ctx.pool, ctx.lease, (c) =>
+        insertDependencyEdges(c, { workspaceId: ctx.workspaceId, projectId: ctx.projectId }, edges),
       );
       return { edges: edges.length, inserted };
     },

@@ -1,0 +1,547 @@
+# Deployment and Incident Runbooks
+
+Operational procedures for the Checkpoint 7 surfaces that **exist today**: `apps/api`, `apps/worker` and
+`apps/cli` over PostgreSQL 16, with Temporal orchestration and replay-only provider routing.
+
+**Truthfulness rules for this document (ADR-0043).** Every command here has been run against this
+repository. Where a procedure is designed but not exercised, it says so explicitly. This document makes **no
+claim** of live-provider validation, calibrated evaluator quality, long-form model quality, or production
+readiness — none of those has been demonstrated. `docs/08-delivery/09-progress.md` remains the single
+authority on what has been built and what has run; the scope outline in
+`docs/08-delivery/06-operations-runbooks-outline.md` lists runbooks that remain unwritten because the
+systems they describe (object storage, KMS, OAuth, live providers) do not exist yet.
+
+`apps/web` does not exist, so every "web" procedure below is marked not applicable rather than described
+speculatively.
+
+---
+
+## 1. Prerequisites and supported versions
+
+| Component | Version | Where it is pinned |
+| --- | --- | --- |
+| Node | 22 LTS (`>=22.12.0`) | `.nvmrc`, `package.json` `engines` |
+| pnpm | 10 (`10.26.0`) | `package.json` `packageManager` |
+| Python | 3.12 with `jsonschema` | planning validator only (`tools/validate-planning-package.py`) |
+| PostgreSQL | **16** with `btree_gist` (bundled) | `packages/db/migrations`, CI service image `postgres:16` |
+| Temporal | SDK `@temporalio/*` 1.24 | `apps/worker/package.json` |
+
+Verified in this workspace: PostgreSQL **16.14**, Node 22, pnpm 10.26.0, Python 3.12.3.
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+```
+
+The lockfile is authoritative. `--frozen-lockfile` is what CI runs; an install that would change the
+lockfile is a configuration error, not something to resolve locally.
+
+---
+
+## 2. PostgreSQL 16 setup
+
+`btree_gist` is required (the canon tables use exclusion constraints so overlapping validity intervals are
+impossible) and ships with PostgreSQL 16, so no external extension source is needed.
+
+```bash
+# A development database and an owner role.
+createdb yeonjae
+psql -c "CREATE ROLE yeonjae LOGIN PASSWORD '<from secret manager>'"
+psql -c "ALTER DATABASE yeonjae OWNER TO yeonjae"
+
+export DATABASE_URL=postgres://yeonjae:<password>@127.0.0.1:5432/yeonjae
+pnpm cli db:migrate
+```
+
+### 2.1 Database roles and RLS
+
+Migration `0006_identity_rls_api.sql` creates the role the application runs as:
+
+```sql
+CREATE ROLE yeonjae_app NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+```
+
+All three attributes matter, and two of them are the whole point:
+
+- **`NOSUPERUSER`** — a superuser bypasses row-level security entirely, so running the application as one
+  would silently disable every workspace-isolation policy while leaving the policies visibly "enabled".
+- **`NOBYPASSRLS`** — the explicit form of the same guarantee.
+
+Every workspace-owned table has `ENABLE ROW LEVEL SECURITY` **and** `FORCE ROW LEVEL SECURITY`; the forced
+form is required because a table's owner is otherwise exempt from its own policies. The application `SET
+ROLE`s to `yeonjae_app` per request and sets the workspace context transaction-locally, so the scope cannot
+leak between pooled requests.
+
+`packages/db/src/app-role-privileges.integration.test.ts` asserts these properties, including that the role
+is not a superuser — because that is exactly the misconfiguration that would make every other isolation test
+pass for the wrong reason.
+
+### 2.2 Migrations
+
+Forward-only and content-hashed. The runner records each file's SHA-256 and **refuses to start** if an
+already-applied migration's content changed, so an edited past migration is a loud failure rather than a
+silent divergence between environments.
+
+| Migration | Adds |
+| --- | --- |
+| `0001_canon_core` | canon schema, evidence trigger (code-point offsets), canon write guards, `btree_gist` exclusions |
+| `0002_gateway_audit` | append-only `llm_calls`, immutable `prompt_versions`, `jobs` / `job_steps` |
+| `0003_context_retrieval` | `summaries`, `search_documents` (accepted-only triggers), ACS and context packs |
+| `0004_workflows` | `jobs.workflow_id` / idempotency / pins, `workflow_artifacts`, `dependency_edges` |
+| `0005_candidate_selection` | `candidate_selections` — the durable N-candidate decision |
+| `0006_identity_rls_api` | users, membership, sessions, API keys, RLS everywhere, `yeonjae_app`, API idempotency keys, job control, `job_events`, `exports` |
+| `0007_app_role_least_privilege` | narrowed grants after the privilege audit |
+| `0008_target_leases` | fenced target leases (TTL + monotone fence) |
+| `0009_lease_fence_assertion` | `canon.assert_lease_fence` — the in-transaction fence assertion (ADR-0048) |
+
+Clean-database verification (what CI does on every push):
+
+```bash
+export DATABASE_URL=postgres://yeonjae:yeonjae@127.0.0.1:5432/yeonjae_test
+pnpm cli db:migrate     # 0001 → 0009 on an empty database
+pnpm test               # integration suites reset and re-migrate per file
+```
+
+---
+
+## 3. Temporal
+
+### 3.1 Development and tests
+
+**No Temporal server and no credentials are needed for `pnpm test`.** The worker suites run against
+Temporal's time-skipping test server, which the SDK downloads and runs locally. That is deliberate: the
+restart, replay, duplicate-start, pause, cancel and lease-loss proofs must be runnable in CI without paid
+infrastructure, and CI asserts they actually executed rather than skipped (see §10).
+
+To run a real server locally:
+
+```bash
+temporal server start-dev            # listens on 127.0.0.1:7233
+export TEMPORAL_ADDRESS=127.0.0.1:7233
+export TEMPORAL_NAMESPACE=default
+```
+
+### 3.2 Deployment
+
+Not exercised: this repository has never been deployed. What the code requires is:
+
+- reachable `TEMPORAL_ADDRESS` and an existing `TEMPORAL_NAMESPACE`;
+- the task queue `TEMPORAL_TASK_QUEUE` (defaults to the built-in `CHAPTER_TASK_QUEUE`), matched between the
+  worker and whoever starts workflows;
+- workers whose workflow code is compatible with in-flight histories. Workflow code is deterministic and
+  replayed from history on recovery, so a rollout that changes workflow control flow needs Temporal
+  versioning. `apps/worker/src/orchestration.integration.test.ts` includes a deterministic history-replay
+  test; use it as the gate before any workflow-code change ships.
+
+---
+
+## 4. Environment variables
+
+Names only — values live in the secret manager (`.env` is git-ignored; AGENTS.md rule 5). `.env.example`
+lists the full planned set; the variables the code reads **today** are:
+
+| Variable | Used by | Required | Notes |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | api, worker, cli, tests | **yes** | No default. `configFromEnv` throws when unset. |
+| `PORT` / `HOST` | api | no | Default `8080` / `127.0.0.1`. |
+| `YEONJAE_INSECURE_COOKIES` | api | no | `true` disables the `Secure` cookie flag for local HTTP. **Never set in production** — the default is secure precisely so that forgetting to configure a deployment cannot downgrade the cookie. |
+| `YEONJAE_PROVIDER_MODE` | worker | **yes** | `replay` or `mock`. There is **no default**: an unset mode is a startup error, not an implicit "go live". |
+| `YEONJAE_REPLAY_FILE` | worker, cli | for replay | Path to a recorded fixture. |
+| `YEONJAE_BUDGET_CENTS` | worker, cli | no | Per-run budget ceiling for the gateway's budget guard. |
+| `TEMPORAL_ADDRESS` / `TEMPORAL_NAMESPACE` / `TEMPORAL_TASK_QUEUE` | worker | no | Defaults `127.0.0.1:7233` / `default` / `CHAPTER_TASK_QUEUE`. |
+
+### 4.1 Provider modes — replay, mock, live
+
+| Mode | Behaviour | Spend |
+| --- | --- | --- |
+| `replay` | Every model call is served from a recorded fixture, bound by prompt hash and activity id. A call with no recording **fails**; it does not fall through to a provider. | none |
+| `mock` | Deterministic synthetic responses with fault injection, for failure-path tests. | none |
+| live | **Not implemented.** No provider credential path is wired into the worker. | n/a |
+
+This is the load-bearing cost control, so it is enforced at the process boundary rather than trusted to
+configuration review: the worker validates the mode **before opening any connection** and exits non-zero
+naming the missing variable. CI asserts that refusal on every push.
+
+```bash
+# Verified in this workspace:
+$ pnpm --filter @yeonjae/worker start      # with YEONJAE_PROVIDER_MODE unset
+# → exit 1, stderr names YEONJAE_PROVIDER_MODE
+```
+
+---
+
+## 5. Startup, shutdown and probes
+
+### 5.1 Order
+
+**Start:** PostgreSQL → migrations → Temporal → worker → API. Migrations before the worker and API because
+both assume the current schema; the worker before the API so a workflow start has somewhere to go.
+
+**Stop:** API → worker → PostgreSQL. The API first so no new work arrives; the worker second so in-flight
+activities finish. The worker handles `SIGINT`/`SIGTERM` with `worker.shutdown()`, which stops polling and
+drains running activities before closing its connection and pool.
+
+A worker killed mid-run loses nothing: `produceChapter` keeps Postgres step checkpoints, so a restarted run
+replays completed steps and re-spends nothing, and its target lease expires on its TTL so the chapter is not
+blocked forever.
+
+### 5.2 Probes
+
+| Probe | Endpoint | Meaning |
+| --- | --- | --- |
+| Liveness | `GET /health` | The process is up. Answers `{"status":"ok"}` without touching the database, so a database outage does not cause a restart loop. |
+| Readiness | `GET /ready` | The process can **serve**: it executes `SELECT 1`. Returns `503` with an RFC 9457 document when the database is unreachable, and never echoes the database error — readiness is a boolean to a load balancer, not a diagnostic channel. |
+| Metrics | `GET /metrics` | Prometheus text format. Unauthenticated by design: it renders metric names, allowlisted labels and numbers only, with no tenant, user or manuscript data. |
+
+```bash
+$ curl -fsS localhost:8080/health   # {"status":"ok"}
+$ curl -fsS localhost:8080/ready    # {"status":"ready"}
+$ curl -s -o /dev/null -w '%{http_code}' localhost:8080/v1/projects   # 401
+```
+
+That last check is part of CI: an unauthenticated protected route must answer `401` with a problem document,
+never data.
+
+---
+
+## 6. Local reproducible development
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+export DATABASE_URL=postgres://yeonjae:yeonjae@127.0.0.1:5432/yeonjae_test
+
+pnpm check            # the exact CI sequence
+pnpm cli db:migrate
+pnpm cli project:create "local"
+pnpm cli chapter:produce <projectId> 1     # replay-only; no spend
+```
+
+`pnpm check` runs: generated-types freshness → typecheck → lint → format check → unit and PostgreSQL
+integration tests → planning validation → contrast validation. Without `DATABASE_URL` the integration
+suites **skip visibly**; a run with no database is not evidence of anything.
+
+---
+
+## 7. Production deployment outline
+
+Not exercised — this is the shape the code implies, not a validated procedure.
+
+1. Build: `pnpm install --frozen-lockfile && pnpm build`.
+2. Apply migrations with a role that may DDL (`DATABASE_MIGRATION_URL` in `.env.example` exists for this
+   separation); run the application as `yeonjae_app`, which cannot bypass RLS.
+3. Roll out the worker first, with `YEONJAE_PROVIDER_MODE` set explicitly.
+4. Roll out the API behind a load balancer using `/health` for liveness and `/ready` for readiness.
+5. Smoke test: produce the fixture chapter with the replay provider and confirm acceptance.
+6. Scrape `/metrics` per instance (see the per-process caveat in §12).
+
+---
+
+## 8. Backup, restore and rollback
+
+### 8.1 Backup
+
+PostgreSQL is the single system of record (ADR-0002); Temporal history is recovery metadata, not truth.
+Losing the Temporal namespace loses no committed state — a re-started run resumes from its Postgres
+checkpoints. So back up PostgreSQL with PITR and treat Temporal as reconstructible.
+
+### 8.2 Restore
+
+Not exercised. Post-restore integrity checks that the schema makes possible:
+
+```sql
+-- Every project's canon_version must equal its highest commit version.
+SELECT p.id, p.canon_version, max(c.version) AS max_commit
+  FROM projects p LEFT JOIN canon_commits c ON c.project_id = p.id
+ GROUP BY p.id, p.canon_version
+HAVING p.canon_version <> coalesce(max(c.version), 0);
+
+-- Every accepted chapter must point at a manuscript version that is itself accepted.
+SELECT ch.id FROM chapters ch
+  JOIN manuscript_versions m ON m.id = ch.accepted_version_id
+ WHERE ch.status = 'accepted' AND m.status <> 'accepted';
+
+-- No live lease should outlive its deadline after a restore.
+SELECT id, holder_workflow_id, expires_at FROM target_leases
+ WHERE released_at IS NULL AND expires_at <= now();
+```
+
+Both queries should return zero rows. Stale leases are self-healing (an expired lease may be stolen), so the
+third is informational.
+
+### 8.3 Application rollback
+
+Code rolls back; **migrations do not**. Forward-only is a deliberate constraint (data architecture §15), so
+reverting a schema change means writing a new migration. Before rolling code back, check whether the newer
+schema is compatible with the older code — `0009` adds a function and grants nothing away, so older code
+simply does not call it; `0007` narrowed grants, so older code that relied on a wider grant would fail.
+
+### 8.4 Failed migration
+
+The runner wraps each file in a transaction, so a failed migration leaves no partial schema and is not
+recorded as applied.
+
+1. Read the error; it names the file.
+2. Fix the **new** migration, or add another one. Never edit an applied file: the hash check will refuse it
+   with "migration … was modified after being applied", which is the intended outcome.
+3. Re-run `pnpm cli db:migrate`. Already-applied files are skipped by hash.
+
+If a file was applied and later edited, the runner refuses to proceed. Recover by restoring the original
+content and expressing the change as a new migration.
+
+---
+
+## 9. Incident runbooks
+
+### 9.1 Provider outage
+
+Symptom: model calls fail; `yeonjae_provider_attempts_total` rises with failure statuses.
+
+The gateway classifies failures by meaning: provider and network faults retry with backoff, while
+validation, policy, budget and selection refusals are **non-retryable**, because the same input fails the
+same way and retrying only burns budget while delaying an operator decision. A run that exhausts retries
+settles as `needs_attention` — a state requiring a decision, not a crash.
+
+Actions: confirm the failure class from the job's persisted error; leave retries to the policy; pause
+further starts if the outage is broad (§9.4); do not raise retry limits to push through an outage.
+
+Today this is reachable only via `mock` fault injection, since no live provider is wired.
+
+### 9.2 Temporal outage or worker restart
+
+In-flight work is safe by construction. A restarted worker replays workflow history, and the chapter
+pipeline replays its Postgres step checkpoints, so **no completed step is re-executed and no provider call
+is duplicated** — proved by a restart test that asserts the model-call count equals a clean run's.
+
+Actions: restart workers; confirm `/ready` on the API; verify no duplicate spend with
+
+```sql
+SELECT idempotency_key, count(*) FROM llm_calls
+ WHERE project_id = $1 GROUP BY idempotency_key HAVING count(*) > 1;
+```
+
+Zero rows is correct: the gateway's idempotency key makes a retried step reuse its recorded call.
+
+### 9.3 Lost or fenced lease
+
+Symptom: a run stops with `LEASE_LOST`; `yeonjae_lease_loss_total` increments with a reason.
+
+| Reason | Meaning | Action |
+| --- | --- | --- |
+| `fenced_out` | **Another run owns the target now.** | None on this run — it stopped correctly. Find the live holder and let it finish. |
+| `expired` | The holder's deadline lapsed (usually a stalled worker). | Investigate why the worker stopped heartbeating; the target is free to re-acquire. |
+| `released` | Cleanup already ran and nobody else holds the target. | Safe to restart the run. |
+| `missing` | The lease row does not exist. | A configuration or client error; the run presented a lease it never held. |
+
+`LEASE_LOST` is **non-retryable** by classification: another worker owns the target, so a retry would only
+re-attempt a forbidden mutation. It is also safe by construction — the fence is asserted **inside** the
+transaction of every protected mutation (ADR-0048), so a fenced-out worker cannot approve, accept or commit
+canon even if it passed an earlier ownership check.
+
+```sql
+-- Who holds a chapter right now.
+SELECT holder_workflow_id, fence, expires_at FROM target_leases
+ WHERE project_id = $1 AND target_kind = 'chapter' AND target_id = $2
+   AND released_at IS NULL AND expires_at > now();
+```
+
+**Limitation, stated plainly:** fencing guarantees the *result* of a fenced-out worker's work cannot become
+canon. It does not abort an in-flight provider call, so that worker may already have spent money on a call
+that was in flight when it lost the lease.
+
+### 9.4 Stuck, paused or cancelled job
+
+Control is an **intent observed at checkpoint boundaries**, never inside a unit of work — which is what
+makes a pause safe: the next step has not begun, so nothing is torn in half and no partial canon exists.
+
+```bash
+curl -X POST .../v1/jobs/<jobId>:pause    -H 'cookie: …' -H 'x-csrf-token: …'
+curl -X POST .../v1/jobs/<jobId>:resume   -H 'cookie: …' -H 'x-csrf-token: …'
+curl -X POST .../v1/jobs/<jobId>:cancel   -H 'cookie: …' -H 'x-csrf-token: …'
+```
+
+A cancel that loses the race with the atomic commit is reported `too_late` and the job settles `completed`.
+It is **not** relabelled: a job marked `cancelled` while canon advanced would be a self-contradictory state,
+and the ignored request is recorded in the job's history instead.
+
+A job that looks stuck: read its `current_step` and `job_steps`. A `running` step whose lease has expired is
+a dead worker (§9.3), not a hung job.
+
+### 9.5 Stale canon conflict
+
+Symptom: a correction, retcon or rollback returns `409 CANON_STALE`.
+
+This is the optimistic version check doing its job: canon moved between the operator's impact report and
+their decision, so the consequences they approved are no longer the real ones. **Do not retry blindly.**
+Re-read the dry-run impact report, confirm the new consequences, and resubmit with the new
+`expected_canon_version`.
+
+The API requires `expected_canon_version` on every committing call rather than defaulting it to current,
+because a default would reduce the check to comparing a value with itself.
+
+### 9.6 Canon repair (correction / retcon / rollback)
+
+Always dry-run first — a dry run writes nothing at all, not even an audit row claiming a change:
+
+```bash
+POST /v1/projects/{id}/canon:correct   {"item_kind":"fact","item_id":"…","new_value":{…},
+                                        "justification":"…","dry_run":true}
+```
+
+Read `material` (these become **stale**) against `contextual` (these are **review suggestions** and were not
+invalidated). Then commit with `expected_canon_version` from the report. A retcon additionally requires
+`confirmed: true`, and rollback is **latest-only** — a rollback of a rollback is refused in SQL.
+
+Nothing is deleted: superseding closes the prior row's validity and links the new row to it, so the old
+value and its evidence stay readable at their original canon version.
+
+### 9.7 Budget exhaustion
+
+Symptom: a run pauses with `BUDGET_EXHAUSTED`; `yeonjae_budget_blocks_total` increments.
+
+The budget guard is a **pre-call** check, so the refusal happens before spend, at an activity boundary. It is
+classified non-retryable on purpose: an automatic retry would hide a decision that belongs to an operator.
+Raise `YEONJAE_BUDGET_CENTS` (or the project's limit) deliberately and resume; the workflow continues from
+its checkpoint without re-spending completed steps. Thresholds come from the pinned Production Policy
+(ADR-0041), not from a mutable API field.
+
+### 9.8 Rate limiting or abuse incident
+
+Symptom: clients receive `429 RATE_LIMITED`; `yeonjae_rate_limited_total{scope}` rises.
+
+Per-scope sliding-window limits, keyed on client identity and enforced **before** authentication — a
+limiter after the auth check would still pay for a scrypt verification on every guess, so it could not stop
+credential stuffing.
+
+| Scope | Default | Covers |
+| --- | --- | --- |
+| `auth` | 10 / min | `/v1/auth/*` — tightest, because each attempt costs a scrypt verification |
+| `job` | 20 / min | job control and production starts (each can spend money) |
+| `mutation` | 60 / min | all other writes |
+| `stream` | 30 / min | SSE job-event streams |
+| `read` | 300 / min | inspectors and lists; loose enough for a polling operator UI |
+
+`/health`, `/ready` and `/metrics` are **exempt**: throttling a probe would make a load balancer eject a
+healthy instance under exactly the load the limiter exists to survive.
+
+**Client identity is not taken from a header by default.** `X-Forwarded-For` is believed only when the
+deployment names its trusted proxies (`trustedProxies`), and then only the rightmost *untrusted* hop is
+used. Configure it when running behind a load balancer; leaving it empty is safe but coarse, since every
+request behind the proxy shares the proxy's address.
+
+Triage: read the scope from the metric label to learn what is being hammered. A rise in `auth` with
+`yeonjae_auth_failures_total` is credential stuffing — the limiter is doing its job; consider blocking at the
+edge if it persists. A rise in `read` is usually a misbehaving client polling too fast.
+
+**Limitation, stated plainly: the window store is in-memory and per-process.** It resets on restart and is
+not shared between instances, so N instances permit roughly N× the configured rate. For a hard global limit,
+enforce at the edge (load balancer or WAF) as well. This is deliberately not called distributed rate
+limiting.
+
+### 9.9 SSE disconnection and replay
+
+Job events are an append-only log with a monotone sequence, so a reconnect is a **resume**, not a restart.
+A client reconnects with `Last-Event-ID` and receives only events after that id, in order, with duplicates
+suppressed. A malformed `Last-Event-ID` is **rejected** rather than silently restarting the stream — a
+silent restart would replay events the client already acted on.
+
+Actions: confirm the client sends `Last-Event-ID`; check `yeonjae_sse_replays`; verify the terminal event
+exists, since a completed run emits one so a client can distinguish "finished" from "idle".
+
+```sql
+SELECT seq, kind FROM job_events WHERE job_id = $1 ORDER BY seq;
+```
+
+### 9.10 Credential or session compromise
+
+Sessions and API keys are stored **hashed**, with expiry and revocation. Revoke immediately:
+
+```sql
+UPDATE sessions  SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL;
+UPDATE api_keys  SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL;
+```
+
+Revocation is effective on the next request: authentication reads the row every time rather than trusting a
+self-contained token. Password verifiers are salted scrypt with per-row parameters, so rotating parameters
+does not invalidate existing rows.
+
+Then: rotate `SESSION_SECRET` (forces re-login), review `audit_log` for the actor's actions, and check
+`yeonjae_auth_failures_total` for the surrounding pattern. Logs cannot help an attacker here — passwords,
+verifiers, session and key values and hashes, CSRF tokens, cookies and authorization headers are all
+excluded by the default-deny log serializer, with tests that assert it.
+
+### 9.11 Export incident
+
+Exports are **accepted-only** and materialized in the database; there are no user-supplied filesystem paths
+and downloads are authorized per request. Working, rejected, quarantined and losing candidates are excluded
+by the same acceptance path production uses, and the export test proves it by planting all three.
+
+If an export contains unexpected text, the question is whether a version was wrongly accepted — not whether
+the exporter filtered correctly. Check the chapter's accepted version and its commit.
+
+### 9.12 Logs and metrics triage
+
+Logs are line-delimited JSON, one record per request, correlated by `request_id` and (when the client sent a
+valid `traceparent`) `trace_id`. The `x-request-id` response header carries the id an operator should quote.
+
+```bash
+# Everything for one request.
+jq 'select(.request_id == "…")' < api.log
+# Error-level requests.
+jq 'select(.level == "error")' < api.log
+```
+
+**What is deliberately absent, and why searching for it is futile:** redaction is default-deny, so a field
+that is not on the allowlist is dropped rather than logged. There is no prompt text, manuscript prose,
+password, verifier, session or key value, CSRF token, cookie, authorization header, provider credential or
+database connection string in any log line. Diagnose from ids, hashes, counts and status codes; when that is
+not enough, query the database directly with the ids from the log.
+
+Metrics: request counts and latency, auth failures, canon commits, lease loss, job control, SSE connections
+and replays, exports, budget blocks and provider attempts.
+
+---
+
+## 10. CI as the standing verification
+
+`ci.yml` runs on every push and PR with a PostgreSQL 16 service, and includes two guards that exist
+specifically so a **skipped** suite cannot be reported as a passing one:
+
+- *"Integration tests actually ran (DATABASE_URL present)"* — the integration suites skip visibly without a
+  database, so their silence must be distinguishable from success.
+- *"Durable orchestration tests actually ran (worker + Temporal test server)"* — greps the JUnit output for
+  the orchestration suite, because it is the only proof of restart, replay and duplicate-start behaviour.
+
+Also enforced: generated-types freshness, typecheck, lint, format, contrast regression (no credentials, no
+provider calls), CLI smoke against a migrated database, API startup smoke (unauthenticated `/v1/projects`
+must be `401`), worker startup smoke (**must refuse** to start without `YEONJAE_PROVIDER_MODE`), the
+dependency-audit gate (high and critical advisories fail; exceptions need a justified, expiring allowlist
+entry) and Gitleaks.
+
+---
+
+## 11. Not applicable / not yet written
+
+| Topic | Status |
+| --- | --- |
+| `apps/web` startup, build and deployment | **Does not exist.** Outstanding Checkpoint 7 scope. |
+| Object storage, KMS, OAuth, live providers | Named in `.env.example` as planned; no code path reads them. |
+| Secret rotation for provider keys | No provider credential path exists to rotate. |
+| Threshold calibration | Evaluators are **uncalibrated**; contrast validation is deterministic replay agreement only (ADR-0029). |
+| Tenant offboarding, PITR restore, deploy rollout | Designed in `06-operations-runbooks-outline.md`; **never exercised**. |
+
+---
+
+## 12. Honest limitations
+
+- **Metrics are per-process.** Counters reset on restart and are scraped per instance; aggregation is the
+  scraper's job. Nothing here is a distributed counter.
+- **No live-provider validation.** Every test replays a frozen fixture. This repository is not evidence of
+  live-model prose quality, cost accuracy or latency.
+- **Evaluators are uncalibrated.** Contrast validation proves deterministic agreement with a frozen corpus,
+  not that the judges match human reviewers.
+- **No production deployment has occurred.** §7, §8.2 and §8.3 are derived from the code, not from
+  operational experience.
+- **Fencing does not abort in-flight spend** (§9.3).
+- **Rate limiting is per-process** (§9.8): it resets on restart and is not shared between instances.
+- **Vector retrieval is an interface only** — no embedder exists (ADR-0045).
