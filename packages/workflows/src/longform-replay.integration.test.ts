@@ -213,7 +213,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
       'utf8',
     );
     report(`${EVIDENCE_MARKER}: ${results.length} chapters, evidence written to ${EVIDENCE_PATH}`);
-  });
+  }, 120_000);
 
   it('makes no live provider call: every response was replayed, no recording missed, no key present', () => {
     expect(h.provider.misses).toEqual([]);
@@ -227,9 +227,17 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
   // -------------------------------------------------------------------------------------------------
 
   it('every accepted manuscript passes the English output-language check', async () => {
+    // One query for all 120 versions rather than 120 round-trips: a per-chapter query loop is slow
+    // enough on a loaded CI runner to trip the default test timeout for reasons that have nothing to
+    // do with the invariant being checked.
+    const rows = await pool.query<{ id: string; status: string; text: string }>(
+      `SELECT id, status, text FROM manuscript_versions WHERE project_id = $1 AND status = 'accepted'`,
+      [h.projectId],
+    );
+    const byId = new Map(rows.rows.map((row) => [row.id, row]));
     for (const r of results) {
-      const v = await getManuscriptVersion(pool, r.accepted?.manuscript_version_id ?? '');
       const canon = r.accepted?.canon_version ?? -1;
+      const v = byId.get(r.accepted?.manuscript_version_id ?? '');
       expect(
         v?.status,
         where(r.chapter_no, 'accept', canon, 'the produced version is accepted'),
@@ -249,7 +257,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
           where(r.chapter_no, 'scene_draft', canon, 'gateway checked scene output language'),
         ).toBe(1);
     }
-  });
+  }, 120_000);
 
   // -------------------------------------------------------------------------------------------------
   // canon advances monotonically, exactly once per acceptance
@@ -290,7 +298,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
         row.base,
         where(row.version - 2, 'accept', row.version, 'commit base is the previous canon version'),
       ).toBe(row.version - 1);
-  });
+  }, 120_000);
 
   // -------------------------------------------------------------------------------------------------
   // chapter k receives chapter k−1's accepted state
@@ -423,7 +431,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
       `${['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'][longformShare(LONGFORM_CHAPTERS)]} percent`,
     );
     expect(longformShareFactLocalId(LONGFORM_CHAPTERS)).toBe('f-share-101');
-  });
+  }, 120_000);
 
   it('a promise opened in chapter 1 is paid in chapter 120, 119 chapters later', async () => {
     const events = await pool.query<{ kind: string; number: number }>(
@@ -451,7 +459,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
         'the chapter-1 promise is paid at 120',
       ),
     ).toBe('paid');
-  });
+  }, 120_000);
 
   it('the mid-run promise opened in chapter 1 is paid at chapter 60 and the early one at chapter 3', async () => {
     const statuses = await pool.query<{ id: string; status: string }>(
@@ -468,7 +476,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
       LONGFORM_PROMISE_PAYOFFS.compass,
       LONGFORM_PROMISE_PAYOFFS.watcher,
     ]);
-  });
+  }, 120_000);
 
   it('a relationship state established at chapter 2 is superseded at chapter 119', async () => {
     const rows = await pool.query<{ type: string; asserted_at_version: number; valid_to: unknown }>(
@@ -491,7 +499,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
       ),
     ).toBe(LONGFORM_RELATIONSHIP.supersededAt + 2);
     expect(late?.valid_to).toBeNull();
-  });
+  }, 120_000);
 
   // -------------------------------------------------------------------------------------------------
   // determinism: identical hashes across equivalent reruns
@@ -535,7 +543,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
         where(k, 'summarize', canon, 'L1 summary hash is identical'),
       ).toBe(ref?.summaryHash);
     }
-  });
+  }, 120_000);
 
   it('the generated chapter text is a pure function of the chapter number', () => {
     // If this drifted, the fixture would no longer be a seed and the rerun test above would be circular.
@@ -675,28 +683,31 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
   // -------------------------------------------------------------------------------------------------
 
   it('each chapter produced exactly one summary, one indexed document set and its dependency edges', async () => {
+    // Two grouped queries rather than 240 round-trips, for the same reason as the language test above.
+    const summaries = await pool.query<{ chapter_from: number; n: string }>(
+      `SELECT chapter_from, count(*)::text AS n FROM summaries
+        WHERE project_id = $1 AND tier = 'L1' GROUP BY chapter_from`,
+      [h.projectId],
+    );
+    const summaryCount = new Map(summaries.rows.map((row) => [row.chapter_from, row.n]));
+    const edges = await pool.query<{ dependent_id: string; n: string }>(
+      `SELECT dependent_id, count(*)::text AS n FROM dependency_edges
+        WHERE project_id = $1 GROUP BY dependent_id`,
+      [h.projectId],
+    );
+    const edgeCount = new Map(edges.rows.map((row) => [row.dependent_id, Number(row.n)]));
     for (const r of results) {
       const canon = r.accepted?.canon_version ?? -1;
-      const summaries = await pool.query<{ n: string }>(
-        `SELECT count(*)::text AS n FROM summaries
-          WHERE project_id = $1 AND tier = 'L1' AND chapter_from = $2`,
-        [h.projectId, r.chapter_no],
-      );
       expect(
-        summaries.rows[0]?.n,
+        summaryCount.get(r.chapter_no),
         where(r.chapter_no, 'summarize', canon, 'exactly one L1 summary per accepted chapter'),
       ).toBe('1');
       expect(
         r.accepted?.indexed_documents,
         where(r.chapter_no, 'summarize', canon, 'the accepted version is indexed'),
       ).toBeGreaterThan(0);
-      const edges = await dependencyEdgesFor(
-        pool,
-        h.projectId,
-        r.accepted?.manuscript_version_id ?? '',
-      );
       expect(
-        edges.length,
+        edgeCount.get(r.accepted?.manuscript_version_id ?? '') ?? 0,
         where(
           r.chapter_no,
           'dependency_edges',
