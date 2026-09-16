@@ -276,7 +276,73 @@ precisely because the corresponding Checkpoint 7 limitation is open, not closed.
 | --- | --- | --- | --- |
 | 1a | 120-chapter compressed continuity validation, **deterministic** | **done** (evidence below) | long-form continuity was previously proven only to chapter 3 |
 | 1b | Live 20-chapter validation, five consecutive nights | **not run** | no live-provider validation has occurred |
-| 2–7 | Chaos drills, provider fallback, restore drills, security expansion, threshold calibration, cost dashboards | **not started** | see the rows below |
+| 2a | Deterministic chaos and provider-fallback drills (B-4-2) | **done** (evidence below) | fallback was previously untested and unclassified |
+| 2b | Chaos/fallback under a REAL provider outage | **not run** | requires live provider access |
+| 3–7 | Restore drills, security expansion, threshold calibration, cost dashboards | **not started** | see the rows below |
+
+### Phase 4 tranche 2 — deterministic chaos and provider-fallback drills (B-4-2, deterministic portion)
+
+**Two production defects were found and fixed** (this is why the tranche exists rather than only adding
+tests):
+
+1. **Fallback was unauthorized.** `Gateway.call` treated EVERY thrown provider error as a reason to move to
+   the next route. A rejected request, an authentication failure, a content refusal and an unrecognized
+   fault were all rerouted — re-sending the same bytes to a second paid model to reach the same refusal, and
+   turning one deterministic failure into N. Fixed by `packages/gateway/src/failures.ts`: a provider adapter
+   states its own verdict by throwing `ProviderFailure`, anything else is classified from its shape, and an
+   UNRECOGNIZED failure defaults to **non-retryable** so an unknown fault cannot multiply spend. Only
+   `retryable_transport`, `retryable_throttled` and `retryable_provider` authorize a reroute. Regression
+   tests: `failures.test.ts` (9) and scenarios GW-05…GW-08, which assert the second provider's call count is
+   **0**.
+2. **Fallback had no attempt-level provenance.** `llm_calls` recorded one row per CALL, so a call that fell
+   back named the winning model and `fallback_from_model_id` but recorded neither why route 1 was abandoned
+   nor what each attempt cost. Migration **0011** adds `attempt_records` (validated by a trigger, because a
+   CHECK constraint cannot contain a subquery) and the gateway now emits one entry per ACTUAL attempt. The
+   row's summed `cost_cents` remains the authoritative total; attempt entries attribute it and must not be
+   added to it. Regression tests: GW-09, GW-11, GW-17, GW-22.
+
+**What exists.** `packages/gateway/src/fallback.chaos.test.ts` (22 gateway scenarios, `GW-nn`) and
+`packages/workflows/src/chaos.integration.test.ts` (11 workflow/control-plane scenarios, `WF-nn`) run
+against the REAL `Gateway`, the REAL `produceChapter` loop and real PostgreSQL 16, with faults injected only
+at the provider boundary. `packages/gateway/src/chaos-report.ts` merges a machine-readable report
+(`coverage/chaos-report.json`) carrying scenario ids, outcomes and short invariant labels — never prose,
+prompts, provider payloads or credentials, which the report writer and the runner both assert.
+`pnpm test:chaos` (`tools/run-chaos-drills.mjs`) is the explicit command: it refuses to start without
+`DATABASE_URL`, deletes any stale report first, and fails unless every declared scenario reported `passed`
+with no duplicate ids, no live provider call and no secret-shaped content. `ci.yml` runs it and additionally
+greps `coverage/junit.xml` for both matrix names, so a skipped or filtered suite fails the build.
+
+**Invariants proved (33 scenarios).** Fallback only for policy-retryable failures (GW-01…GW-04) and never
+for a rejected request, auth failure, content refusal or unknown fault (GW-05…GW-08); every route
+unavailable and an unconfigured fallback both fail closed (GW-09, GW-10); malformed output exhausts its
+bounded repair budget on its own route before rerouting and fails closed when every route is invalid
+(GW-11, GW-12); non-English output is regenerated once, rerouted once, then fails closed (GW-13); budget
+denial precedes dispatch and a fallback cannot spend past the reservation (GW-14, GW-15); a missing identity
+contract never reaches a provider (GW-16); each actual attempt has its own audit entry with its own verdict
+(GW-17); a fallback call retains every pinned policy/prompt/identity/contract value and still runs the
+output-language check (GW-18); a lost response followed by a retry reads the recorded call instead of
+spending again (GW-19); usage is stored verbatim rather than guessed (GW-20); the surfaced error names its
+`failure_class` without prose, prompts or secrets (GW-21); fallback order follows configured priority
+deterministically (GW-22). On the workflow side: a crash after extraction leaves canon untouched and resumes
+to exactly one commit (WF-01, WF-02); two concurrent runs of one chapter produce one acceptance and one
+canon transition (WF-03); pause and cancel requested before dispatch stop the run at a step boundary with
+no canon, no manuscript and no spend (WF-04, WF-05); a completed run emits exactly one terminal event and a
+late cancel cannot rewrite it (WF-06, WF-07); a genuine replay miss fails closed without substituting a
+draft (WF-08); a rerun re-reads recorded spend and refuses a second canon transition (WF-09, WF-10); and
+control requested on an already-terminal job is refused rather than reopening it (WF-11).
+
+**Measured (this session, local).** `pnpm test:chaos` — 33 scenarios, 64 tests, **20.5 s**, 0 live provider
+calls. Repository test counts moved from **56 files / 790 tests** to **59 files / 824 tests**.
+
+**What this tranche explicitly does NOT claim.**
+
+- **No real provider outage was exercised.** Every fault is injected deterministically at the provider
+  boundary. A mock/replay fallback drill is valid evidence about this system's decision logic and is **not**
+  evidence that a vendor failed over successfully in production.
+- Fencing still does **not** abort an already-running provider request. The lease fence prevents a stale
+  result from committing; it does not cancel an in-flight HTTP call. Unchanged by this tranche.
+- No provider credential, paid scheduled workflow or live call was added.
+- B-4-2's live half and Phase 4 as a whole remain **incomplete**.
 
 ### Phase 4 tranche 1 — deterministic 120-chapter continuity replay (B-4-1, deterministic portion)
 
@@ -344,7 +410,7 @@ implemented in this tranche.
 | --- | --- | --- |
 | 1 | 120-chapter compressed continuity validation | **deterministic half done in tranche 1** (above); long-form continuity is now exercised to chapter 120 deterministically |
 | 2 | Live 20-chapter nightly validation for five consecutive nights | no live-provider validation has occurred; every model call to date is replayed |
-| 3 | Provider fallback and chaos drills | fencing prevents a stale result from committing but does not abort an already-running provider request; fallback behaviour is untested under real provider failure |
+| 3 | Provider fallback and chaos drills | **deterministic half done in tranche 2** (above): fallback is now classified and authorized, and 33 deterministic scenarios run in CI. Still open: fencing does not abort an already-running provider request, and fallback under a REAL provider failure is untested |
 | 4 | Backup/restore and recovery drills | no production deployment has occurred and no restore has ever been exercised |
 | 5 | Security test expansion | the RLS/least-privilege/rate-limit surfaces are tested but not adversarially exercised at MVP scale |
 | 6 | Bilingual reviewer evaluation and threshold calibration | evaluator thresholds remain `uncalibrated` (ADR-0029); contrast agreement is deterministic replay agreement, not measured judge quality |
