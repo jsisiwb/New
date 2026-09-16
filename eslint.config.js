@@ -9,6 +9,8 @@ export default tseslint.config(
       '**/dist/**',
       '**/node_modules/**',
       '**/coverage/**',
+      // Next's build output is generated code, not source.
+      '**/.next/**',
       'packages/domain/src/generated/**',
       '.hoplite/**',
     ],

@@ -58,6 +58,15 @@ jobs:
         run: |
           grep -q "durable orchestration" coverage/junit.xml || {
             echo "::error::apps/worker orchestration tests did not run"; exit 1; }
+      - name: Operator web tests actually ran (journeys, accessibility, keyboard paths)
+        # Same reasoning as the orchestration guard above: apps/web's suites are the only proof that the
+        # operator journeys, the axe checks on every work area and the keyboard critical path hold. A
+        # silently skipped web suite would turn "web is covered" into an unverified claim.
+        run: |
+          grep -q "keyboard-only critical path" coverage/junit.xml || {
+            echo "::error::apps/web journey tests did not run"; exit 1; }
+          grep -q "has no accessibility violations" coverage/junit.xml || {
+            echo "::error::apps/web accessibility tests did not run"; exit 1; }
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
@@ -89,6 +98,22 @@ jobs:
           fi
           grep -q "YEONJAE_PROVIDER_MODE" /tmp/worker.err || {
             echo "::error::worker failure did not name the missing provider mode"; cat /tmp/worker.err; exit 1; }
+      - name: Operator web production build
+        run: pnpm build:web
+      - name: Web startup smoke test (the built app serves the operator console)
+        run: |
+          pnpm --filter @yeonjae/web start &
+          WEB_PID=$!
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3000/ > /tmp/web.html; then break; fi
+            sleep 1
+          done
+          # The shell must actually render: a 200 that returned an error page would pass a bare curl.
+          grep -q "Yeonjae Studio" /tmp/web.html || {
+            echo "::error::web app did not render the operator shell"; head -c 2000 /tmp/web.html; exit 1; }
+          grep -q "Skip to main content" /tmp/web.html || {
+            echo "::error::web app rendered without its accessibility landmarks"; exit 1; }
+          kill $WEB_PID
       - name: Dependency audit (high and critical advisories fail the build)
         # The previous form ended in `|| (echo ... && exit 0)`, so despite its name it converted every
         # finding into a success and the gate never existed. High/critical advisories now fail. A finding

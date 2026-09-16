@@ -20,6 +20,8 @@
 | `pnpm test`                                                                                                     | Vitest unit tests                                                                 |
 | `pnpm validate:planning`                                                                                        | planning-package validator (schemas, examples, evidence, references, stale terms) |
 | `pnpm check`                                                                                                    | everything CI runs                                                                |
+| `pnpm build:web`                                                                                                | production build of the operator web app                                          |
+| `pnpm --filter @yeonjae/web dev`                                                                                | run the operator web app against a local API (see the environment variables below) |
 | `pnpm cli <command>`                                                                                            | the CLI (`pnpm cli` prints usage)                                                 |
 | `pnpm cli pack:build <project> <ch> <role> <contract.json> <spec.json> [--identity=<ref>] [--full] [--persist]` | build a Context Pack and print its manifest (no manuscript text unless `--full`)  |
 | `pnpm cli chapter:produce <project> <ch>`                                                                       | run (or resume) chapter production through the Postgres-checkpointed workflow     |
@@ -57,9 +59,18 @@ apps/api            Checkpoint 7 Fastify /v1 operator API: session/API-key auth,
                     authorization, RLS-scoped requests, RFC 9457 problem details, Idempotency-Key,
                     cursor pagination, security headers, health/readiness, audit log. A thin adapter
                     over packages/* — it holds no canon, selection or workflow logic of its own.
-                    Adds job control (pause/resume/cancel), replayable SSE job events and accepted-only
-                    TXT/DOCX export with authorized download.
-                    (apps/web remains outstanding Checkpoint 7 scope.)
+                    Adds job control (pause/resume/cancel), replayable SSE job events, accepted-only
+                    TXT/DOCX export with authorized download, and the operator-editable write families
+                    (story spec, assumption review, directions, concepts, register profiles, narrative
+                    identity / naming / terminology, planning documents, chapter review, candidates,
+                    scorecards, chapter trace) over migration 0010
+apps/web            Checkpoint 7 operator application (Next.js 16 / React 19): the 11 operator work areas
+                    over the REAL /v1 API — authentication, workspace/projects, spec and assumptions,
+                    directions and concepts, bible and register profiles, narrative identity and
+                    terminology, planning, chapters and production, candidate and scorecard review, canon
+                    and change operations, and operations (jobs, replayable SSE, costs, budgets, export).
+                    No mock or fixture backs a production path. The session secret stays in the server's
+                    HttpOnly cookie and is never readable by app code; a 401 revokes local state at once
 packages/prose      NFC boundary, code-point addressing, evidence verification, paragraphs, length model,
                     deterministic output-language check
 packages/domain     schema loader + Ajv validators, generated types, UUIDv7, StoryClock ordering,
@@ -91,6 +102,30 @@ tools/              gen-types.ts, validate-planning-package.py
 schemas/ examples/  the contracts and fixture data (validated by CI)
 docs/               the plan; status lives only in docs/08-delivery/09-progress.md
 ```
+
+## Environment variables
+
+| Variable | Used by | Meaning |
+| --- | --- | --- |
+| `DATABASE_URL` | cli, api, worker, tests | PostgreSQL 16 connection string. Integration tests skip visibly when unset |
+| `YEONJAE_PROVIDER_MODE` | worker | `replay` or `mock`. The worker REFUSES to start without it, so it can never default to a paid provider |
+| `YEONJAE_INSECURE_COOKIES` | api | Local HTTP development only. Cookies are `Secure` by default; forgetting to configure a deployment cannot downgrade them |
+| `YEONJAE_CORS_ORIGINS` | api | Comma-separated exact origins permitted to make credentialed cross-origin requests. **Absent or empty means deny all cross-origin requests**, which leaves same-origin traffic untouched. Validated at startup: `*` and malformed entries are refused by name |
+| `YEONJAE_TRUSTED_PROXIES` | api | Addresses whose `X-Forwarded-For` may be believed. **Empty by default**: an unconfigured deployment keys rate limits on the socket address, never on attacker-controlled header content |
+| `NEXT_PUBLIC_API_BASE_URL` | web | Base URL of the `/v1` API. **Empty by default, meaning same-origin** — the configuration that needs no CORS at all. Set it only when the web app is served from a different origin, and add that origin to `YEONJAE_CORS_ORIGINS` |
+
+## Running the operator web app
+
+```
+export DATABASE_URL=postgres://yeonjae:yeonjae@127.0.0.1:5432/yeonjae_test
+pnpm cli db:migrate
+YEONJAE_INSECURE_COOKIES=true pnpm --filter @yeonjae/api start   # http://127.0.0.1:8080
+pnpm --filter @yeonjae/web dev                                    # http://127.0.0.1:3000
+```
+
+Same-origin is the default, so no CORS configuration is needed for the two-process local setup above when
+the web app proxies to the API. Serving them from different origins requires
+`NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8080` and `YEONJAE_CORS_ORIGINS=http://127.0.0.1:3000`.
 
 ## Rules of the road
 

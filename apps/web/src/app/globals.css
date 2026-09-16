@@ -1,0 +1,286 @@
+/*
+ * Operator styling (Checkpoint 7, UI plan §4).
+ *
+ * Three rules are enforced here rather than left to each screen:
+ *  * focus is ALWAYS visible — removing the outline is the single most common way to make a keyboard
+ *    interface unusable, so the focus ring is defined once and never suppressed;
+ *  * status colour is decoration on top of a word, never the only carrier of meaning;
+ *  * motion respects `prefers-reduced-motion`.
+ */
+
+:root {
+  --text: #1a1a1a;
+  --muted: #5a5a5a;
+  --line: #d4d4d4;
+  --bg: #ffffff;
+  --focus: #0b5fff;
+  --good: #14532d;
+  --bad: #7f1d1d;
+  --attention: #78350f;
+  --progress: #1e3a8a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+main {
+  padding: 1rem;
+  max-width: 70rem;
+  margin: 0 auto;
+}
+
+/* Never suppressed anywhere else in the app. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 0.5rem;
+  background: var(--bg);
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--focus);
+  z-index: 10;
+}
+
+header {
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1rem;
+}
+.brand {
+  font-weight: 600;
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+caption {
+  text-align: left;
+  color: var(--muted);
+  padding-bottom: 0.5rem;
+}
+th,
+td {
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+}
+/* Colour is additional to the label text, which always states the status. */
+.badge-good {
+  color: var(--good);
+}
+.badge-bad {
+  color: var(--bad);
+}
+.badge-attention {
+  color: var(--attention);
+}
+.badge-progress {
+  color: var(--progress);
+}
+.badge-neutral {
+  color: var(--muted);
+}
+.badge-detail {
+  color: var(--muted);
+}
+
+.error-summary {
+  border: 2px solid var(--bad);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+.error-summary-title {
+  margin-top: 0;
+  color: var(--bad);
+  font-size: 1.1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
+}
+.field-hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.field-error {
+  color: var(--bad);
+  font-weight: 600;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  max-width: 48rem;
+}
+textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+button {
+  font: inherit;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #f6f6f6;
+  cursor: pointer;
+}
+button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+button.danger {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+
+.card-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.card-list > li {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+/* Responsive by default: a single column on narrow screens, side by side when there is room. */
+.compare-grid {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 48rem) {
+  .compare-grid {
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  }
+}
+.compare-grid > li {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+}
+.summary dt {
+  color: var(--muted);
+}
+.summary dd {
+  margin: 0;
+}
+
+.note {
+  color: var(--muted);
+}
+
+.async-state {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.dialog {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  max-width: 34rem;
+  width: 100%;
+}
+.dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+pre {
+  overflow-x: auto;
+  background: #f6f6f6;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
