@@ -10,6 +10,7 @@
  * real model would have copied from the prompt). An unbound placeholder is an error, never silently emitted.
  */
 import { readFileSync } from 'node:fs';
+import { ProviderFailure } from './failures.js';
 import { promptKey } from './mock-provider.js';
 import {
   type FinishReason,
@@ -136,7 +137,10 @@ export class ReplayProvider implements Provider {
     }
     if (!rec) {
       this.misses.push(key);
-      throw new Error(
+      // Non-retryable by construction: an unrecorded prompt is unrecorded on every route, so falling back
+      // would only spend on a second provider to reach the same refusal (B-4-2).
+      throw new ProviderFailure(
+        'non_retryable_request',
         `ReplayProvider: no recording for prompt ${key.slice(0, 12)}…${req.trace ? ` / activity ${req.trace.activityId}` : ''} (model ${req.modelId}); refusing to call a live provider`,
       );
     }

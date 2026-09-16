@@ -4,6 +4,7 @@
  * can be injected per call for chaos tests.
  */
 import { createHash } from 'node:crypto';
+import { ProviderFailure, type FailureClass } from './failures.js';
 import {
   type ModelParams,
   type Provider,
@@ -32,6 +33,13 @@ export interface MockFault {
   readonly kind: 'error' | 'timeout' | 'truncate' | 'invalid_json' | 'korean_prose';
   /** Fire on the nth call (1-based) matching `role`-agnostic order; default: next call. */
   readonly onCall?: number | undefined;
+  /**
+   * Classification the injected transport fault should carry (B-4-2 chaos scenarios). Defaults keep the
+   * historical behaviour: `error` and `timeout` are retryable transport faults.
+   */
+  readonly failureClass?: FailureClass | undefined;
+  /** True when the provider may have completed the work before the response was lost. */
+  readonly possiblyCompleted?: boolean | undefined;
 }
 
 export class MockProvider implements Provider {
@@ -69,8 +77,18 @@ export class MockProvider implements Provider {
     const started = Date.now();
     const faultIdx = this.faults.findIndex((f) => (f.onCall ?? this.calls) === this.calls);
     const fault = faultIdx >= 0 ? this.faults.splice(faultIdx, 1)[0] : undefined;
-    if (fault?.kind === 'error') throw new Error('mock provider failure (injected)');
-    if (fault?.kind === 'timeout') throw new Error('mock provider timeout (injected)');
+    if (fault?.kind === 'error')
+      throw new ProviderFailure(
+        fault.failureClass ?? 'retryable_transport',
+        'mock provider failure (injected)',
+        { ...(fault.possiblyCompleted ? { possiblyCompleted: true } : {}) },
+      );
+    if (fault?.kind === 'timeout')
+      throw new ProviderFailure(
+        fault.failureClass ?? 'retryable_transport',
+        'mock provider timeout (injected)',
+        { ...(fault.possiblyCompleted ? { possiblyCompleted: true } : {}) },
+      );
     const canned = this.canned.get(promptKey(req)) ?? this.script?.(req, this.calls);
     if (!canned) {
       throw new Error(

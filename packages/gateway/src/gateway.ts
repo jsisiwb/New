@@ -7,6 +7,7 @@
 import { createHash } from 'node:crypto';
 import { checkOutputLanguage, toNfcText } from '@yeonjae/prose';
 import { uuidv7, validatorFor, type Uuid } from '@yeonjae/domain';
+import { classifyProviderFailure, isRetryable, type FailureClass } from './failures.js';
 import { guardRequest, type GuardContext } from './guard.js';
 import { DEFAULT_PARAMS } from './mock-provider.js';
 import {
@@ -72,6 +73,24 @@ export interface AuditRecord {
   readonly repair_attempts: number;
   readonly fallback_from_model_id?: string | undefined;
   readonly error?: { class: string; message: string } | undefined;
+  /**
+   * Attempt-level provenance (B-4-2). `attempt_records` carries one entry per ACTUAL provider attempt, so
+   * a fallback that succeeded on route 2 still shows why route 1 was abandoned. Cost is attributed per
+   * attempt and the summed `cost_cents` stays the authoritative total, so no attempt is double-charged.
+   */
+  readonly attempt_records?:
+    | readonly {
+        readonly attempt: number;
+        readonly model_id: string;
+        readonly provider: string;
+        readonly outcome: 'succeeded' | 'failed';
+        readonly failure_class?: string | undefined;
+        readonly error_class?: string | undefined;
+        readonly cost_cents: number;
+        readonly usage: ProviderResponse['usage'];
+        readonly latency_ms: number;
+      }[]
+    | undefined;
   /** Prompt and output text are never logged in plaintext; only hashes and sizes live on the record. */
   readonly input_hash: string;
   readonly output_hash?: string | undefined;
@@ -203,6 +222,8 @@ export class Gateway {
     let languageFailures = 0;
     let routeIdx = 0;
     let actualCost = 0;
+    let lastFailureClass: FailureClass | undefined;
+    const attemptRecords: NonNullable<AuditRecord['attempt_records']>[number][] = [];
     const validator = req.outputSchemaRef ? validatorFor(req.outputSchemaRef) : undefined;
 
     try {
@@ -227,19 +248,51 @@ export class Gateway {
             },
           });
         } catch (err) {
+          // Fallback is authorized ONLY for a policy-retryable failure. A rejected request, an auth
+          // failure, a content refusal or an unrecognized fault stops here: re-sending the same bytes to
+          // the next paid model would multiply spend without any prospect of a different answer.
+          const failureClass = classifyProviderFailure(err);
+          lastFailureClass = failureClass;
           lastError = {
             class: 'PROVIDER_FAILED',
             message: err instanceof Error ? err.message : String(err),
           };
+          attemptRecords.push({
+            attempt,
+            model_id: route.modelId,
+            provider: route.provider,
+            outcome: 'failed',
+            failure_class: failureClass,
+            error_class: 'PROVIDER_FAILED',
+            cost_cents: 0,
+            usage: { input: 0, output: 0, cached: 0 },
+            latency_ms: 0,
+          });
+          if (!isRetryable(failureClass)) break;
           fallbackFrom = route.modelId;
           routeIdx++;
           continue;
         }
-        actualCost += costCents(route, res.usage);
+        const attemptCost = costCents(route, res.usage);
+        actualCost += attemptCost;
+
+        const noteAttempt = (outcome: 'succeeded' | 'failed', errorClass?: string): void => {
+          attemptRecords.push({
+            attempt,
+            model_id: route.modelId,
+            provider: route.provider,
+            outcome,
+            ...(errorClass ? { error_class: errorClass } : {}),
+            cost_cents: attemptCost,
+            usage: res.usage,
+            latency_ms: res.latencyMs,
+          });
+        };
 
         // 3. truncation
         if (res.finishReason === 'length') {
           lastError = { class: 'TRUNCATED', message: 'provider stopped at max_tokens' };
+          noteAttempt('failed', 'TRUNCATED');
           if (attempt < 2) continue; // one regeneration on the same route
           routeIdx++;
           continue;
@@ -265,6 +318,7 @@ export class Gateway {
           if (!schemaValid) {
             repairAttempts++;
             lastError = { class: 'SCHEMA_INVALID', message: 'structured output did not validate' };
+            noteAttempt('failed', 'SCHEMA_INVALID');
             if (repairAttempts <= 2) continue; // bounded repair = regenerate on the same route
             routeIdx++;
             continue;
@@ -290,6 +344,7 @@ export class Gateway {
               class: 'OUTPUT_LANGUAGE_FAILED',
               message: `English confidence ${check.english_confidence}; offending: ${check.offending_segments.map((s) => s.paragraph_id).join(',')}`,
             };
+            noteAttempt('failed', 'OUTPUT_LANGUAGE_FAILED');
             // discard; regenerate once on the same route, then reroute to the alternate P-class model
             if (languageFailures === 1) continue;
             fallbackFrom = route.modelId;
@@ -299,6 +354,7 @@ export class Gateway {
         }
 
         // 6. success → audit
+        noteAttempt('succeeded');
         const status =
           fallbackFrom && fallbackFrom !== route.modelId ? 'fallback_succeeded' : 'succeeded';
         const output = { text: res.text, json };
@@ -318,6 +374,7 @@ export class Gateway {
           languageCheck,
           output,
           attempt,
+          attemptRecords,
         );
         await this.opts.audit.append(record);
         await reservation.release(actualCost);
@@ -342,11 +399,19 @@ export class Gateway {
           undefined,
           undefined,
           attempt,
+          attemptRecords,
         ),
       );
       await reservation.release(actualCost);
       const cls = (lastError?.class ?? 'PROVIDER_FAILED') as GatewayError['code'];
-      throw new GatewayError(cls, lastError?.message ?? 'all routes failed');
+      // The surfaced error names the classification that stopped the call, so an operator can tell a
+      // refused request from an exhausted set of retryable routes. Causal detail only; never prose.
+      throw new GatewayError(
+        cls,
+        lastFailureClass
+          ? `${lastError?.message ?? 'all routes failed'} [failure_class=${lastFailureClass}]`
+          : (lastError?.message ?? 'all routes failed'),
+      );
     } catch (err) {
       if (!(err instanceof GatewayError)) {
         await reservation.release(actualCost);
@@ -371,6 +436,7 @@ export class Gateway {
     languageCheck?: GatewayResponse['outputLanguageCheck'],
     output?: { text?: string | undefined; json?: unknown },
     attempt = 1,
+    attemptRecords?: AuditRecord['attempt_records'],
   ): AuditRecord {
     const now = (this.opts.clock ?? (() => new Date()))();
     const outText =
@@ -410,6 +476,7 @@ export class Gateway {
       repair_attempts: repairAttempts,
       fallback_from_model_id: fallbackFrom,
       error,
+      ...(attemptRecords && attemptRecords.length > 0 ? { attempt_records: attemptRecords } : {}),
       input_hash: sha(`${req.pack.renderedSystem}\u0000${req.pack.renderedUser}`),
       output_hash: outText !== undefined ? sha(outText) : undefined,
       output,
