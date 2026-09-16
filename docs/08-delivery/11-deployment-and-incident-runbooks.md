@@ -407,13 +407,36 @@ its checkpoint without re-spending completed steps. Thresholds come from the pin
 
 ### 9.8 Rate limiting or abuse incident
 
-**Not implemented.** Rate limiting is outstanding Checkpoint 7 scope; `yeonjae_rate_limited_total` is
-registered but nothing increments it yet. What exists today: a 1 MB request-body limit, security headers on
-every response including errors, CSRF enforcement on cookie-authenticated writes, and `Secure` cookies by
-default.
+Symptom: clients receive `429 RATE_LIMITED`; `yeonjae_rate_limited_total{scope}` rises.
 
-Until limits land, mitigate at the edge (load balancer or WAF). This section will be rewritten when the
-control exists; it deliberately does not describe a procedure for a feature that is absent.
+Per-scope sliding-window limits, keyed on client identity and enforced **before** authentication — a
+limiter after the auth check would still pay for a scrypt verification on every guess, so it could not stop
+credential stuffing.
+
+| Scope | Default | Covers |
+| --- | --- | --- |
+| `auth` | 10 / min | `/v1/auth/*` — tightest, because each attempt costs a scrypt verification |
+| `job` | 20 / min | job control and production starts (each can spend money) |
+| `mutation` | 60 / min | all other writes |
+| `stream` | 30 / min | SSE job-event streams |
+| `read` | 300 / min | inspectors and lists; loose enough for a polling operator UI |
+
+`/health`, `/ready` and `/metrics` are **exempt**: throttling a probe would make a load balancer eject a
+healthy instance under exactly the load the limiter exists to survive.
+
+**Client identity is not taken from a header by default.** `X-Forwarded-For` is believed only when the
+deployment names its trusted proxies (`trustedProxies`), and then only the rightmost *untrusted* hop is
+used. Configure it when running behind a load balancer; leaving it empty is safe but coarse, since every
+request behind the proxy shares the proxy's address.
+
+Triage: read the scope from the metric label to learn what is being hammered. A rise in `auth` with
+`yeonjae_auth_failures_total` is credential stuffing — the limiter is doing its job; consider blocking at the
+edge if it persists. A rise in `read` is usually a misbehaving client polling too fast.
+
+**Limitation, stated plainly: the window store is in-memory and per-process.** It resets on restart and is
+not shared between instances, so N instances permit roughly N× the configured rate. For a hard global limit,
+enforce at the edge (load balancer or WAF) as well. This is deliberately not called distributed rate
+limiting.
 
 ### 9.9 SSE disconnection and replay
 
@@ -502,7 +525,6 @@ entry) and Gitleaks.
 | Topic | Status |
 | --- | --- |
 | `apps/web` startup, build and deployment | **Does not exist.** Outstanding Checkpoint 7 scope. |
-| Rate-limit / abuse response | **Not implemented** (§9.8). |
 | Object storage, KMS, OAuth, live providers | Named in `.env.example` as planned; no code path reads them. |
 | Secret rotation for provider keys | No provider credential path exists to rotate. |
 | Threshold calibration | Evaluators are **uncalibrated**; contrast validation is deterministic replay agreement only (ADR-0029). |
@@ -521,5 +543,5 @@ entry) and Gitleaks.
 - **No production deployment has occurred.** §7, §8.2 and §8.3 are derived from the code, not from
   operational experience.
 - **Fencing does not abort in-flight spend** (§9.3).
-- **Rate limiting is absent** (§9.8).
+- **Rate limiting is per-process** (§9.8): it resets on restart and is not shared between instances.
 - **Vector retrieval is an interface only** — no embedder exists (ADR-0045).

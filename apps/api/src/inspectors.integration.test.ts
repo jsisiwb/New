@@ -33,6 +33,7 @@ import {
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import type { FastifyInstance } from 'fastify';
 import { buildApi } from './server.js';
+import { RateLimiter } from './rate-limit.js';
 import { CSRF_HEADER, WORKSPACE_HEADER } from './auth.js';
 import { ensureChapterTwo, seedAcceptedChapterOne, type SeededProject } from './testkit.js';
 
@@ -83,7 +84,13 @@ run('API: canon inspectors, costs and budgets (Checkpoint 7)', () => {
 
   beforeAll(async () => {
     pool = await freshDatabase();
-    app = buildApi({ pool, secureCookies: false });
+    app = buildApi({
+      pool,
+      secureCookies: false,
+      // These suites authenticate many times from one identity, which legitimately exceeds the
+      // production auth limit. The limiter is proved in its own unit and integration suites.
+      rateLimiter: RateLimiter.disabled(),
+    });
     await app.ready();
   }, 60_000);
 

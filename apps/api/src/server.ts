@@ -67,6 +67,7 @@ import {
 } from './canon-ops.js';
 import { type CorrectionResult } from './canon-deps.js';
 import { logLine, METRIC, METRIC_HELP, Metrics, traceIdFrom } from './observability.js';
+import { clientIdentity, rateLimited, RateLimiter, scopeFor } from './rate-limit.js';
 import { parseLastEventId, SSE_HEADERS, streamJobEvents, type SseSink } from './sse.js';
 import { ApiError, PROBLEM_CONTENT_TYPE, toProblem } from './problem.js';
 import {
@@ -91,6 +92,18 @@ export interface ApiOptions {
   readonly metrics?: Metrics | undefined;
   /** Where structured JSON log lines go. Defaults to stdout. */
   readonly logSink?: ((line: string) => void) | undefined;
+  /**
+   * Shared rate limiter. Injectable so a test can drive its clock, and so several Fastify instances in one
+   * process share one window set.
+   */
+  readonly rateLimiter?: RateLimiter | undefined;
+  /**
+   * Addresses of proxies whose `X-Forwarded-For` may be believed.
+   *
+   * EMPTY BY DEFAULT, and that default is the security property: a deployment that forgets to configure
+   * this gets limits keyed on the socket address, never on attacker-controlled header content.
+   */
+  readonly trustedProxies?: readonly string[] | undefined;
 }
 
 /** Maximum JSON body. A bounded body is the cheapest defence against memory-exhaustion requests. */
@@ -122,6 +135,8 @@ export function buildApi(options: ApiOptions): FastifyInstance {
    */
   const emit = options.logSink ?? ((line: string) => process.stdout.write(`${line}\n`));
   const observed = new Map<string, ObservedRequest>();
+  const limiter = options.rateLimiter ?? new RateLimiter();
+  const trustedProxies = options.trustedProxies ?? [];
 
   app.addHook('onRequest', async (req, reply) => {
     // Security headers on every response, including errors.
@@ -137,6 +152,28 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     const traceId = traceIdFrom(headerOf(req, 'traceparent'));
     if (traceId) reply.header('x-trace-id', traceId);
     observed.set(req.id, { traceId, startedAt: process.hrtime.bigint() });
+
+    /**
+     * Rate limiting, before authentication.
+     *
+     * Deliberately BEFORE the auth check: the login endpoint's cost is a scrypt verification, so a
+     * limiter that ran after authentication would still pay for every guess and could not stop credential
+     * stuffing. Health, readiness and metrics are exempt because throttling a probe would make a load
+     * balancer eject a healthy instance under exactly the load the limit exists to survive.
+     */
+    const route = req.routeOptions.url ?? 'unmatched';
+    if (route === '/health' || route === '/ready' || route === '/metrics') return;
+    const identity = clientIdentity(
+      { socketAddress: req.ip, forwardedFor: headerOf(req, 'x-forwarded-for') },
+      { trustedProxies },
+    );
+    const scope = scopeFor(req.method, route);
+    const verdict = limiter.check(scope, identity);
+    if (!verdict.allowed) {
+      metrics.increment(METRIC.rateLimited, METRIC_HELP[METRIC.rateLimited] ?? '', { scope });
+      reply.header('retry-after', String(verdict.retryAfterSeconds));
+      throw rateLimited(verdict.retryAfterSeconds);
+    }
   });
 
   /**
