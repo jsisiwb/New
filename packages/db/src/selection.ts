@@ -12,7 +12,8 @@
  *    caller commits; the other reads the committed decision. `SelectionConflictError` is typed, so a raw
  *    unique-violation never escapes into the workflow layer.
  */
-import { type Client, type Pool, rethrowCanon, withTransaction } from './client.js';
+import { type Client, type Pool, rethrowCanon } from './client.js';
+import { withFencedTransaction, type LeaseClaim } from './leases.js';
 
 type Queryable = Pool | Client;
 
@@ -63,6 +64,12 @@ export interface CommitSelectionInput {
   readonly selectionRequired: boolean;
   readonly schedule: string;
   readonly artifactId?: string | undefined;
+  /**
+   * The lease the deciding run holds, when it has one. The selection decision is what authorizes approval
+   * and canon acceptance downstream, so a fenced-out worker committing one would pre-authorize its own
+   * loser for a rival's chapter. Asserted inside this transaction with the decision itself.
+   */
+  readonly lease?: LeaseClaim | undefined;
 }
 
 /**
@@ -77,7 +84,7 @@ export async function commitSelection(
   pool: Pool,
   input: CommitSelectionInput,
 ): Promise<CandidateSelectionRow> {
-  return withTransaction(pool, async (client) => {
+  return withFencedTransaction(pool, input.lease, async (client) => {
     const inserted = await client
       .query<CandidateSelectionRow>(
         `INSERT INTO candidate_selections

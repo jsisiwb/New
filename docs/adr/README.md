@@ -49,6 +49,7 @@
 | [0045](0045-context-pack-retrieval-implementation.md) | Context packs are pure functions of pinned inputs; lexical retrieval is synchronous and accepted-only (SQL-enforced); vector retrieval is an interface until an embedder exists |
 | [0046](0046-chapter-production-implementation.md) | Chapter-production implementation: previous-chapter gate before spend, replay activity-id binding, global canon identity with per-test DB isolation |
 | [0047](0047-temporal-adapter-over-checkpointed-steps.md) | Temporal orchestrates the proven chapter loop as one durable activity over its Postgres checkpoints, not as decomposed activities |
+| [0048](0048-atomic-lease-fencing.md) | Lease fencing is asserted inside the transaction it protects (raising `LEASE_LOST`), closing the time-of-check/time-of-use gap a pre-step ownership read leaves open |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

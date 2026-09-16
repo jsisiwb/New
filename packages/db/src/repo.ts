@@ -3,6 +3,7 @@
  * `canon.commit_delta` / `canon.rollback_latest` so the atomic boundary is the SQL function, not this module.
  */
 import { type Client, type Pool, rethrowCanon, withTransaction } from './client.js';
+import { withFencedTransaction, type LeaseClaim } from './leases.js';
 import { measure, toNfcText } from '@yeonjae/prose';
 import { createHash } from 'node:crypto';
 import { type StoryClock } from '@yeonjae/domain';
@@ -358,6 +359,14 @@ export interface CommitInput {
   justification?: string | undefined;
   clockMax?: StoryClock | undefined;
   supersededManuscriptVersionId?: string | undefined;
+  /**
+   * The lease this commit is performed under, when the caller holds one.
+   *
+   * Present for orchestrated runs and absent for the CLI's single-operator path. When present, the fence is
+   * asserted in the SAME transaction as `canon.commit_delta`, so a worker that was fenced out after its
+   * last ownership read cannot land a commit: the assertion raises and the commit rolls back with it.
+   */
+  lease?: LeaseClaim | undefined;
 }
 
 export interface CommitResult {
@@ -367,9 +376,15 @@ export interface CommitResult {
   item_counts: Record<string, number>;
 }
 
-/** The atomic canon boundary. Runs canon.commit_delta inside one transaction. */
+/**
+ * The atomic canon boundary. Runs canon.commit_delta inside one transaction.
+ *
+ * When the caller holds a target lease, the fence assertion is the transaction's first statement. That
+ * placement is the guarantee: the check and the commit are one atomic unit, so unlike a pre-step ownership
+ * read there is no interval in which the lease can be stolen while the commit still succeeds.
+ */
 export async function commitDelta(pool: Pool, input: CommitInput): Promise<CommitResult> {
-  return withTransaction(pool, async (client) => {
+  return withFencedTransaction(pool, input.lease, async (client) => {
     const r = await client
       .query<{ commit_delta: CommitResult }>(
         `SELECT canon.commit_delta($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9::jsonb, $10) AS commit_delta`,

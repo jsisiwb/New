@@ -100,6 +100,20 @@ export function asWorkflowError(err: unknown, step: string): WorkflowError {
         cause: err,
       },
     );
+  // A fenced write refused by `canon.assert_lease_fence` arrives as LEASE_LOST. It is definitive and NOT
+  // retryable: another worker owns the target, so retrying would only attempt the same forbidden mutation.
+  if (code === 'LEASE_LOST')
+    return new WorkflowError('LEASE_LOST', message, {
+      step,
+      recommendedActions: ['review_conflicts'],
+      data: {
+        reason:
+          (err as { reason?: unknown }).reason === undefined
+            ? 'fenced_out'
+            : (err as { reason: unknown }).reason,
+      },
+      cause: err,
+    });
   if (code === 'STALE_CANON')
     return new WorkflowError('CANON_STALE', message, {
       step,

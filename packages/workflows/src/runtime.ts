@@ -15,6 +15,7 @@ import {
   leaseOwnership,
   putArtifact,
   updateJob,
+  withFencedTransaction,
   type GatewayAuditLike,
   type JobRow,
   type LlmOutputStore,
@@ -53,6 +54,16 @@ export interface HeldLease {
   readonly leaseId: string;
   readonly holderWorkflowId: string;
   readonly fence: string;
+  /**
+   * Optional local verdict that ownership is already known to be lost.
+   *
+   * The orchestrator's heartbeat renews the lease, and a `false` renewal is the database stating that this
+   * holder/fence pair is no longer live. That verdict arrives between step boundaries, so exposing it as a
+   * predicate lets the very next boundary fail closed on knowledge it already has, instead of issuing
+   * another ownership read that can only confirm the same thing. It is an accelerator, never the guarantee:
+   * the guarantee is `canon.assert_lease_fence` inside each protected transaction.
+   */
+  readonly lostLocally?: (() => string | undefined) | undefined;
 }
 
 export interface WorkflowContext {
@@ -160,8 +171,20 @@ export async function runStep<T>(
   // Then the operator's intent. `checkpointControl` throws JobControlStop, which the caller translates
   // into a clean, resumable halt.
   await checkpointControl(ctx.pool, { jobId: ctx.job.id, step });
-  const row = await beginJobStep(ctx.pool, { jobId: ctx.job.id, step, idempotencyKey: key });
-  await updateJob(ctx.pool, ctx.job.id, { status: 'running', currentStep: step, error: null });
+  /**
+   * The step's own durable bookkeeping is FENCED, not merely preceded by a check.
+   *
+   * `assertStillOwner` above is a separate transaction, so on its own it leaves a time-of-check/time-of-use
+   * gap: the lease can be stolen between that read and these writes. Performing the step-begin row and the
+   * job's running-status update inside one fenced transaction means a worker that lost its lease in that
+   * window rolls back instead of claiming the step — so a rival never finds a zombie's `running` step, and
+   * the zombie's own attempt counter does not advance.
+   */
+  const row = await withFencedTransaction(ctx.pool, ctx.lease, async (c) => {
+    const begun = await beginJobStep(c, { jobId: ctx.job.id, step, idempotencyKey: key });
+    await updateJob(c, ctx.job.id, { status: 'running', currentStep: step, error: null });
+    return begun;
+  });
   try {
     const result = await fn();
     await completeJobStep(ctx.pool, key, result);
@@ -196,6 +219,18 @@ export async function runStep<T>(
 async function assertStillOwner(ctx: WorkflowContext, step: string): Promise<void> {
   const lease = ctx.lease;
   if (!lease) return;
+  // A renewal the database already refused needs no second opinion: fail closed on it immediately.
+  const localLoss = lease.lostLocally?.();
+  if (localLoss !== undefined)
+    throw new WorkflowError(
+      'LEASE_LOST',
+      `lease renewal was refused (${localLoss}); stopping before ${step}`,
+      {
+        step,
+        recommendedActions: ['review_conflicts'],
+        data: { lease_id: lease.leaseId, fence: lease.fence, reason: localLoss },
+      },
+    );
   let state;
   try {
     state = await leaseOwnership(ctx.pool, {

@@ -8,7 +8,13 @@
  * optimistic check compare a value with itself, so a commit that landed between extraction and acceptance
  * would be absorbed silently instead of raising STALE_CANON (found by the B-6-2 racing-commit test).
  */
-import { commitDelta, getManuscriptVersion, type CommitResult, type Pool } from '@yeonjae/db';
+import {
+  commitDelta,
+  getManuscriptVersion,
+  type CommitResult,
+  type LeaseClaim,
+  type Pool,
+} from '@yeonjae/db';
 import { type StoryClock } from '@yeonjae/domain';
 import { toNfcText } from '@yeonjae/prose';
 import { verifyDelta, type VerificationIssue, type VerifyContext } from './verify.js';
@@ -32,6 +38,12 @@ export interface AcceptChapterInput {
   readonly timelines: VerifyContext['timelines'];
   readonly mainTimelineId: string;
   readonly knownEntityIds?: ReadonlySet<string> | undefined;
+  /**
+   * The target lease the accepting run holds, when it has one. Threaded straight through to `commitDelta`
+   * so the fence is asserted in the commit's own transaction — the only placement that actually prevents a
+   * fenced-out worker from accepting, since any earlier check can be overtaken before the commit runs.
+   */
+  readonly lease?: LeaseClaim | undefined;
 }
 
 /** Verify (deterministically) then commit atomically. Acceptance is set by the commit, never here. */
@@ -75,5 +87,6 @@ export async function acceptChapter(pool: Pool, input: AcceptChapterInput): Prom
     chapterId: input.chapterId,
     manuscriptVersionId: input.manuscriptVersionId,
     clockMax: input.clockMax,
+    ...(input.lease ? { lease: input.lease } : {}),
   });
 }

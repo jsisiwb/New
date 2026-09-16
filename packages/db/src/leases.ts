@@ -15,7 +15,7 @@
  *    lease presents a stale fence, and its renew/release is refused — which is what keeps a zombie worker
  *    from acting after its target was taken over.
  */
-import { type Client, type Pool, rethrowCanon } from './client.js';
+import { asCanonError, type Client, type Pool, rethrowCanon, withTransaction } from './client.js';
 
 type Queryable = Pool | Client;
 
@@ -181,6 +181,93 @@ export async function leaseOwnership(
   if (row.released_at !== null) return { owned: false, reason: 'released' };
   if (row.expired) return { owned: false, reason: 'expired' };
   return { owned: true, reason: 'held' };
+}
+
+/**
+ * A lease claim carried into a protected write. Deliberately the minimal triple the SQL assertion needs, so
+ * a caller cannot present a stale copy of a whole lease row and have extra fields excuse a bad fence.
+ */
+export interface LeaseClaim {
+  readonly leaseId: string;
+  readonly holderWorkflowId: string;
+  readonly fence: string | number;
+}
+
+/**
+ * Typed lease loss. Raised when a fenced write was refused because the caller had been superseded.
+ *
+ * `LEASE_LOST` is the stable code the API, the worker's retry classification and the operator UI all key
+ * on; the reason distinguishes the four ways ownership ends so an operator learns whether a worker died
+ * (expired), a rival took over (fenced_out), or cleanup already ran (released).
+ */
+export class LeaseLostError extends Error {
+  readonly code = 'LEASE_LOST';
+  constructor(
+    readonly reason: LeaseOwnership['reason'],
+    detail: string,
+  ) {
+    super(detail);
+    this.name = 'LeaseLostError';
+  }
+}
+
+const LEASE_REASONS: readonly LeaseOwnership['reason'][] = [
+  'fenced_out',
+  'expired',
+  'released',
+  'missing',
+];
+
+/** Recover the reason the SQL assertion reported, so the typed error keeps the database's verdict. */
+function leaseLostFrom(err: unknown): LeaseLostError | undefined {
+  const canon = asCanonError(err);
+  if (canon?.code !== 'LEASE_LOST') return undefined;
+  const reason = LEASE_REASONS.find((r) => canon.detail.includes(`(${r})`)) ?? 'fenced_out';
+  return new LeaseLostError(reason, canon.detail);
+}
+
+/**
+ * Assert, INSIDE the caller's transaction, that it still owns its lease — then let the caller mutate.
+ *
+ * This is the load-bearing half of fencing and the reason `leaseOwnership` alone is not enough. A pre-step
+ * ownership read and a later mutation are two separate transactions, so a lease can expire or be stolen in
+ * between and the mutation still lands: a time-of-check/time-of-use gap. Calling this as the first
+ * statement of the transaction that performs the mutation removes the gap entirely, because the assertion
+ * and the write commit or roll back together, and the assertion's `FOR SHARE` lock makes a concurrent steal
+ * wait rather than interleave.
+ *
+ * Use `withFencedTransaction` in preference to calling this directly; it makes forgetting the assertion
+ * impossible for the writes that need it.
+ */
+export async function assertLeaseFence(client: Client, claim: LeaseClaim): Promise<void> {
+  try {
+    await client.query('SELECT canon.assert_lease_fence($1, $2, $3)', [
+      claim.leaseId,
+      claim.holderWorkflowId,
+      String(claim.fence),
+    ]);
+  } catch (err) {
+    throw leaseLostFrom(err) ?? err;
+  }
+}
+
+/**
+ * Run `fn` in one transaction that begins with a lease-fence assertion.
+ *
+ * `claim` is optional because the unleased path is legitimate: the CLI runs the same pipeline as a single
+ * local operator with no rival to race, so requiring a lease there would break it. When a claim IS present
+ * the assertion is not optional — that is the whole point — so there is no way to hold a lease and skip the
+ * check while still using this helper.
+ */
+export async function withFencedTransaction<T>(
+  pool: Pool,
+  claim: LeaseClaim | undefined,
+  fn: (client: Client) => Promise<T>,
+): Promise<T> {
+  return withTransaction(pool, async (client) => {
+    if (claim) await assertLeaseFence(client, claim);
+    return fn(client);
+  });
 }
 
 /** The live lease on a target, if any. Used to tell an operator which run is in the way. */

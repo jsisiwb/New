@@ -128,29 +128,34 @@ export function createActivities(deps: ActivityDeps) {
       /**
        * Heartbeat and lease renewal.
        *
-       * Renewal failure is NEVER ignored. The previous version swallowed both a `false` result and a
-       * thrown error, which meant a worker could keep drafting, evaluating and committing canon after its
-       * lease had expired or been stolen at a higher fence — exactly the zombie this lease exists to
-       * prevent. Now the outcome is recorded and the *step boundary* enforces it: `runStep` re-verifies
-       * ownership before every unit of work, so a fenced-out run stops before its next durable side
-       * effect rather than at some arbitrary point inside one.
+       * A `false` renewal is DEFINITIVE LEASE LOSS and is treated as such immediately. `false` is returned
+       * only when the conditional UPDATE matched no row, which means this holder/fence pair is no longer
+       * the live lease — it was released, expired and stolen, or superseded at a higher fence. That is a
+       * verdict from the database, not an ambiguity, and the previous version discarded it: it recorded
+       * only thrown errors and left a fenced-out run heartbeating happily until the next step boundary
+       * happened to notice. A thrown error, by contrast, says nothing about ownership (it is usually a
+       * transport fault), so it is recorded and left to the ownership read rather than aborting a healthy
+       * run on a blip.
        *
-       * The callback is deliberately not `void`-discarded: an interval callback that returns a rejected
-       * promise is an unhandled rejection, so the async work is wrapped and its failure captured.
+       * Losing the lease cancels production promptly instead of waiting for the next `runStep` boundary,
+       * and the fenced transactions inside the pipeline are what make the stop SAFE rather than merely
+       * fast: any durable mutation attempted in the meantime is refused by `canon.assert_lease_fence`.
        */
       let renewalError: unknown;
+      let leaseLost: 'renewal_refused' | undefined;
       const beat = (): void => {
         void (async () => {
           try {
             ctx.heartbeat({ chapterNo: input.chapterNo });
-            await renewTargetLease(pool, {
+            const renewed = await renewTargetLease(pool, {
               leaseId: input.lease.leaseId,
               holderWorkflowId: input.lease.holderWorkflowId,
               fence: input.lease.fence,
             });
+            if (!renewed) leaseLost = 'renewal_refused';
           } catch (err) {
-            // Recorded, not thrown: throwing from a timer cannot be caught by the activity. The
-            // authoritative check is the ownership read at the next step boundary.
+            // Recorded, not thrown: throwing from a timer cannot be caught by the activity. A transport
+            // fault is not evidence of lease loss, so the ownership read decides.
             renewalError = err;
           }
         })();
@@ -184,6 +189,9 @@ export function createActivities(deps: ActivityDeps) {
               leaseId: input.lease.leaseId,
               holderWorkflowId: input.lease.holderWorkflowId,
               fence: input.lease.fence,
+              // The heartbeat's refused renewal reaches the pipeline through this predicate, so the next
+              // step boundary stops the run on a verdict the database has already given.
+              lostLocally: () => leaseLost,
             },
             projectId: input.projectId,
             chapterNo: input.chapterNo,

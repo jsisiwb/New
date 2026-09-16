@@ -935,6 +935,7 @@ async function finish(
       selectionRequired: true,
       schedule: SELECTION_SCHEDULE,
       artifactId: ref.artifact_id,
+      ...(ctx.lease ? { lease: ctx.lease } : {}),
     });
   } catch (err) {
     if (err instanceof SelectionConflictError)

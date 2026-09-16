@@ -53,6 +53,10 @@ no single place to read what happened.
    logical run from starting twice. Migration 0008's **target leases** stop a *different* run — an operator
    regeneration, say — from racing the same chapter; leases carry a TTL so a dead worker cannot block a
    target forever, and a monotone **fence** so a revived holder cannot act after its lease was stolen.
+   **Superseded in mechanism by ADR-0048**: as delivered here the fence was enforced by a pre-step
+   ownership read, which leaves a time-of-check/time-of-use gap between the check and the write. ADR-0048
+   moves the fence assertion inside the transaction that performs each protected mutation, which is what
+   makes this sentence true as written.
 5. **Activity contracts are versioned and carry no prose.** Only identifiers, hashes and counters cross the
    boundary; the story intake and bible are passed as content-addressed artifact ids and loaded by the
    activity. Workflow history therefore stays bounded and never becomes a second, unguarded copy of
