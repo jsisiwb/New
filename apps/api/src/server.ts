@@ -43,6 +43,17 @@ import {
   type WorkspaceScope,
 } from './auth.js';
 import { withIdempotency } from './idempotency.js';
+import {
+  CONTENT_TYPES,
+  exportContent,
+  exportOr404,
+  parseTypography,
+  persistExport,
+  persistFailedExport,
+  renderExport,
+  safeFilename,
+  type ExportRow,
+} from './export.js';
 import { requireVerb } from './verbs.js';
 import { parseLastEventId, SSE_HEADERS, streamJobEvents, type SseSink } from './sse.js';
 import { ApiError, PROBLEM_CONTENT_TYPE, toProblem } from './problem.js';
@@ -592,6 +603,153 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     };
   });
 
+  // ---- export lifecycle (accepted content only) -----------------------------------------------------
+  app.post('/v1/projects/:projectId/exports', async (req, reply) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'editor');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    const body = asObject(req.body);
+    const format = requireEnum(body.format, ['txt', 'docx'] as const, 'body.format');
+    const chapters = parseChapterScope(body.chapters);
+    const typography = parseTypography(
+      body.options === undefined ? undefined : asObject(body.options, 'body.options'),
+    );
+
+    const outcome = await inScope(pool, scope, async (c) =>
+      withIdempotency(
+        c,
+        {
+          workspaceId: scope.workspaceId,
+          key: headerOf(req, 'idempotency-key'),
+          method: 'POST',
+          route: '/v1/projects/:projectId/exports',
+          body: req.body,
+        },
+        async () => {
+          const project = await projectOr404(c, projectId);
+          const scopeJson = { chapters: chapters ?? 'all_accepted' };
+          const optionsJson = {
+            paragraph_style: typography.paragraphStyle,
+            locale: typography.locale,
+            include_chapter_headings: typography.includeChapterHeadings,
+          };
+          let rendered;
+          try {
+            rendered = await renderExport(pool, {
+              projectId,
+              title: project.title,
+              format,
+              typography,
+              ...(chapters ? { chapters } : {}),
+            });
+          } catch (err) {
+            // A chapter that is not accepted is a legitimate, typed refusal. It is recorded so the operator
+            // can see that the export was attempted and why it did not happen — but in a SEPARATE scoped
+            // transaction, because this one is about to roll back as the error propagates. Writing the
+            // record here would roll it back with everything else, leaving a silent refusal.
+            const wf = err as { code?: string; detail?: string };
+            await inScope(pool, scope, async (failureClient) => {
+              const row = await persistFailedExport(failureClient, {
+                workspaceId: scope.workspaceId,
+                projectId,
+                requestedBy: scope.principal.user.id,
+                format,
+                scope: scopeJson,
+                options: optionsJson,
+                error: { code: wf.code ?? 'INTERNAL', detail: wf.detail ?? 'export failed' },
+              });
+              await audit(failureClient, scope, {
+                action: 'export.request',
+                targetKind: 'export',
+                targetId: row.id,
+                projectId,
+                requestId: req.id,
+                detail: { format, status: 'failed', code: wf.code ?? 'INTERNAL' },
+              });
+            });
+            throw err;
+          }
+          const row = await persistExport(c, {
+            workspaceId: scope.workspaceId,
+            projectId,
+            requestedBy: scope.principal.user.id,
+            format,
+            scope: scopeJson,
+            options: optionsJson,
+            rendered,
+          });
+          await audit(c, scope, {
+            action: 'export.request',
+            targetKind: 'export',
+            targetId: row.id,
+            projectId,
+            requestId: req.id,
+            detail: { format, chapters: rendered.chapterNumbers.length },
+          });
+          return { status: 201, body: exportView(row) };
+        },
+      ),
+    );
+    return reply.status(outcome.status).send(outcome.body);
+  });
+
+  app.get('/v1/projects/:projectId/exports/:exportId', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const params = req.params as { projectId?: string; exportId?: string };
+    const projectId = requireUuid(params.projectId, 'params.projectId');
+    const exportId = requireUuid(params.exportId, 'params.exportId');
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      const row = await exportOr404(c, exportId);
+      // An export id from another project in the same workspace must not resolve under this project.
+      if (row.project_id !== projectId)
+        throw new ApiError('NOT_FOUND', 'The export does not exist.');
+      return exportView(row);
+    });
+  });
+
+  /**
+   * Download an export's bytes. The request names an export ID; there is no filesystem path anywhere in it,
+   * so traversal is impossible rather than merely filtered, and the filename in Content-Disposition is
+   * derived from the project title through an ASCII-only slug.
+   */
+  app.get('/v1/projects/:projectId/exports/:exportId/content', async (req, reply) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const params = req.params as { projectId?: string; exportId?: string };
+    const projectId = requireUuid(params.projectId, 'params.projectId');
+    const exportId = requireUuid(params.exportId, 'params.exportId');
+    const { project, row, content } = await inScope(pool, scope, async (c) => {
+      const found = await projectOr404(c, projectId);
+      const result = await exportContent(c, exportId);
+      if (result.row.project_id !== projectId)
+        throw new ApiError('NOT_FOUND', 'The export does not exist.');
+      return { project: found, ...result };
+    });
+    await inScope(pool, scope, async (c) =>
+      audit(c, scope, {
+        action: 'export.download',
+        targetKind: 'export',
+        targetId: exportId,
+        projectId,
+        requestId: req.id,
+        detail: { format: row.format, bytes: content.byteLength },
+      }),
+    );
+    return reply
+      .header('content-type', CONTENT_TYPES[row.format])
+      .header(
+        'content-disposition',
+        `attachment; filename="${safeFilename(project.title, row.format)}"`,
+      )
+      .header('x-content-hash', row.content_hash ?? '')
+      .send(content);
+  });
+
   return app;
 }
 
@@ -742,6 +900,53 @@ async function audit(
       JSON.stringify(input.detail ?? {}),
     ],
   );
+}
+
+/** Validate an optional explicit chapter scope. An empty array is a client error, not "everything". */
+function parseChapterScope(value: unknown): readonly number[] | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length === 0)
+    throw new ApiError(
+      'VALIDATION_FAILED',
+      'body.chapters must be a non-empty array of chapter numbers.',
+      {
+        errors: [{ path: 'body.chapters', message: 'non-empty array of integers' }],
+      },
+    );
+  if (value.length > 500)
+    throw new ApiError('VALIDATION_FAILED', 'body.chapters may name at most 500 chapters.', {
+      errors: [{ path: 'body.chapters', message: 'at most 500 entries' }],
+    });
+  // `value` arrives as `any[]` from JSON. Each entry is checked to be a number here rather than handed to
+  // requireInt untyped, so a nested object or array cannot reach the coercion.
+  const numbers = (value as unknown[]).map((entry, i) => {
+    if (typeof entry !== 'number')
+      throw new ApiError('VALIDATION_FAILED', 'body.chapters must contain chapter numbers.', {
+        errors: [{ path: `body.chapters[${i}]`, message: 'must be an integer' }],
+      });
+    return requireInt(entry, `body.chapters[${i}]`, { min: 1, max: 10_000 });
+  });
+  // Deterministic order regardless of how the client listed them, and no duplicate chapter in the output.
+  return [...new Set(numbers)].sort((a, b) => a - b);
+}
+
+/** The safe public view of an export. `content` is never serialized into JSON. */
+function exportView(row: ExportRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    project_id: row.project_id,
+    format: row.format,
+    status: row.status,
+    canon_version: row.canon_version,
+    chapter_numbers: row.chapter_numbers,
+    content_hash: row.content_hash,
+    byte_size: row.byte_size,
+    error: row.error,
+    created_at: row.created_at,
+    completed_at: row.completed_at,
+    download_path:
+      row.status === 'ready' ? `/v1/projects/${row.project_id}/exports/${row.id}/content` : null,
+  };
 }
 
 /** Cursor page envelope with a deterministic next cursor. */
