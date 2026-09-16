@@ -55,6 +55,7 @@ import {
   type ExportRow,
 } from './export.js';
 import { requireVerb } from './verbs.js';
+import { registerResourceRoutes } from './resource-routes.js';
 import {
   correct as correctCanonOp,
   correctionView,
@@ -1385,6 +1386,19 @@ export function buildApi(options: ApiOptions): FastifyInstance {
       )
       .header('x-content-hash', row.content_hash ?? '')
       .send(content);
+  });
+
+  // The operator-editable resource families (API plan §1) live in their own module for size; they share
+  // this file's authentication, scoping, audit and pagination helpers rather than re-deriving them, so
+  // there is exactly one implementation of each rule.
+  registerResourceRoutes(app, {
+    pool,
+    scoped: (req) => scoped(pool, req),
+    inScope: (scope, fn) => inScope(pool, scope, fn),
+    projectOr404,
+    audit,
+    pageOf,
+    headerOf,
   });
 
   return app;
