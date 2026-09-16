@@ -67,6 +67,21 @@ jobs:
             echo "::error::apps/web journey tests did not run"; exit 1; }
           grep -q "has no accessibility violations" coverage/junit.xml || {
             echo "::error::apps/web accessibility tests did not run"; exit 1; }
+      - name: 120-chapter continuity replay actually ran (B-4-1 deterministic portion)
+        # Same reasoning as the guards above. This suite is the only long-form evidence that chapter k
+        # inherits chapter k−1's ACCEPTED state across 120 links, that canon advances exactly once per
+        # acceptance, and that retry/resume duplicates nothing — a silent skip would turn all of that
+        # into an unverified claim.
+        run: |
+          grep -q "B-4-1 120-chapter replay completion evidence" coverage/junit.xml || {
+            echo "::error::the 120-chapter continuity replay did not run"; exit 1; }
+      - name: 120-chapter continuity replay, explicit run with its no-skip guard
+        # `pnpm test:replay-120` refuses to start without DATABASE_URL and fails unless the suite's own
+        # completion evidence records a full 120-chapter run with zero replay misses and zero live
+        # provider calls. No credentials and no paid provider are involved.
+        run: pnpm test:replay-120
+        env:
+          CI: 'true'
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
