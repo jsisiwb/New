@@ -16,8 +16,13 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import {
   createSession,
   entitiesOfType,
+  isTerminalStatus,
+  jobControlOf,
+  jobEventsAfter,
   listCommits,
   manuscriptVersionsOf,
+  needsAttention,
+  requestJobControl,
   revokeSession,
   timelinesOf,
   verifyPassword,
@@ -38,6 +43,8 @@ import {
   type WorkspaceScope,
 } from './auth.js';
 import { withIdempotency } from './idempotency.js';
+import { requireVerb } from './verbs.js';
+import { parseLastEventId, SSE_HEADERS, streamJobEvents, type SseSink } from './sse.js';
 import { ApiError, PROBLEM_CONTENT_TYPE, toProblem } from './problem.js';
 import {
   asObject,
@@ -424,6 +431,130 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     });
   });
 
+  app.get('/v1/jobs/:jobId', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const jobId = requireUuid((req.params as { jobId?: string }).jobId, 'params.jobId');
+    return inScope(pool, scope, async (c) => {
+      const job = await jobRowOr404(c, jobId);
+      const steps = await c.query<{
+        step: string;
+        status: string;
+        attempt: number;
+        error: Record<string, unknown> | null;
+      }>(
+        `SELECT step, status, attempt, error FROM job_steps WHERE job_id = $1
+          ORDER BY started_at, id`,
+        [jobId],
+      );
+      return {
+        ...job,
+        attention: needsAttention(job.status),
+        terminal: isTerminalStatus(job.status),
+        steps: steps.rows,
+      };
+    });
+  });
+
+  // Pause / resume / cancel. These are intents: the runtime observes them at a checkpoint boundary, so no
+  // step is torn in half and a cancelled run leaves nothing partial in canon (packages/db/job-control.ts).
+  //
+  // One route serves all three verbs because Fastify reads `/:jobId\\:pause` as a single parameter named
+  // `jobId:pause`; registering the three patterns separately makes the first silently answer all of them,
+  // which would run the pause handler (editor) for a cancel request (owner). See ./verbs.ts.
+  app.post('/v1/jobs/:jobAction', async (req, reply) => {
+    const { id, verb: action } = requireVerb((req.params as { jobAction?: string }).jobAction, [
+      'pause',
+      'resume',
+      'cancel',
+    ] as const);
+    const scope = await scoped(pool, req);
+    // Cancelling discards work that has already been paid for, so it is an owner operation; pause and
+    // resume are ordinary production control an editor performs.
+    requireRole(scope, action === 'cancel' ? 'owner' : 'editor');
+    const jobId = requireUuid(id, 'params.jobId');
+    const outcome = await inScope(pool, scope, async (c) =>
+      withIdempotency(
+        c,
+        {
+          workspaceId: scope.workspaceId,
+          key: headerOf(req, 'idempotency-key'),
+          method: 'POST',
+          route: `/v1/jobs/:jobId:${action}`,
+          body: req.body ?? null,
+        },
+        async () => {
+          const job = await jobRowOr404(c, jobId);
+          const result = await requestJobControl(c, {
+            jobId,
+            control: action === 'resume' ? 'run' : action,
+            actorUserId: scope.principal.user.id,
+          });
+          await audit(c, scope, {
+            action: `job.${action}`,
+            targetKind: 'job',
+            targetId: jobId,
+            projectId: job.project_id,
+            requestId: req.id,
+            detail: { applied: result.applied, reason: result.reason ?? null },
+          });
+          return {
+            // A refused request is reported truthfully rather than as a silent success: the client is
+            // told the job is terminal / not paused / already requested, and can act on it.
+            status: result.applied ? 202 : 200,
+            body: {
+              job_id: jobId,
+              status: result.job.status,
+              control: jobControlOf(result.job),
+              applied: result.applied,
+              reason: result.reason ?? null,
+            },
+          };
+        },
+      ),
+    );
+    return reply.status(outcome.status).send(outcome.body);
+  });
+
+  /**
+   * Job progress as server-sent events, replayed from the persisted `job_events` log.
+   *
+   * Every poll runs in its own RLS-scoped transaction rather than holding one open for the stream's
+   * lifetime: a long-lived transaction would pin a connection and an old snapshot, and would therefore
+   * never observe the events it exists to deliver.
+   */
+  app.get('/v1/jobs/:jobId/events', async (req, reply) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const jobId = requireUuid((req.params as { jobId?: string }).jobId, 'params.jobId');
+    const fromSeq = parseLastEventId(headerOf(req, 'last-event-id'));
+
+    // Authorize and confirm visibility before a single byte of stream is written, so an unauthorized or
+    // foreign job produces a normal problem document instead of a half-open event stream.
+    await inScope(pool, scope, async (c) => jobRowOr404(c, jobId));
+
+    reply.raw.writeHead(200, { ...SSE_HEADERS, 'x-request-id': req.id });
+    const sink: SseSink = {
+      write: (chunk) => {
+        reply.raw.write(chunk);
+      },
+      end: () => {
+        reply.raw.end();
+      },
+      // Re-read the socket state on every call: the client can vanish between two frames.
+      isClosed: () => reply.raw.writableEnded || reply.raw.destroyed || req.raw.destroyed,
+    };
+    const result = await streamJobEvents({
+      sink,
+      fromSeq,
+      readEvents: (afterSeq, limit) =>
+        inScope(pool, scope, async (c) => jobEventsAfter(c, { jobId, afterSeq, limit })),
+    });
+    if (!sink.isClosed()) reply.raw.end();
+    req.log.debug({ request_id: req.id, ...result }, 'sse stream finished');
+    return reply;
+  });
+
   app.get('/v1/projects/:projectId/workflows/:chapterNo/status', async (req) => {
     const scope = await scoped(pool, req);
     requireRole(scope, 'viewer');
@@ -517,6 +648,47 @@ async function projectOr404(
   );
   const row = r.rows[0];
   if (!row) throw new ApiError('NOT_FOUND', 'The project does not exist.');
+  return row;
+}
+
+/**
+ * Read a job inside the RLS scope. A job belonging to another workspace is invisible, so this answers the
+ * same 404 as a job that does not exist — a job id must not be a cross-tenant existence probe.
+ */
+async function jobRowOr404(
+  c: Client,
+  jobId: string,
+): Promise<{
+  id: string;
+  project_id: string;
+  kind: string;
+  status: string;
+  control: string;
+  current_step: string | null;
+  spend_cents: string;
+  error: Record<string, unknown> | null;
+  created_at: Date;
+  finished_at: Date | null;
+}> {
+  const r = await c.query<{
+    id: string;
+    project_id: string;
+    kind: string;
+    status: string;
+    control: string;
+    current_step: string | null;
+    spend_cents: string;
+    error: Record<string, unknown> | null;
+    created_at: Date;
+    finished_at: Date | null;
+  }>(
+    `SELECT id, project_id, kind, status, control, current_step, spend_cents::text AS spend_cents,
+            error, created_at, finished_at
+       FROM jobs WHERE id = $1`,
+    [jobId],
+  );
+  const row = r.rows[0];
+  if (!row) throw new ApiError('NOT_FOUND', 'The job does not exist.');
   return row;
 }
 
