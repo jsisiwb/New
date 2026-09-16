@@ -426,6 +426,307 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     });
   });
 
+  // ---- canon inspectors: facts, promises, evidence, dependencies, stale -----------------------------
+  //
+  // All read-only, all `viewer`, all through the RLS-scoped connection. Each is a paginated projection of
+  // canon the operator UI's inspector screens need; none of them can return unaccepted text, because none
+  // of them reads manuscript bodies at all — they return canon items, references and counts.
+
+  app.get('/v1/projects/:projectId/canon/facts', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    const query = req.query as { entity?: string; attribute?: string };
+    const page = parsePage(query);
+    // Optional filters are validated when present rather than interpolated: an unvalidated `entity` would
+    // be a parameter either way, but a malformed one should be a 422 naming the field, not an empty page.
+    const entity = query.entity === undefined ? null : requireUuid(query.entity, 'query.entity');
+    const attribute =
+      query.attribute === undefined ? null : requireString(query, 'attribute', { max: 200 });
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      const rows = await c.query<{
+        id: string;
+        entity_id: string;
+        attribute: string;
+        key: string | null;
+        value_text: string | null;
+        frame: string;
+        confidence: number;
+        locked: boolean;
+        asserted_at_version: number;
+        retracted_at_version: number | null;
+      }>(
+        // `locked` and the retraction version travel with each fact so an inspector can render a locked
+        // fact and a retracted one distinctly instead of showing every row as live canon.
+        `SELECT id, entity_id, attribute, key, value_text, frame, confidence, locked,
+                asserted_at_version, retracted_at_version
+           FROM facts
+          WHERE project_id = $1
+            AND ($2::uuid IS NULL OR entity_id = $2::uuid)
+            AND ($3::text IS NULL OR attribute = $3::text)
+            AND ($4::uuid IS NULL OR id > $4::uuid)
+          ORDER BY id
+          LIMIT $5`,
+        [projectId, entity, attribute, page.after ?? null, page.limit + 1],
+      );
+      return pageOf(rows.rows, page.limit, (r) => r.id);
+    });
+  });
+
+  app.get('/v1/projects/:projectId/canon/promises', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    const query = req.query as { status?: string };
+    const page = parsePage(query);
+    const status =
+      query.status === undefined
+        ? null
+        : requireEnum(
+            query.status,
+            ['open', 'partially_paid', 'paid', 'broken', 'abandoned', 'rescheduled'] as const,
+            'query.status',
+          );
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      const rows = await c.query<{
+        id: string;
+        type: string;
+        statement: string;
+        status: string;
+        importance: string;
+        due_min_chapter: number | null;
+        due_max_chapter: number | null;
+      }>(
+        `SELECT id, type, statement, status, importance, due_min_chapter, due_max_chapter
+           FROM promises
+          WHERE project_id = $1
+            AND ($2::text IS NULL OR status = $2::text)
+            AND ($3::uuid IS NULL OR id > $3::uuid)
+          ORDER BY id
+          LIMIT $4`,
+        [projectId, status, page.after ?? null, page.limit + 1],
+      );
+      return pageOf(rows.rows, page.limit, (r) => r.id);
+    });
+  });
+
+  /**
+   * Evidence for one canon fact.
+   *
+   * Evidence spans DO quote manuscript text — that is what evidence is — so this route is the one canon
+   * inspector that can surface prose. It is therefore restricted to spans whose manuscript version is
+   * ACCEPTED: an evidence row pointing at a working or quarantined draft must not become a way to read
+   * unaccepted text through the canon API. The join is what enforces it, not a filter applied afterwards.
+   */
+  app.get('/v1/projects/:projectId/canon/facts/:factId/evidence', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const params = req.params as { projectId?: string; factId?: string };
+    const projectId = requireUuid(params.projectId, 'params.projectId');
+    const factId = requireUuid(params.factId, 'params.factId');
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      const fact = await c.query<{ id: string }>(
+        'SELECT id FROM facts WHERE id = $1 AND project_id = $2',
+        [factId, projectId],
+      );
+      if (!fact.rows[0]) throw new ApiError('NOT_FOUND', 'No such canon fact.');
+      const rows = await c.query<{
+        manuscript_version_id: string;
+        chapter_no: number | null;
+        paragraph_id: string | null;
+        quote: string;
+        start_cp: number;
+        end_cp: number;
+      }>(
+        `SELECT s.manuscript_version_id, s.chapter_no, s.paragraph_id, s.quote,
+                s.start_cp, s.end_cp
+           FROM fact_evidence fe
+           JOIN evidence_spans s ON s.id = fe.evidence_span_id
+           JOIN manuscript_versions m ON m.id = s.manuscript_version_id
+          WHERE fe.fact_id = $1 AND m.status = 'accepted'
+          ORDER BY s.chapter_no NULLS LAST, s.start_cp`,
+        [factId],
+      );
+      return { fact_id: factId, items: rows.rows };
+    });
+  });
+
+  app.get('/v1/projects/:projectId/canon/dependencies', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    const query = req.query as { materiality?: string };
+    const page = parsePage(query);
+    const materiality =
+      query.materiality === undefined
+        ? null
+        : requireEnum(query.materiality, ['material', 'contextual'] as const, 'query.materiality');
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      const rows = await c.query<{
+        id: string;
+        dependent_kind: string;
+        dependent_id: string;
+        canon_item_kind: string;
+        canon_item_ref: string;
+        materiality: string;
+        basis: string;
+        canon_version_read: number;
+      }>(
+        `SELECT id, dependent_kind, dependent_id, canon_item_kind, canon_item_ref,
+                materiality, basis, canon_version_read
+           FROM dependency_edges
+          WHERE project_id = $1
+            AND ($2::text IS NULL OR materiality = $2::text)
+            AND ($3::uuid IS NULL OR id > $3::uuid)
+          ORDER BY id
+          LIMIT $4`,
+        [projectId, materiality, page.after ?? null, page.limit + 1],
+      );
+      return pageOf(rows.rows, page.limit, (r) => r.id);
+    });
+  });
+
+  /**
+   * Stale artifacts: what a canon change invalidated, and what it merely suggests reviewing.
+   *
+   * The two lists are returned separately because the data architecture's material/contextual split is the
+   * whole point (ADR-0032): a material dependent is genuinely stale, a contextual one is a suggestion. A
+   * single merged list would present a suggestion as an invalidation and push operators toward needless
+   * regeneration.
+   */
+  app.get('/v1/projects/:projectId/canon/stale', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      const staleChapters = await c.query<{ number: number; status: string }>(
+        `SELECT number, status FROM chapters
+          WHERE project_id = $1 AND status IN ('stale', 'retconned', 'superseded')
+          ORDER BY number`,
+        [projectId],
+      );
+      // The accepted versions belonging to those chapters. Staleness is recorded on the CHAPTER
+      // (`chapters.status`), not on the immutable version row — a manuscript version never mutates, so it
+      // has no staleness field to read. Listing its id lets an operator jump straight to the artifact.
+      const staleVersions = await c.query<{ id: string; chapter_no: number }>(
+        `SELECT ch.accepted_version_id AS id, ch.number AS chapter_no
+           FROM chapters ch
+          WHERE ch.project_id = $1
+            AND ch.status IN ('stale', 'retconned', 'superseded')
+            AND ch.accepted_version_id IS NOT NULL
+          ORDER BY ch.number
+          LIMIT 500`,
+        [projectId],
+      );
+      return {
+        stale_chapters: staleChapters.rows,
+        stale_versions: staleVersions.rows,
+        // Named explicitly so a client cannot mistake review suggestions for invalidations.
+        note: 'stale entries are material invalidations; contextual dependents appear under /canon/dependencies?materiality=contextual as review suggestions only',
+      };
+    });
+  });
+
+  // ---- costs, budgets and spend ---------------------------------------------------------------------
+  //
+  // Cost data is derived from the append-only `llm_calls` audit, which records hashes, sizes and cents —
+  // never prompt bodies or outputs. A cost dashboard therefore cannot leak prose by construction.
+  app.get('/v1/projects/:projectId/costs', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    const groupBy = requireEnum(
+      (req.query as { group_by?: string }).group_by ?? 'role',
+      ['role', 'model', 'chapter'] as const,
+      'query.group_by',
+    );
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      // The grouping column is chosen from a closed set above and mapped here, so no client string ever
+      // reaches the SQL text.
+      const column =
+        groupBy === 'role' ? 'role' : groupBy === 'model' ? 'model_class' : 'activity_id';
+      const rows = await c.query<{
+        group_key: string | null;
+        calls: string;
+        cost_cents: string;
+        input_tokens: string;
+        output_tokens: string;
+      }>(
+        // Token counts live inside the audit's `usage` jsonb rather than as columns, so they are summed
+        // out of it. A missing or non-numeric entry contributes 0 instead of failing the whole dashboard.
+        `SELECT ${column} AS group_key,
+                count(*)::text AS calls,
+                coalesce(sum(cost_cents), 0)::text AS cost_cents,
+                coalesce(sum((usage->>'input_tokens')::bigint), 0)::text AS input_tokens,
+                coalesce(sum((usage->>'output_tokens')::bigint), 0)::text AS output_tokens
+           FROM llm_calls
+          WHERE project_id = $1
+          GROUP BY ${column}
+          ORDER BY coalesce(sum(cost_cents), 0) DESC, ${column}
+          LIMIT 200`,
+        [projectId],
+      );
+      const total = rows.rows.reduce((sum, r) => sum + Number(r.cost_cents), 0);
+      return {
+        group_by: groupBy,
+        total_cost_cents: total,
+        items: rows.rows.map((r) => ({
+          group_key: r.group_key,
+          calls: Number(r.calls),
+          cost_cents: Number(r.cost_cents),
+          input_tokens: Number(r.input_tokens),
+          output_tokens: Number(r.output_tokens),
+        })),
+      };
+    });
+  });
+
+  app.get('/v1/projects/:projectId/budgets', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    return inScope(pool, scope, async (c) => {
+      const project = await projectOr404(c, projectId);
+      const spend = await c.query<{ cents: string }>(
+        'SELECT coalesce(sum(cost_cents), 0)::text AS cents FROM llm_calls WHERE project_id = $1',
+        [projectId],
+      );
+      return {
+        project_id: projectId,
+        quality_tier: project.quality_tier,
+        spend_cents: Number(spend.rows[0]?.cents ?? '0'),
+        // The authoritative limits live in the pinned Production Policy, not in a mutable API field
+        // (ADR-0041). Reporting the pinned version rather than a copied number is what keeps the
+        // "numbers live in one place" rule true of the API as well.
+        production_policy_version: project.production_policy_version,
+      };
+    });
+  });
+
   // ---- canon operator actions: correction, retcon, regeneration preview, rollback -------------------
   //
   // The API plan specifies these as colon verbs on the canon resource. They are the authorized HTTP
