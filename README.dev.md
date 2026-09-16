@@ -4,6 +4,8 @@
 
 - Node 22 LTS (`.nvmrc`), pnpm 10 (`corepack enable` or `npm i -g pnpm@10`)
 - Python 3.12 with `jsonschema` for the planning validator (`pip install jsonschema`)
+- Temporal (optional locally; the test suite downloads and runs the time-skipping test server itself, so no
+  server and no credentials are needed for `pnpm test`)
 - Postgres 16 with `btree_gist` (bundled) — `DATABASE_URL=postgres://user:pass@127.0.0.1:5432/yeonjae_test`; integration tests skip (visibly) when it is unset
 
 ## Commands
@@ -44,11 +46,20 @@ pnpm cli export:accepted <projectId>                # accepted chapter 1 summary
 
 ```
 apps/cli            operator surface for the core loop (first app, ADR-0044)
+apps/worker         Checkpoint 7 durable orchestration (ADR-0047): a Temporal worker whose workflow
+                    acquires a fenced target lease, observes the operator's pause/cancel intent at
+                    checkpoint boundaries, runs packages/workflows' produceChapter as ONE durable
+                    activity (which keeps its own Postgres step checkpoints, so a restart replays and
+                    re-spends nothing), settles the terminal job state and releases the lease.
+                    Versioned, prose-free activity contracts; retries classified by failure meaning;
+                    replay-only provider routing — it refuses to start without YEONJAE_PROVIDER_MODE
 apps/api            Checkpoint 7 Fastify /v1 operator API: session/API-key auth, membership-derived
                     authorization, RLS-scoped requests, RFC 9457 problem details, Idempotency-Key,
                     cursor pagination, security headers, health/readiness, audit log. A thin adapter
                     over packages/* — it holds no canon, selection or workflow logic of its own.
-                    (apps/web and apps/worker remain outstanding Checkpoint 7 scope.)
+                    Adds job control (pause/resume/cancel), replayable SSE job events and accepted-only
+                    TXT/DOCX export with authorized download.
+                    (apps/web remains outstanding Checkpoint 7 scope.)
 packages/prose      NFC boundary, code-point addressing, evidence verification, paragraphs, length model,
                     deterministic output-language check
 packages/domain     schema loader + Ajv validators, generated types, UUIDv7, StoryClock ordering,
