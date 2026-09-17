@@ -95,8 +95,10 @@ version numbering across quarantined versions.
 - Fixture manuscripts: only ch.9 (accepted) and its rejected draft exist as text; ch.12/ch.14 evidence is
   described, not addressable, until Checkpoint 5 produces them.
 - Thresholds in profiles and policies are `uncalibrated`.
-- **B-4-5 is not started.** The contrast corpus remains at **40 sets**; no expansion toward 100 has been
-  attempted, and no blinded reviewer tooling exists. Calibration stays `uncalibrated`.
+- **B-4-5 is PARTIAL.** The contrast corpus remains at **40 sets**; no expansion toward 100 has been
+  attempted (padding it with near-duplicates to reach a number would defeat its purpose). Blinded reviewer
+  tooling exists and is tested, but **generated packets are not human review**: no reviewer has seen one,
+  no judgment exists, and calibration stays `uncalibrated`.
 - **Phase 4 external blockers, all still open.** Live 20-chapter × five-night validation (B-4-1b) and the
   real-provider outage drill (B-4-2b) need paid providers. Staging restore, production restore, PITR,
   off-site backup and RTO/RPO (B-4-3c) need a deployment environment. Live credential rotation (B-4-3d)
@@ -301,11 +303,46 @@ environment, repository administration or a human reviewer remains **not run**, 
 | 3d | Live credential rotation | **not run** — no secret manager or credentials | unchanged |
 | 4 | Defensive security suite and CI security gates (B-4-4) | **done for the automated surfaces** (evidence below) | tenant/operator boundaries were covered only where suites happened to touch them |
 | 5a | Contrast corpus expansion toward 100 sets (B-4-5) | **not started** — corpus remains at **40 sets** | unchanged |
-| 5b | Blinded reviewer tooling (B-4-5) | **not started** | unchanged |
+| 5b | Blinded reviewer tooling (B-4-5) | **done** (evidence below) — tooling only, **not** human-review evidence | unchanged |
 | 5c | Bilingual human review and threshold calibration | **not run** — needs human reviewers | thresholds remain `uncalibrated` |
 | 6a | Deterministic cost/attempt accounting (B-4-6) | **done** (evidence below) | attempt-level spend was recorded but never read |
 | 6b | Attempt-level cost API surface (B-4-6) | **done** (evidence below) | retry/fallback visibility had no API |
 | 6c | Real billing calibration against provider invoices | **not run** — needs live providers and invoices | unchanged |
+
+### Phase 4 tranche 5 — blinded reviewer tooling (B-4-5, automation portion only)
+
+**The protocol is not invented here.** `docs/07-quality/01-testing-strategy.md` §6 specifies it exactly:
+30 chapters, 3 bilingual reviewers, blind 1–5 on TWO scales ("natural English" and "reads as a Korean
+webnovel of this genre") plus free comments, Spearman ≥ 0.8 between each judge and its scale, feeding
+threshold calibration (ADR-0029). `packages/eval/src/review-packet.ts` implements that shape and refuses
+to generate a short packet rather than silently weakening it.
+
+**Blinding.** A packet carries no model id, provider, route, variant class or prompt version — asserted by
+test. The A/B side assignment lives only in the manifest, hashed into the packet so the key provably
+existed at generation without being shipped. Ordering and side assignment come from a seeded PRNG, so a
+run is reproducible for the operator and unguessable from the packet alone, and each reviewer gets an
+independent order so nobody can copy a neighbour's positional habit.
+
+**Intake fails closed.** `importResponses` rejects an incomplete set, a duplicate response, a response
+from another packet, merged reviewer identities, a missing reviewer identity, a rating outside 1–5 or
+non-integer, and a packet whose content hash no longer matches — returning nothing accepted rather than
+importing part of a set, because an agreement figure computed over partially-reviewed data would be worse
+than none.
+
+**What it CANNOT do, by construction.** It never invents a reviewer name or a judgment; a generated packet
+is `status: 'generated'` and nothing in the module can advance that; `reviewReport` returns
+`calibration: 'uncalibrated'` and `requires_human_approval: true` unconditionally; and
+`recommendThresholds` returns a RECOMMENDATION with its blockers, never a threshold and never
+`contrast_calibrated`. One test exists solely to pin that a packet with no responses yields zero reviewers
+and NaN agreement.
+
+**Evidence.** 28 tests. Also included: Spearman with average-rank tie handling (a reviewer who used only
+part of the scale must not get an order-dependent correlation) returning NaN rather than a fabricated
+number when a series has no variance.
+
+**What this is NOT.** **Not human-review evidence.** No reviewer has been contacted, no packet has been
+reviewed, no judgment exists. Thresholds remain `uncalibrated` and B-4-5 remains **partial** — the corpus
+is still 40 sets and the bilingual review has not run.
 
 ### Phase 4 tranche 6 — deterministic cost and attempt accounting (B-4-6, deterministic portion)
 
