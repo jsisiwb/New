@@ -85,8 +85,17 @@ the provider reported — including on a response that arrived after the abort a
 preserved and priced with the same integer millicent arithmetic as every other row. Usage it did not
 report is `unknown`, **never zero**, and `billing_status` cannot be `known` when usage is `unknown`.
 Migration 0012 enforces all of this with a trigger, so the rule holds for every writer including raw SQL,
-and the column inherits the table's existing append-only trigger, FORCE RLS policy and least-privilege
-grants — cancellation provenance cannot be rewritten after the fact.
+and the column inherits the table's existing append-only trigger and FORCE RLS policy — cancellation
+provenance cannot be rewritten after the fact.
+
+**Correction from the independent review.** 0012's own comment, and an earlier version of this paragraph,
+claimed the column also inherited "least-privilege grants" on the basis that `llm_calls` was INSERT/SELECT
+only for the request-scoped role. That was **not true**: 0007 narrowed that role table by table and never
+listed `llm_calls`, so it retained UPDATE and DELETE. The append-only trigger made it unexploitable, and
+the review verified both refusals directly — so this was a truthfulness and defence-in-depth defect, not a
+live authorization bypass. **Migration 0013** revokes those privileges, and a test now asserts the exact
+grant set, so the claim is true rather than assumed. 0013 also closes a second gap 0012 left: provenance
+could be attached to a row that was *not* cancelled, producing an audit row that contradicted itself.
 
 **6. Observation is bounded and disposed.**
 The durable intent is polled with one fixed single-row query on a fixed interval, only while a call is in

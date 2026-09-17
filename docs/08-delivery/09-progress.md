@@ -402,6 +402,58 @@ lifecycle), not merely the thrown error. Both suites are in the chaos matrix (mi
 scenarios reported) and are guarded by name in CI against a silent skip. No live-provider call and no
 credentials are involved in any of it.
 
+### Independent release-gate review of active-request cancellation (four further defects repaired)
+
+A second, independent review pass re-derived the evidence rather than trusting the first pass, and found
+four more defects. All are repaired on the same branch as appended commits; no published commit was
+rewritten.
+
+**R-1 (HIGH, gateway).** A caller-supplied late-result callback that THREW became an unhandled rejection,
+because the notification ran inside the observer attached to the provider promise and nothing awaits that
+promise on the late path. An unhandled rejection can take a worker process down — precisely the failure
+the module documents itself as preventing. Reproduced on both late paths before the fix; the callback is
+now isolated, so a caller's bug cannot alter the cancellation outcome or crash the process. A non-Error
+provider rejection is also normalized rather than escaping as an unhandled non-Error throw.
+
+**R-2 (HIGH, truthfulness).** Migration 0012's own comment and ADR-0049 asserted that `llm_calls` is
+"INSERT/SELECT only for `yeonjae_app`". The database said otherwise: 0007 narrowed the request-scoped role
+table by table and never listed `llm_calls`, so the role still held UPDATE and DELETE. Nothing was
+exploitable — 0002's append-only trigger refuses both for every caller, verified directly — so this was a
+truthfulness and defence-in-depth defect rather than a live authorization bypass. **Migration 0013** now
+revokes them, making the documented claim true; the grant set is asserted by test. Other
+append-only-by-trigger tables carry the same redundant grants from 0007: that is **pre-existing and still
+open**, deliberately out of scope for a cancellation review, and recorded here rather than swept in.
+
+**R-3 (MEDIUM, database).** 0012's trigger refused a `cancelled` row with no provenance but never asked the
+converse, so a row could claim both that the call succeeded and that an operator cancelled it. No
+application path produces that, which is exactly why the trigger is the right guard: it is the only one
+covering raw SQL, a future writer, or a restore from a doctored dump. Closed in 0013, which keeps every
+0012 rule verbatim and adds the converse check.
+
+**R-4 (MEDIUM, tooling).** The D-10 repair fixed the restore drill's wrong-direction comparison but left it
+accepting garbage: it compared a raw four-character prefix as a string, and `abc`, `999` and `9_weird` all
+sort above `0011`. The decision moved out of the runner into `@yeonjae/db`'s `assessRestoredMigration` —
+it had been wrong twice while inline and untestable both times — and now requires four digits followed by a
+separator or nothing, compared numerically so a future `0100` cannot be defeated by lexicographic ordering.
+Anything uninterpretable fails closed. Proved by an exhaustive table.
+
+**D-2 re-examined.** The first pass's "bounded one-macrotask adoption of the adapter's verdict" was attacked
+directly and holds: usage reported across a microtask chain is adopted; an adapter that never settles does
+not delay the cancellation; an adapter answering after the bound cannot retroactively claim
+acknowledgement; the outcome was identical across 200 runs; and an adapter cannot relabel the reason that
+actually fired.
+
+**D-9 re-verified as pre-existing.** The distinctness cross-check timeout was reproduced at the exact base
+SHA `4df7d92f` in an isolated worktree, with none of this branch applied, leaving the working branch
+untouched. It is inherited, unrelated to cancellation, and is why CI for the base tree fails on this fork.
+
+**Final validation after the repairs:** **70 test files / 1,059 tests / 0 skipped** (597 s) against
+PostgreSQL 16.14 — 11 more tests than the first pass. Replay-120 (120 chapters, canon v122), 49 chaos
+scenarios, **23 restore invariants at schema `0013`**, 16 defensive-security scenarios / 178 tests, 14 cost
+scenarios, contrast regression PASSED with the corpus hash, threshold `0.60` and `uncalibrated` status all
+unchanged, dependency audit clean, web build OK. No threshold was moved to make anything pass. Still no
+live-provider call and no credentials, and **neither B-4-5 nor Phase 4 is complete**.
+
 ### B-4-5a corpus expansion — 100 accepted sets (automated scope complete; NOT calibration)
 
 **Status: B-4-5a automated corpus expansion is implemented.** The corpus is **100 accepted sets**
