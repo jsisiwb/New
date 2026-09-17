@@ -4187,6 +4187,277 @@
         "min_gap_prose_vs_translation_like": 43,
         "min_gap_structure_vs_western_english": 37
       }
+    },
+    {
+      "id": "cs-081",
+      "genre": "academy",
+      "function": "action",
+      "variants": {
+        "kwn_english": "The archive stack was burning from the inside, which meant somebody had started it at the centre.\n\nHa-eun did not go for the extinguisher. She went for the ledger shelf.\n\nRow four. Nineteen forty through nineteen eighty. Her arms took eleven volumes and the twelfth would not come, so she left the twelfth.\n\nBehind her, glass went.\n\nShe was on the stairs before the sprinkler heads opened, and the sprinklers — installed four decades ago, serviced never — opened only over the reading room.\n\nNot over the stacks.\n\n*Whoever lit it knew which half of this building gets wet.*",
+        "western_english": "The fire had been set in the middle of the archive stack rather than at its edge, which is a distinction of some consequence, since a fire at the edge spreads inward and a fire at the centre consumes the thing it was set inside. Ha-eun made no attempt on the extinguisher, which hung by the door in its cabinet as it had for four decades. She went instead to the fourth row, where the ledgers covering the years between nineteen forty and nineteen eighty were shelved, and took eleven volumes into her arms and failed to take the twelfth. Glass gave somewhere behind her. She reached the stairs before the sprinkler heads opened, and observed as she went that they opened over the reading room alone and not over the stacks at all, which told her something definite about the person who had lit it.",
+        "translation_like": "The archive stack was burning from the inside, and that means some person started it at the centre point.\n\nHa-eun did not go for the extinguisher. She went for the ledger shelf.\n\nIt is the row four. It is from the nineteen forty until the nineteen eighty. Her own arms took eleven volumes and the twelfth one would not come, so she left the twelfth one at there.\n\nAt the behind of her, the glass went.\n\nShe was at the stairs at the before time when the sprinkler heads opened, and the sprinklers — they were installed at four decades ago and were serviced at no time — opened only at the above of the reading room.\n\nNot at the above of the stacks.\n\n*The person who lit it was knowing the half of this building which is becoming wet.*",
+        "literary": "A fire set at the edge of a thing intends to spread; a fire set at its centre intends to finish. The archive was burning outward from the middle of the fourth stack, and Ha-eun, standing in the doorway with the extinguisher cabinet at her shoulder exactly where it had hung for forty years, elected to ignore it. She went instead along row four, where the ledgers of nineteen forty to nineteen eighty stood in their uniform buckram, and took eleven of them and could not take the twelfth, and in the taking understood that she had just made the sort of choice that gets recounted afterward by people who were not present. Glass failed behind her. On the stairs, she watched the sprinklers open over the reading room, faithfully and uselessly, and not over the stacks at all.",
+        "weak_serial": "Ha-eun discovered that the archive stack was on fire and that the fire had started at the centre rather than at the edge, which indicated that it had been set deliberately. Instead of using the extinguisher by the door, she went to the fourth row of shelves where the ledgers covering nineteen forty to nineteen eighty were kept. She was able to carry eleven of the volumes but could not manage the twelfth, so she left it behind. A window broke somewhere behind her as she was leaving. She reached the stairs before the sprinkler system activated. When the sprinklers did open, they only covered the reading room and not the stacks themselves, even though the stacks were where the fire was. This suggested that whoever set the fire knew how the building's sprinkler coverage was arranged."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-09",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-082",
+      "genre": "regression",
+      "function": "action",
+      "variants": {
+        "kwn_english": "The fire was in the branch, and this time she was inside it.\n\nThree lives she had tried to keep him out of this building. Tonight she had walked him into it herself.\n\n“The strongroom,” Ha-ram said. “Not the door. The strongroom.”\n\n“The door is that way—”\n\n“The door is where it started.”\n\nHe hesitated for one second, which she had budgeted for, and then he ran the way she pointed.\n\nThe strongroom had a service hatch. It had always had a service hatch. She had read about it in a fire report published eleven years after tonight.\n\n*This is the part I couldn't do from outside.*",
+        "western_english": "She had attempted on three separate occasions to keep the man out of the building, by warning and by argument and once by a forgery that had cost her a great deal, and on this occasion she had brought him into it herself, which was either the correct solution or the last of her mistakes. The fire was in the branch. She directed him away from the street door and toward the strongroom, and when he began to object that the exit lay in the other direction she told him that the other direction was where the fire had been set. He hesitated for approximately one second, an interval she had allowed for. The strongroom possessed a service hatch; it had always possessed one; she had learned of its existence from a fire report published eleven years after that night.",
+        "translation_like": "The fire was at the inside of the branch, and at this time she was at the inside of it also.\n\nDuring three lives, she tried for keeping him at the outside of this building. At tonight, she walked him to the inside of it by herself.\n\n“It is the strongroom,” Ha-ram said. “Not the door. It is the strongroom.”\n\n“The door is at that direction—”\n\n“The door is the place where it started.”\n\nHe hesitated during one second, which she made a budget for, and after that he ran to the direction which she pointed at.\n\nThe strongroom was having a service hatch. It always was having a service hatch. She read about it at a fire report which was published at eleven years after the tonight.\n\n*This is the part which I could not do from the outside.*",
+        "literary": "Three lives she had spent keeping the man out of that building — by warning, by argument, and once by a forgery whose cost she preferred not to itemize — and on the fourth she had walked him through its doors herself, which is the kind of solution one arrives at only after the honest methods have been exhausted. The fire was already in the branch. She sent him away from the street door, and when he began the inevitable objection she told him, flatly, that the street door was where it had been set. He hesitated one second; she had budgeted one second. And she thought, following him toward a strongroom whose service hatch she knew about only from a report that would not be printed for another eleven years, that there are certain rescues which cannot be performed from outside a building.",
+        "weak_serial": "The fire had started inside the bank branch, and on this occasion Ha-ram was inside the building as well. During her three previous lives she had tried to prevent the loan officer from being in the building at all, but this time she had brought him there herself. She told him to go toward the strongroom rather than toward the main door. He started to object that the exit was in the other direction, and she explained that the fire had been set near the door. He hesitated briefly and then went the way she had indicated. The strongroom contained a service hatch that could be used as an alternative exit. Ha-ram knew about the hatch because she had read about it in a fire report that was published eleven years after that night."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-MON-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-MON-02"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-083",
+      "genre": "system-progression",
+      "function": "action",
+      "variants": {
+        "kwn_english": "He took the descent at a run, and floor eleven tried to stop him.\n\n[Unauthorized descent. Corrective encounter generated.]\n\nIt came out of the wall wearing his own build — eleven titles, hundred-floor clear, no deaths.\n\nOf course it did. What else would the system use?\n\nDan-ho let it hit him.\n\n[Damage taken: 48%.]\n[Inverted Mercy: healing conversion pending. No healer in range.]\n\nNo healer. That was the point of sending him alone.\n\nSo he opened the party channel, ninety-nine floors up, and said the only thing that would work.\n\n“I need help.”\n\nIt was the first time he had ever said it.",
+        "western_english": "He took the descent at a run, and the eleventh floor generated a corrective encounter against him in the manner the system reserves for unauthorized movement, which is to say without warning and without any particular malice. What emerged from the wall wore his own build: eleven titles, a hundred-floor clear, no recorded deaths. This was, on reflection, the only build the system had available to use against him. He permitted it to strike him and took something close to half his health, at which point his own title attempted its conversion and found no healer within range, there being no healer within ninety-nine floors, which had presumably been the reason for sending him down alone. He therefore opened the party channel and asked for help, which he had not previously done at any point in the ascent.",
+        "translation_like": "He took the descent at a running, and the floor eleven tried for stopping him.\n\n[It is the unauthorized descent. A corrective encounter is generated.]\n\nIt came out from the wall while it is wearing his own build — eleven titles, the hundred-floor clear, no deaths.\n\nOf course it did that. What other thing would the system use?\n\nDan-ho permitted it for hitting him.\n\n[Damage which is taken: 48%.]\n[Inverted Mercy: the healing conversion is at the pending state. There is no healer at the range.]\n\nThere is no healer. That was the point about sending him alone.\n\nSo, he opened the party channel, at the ninety-nine floors of the up, and said the only one thing which will work.\n\n“I need the help.”\n\nIt was the first time when he ever said it.",
+        "literary": "The eleventh floor objected, as floors do, by generating a corrective encounter — the system's term, and a fair one, since there was nothing personal in it — and the thing that came out of the wall was wearing his own build entire: eleven titles, the hundred-floor clear, the clean unblemished absence of any recorded death. It could hardly have worn anything else. He let it hit him, and took half of himself, and felt the title begin its conversion and find nothing to convert, there being no healer within ninety-nine floors of where he stood, which was of course the whole design of sending a man down alone. And so he did the thing he had climbed a hundred floors specifically in order never to do, which was to open the channel and ask.",
+        "weak_serial": "Dan-ho ran down the stairs toward floor eleven, and the system generated a corrective encounter to stop him because his descent was unauthorized. The entity that appeared from the wall was using his own build, including his eleven titles and his hundred-floor clear record with no deaths. He allowed it to hit him, and he took around forty-eight percent damage. His Inverted Mercy title then tried to convert incoming healing into damage output, but there was no healer within range because the rest of the party was ninety-nine floors above him. This was presumably why the system had arranged for him to descend on his own. He opened the party channel and asked the others for help, which was something he had never done before during the entire climb."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
+    },
+    {
+      "id": "cs-084",
+      "genre": "hunter-gate",
+      "function": "banter",
+      "variants": {
+        "kwn_english": "“You can't invoice the Association for a gate that doesn't exist.”\n\n“I'm not invoicing for the gate. I'm invoicing for the crowbar.”\n\nThe clerk looked at the form. Line one: one crowbar, damaged beyond use. Line two: labour, eleven hours. Line three: closure of unregistered aperture, Mapo residential — *fee waived, no closable asset.*\n\n“…You waived it yourself.”\n\n“The system already waived it. I just wrote it down where somebody has to read it.”\n\n“Nobody reads line three.”\n\n“Somebody reads line three when line one is a crowbar,” Se-chan said. “Stamp it.”",
+        "western_english": "The disbursement clerk had been employed at the Mapo office for some years and had developed, as such people do, a settled view of what could and could not be submitted, and she began by observing that one cannot invoice the Association in respect of a gate which the Association does not acknowledge to exist. Se-chan agreed, and pointed out that he had invoiced for a crowbar. The form bore three lines: a crowbar damaged beyond use, eleven hours of labour, and — in the third position, where the eye does not go — the closure of an unregistered aperture in a Mapo residential building, with the fee marked as waived on the grounds that there was no closable asset. She noted that he had waived it himself. He replied that the system had waived it and that he had merely written it where somebody would be obliged to read it.",
+        "translation_like": "“You cannot make an invoice to the Association for a gate which is not existing.”\n\n“I am not making the invoice for the gate. I am making the invoice for the crowbar.”\n\nThe clerk looked at the form. The line one: one crowbar, and it is damaged until it cannot be used. The line two: the labour, eleven hours. The line three: the closure of the unregistered aperture, the Mapo residential — *the fee is waived, there is no closable asset.*\n\n“…You did the waiving by yourself.”\n\n“The system already did the waiving. I only wrote it down at the place where some person has to read it.”\n\n“No person is reading the line three.”\n\n“Some person is reading the line three at the time when the line one is a crowbar,” Se-chan said. “Please put the stamp on it.”",
+        "literary": "There is an art to the placement of an inconvenient fact, and it consists almost entirely in understanding where a trained eye declines to travel. The clerk began where clerks begin, with the observation that one may not invoice the Association in respect of a gate the Association does not concede exists, and he agreed with her at once, and directed her attention to the fact that the invoice was for a crowbar. Three lines. A crowbar damaged beyond use; eleven hours of labour; and, third, in the position reserved by long custom for the uncontroversial, the closure of an unregistered aperture in a residential building, its fee waived for want of any closable asset. She said that he had waived it himself. He said the system had waived it, and that he had simply written it somewhere a person would be obliged to look.",
+        "weak_serial": "Se-chan submitted an invoice at the disbursement office, and the clerk told him that he could not bill the Association for closing a gate that was not officially registered. He replied that the invoice was not for the gate but for the crowbar he had used. The form had three lines on it. The first line listed one crowbar that had been damaged beyond use, the second line listed eleven hours of labour, and the third line described the closure of an unregistered aperture in a residential building in Mapo, with the fee marked as waived because there was no closable asset. The clerk pointed out that he had waived the fee himself. He explained that the system had already waived it and that he had only recorded it in a place where somebody would have to read it. He then asked her to stamp the form."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-085",
+      "genre": "romance-fantasy",
+      "function": "banter",
+      "variants": {
+        "kwn_english": "“You've made yourself head of a dead woman's household.”\n\n“I've made myself head of three living people,” Verena said. “The dead woman was never the asset.”\n\nThe margrave sat down without being asked, which she permitted, because a man who sits uninvited has stopped negotiating.\n\n“My steward—”\n\n“Is mine. He was sworn eleven years ago and you never checked to whom.”\n\n“…And my dressmaker.”\n\n“Also mine, and rather better paid now.” She poured. “Sugar?”\n\n“You've taken my entire household.”\n\n“I've taken your entire household's *records*. You may keep the people. They cost a great deal to feed and they've never once been loyal to you.”",
+        "western_english": "The margrave arrived without an appointment and sat without being invited, which Verena permitted, having long held the view that a man who takes a chair uninvited has already ceased to negotiate and merely does not yet know it. He began with the accusation that she had made herself head of a dead woman's household. She corrected him: the household consisted of three living persons, and the dead woman had never been the asset in question. He proceeded to the steward, who had been sworn eleven years previously to an employer he had never troubled to identify, and then to the dressmaker, who was now somewhat better paid. He observed at last that she had taken his entire household. She replied that she had taken his household's records, that he was welcome to retain the people themselves, and that they had never at any point been loyal to him.",
+        "translation_like": "“You made yourself to be the head of the household of a dead woman.”\n\n“I made myself to be the head of three living persons,” Verena said. “The dead woman was never the asset thing.”\n\nThe margrave sat down without being asked, and she permitted it, because a man who is sitting without the invitation has stopped the negotiating.\n\n“My own steward—”\n\n“He is mine. He was sworn at eleven years ago and you never did the checking about the person to whom.”\n\n“…And my own dressmaker also.”\n\n“She is also mine, and she is receiving rather better payment at now.” She poured the tea. “Do you want sugar?”\n\n“You took my whole household.”\n\n“I took the *records* of your whole household. You may keep the persons. They are costing a great amount for the feeding and they were never loyal to you even one time.”",
+        "literary": "He sat without being asked, which she allowed, since a man who takes a chair uninvited has already surrendered the negotiation and requires only time to discover it. The accusation came out in the form such accusations take among the aristocracy — that she had installed herself at the head of a dead woman's household — and she declined the premise rather than the charge: three living persons, and the dead woman had never been the asset. Then the steward, sworn eleven years since to an employer he had not thought to name and the margrave had not thought to ask. Then the dressmaker, better paid. And at last the summary, delivered in the tone of a man reading his own inventory aloud, that she had taken his entire household — to which the accurate reply concerned records rather than people.",
+        "weak_serial": "The margrave came to see Verena and accused her of making herself the head of a household that belonged to a woman who had died eleven years earlier. Verena responded that the household consisted of three living people and that the countess had never been the valuable part of it. He sat down without waiting to be invited. He then brought up his steward, and she told him that the steward had been sworn to her family eleven years ago and that he had never checked who the man actually served. He mentioned the dressmaker next, and she said that the dressmaker was also working for her now and was being paid more than before. She offered him tea and asked if he wanted sugar. He said that she had taken his entire household, and she replied that she had taken the household's records rather than the people themselves."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-CAD-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 37
+      }
     }
   ],
   "register_cases": [
