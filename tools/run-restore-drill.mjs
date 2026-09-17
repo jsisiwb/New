@@ -16,6 +16,10 @@
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
+import {
+  assessRestoredMigration,
+  MIN_RESTORED_MIGRATION,
+} from '../packages/db/dist/restore-safety.js';
 
 const REPORT_PATH = 'coverage/restore-drill-report.json';
 const SUITES = [
@@ -101,17 +105,21 @@ if (!String(report.postgres_version ?? '').startsWith('16.'))
     `the drill ran against PostgreSQL ${String(report.postgres_version)}, expected 16.x`,
   );
 /**
- * The restored schema must be at least the migration this guard was written against.
+ * The restored schema must be at least the migration this guard was written against, and the guard must
+ * FAIL CLOSED on anything it cannot interpret.
  *
- * Compared with `localeCompare` on the zero-padded migration name rather than `startsWith`, which was the
- * defect: `startsWith('0011')` accepted ONLY 0011 and rejected every later migration, so the guard failed
- * the moment a new migration landed — the opposite of the "or later" it claimed to check. Migration names
- * are zero-padded and therefore sort lexicographically in application order.
+ * The decision now lives in `@yeonjae/db`'s `assessRestoredMigration` rather than inline here, because it
+ * was wrong twice while it was inline and untestable both times: first `startsWith('0011')` (which
+ * accepted only 0011 and rejected every later migration), then a raw string-prefix compare (which
+ * accepted `'abc'`, `'999'` and `'9_weird'`). It is now a pure function with its own exhaustive test
+ * table, so a third mistake fails in the suite rather than in a drill report.
  */
-const MIN_MIGRATION = '0011';
-if (String(report.migration_version ?? '').slice(0, 4) < MIN_MIGRATION)
+const migrationVerdict = assessRestoredMigration(report.migration_version);
+if (!migrationVerdict.safe)
   problems.push(
-    `the restored schema is at ${String(report.migration_version)}, expected ${MIN_MIGRATION} or later`,
+    `the restored schema version ${JSON.stringify(String(report.migration_version ?? ''))} is not ` +
+      `acceptable (${migrationVerdict.reasons.join(', ')}); expected a zero-padded migration name at ` +
+      `${String(MIN_RESTORED_MIGRATION).padStart(4, '0')} or later`,
   );
 
 const reported = new Map((report.invariants ?? []).map((i) => [String(i.id), String(i.outcome)]));
