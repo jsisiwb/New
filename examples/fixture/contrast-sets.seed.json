@@ -2290,6 +2290,278 @@
         "min_gap_prose_vs_translation_like": 39,
         "min_gap_structure_vs_western_english": 33
       }
+    },
+    {
+      "id": "cs-046",
+      "genre": "hunter-gate",
+      "function": "banter",
+      "variants": {
+        "kwn_english": "“Your insurance form says ‘porter'.”\n\n“It does.”\n\n“You killed a B-class.”\n\n“The form doesn't ask what I killed. It asks what I was hired as.”\n\nThe adjuster set down her pen. “Mr. Kang. If I write ‘porter', the payout is one point two million. If I write ‘combat contractor', it's ninety.”\n\n“Write porter.”\n\n“That is eighty-nine million won.”\n\n“Write porter,” Se-chan said, “and next time the guild sends me in as a porter, and nobody checks what's in my bag.”\n\nThe adjuster looked at the bag.\n\nShe wrote porter.",
+        "western_english": "The insurance office occupied a converted apartment on the fourth floor of a building that had been designed, decades before, for people who did not expect elevators, and the adjuster had worked there long enough to have developed opinions about most of the forms that crossed her desk. The one in front of her described the claimant as a porter. It also described, in the section reserved for incident detail, the destruction of a B-class entity, and she pointed out to the young man across from her that these two facts were difficult to hold in the same document. He declined to alter it. She explained the arithmetic — one point two million if the form said porter, ninety million if it said combat contractor — and he asked her again, politely, to write porter, and gave as his reason the observation that a guild which believes it is hiring a porter does not, as a rule, examine the contents of his bag. She looked at the bag for some time before she wrote it.",
+        "translation_like": "“Your insurance form is saying ‘porter'.”\n\n“Yes, it is doing that.”\n\n“You killed a B-class one.”\n\n“The form is not asking about the thing which I killed. It is asking about the thing which I was hired as.”\n\nThe adjuster put down her own pen. “Mr. Kang. If I write ‘porter', the payout money is one point two million. If I write ‘combat contractor', it is ninety.”\n\n“Please write porter.”\n\n“That is eighty-nine million won of money.”\n\n“Please write porter,” Se-chan said, “and at the next time, the guild will send me to the inside as a porter, and nobody will check about the thing which is inside of my bag.”\n\nThe adjuster looked at the bag.\n\nShe wrote porter.",
+        "literary": "An insurance form is a small machine for converting an event into a category, and like all such machines it is indifferent to the event. The adjuster — a woman who had spent eleven years watching people argue themselves into the wrong box, and who had come to regard the profession as a kind of applied theology — observed that the document before her described a porter and the incident within it described something else entirely. The young man was not moved. There was, she thought, a particular quality to his stillness: not the stillness of a man who has failed to understand the sum he is refusing, but the stillness of one who has calculated it twice and found the answer insufficiently interesting. Eighty-nine million won, she said, and he said write porter, and she understood at last that she was not negotiating with him at all but merely witnessing an arrangement he had made with some future she had no standing to see.",
+        "weak_serial": "Se-chan visited the insurance office to submit a claim after his most recent gate assignment. The adjuster noticed that his form listed his role as porter even though the incident report described the death of a B-class entity, and she pointed out the discrepancy to him. She explained that a porter claim would pay one point two million won, while a combat contractor claim would pay ninety million won instead. Se-chan told her to write porter anyway. When she asked why he would give up that much money, he explained that if the guild continued to believe he was only a porter, they would keep sending him into gates without inspecting his equipment. The adjuster looked at his bag and then filled out the form the way he had asked."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-047",
+      "genre": "regression",
+      "function": "banter",
+      "variants": {
+        "kwn_english": "“You want to buy a building,” the loan officer said. “You are nineteen.”\n\n“I want to buy the lot. The building is a mistake somebody else is going to make on it.”\n\n“And you know this how?”\n\n“The subway line.”\n\n“There's no subway line.”\n\n“There will be. Announcement's in March.” Ha-ram slid the deposit book across. “You can tell me I'm wrong in March, and I'll pay double interest. Or you can lend me the money now, at your rate, and be the branch that funded it.”\n\nThe officer did not touch the book.\n\n“…What else happens in March?”\n\n“Ask me after you sign.”",
+        "western_english": "It was the loan officer's habit, developed over a long and unremarkable career at a branch that had never once been first at anything, to begin difficult conversations by stating the facts most likely to end them, and so he began by observing that his applicant wished to purchase a commercial lot and was nineteen years old. Ha-ram did not dispute either point. What she disputed, gently, was his assumption about the lot itself: it was worthless, he said, and she agreed that it was worthless now, and then explained that a subway line would be announced in March which would make it something else. He asked how she knew. She offered him a deposit book and a wager — that he might call her wrong in March and collect double interest, or lend at his own rate today and be, for once in the branch's history, the office that had funded the thing before it was obvious — and he found that he had not, in fact, reached for the book.",
+        "translation_like": "“You want to buy a building,” the loan officer said. “You are nineteen years old.”\n\n“I want to buy the lot. The building is a mistake which some other person is going to make at the above of it.”\n\n“And, how do you know about this?”\n\n“It is the subway line.”\n\n“There is not a subway line.”\n\n“There will be one. The announcement is at the March.” Ha-ram pushed the deposit book to the across side. “You can say to me that I am wrong at the March, and I will pay the double interest. Or, you can lend the money to me at now, at your own rate, and become the branch which funded it.”\n\nThe officer did not touch the book.\n\n“…What is the another thing which happens at the March?”\n\n“Please ask me after you sign it.”",
+        "literary": "There is an arithmetic peculiar to provincial banking in which the safest possible act — the refusal — is also the only act guaranteed to cost nothing and produce nothing, and the officer had performed it for twenty-two years with the quiet competence of a man laying bricks in a wall no one intends to finish. The girl across the desk was nineteen. She wished to buy a lot that was, by every measure his institution recognized, worth precisely what the weeds on it were worth. She spoke of a subway line in the present tense of things that have not happened, which is the tense of madmen and prophets and, he supposed, of the occasional very lucky child. He noticed, with some interest, that his hand had not moved toward the deposit book she had set between them, and he began to wonder what it was that his hand had understood before he did.",
+        "weak_serial": "Ha-ram went to a bank branch to apply for a loan so that she could buy a commercial lot. The loan officer pointed out that she was only nineteen years old and questioned whether the purchase made sense, since the lot had very little value at the time. She told him that a new subway line would be announced in March and that this would change the value of the property considerably. He asked her how she could know something like that in advance. Instead of answering directly, she offered him two options: he could wait until March and collect double interest if she turned out to be wrong, or he could approve the loan now at the standard rate. The officer did not respond immediately and asked her what else was going to happen in March."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-05",
+          "TRN-14",
+          "EP-DLG-02"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-CAD-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-048",
+      "genre": "romance-fantasy",
+      "function": "banter",
+      "variants": {
+        "kwn_english": "“You've returned my letters unopened.”\n\n“I've returned them sealed,” Verena said. “There is a difference, and you of all people should know it.”\n\nThe margrave turned one over. The wax was unbroken. The ribbon was not the one he had tied.\n\n“…You opened them and resealed them.”\n\n“I read them, copied the three that mattered, and sealed them with your father's die, which your steward sold to a pawnbroker in Haldon Street in autumn.” She poured his tea. “Sugar?”\n\n“You could have simply written back.”\n\n“I could have. But then you'd only know what I chose to tell you.” She held out the cup. “This way you know what your household is worth.”",
+        "western_english": "The margrave had been sending letters to the house on Haldon Street for the better part of a season, and receiving them back with their seals intact, which he had taken — reasonably enough, given his experience of women who wished to be left alone — as an answer in itself. What he had not examined until this afternoon was the ribbon. Verena let him examine it now, across a tea service that had belonged to her mother, and explained without apparent malice that the letters had indeed been opened, read, copied in the three particulars that mattered, and closed again with his own father's seal die, which his steward had disposed of to a pawnbroker in the autumn for a sum she declined to name. She then asked whether he took sugar. When he observed that a written reply would have been simpler, she agreed that it would, and pointed out that a reply would have told him only what she chose to tell him, whereas this had told him what his household was worth.",
+        "translation_like": "“You returned my letters without opening them.”\n\n“I returned them at the sealed state,” Verena said. “There is one difference, and you, among all of the people, should know about it.”\n\nThe margrave turned one of them over. The wax was not broken. The ribbon was not the one which he tied by himself.\n\n“…You opened them and did the sealing again.”\n\n“I read them, copied the three ones which had importance, and sealed them with the die of your father, which your steward sold to a pawnbroker at the Haldon Street at the autumn.” She poured his tea. “Do you want sugar?”\n\n“You could have just written the reply.”\n\n“I could have done that. But then, you would only know the thing which I chose for telling you.” She held out the cup. “By this method, you know the value which your household has.”",
+        "literary": "A sealed letter returned is the most eloquent of refusals, which is precisely why it is so seldom examined: the recipient, having been refused, attends to his injury rather than to the wax. The margrave had attended to his injury for the better part of a season. Now, in a room that smelled of bergamot and of old plaster, he turned the last of them over and found the seal perfect and the ribbon wrong, and understood in the manner of a man discovering a step where he had expected a landing that the refusal had been an artifact and the reading had been the fact. She was pouring tea. She asked whether he took sugar, and it seemed to him that the question was not a discourtesy but a mercy — an interval offered to a man who had just learned, in a single afternoon, both the price of his father's seal die and the name of the street on which his steward had sold it.",
+        "weak_serial": "The margrave came to visit Verena because she had been returning his letters with the seals unbroken, which he had interpreted as a refusal to correspond with him. During their conversation he looked more closely at one of the letters and noticed that the ribbon on it was not the one he had used when he sent it. Verena then explained that she had in fact opened and read all of the letters, made copies of the three that contained useful information, and resealed them using his father's seal die. She added that the die had been sold to a pawnbroker on Haldon Street by his own steward during the autumn. She offered him tea and asked whether he wanted sugar. He said that she could have simply written back to him instead."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-10",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-OPEN-01"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-049",
+      "genre": "system-progression",
+      "function": "banter",
+      "variants": {
+        "kwn_english": "“Sell me the skill book.”\n\n“It's bound. Bound means bound.”\n\n“Unbind it.”\n\nThe merchant laughed until he noticed Dan-ho wasn't laughing with him. “Kid, unbinding costs more than the book.”\n\n“Then sell me the unbinding, and I'll sell you the book back at half.”\n\n“…Why would I buy back a book I already—” The merchant stopped.\n\n“Because it comes back unbound,” Dan-ho said. “And an unbound copy of a bound book has never once existed in this city.”\n\nA long silence.\n\n“Forty percent.”\n\n“Half. And you throw in the appraisal, since you'll want one anyway when you realize what I'm going to do with the second copy.”",
+        "western_english": "The shop stood at the end of a market row given over almost entirely to consumables, and the merchant who kept it had been trading in skill literature since before the guilds had thought to regulate it, which had left him with an instinct for the moment a conversation stops being about price. That moment arrived some while into his discussion with Dan-ho. The young man wished to purchase a bound skill book, which was impossible; he then wished to purchase the unbinding, which was expensive; and then, having established both of these things, he proposed to sell the book back afterward at half its value. The merchant began to explain why he would not buy back a volume he had already sold, and discovered halfway through the sentence that the book would return to him unbound, and that no unbound copy of that particular text had ever existed within the city walls, and that he had just been walked, quite deliberately and at his own pace, to the edge of an idea he had not previously had.",
+        "translation_like": "“Please sell the skill book to me.”\n\n“It is at the bound state. The bound state means the bound state.”\n\n“Please do the unbinding of it.”\n\nThe merchant laughed until the time he noticed that Dan-ho was not laughing together with him. “Kid, the unbinding is costing more money than the book.”\n\n“Then, sell the unbinding to me, and I will sell the book back to you at the half price.”\n\n“…Why would I buy again a book which I already—” The merchant stopped his words.\n\n“Because it is coming back at the unbound state,” Dan-ho said. “And an unbound copy of a bound book never existed at this city even one time.”\n\nA long silence was there.\n\n“Forty percent.”\n\n“The half. And please put in the appraisal also, because you will want one anyway at the time when you realize the thing which I am going to do with the second copy.”",
+        "literary": "Commerce, at its higher altitudes, ceases to be an exchange of goods and becomes an exchange of what each party has been able to imagine, and the merchant — who had sold skill literature since before the guilds existed to forbid it, and who possessed therefore a connoisseur's ear for the moment when a customer stops haggling and begins constructing — heard that moment arrive somewhere between the second and third of the boy's proposals. He had said the book was bound, which was true. He had said unbinding cost more than the book, which was also true. He had begun to say that he would not repurchase a volume he had already sold, and it was in the middle of that entirely reasonable sentence that the shape of the thing opened beneath him like a trapdoor politely indicated in advance, and he understood that the boy had not been bargaining at all but had been, for some minutes now, teaching.",
+        "weak_serial": "Dan-ho went to a merchant in the market row to ask about purchasing a skill book. The merchant told him that the book was bound and therefore could not be transferred to another owner. Dan-ho then asked him to unbind it, and the merchant explained that the unbinding process cost more than the book itself was worth. Dan-ho proposed that he would buy the unbinding and then sell the book back to the merchant at half price afterward. The merchant started to say that this made no sense, but then he realized that the book would be returned to him in an unbound state, and that no unbound copy of that book existed anywhere in the city. They negotiated over the exact percentage for a while. Dan-ho also asked him to include an appraisal as part of the deal."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14",
+          "EP-DLG-02"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-OPEN-01"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-CAD-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
+    },
+    {
+      "id": "cs-050",
+      "genre": "academy",
+      "function": "banter",
+      "variants": {
+        "kwn_english": "“You submitted a blank sheet.”\n\n“I submitted the answer.”\n\n“The answer,” said the examiner, “to ‘describe the safe procedure for containment breach in a sealed hall' is not nothing.”\n\n“It's not nothing. It's ‘there is no safe procedure.'” Ha-eun pointed at the ceiling. “Your hall has one door, no vent line, and a suppression system that floods from the floor up. Everything on the answer sheet assumes a second exit that was removed in the renovation.”\n\n“That renovation was forty years ago.”\n\n“Then the answer sheet is forty years old.”\n\nThe examiner looked at the ceiling for a long time.\n\n“…Sit down. Not you — the rest of you. Out.”",
+        "western_english": "The written examination in containment procedure had been administered in the same sealed hall for four decades, and the examiner, who had marked it for nine of them, was accustomed to a certain range of answers, all of which were wrong in familiar ways. A blank sheet fell outside that range. He raised the matter with the candidate, who informed him that the sheet was not blank in the sense he meant but constituted an answer of its own: that there existed no safe procedure for a containment breach in that hall, the hall having one door and no vent line and a suppression system that flooded upward from the floor, while the model answer presupposed a second exit removed during a renovation. He observed that the renovation had occurred forty years previously. She agreed, and remarked that this made the model answer forty years old. He then spent some time looking at the ceiling before dismissing the rest of the candidates from the room.",
+        "translation_like": "“You submitted a blank paper sheet.”\n\n“I submitted the answer.”\n\n“The answer,” the examiner said, “for the question ‘please describe the safe procedure for the containment breach at a sealed hall' is not the nothing.”\n\n“It is not the nothing. It is ‘a safe procedure does not exist.'” Ha-eun pointed at the ceiling. “Your own hall is having one door, there is no vent line, and the suppression system is flooding from the floor to the up direction. All of the things at the answer sheet are assuming a second exit which was removed at the renovation.”\n\n“That renovation was at forty years ago.”\n\n“Then, the answer sheet is forty years old.”\n\nThe examiner looked at the ceiling during a long time.\n\n“…Please sit down. Not you — all of the rest persons. Please go out.”",
+        "literary": "An institution's examinations are its memory, and like all memory they preserve most faithfully the things that have ceased to be true. The examiner had marked this particular paper for nine years, in this particular hall, and had never had occasion to notice that the hall and the paper disagreed. The girl's sheet was blank. She maintained — with a composure he found himself resenting and then, some moments later, admiring — that the blankness was itself the answer: that no safe procedure existed here, that the model solution presumed a second exit which the renovation had taken away four decades ago, and that the document he had been marking all this time was therefore a description of a building that no longer stood. He looked at the ceiling. He was aware of the other candidates, and of the peculiar silence of a room in which an authority is visibly recalculating.",
+        "weak_serial": "Ha-eun handed in a blank sheet for the written examination on containment procedure. The examiner questioned her about this, since the question asked candidates to describe the safe procedure for a containment breach in a sealed hall. She replied that the blank sheet represented her answer, which was that no safe procedure existed for that particular hall. She explained that the hall had only one door, no vent line, and a suppression system that flooded upward from the floor, while the expected answer assumed there was a second exit. The examiner said that the second exit had been removed during a renovation forty years earlier. Ha-eun observed that this meant the answer sheet was also forty years out of date. The examiner looked at the ceiling and then dismissed the other candidates from the hall."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 37
+      }
     }
   ],
   "register_cases": [
