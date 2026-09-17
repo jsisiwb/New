@@ -19,7 +19,7 @@ examples/
     source-story.micro.json           possession micro-fixture: source_story timeline facts + knowledge (ADR-0039)
     knowledge-ledger.json             expected knowledge states through season 1, per-timeline truths, guards,
                                       expected leak detections
-    contrast-sets.seed.json           40 contrast sets in the repo, five classes each (kwn_english /
+    contrast-sets.seed.json           45 contrast sets in the repo, five classes each (kwn_english /
                                       western_english / translation_like / literary / weak_serial) + register
                                       cases; the four MVP genre profiles plus system-progression (a Beta
                                       overlay carried here as extra test coverage, not an MVP profile) ×

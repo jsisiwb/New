@@ -71,7 +71,7 @@ describe('similarity is deterministic, explainable and normalization-aware', () 
   });
 });
 
-describe('the accepted 40-set corpus passes its own audit', () => {
+describe('the accepted corpus passes its own audit', () => {
   const report = auditDistinctness(corpus.sets);
 
   it('reports no structural finding and no near-duplicate', () => {
@@ -81,9 +81,11 @@ describe('the accepted 40-set corpus passes its own audit', () => {
   });
 
   it('compared every same-class pair of sets', () => {
-    // 40 sets → 780 pairs × 5 classes.
-    expect(report.setCount).toBe(40);
-    expect(report.comparisons).toBe(((40 * 39) / 2) * VARIANT_CLASSES.length);
+    // Derived from the corpus, never a literal: a hardcoded count silently turns into stale evidence the
+    // moment a set is added, and the property worth pinning is that EVERY same-class pair was compared.
+    const n = corpus.sets.length;
+    expect(report.setCount).toBe(n);
+    expect(report.comparisons).toBe(((n * (n - 1)) / 2) * VARIANT_CLASSES.length);
   });
 
   it('leaves real headroom under the threshold, so the gate is not borderline', () => {
@@ -206,13 +208,21 @@ describe('coverage audit reports what the corpus actually spans', () => {
   const coverage = auditCoverage(corpus.sets);
 
   it('counts the accepted corpus across its genres and functions', () => {
-    expect(Object.values(coverage.byGenre).reduce((a, b) => a + b, 0)).toBe(40);
-    expect(Object.values(coverage.byFunction).reduce((a, b) => a + b, 0)).toBe(40);
+    const n = corpus.sets.length;
+    expect(Object.values(coverage.byGenre).reduce((a, b) => a + b, 0)).toBe(n);
+    expect(Object.values(coverage.byFunction).reduce((a, b) => a + b, 0)).toBe(n);
     expect(Object.keys(coverage.byFunction)).toHaveLength(8);
   });
 
   it('shows no genre starved relative to the others', () => {
     expect(coverage.concentrated).toEqual([]);
+  });
+
+  it('spans every genre × narrative-function cell the corpus claims', () => {
+    // The count alone cannot show that additions landed in new cells rather than piling into old ones.
+    expect(coverage.genreFunctionPairs).toBe(
+      Object.keys(coverage.byGenre).length * Object.keys(coverage.byFunction).length,
+    );
   });
 
   it('evidences dimension coverage through the lint codes the corpus expects', () => {

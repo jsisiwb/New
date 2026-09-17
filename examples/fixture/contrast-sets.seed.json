@@ -2015,6 +2015,281 @@
         "min_gap_prose_vs_translation_like": 44,
         "min_gap_structure_vs_western_english": 38
       }
+    },
+    {
+      "id": "cs-041",
+      "genre": "academy",
+      "function": "action",
+      "variants": {
+        "kwn_english": "The tether snapped taut at eleven meters.\n\nBelow it, the last marker was still blinking.\n\nHa-eun looked up. Forty students on the cistern rail, the proctor's whistle already in his mouth, and above all of it the winch that had never once failed to haul a candidate out.\n\nShe cut the rope.\n\nThe cold came in like a door closing.\n\nTwelve meters. Thirteen. Her hand closed on the marker, and the water above her went dark with bodies — proctors, diving, too late to stop her and too early to say so.\n\nShe surfaced holding it.\n\n*Rank isn't who goes deepest. It's who comes back with proof.*",
+        "western_english": "The cistern beneath the academy's east wing had been dug two centuries earlier to hold the winter melt, and it retained, even now, the particular cold of stone that has never once been asked to be warm. Ha-eun had studied its dimensions the week before, as she studied everything, and so she knew that the safety tether issued to each candidate measured eleven meters, and that the deepest of the three markers had been set at something closer to thirteen. She waited on the rail while the others went down and came up again, one after another, with the shallow markers and their small bright faces, and she thought about the winch overhead, which had never failed anyone, and about the proctor, who was not by any means a cruel man. When her own turn came she went into the dark, and at the point where the rope drew tight against her waist she took out her knife and cut it. Afterward, surfacing with the deepest marker closed in her fist while the proctors shouted from the water around her, she reflected that the rule had never actually said the rope was required.",
+        "translation_like": "The tether became taut at the eleven meters.\n\nAt the below of it, the last marker was still blinking.\n\nHa-eun looked at the up side. Forty persons of students were at the cistern rail, the whistle of the proctor was already inside his mouth, and at the above of everything there was the winch which never failed for pulling out a candidate even one time.\n\nShe cut the rope.\n\nThe coldness came inside like a door which is closing.\n\nTwelve meters. Thirteen meters. Her own hand closed at the marker, and the water at the above of her became dark because of the bodies — the proctors were diving, it was too late for stopping her and too early for saying about it.\n\nShe came up to surface while she was holding it.\n\n*The rank is not person who goes to the most deep place. It is person who comes back with the proof.*",
+        "literary": "There is a cold that belongs to no season but to masonry alone, the patient two-hundred-year refusal of stone that has been asked to hold water and never once asked to hold warmth, and it was into this that Ha-eun descended: past the depth at which the rope still remembered her, past the depth at which the rope could be said to hold an opinion. The knife was a small argument. The rope, being a rope, declined to answer it. What rose in her on the way down was not fear, which is a social emotion and requires an audience, but something older and more arithmetical — the sensation of a long debt being at last correctly counted — and when her fingers closed on the marker at thirteen meters she understood that she had not, in the end, been measuring the cistern at all, but the precise depth at which the academy's rules stopped being a description of her.",
+        "weak_serial": "Ha-eun took part in the retrieval examination held at the academy cistern. Each student was given a safety tether eleven meters long, and three markers had been placed at different depths in the water. The deepest marker was below the length of the tether, which was why no candidate had ever retrieved it. When Ha-eun's turn came, she swam down until the rope went tight, and then she cut it with her knife so that she could keep going. She reached the deepest marker at around thirteen meters and brought it back up with her. The proctors had gone into the water after her and they were clearly upset about what she had done. She decided that she would explain her reasoning to them once everyone had dried off."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-END-01"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-PARA-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-042",
+      "genre": "hunter-gate",
+      "function": "action",
+      "variants": {
+        "kwn_english": "The exit crystal chimed for the fourth time. Three chimes left.\n\n“Anchor's still in the chamber,” the team leader said, not moving.\n\n“Then it stays there.”\n\n“It's forty million won.”\n\nSe-chan was already walking back in. “And the seal reads off the anchor. You leave it, the gate doesn't close — it widens.”\n\nFifth chime.\n\nThe corridor had grown teeth since they came through it. He took the first one on the borrowed spear, let it bind, and used the weight to swing himself past the second.\n\nSixth chime. He got a hand on the anchor.\n\n“RUN IT!”\n\nThe seventh chime never finished.",
+        "western_english": "By the time the fourth chime sounded from the exit crystal, the recovery team had already assembled at the threshold with their equipment stowed and their harnesses checked, which was, the team leader would say later, precisely the difficulty: the procedure had been followed exactly, and the procedure had been written by people who believed the anchor stone was an asset rather than a component. Se-chan, who had spent two seasons as a porter before anyone thought to test him, understood the distinction, and he explained it briefly — that the closing seal took its reading from the anchor, so that an abandoned anchor did not merely cost the team its fee but left the aperture to widen unattended. Then he went back into the corridor alone, carrying a spear he had borrowed that morning and had not yet had occasion to use, while the chimes went on marking their patient sequence behind him, and the others waited at the threshold and did what people at thresholds generally do, which is to count.",
+        "translation_like": "The exit crystal made the chime at the fourth time. There are three chimes which are remaining.\n\n“The anchor is still inside the chamber,” the team leader said, but he was not moving his body.\n\n“Then, let it stay at there.”\n\n“It is forty million won of money.”\n\nSe-chan was already walking to the inside again. “And the seal is reading from the anchor. If you leave it, the gate does not close — it becomes wide.”\n\nThe fifth chime.\n\nThe corridor grew the teeth since the time they came through it. He received the first one with borrowed spear, let it be bound, and used that weight for swinging his body to the past of the second one.\n\nThe sixth chime. He put his own hand at the anchor.\n\n“Please run it!”\n\nThe seventh chime never finished itself.",
+        "literary": "A gate closing is, if one attends to it properly, a species of clock — seven chimes, each one a smaller portion of the world remaining — and the men at the threshold had arranged themselves around that clock in the posture of people who have decided that arithmetic will excuse them. Se-chan did not argue the point, or rather he argued it once, briefly, in the flattened vocabulary of a man who has carried other men's equipment for two seasons and knows what a component is, and then he went back down the corridor, which had acquired in the interval a quality of dentition it had not previously possessed. The spear was borrowed. This detail would trouble him afterward more than the corridor did, since a borrowed thing carries an obligation to be returned, and he had begun, at the fifth chime, to suspect that he had made a promise he would be unable to keep.",
+        "weak_serial": "The exit crystal in the gate sounded its fourth chime, which meant that there were three chimes left before the gate closed. The recovery team had gathered at the threshold, but the anchor stone was still inside the chamber, and the team leader did not want to go back for it because of the risk. Se-chan explained that the closing seal took its reading from the anchor, so leaving it behind would cause the gate to widen instead of closing properly. He went back into the corridor by himself with a borrowed spear and dealt with the creatures that had appeared there. He managed to reach the anchor at around the sixth chime and shouted for the team to begin the closing sequence."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14",
+          "EP-DLG-02"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-CAD-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-PARA-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-043",
+      "genre": "regression",
+      "function": "action",
+      "variants": {
+        "kwn_english": "The platform clock read 7:14. She had ninety seconds.\n\nLast time, Ha-ram had spent them screaming for security. Security had arrived at 7:16.\n\nThis time she bought a coffee.\n\nAt 7:15 the man in the grey coat stepped off the down escalator and put his right hand into his pocket, exactly as he had on the morning she died watching him do it.\n\nHa-ram walked into him.\n\nThe cup went across his chest. He caught her elbow on reflex — right hand, out of the pocket, occupied — and in the four seconds he spent deciding whether to be angry, the train doors opened and the deputy minister walked past his back.\n\n“Sorry,” Ha-ram said. “I'm so clumsy.”\n\n*Ninety seconds. I only needed four.*",
+        "western_english": "She had come to understand, in the months since she had begun living the week over again, that the difficulty with foreknowledge is not the knowing but the timing, and that a warning delivered at the wrong minute is indistinguishable from a rumor. The platform clock read 7:14 when she took her place near the kiosk. On the first occasion — she had learned to say it that way, the first occasion, rather than the other phrase — she had spent those ninety seconds trying to make a security officer understand her, and the officer had understood her at 7:16, which was a minute and a half too late for everyone concerned. So this time she bought a coffee instead, and when the man in the grey coat came off the escalator and put his right hand into his pocket, she simply walked into him and spilled it, and apologized, and was called clumsy by a stranger, and watched the deputy minister pass behind his occupied hands and board the train unharmed.",
+        "translation_like": "The clock of the platform was reading 7:14. She has ninety seconds.\n\nAt the last time, Ha-ram used them for screaming to the security. The security arrived at the 7:16.\n\nAt this time, she bought coffee.\n\nAt the 7:15, the man who is wearing grey coat came down from the escalator and put his own right hand to the inside of his pocket, exactly same with the morning when she was dying while watching him do it.\n\nHa-ram walked into his body.\n\nThe cup went across his chest. He caught her own elbow by reflex — the right hand, at the outside of the pocket, being occupied — and during the four seconds which he used for deciding whether he will be angry or not, the doors of the train opened and the deputy minister walked past at the behind of his back.\n\n“I am sorry,” Ha-ram said. “I am very clumsy person.”\n\n*Ninety seconds. I needed only four seconds.*",
+        "literary": "Prophecy, she had discovered, is not a gift but a scheduling problem. The platform at 7:14 was the platform at 7:14 in any life — the same brown light, the same kiosk exhaling the smell of scorched milk, the same commuters arranged by the invisible etiquette of people who will never meet again — and into this unchanging architecture she had now to insert one small original act. On the first occasion she had tried argument, which is the instrument of those who believe the world is listening. It had taken her until 7:16 to learn otherwise, and the learning had cost her the remainder of her life. So now she stood with a paper cup cooling in her hand and considered the peculiar humility of the plan she had arrived at: that to save a man's life she would have to be, for four seconds and in the estimation of a stranger in a grey coat, merely careless.",
+        "weak_serial": "Ha-ram arrived on the subway platform at 7:14 in the morning, which gave her about ninety seconds before the incident she remembered was going to happen. During her previous life she had used that time to look for a security officer, but the officer had not reached the platform until 7:16, by which point it was already too late to prevent anything. Knowing this, she bought a cup of coffee instead and waited near the kiosk. When the man in the grey coat came down the escalator and reached into his pocket, she walked into him and spilled the coffee on his chest, which caused him to use his right hand to catch her arm. The deputy minister boarded the train during the confusion. Afterward she apologized to the man and thought about what she would do the following morning."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-MON-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-044",
+      "genre": "romance-fantasy",
+      "function": "action",
+      "variants": {
+        "kwn_english": "The lead horse went down on the switchback and the carriage began to slide.\n\n“Stay inside, my lady—”\n\nVerena was already through the door.\n\nShe cut the traces at the collar, not the buckle. The buckle was the coachman's habit and the coachman was under the wheel. The carriage went on without the horses, over the edge, and made a sound below that she decided not to listen to.\n\nThat left one animal, no saddle, and the toll gate closing at dusk.\n\n“My lady, the road—”\n\n“Is nine miles. The gate shuts in forty minutes.” She got the horse's mane in both hands. “Tell them a lady died here. It will be true by tomorrow if I'm slow.”",
+        "western_english": "The road above Farren's Pass had been cut in the reign of the old queen and had not been widened since, so that a carriage taking the third switchback at speed occupied very nearly the entire width of it, and when the lead horse lost its footing the whole arrangement — animals, vehicle, driver and passenger — became for a moment a single object obeying gravity. Verena had been raised to remain inside a carriage under all circumstances, a rule that had been explained to her many times and never once justified, and she left it now through the near door with her skirts gathered in one fist and her uncle's knife in the other. She cut the traces where they met the collar rather than at the buckle, the buckle being an article of faith belonging to a coachman who was at that moment beneath a wheel. When it was done she had one horse and no saddle and nine miles of failing light between herself and a toll gate that closed at dusk, and she considered, briefly, how little of her education had prepared her for any part of it.",
+        "translation_like": "The horse at the lead position fell down at the switchback and the carriage started sliding.\n\n“Please stay at the inside, my lady—”\n\nVerena was already passing through the door.\n\nShe cut the traces at the collar, not at the buckle. The buckle was habit of the coachman, and the coachman was at the under of the wheel. The carriage continued going without the horses, to the over of the edge, and made a sound at the below which she decided that she will not listen to it.\n\nBecause of that, one animal was remaining, there was no saddle, and the toll gate is closing at the dusk time.\n\n“My lady, the road—”\n\n“It is nine miles. The gate closes after forty minutes.” She held the mane of the horse with her own both hands. “Please tell to them that a lady died at here. It will become true until tomorrow if I am slow.”",
+        "literary": "Gravity, which the nobility are taught to regard as a rumor affecting other people, arrived on the third switchback in the form of a horse's foreleg finding nothing where the road had promised something. What followed was not a crash so much as a slow administrative collapse: the vehicle, the animals, the driver and the girl inside it all at once became a single object with a single opinion. Verena's education had included the harp, three dead languages, the seating order of two courts, and the immutable instruction that a lady remains inside her carriage — a rule she had accepted for eighteen years in the manner of a tenant accepting a clause she assumes will never be enforced. She left through the near door. Later, riding bareback into a dusk that was closing over the pass like a hand over a candle, she would find herself unable to recall the decision itself, only the odd lightness of discovering that the clause had been, all along, unenforceable.",
+        "weak_serial": "The carriage carrying Verena was descending the switchbacks above the pass when the lead horse lost its footing and fell, which caused the vehicle to slide toward the edge of the road. The coachman told her to remain inside, but she climbed out through the door instead. She used a knife to cut the traces at the collar rather than at the buckle, because the coachman who normally handled the buckle had been trapped under one of the wheels. The carriage went over the edge without the horses attached to it. This left Verena with a single horse and no saddle, and she still needed to travel nine miles to the toll gate before it closed at dusk. She took hold of the horse's mane and prepared to set out."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-10",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-END-01"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 37
+      }
+    },
+    {
+      "id": "cs-045",
+      "genre": "system-progression",
+      "function": "action",
+      "variants": {
+        "kwn_english": "[Warning: Reflection Field active. All damage dealt returns to the dealer.]\n\nThe front line stopped swinging. Dan-ho kept walking.\n\n“Don't—” the healer started.\n\n[Debuff accepted: Inverted Mercy. Healing received converts to damage output. Duration 60s.]\n\n“Heal me,” Dan-ho said.\n\n“What?”\n\n“Heal me as hard as you can and don't stop.”\n\nThe first stack landed. The field read it as damage, reflected it, and reflected it into a man who was, at that exact second, being healed faster than he was being hurt.\n\nFifty-eight seconds.\n\nThe field broke at forty-one.",
+        "western_english": "The reflection field had been described in the guild's own bestiary as an unsolvable encounter, and the description was accurate as far as it went, since any blow struck inside the field returned in full to whoever had struck it, and the raid's entire doctrine was built on the assumption that damage travels in one direction. Dan-ho had read the bestiary entry many times. He had also read, rather more carefully, the description of a debuff called Inverted Mercy, which no one took voluntarily because it converted incoming healing into outgoing damage and thereby made a liability of the one resource a party could reliably supply. Standing in the stalled front line, with the healer beginning to object behind him, he accepted the debuff and asked to be healed as rapidly as she was able, and the field, reading each conversion as an attack and returning it faithfully to its source, spent the next forty-one seconds destroying itself against a man who was being mended faster than he could be broken.",
+        "translation_like": "[Warning: The Reflection Field is at the active state. All of the damage which is dealt is returning to the dealer person.]\n\nThe front line stopped the swinging. Dan-ho continued walking.\n\n“Please do not—” the healer started to say.\n\n[Debuff is accepted: Inverted Mercy. The healing which is received is converting to the damage output. Duration is 60s.]\n\n“Please heal me,” Dan-ho said.\n\n“What did you say?”\n\n“Please heal me with all of your strength and do not stop it.”\n\nThe first stack landed. The field read it as damage, reflected it, and reflected it to the inside of a man who was, at that exact second, being healed more fast than he was being hurt.\n\nFifty-eight seconds.\n\nThe field was broken at the forty-one.",
+        "literary": "Mercy, in the grammar of the system, is a direction — something that flows toward a body and is registered by the body as improvement — and the field that had stopped the raid did nothing more sophisticated than reverse the preposition. Dan-ho, who had spent four floors learning that the system does not understand what it enforces, walked forward into it with the dull confidence of a man translating a badly written law. He took the debuff nobody took. He asked to be mended, and mending arrived, and the field, which could recognize an attack but had never in its long mechanical life been asked to recognize kindness, saw one and answered it, and then answered its own answer, until the arithmetic that had made it invincible was the precise arithmetic taking it apart, and the whole interminable structure came down in less than a minute against nothing more than a woman refusing to stop being generous.",
+        "weak_serial": "The raid party encountered a reflection field, which meant that any damage they dealt would be returned to whoever dealt it. The front line stopped attacking because of this. Dan-ho had read about a debuff called Inverted Mercy, which converts healing that a player receives into damage output, and he decided to accept it. He then asked the party healer to heal him continuously and at maximum strength. Because the field treated each of these conversions as an attack, it reflected the damage back into Dan-ho, who was being healed faster than the reflected damage could hurt him. The field eventually broke after about forty-one seconds. The party then continued on to the next floor of the dungeon."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-14",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
     }
   ],
   "register_cases": [
