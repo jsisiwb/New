@@ -2834,6 +2834,276 @@
         "min_gap_prose_vs_translation_like": 43,
         "min_gap_structure_vs_western_english": 33
       }
+    },
+    {
+      "id": "cs-056",
+      "genre": "romance-fantasy",
+      "function": "ending",
+      "variants": {
+        "kwn_english": "The steward's confession took four pages. Verena read it twice and burned neither copy.\n\nOne went into the strongbox with the pawnbroker's receipt.\n\nThe other she folded into an envelope, wrote *To be opened at my death, by any magistrate* on the face of it, and left on the hall table where every servant in the house would pass it before breakfast.\n\nBy noon the margrave would know it existed. By evening, so would his mother.\n\nVerena went upstairs and slept, for the first time in a season, with the door unbolted.\n\n*Let them count the copies. That is the whole point of copies.*",
+        "western_english": "The steward's confession ran to four pages and was, in its way, a competent document: dates, sums, the name of the pawnbroker, and an account of the autumn transaction rendered in the flat prose of a man who had decided, rather late, that honesty was the cheaper option. Verena read it through twice. She did not destroy either copy. The first she placed in the strongbox alongside the receipt, and the second she sealed into an envelope inscribed to be opened at her death by any magistrate, which she left upon the hall table, where the household would pass it on their way to breakfast and would draw, she expected, the appropriate conclusions. She reflected as she went upstairs that the margrave would learn of it by noon and his mother by evening, and that she would sleep, for the first time in a season, with the door unbolted.",
+        "translation_like": "The confession of the steward took four pages. Verena read it two times and did not burn any copy of them.\n\nOne of them went to the inside of the strongbox together with the receipt of the pawnbroker.\n\nThe another one, she folded it to the inside of an envelope, wrote *Please open at the time of my death, by any magistrate person* at the face of it, and left it at the hall table where every servant at this house will pass at the front of it before the breakfast.\n\nUntil the noon, the margrave will know that it is existing. Until the evening, his own mother also will know.\n\nVerena went to the upstairs and slept, at the first time during one season, with the door at the unbolted state.\n\n*Let them count the copies. That is the whole point about the copies.*",
+        "literary": "A confession is a peculiar species of property: it belongs least of all to the man who wrote it. The steward's ran to four pages — dates, sums, a pawnbroker's name, and beneath it all the small sour music of a man arriving at honesty by arithmetic — and Verena read it twice in the failing light of a room that had been her mother's. She destroyed nothing. This was, she thought, the lesson her mother had never learned: that the danger of a secret lies not in its being known but in its being unique, and that the correct answer to a household of practiced liars is not fire but multiplication. One copy to the strongbox. One to an envelope, inscribed for a magistrate and for her own death, laid where the servants would read the inscription on their way to breakfast. She slept afterward with the door unbolted.",
+        "weak_serial": "The steward's confession was four pages long, and Verena read through it twice before deciding what to do with it. She chose not to destroy either of the two copies that she had. She put the first copy into the strongbox together with the receipt from the pawnbroker on Haldon Street. The second copy she put into an envelope and wrote on the front of it that it should be opened at her death by any magistrate. She then left that envelope on the hall table where the servants would see it on their way to breakfast the next morning. She expected that the margrave would hear about it by around noon and that his mother would hear about it later in the day. Then she went upstairs to sleep, and she did not bolt her bedroom door."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-END-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-END-01",
+          "ST-PAY-01",
+          "ST-HOOK-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-057",
+      "genre": "system-progression",
+      "function": "ending",
+      "variants": {
+        "kwn_english": "[Floor 100 cleared. Tower record updated.]\n[Contribution ranking: 1. Healer — 2. Vanguard — 3. Scout — … — 11. Dan-ho.]\n\nEleventh out of eleven. The board had never been wrong about him.\n\n[Title condition satisfied: One Who Was Carried.]\n[Redistribution active.]\n\nDan-ho looked at the party — at the healer already asleep sitting up, at the vanguard's cracked shield — and accepted the title that said, in the system's flat letters, exactly what he was.\n\nThen he opened the descent gate instead of the exit.\n\n“Where are you going?” someone said behind him.\n\n“Down. Somebody's on floor twelve being carried right now.”",
+        "western_english": "The hundredth floor cleared shortly before dawn, and the system posted its contribution ranking in the usual manner, listing the healer first and the vanguard second and the scout third and continuing in that fashion to the eleventh position, which was Dan-ho's, as it had been for most of the ascent. He did not dispute the arithmetic; the board had never been wrong about him. The title condition resolved itself a moment later — One Who Was Carried, with its redistribution now active — and he accepted it while looking at his companions, the healer asleep where she sat and the vanguard's shield split along its face. Then, rather than taking the exit that the hundredth floor had earned them all, he opened the descent gate, and when somebody asked where he was going he said that he was going down, because there was someone on the twelfth floor being carried at that moment.",
+        "translation_like": "[The Floor 100 is cleared. The tower record is updated.]\n[Contribution ranking: 1. Healer — 2. Vanguard — 3. Scout — … — 11. Dan-ho.]\n\nThe eleventh position among eleven persons. The board was never wrong about him.\n\n[The title condition is satisfied: One Who Was Carried.]\n[The redistribution is at the active state.]\n\nDan-ho looked at the party — at the healer who is already sleeping at the sitting position, at the cracked shield of the vanguard — and accepted the title which is saying, at the flat letters of the system, exactly the thing which he is.\n\nAfter that, he opened the descent gate instead of the exit.\n\n“Where are you going to?” some person said at the behind of him.\n\n“To the down. Some person is at the floor twelve and is being carried at right now.”",
+        "literary": "The tower keeps its accounts in public, which is the cruelty of it, and at the clearing of the hundredth floor it published them as it always had: the healer first, the vanguard second, the scout third, and so on down the ladder of usefulness to the eleventh position, which had been his since the third floor and which he had long ago stopped contesting. The title resolved at almost the same moment. One Who Was Carried. He read it with the party arranged around him in their various exhaustions — the healer asleep upright, the vanguard's shield split along its face like a dropped plate — and he understood that the system had, for once, described something correctly. What the system had not described, because it possesses no vocabulary for it, was the gate he opened afterward, which was the wrong one, and which led down.",
+        "weak_serial": "The party finished clearing floor one hundred of the tower and the system updated the record. The contribution ranking listed the healer in first place, the vanguard in second, and the scout in third, with Dan-ho in eleventh place out of eleven members. He accepted this ranking because it matched his actual contribution during the climb. At the same time, the condition for his title, One Who Was Carried, was satisfied, and the redistribution effect became active. He looked around at the other members of the party, who were exhausted after the fight. Then he opened the descent gate rather than the exit gate. Someone asked him where he was going, and he said that he was going back down because there was another person on floor twelve who was in the same situation he had been in."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-10",
+          "TRN-13",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-END-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-END-01",
+          "ST-PAY-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-END-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-058",
+      "genre": "academy",
+      "function": "ending",
+      "variants": {
+        "kwn_english": "They rebuilt the memorial wall in one week, which told Ha-eun everything about the budget and nothing about the shame.\n\nThe nineteen names were cut properly this time, in the fourth row, in stone the wrong colour because the old quarry had closed.\n\nAt the dedication, the principal spoke for eleven minutes about renewal.\n\nHa-eun did not attend. She was in the third-floor lab with the door propped open and the ledger on the bench, copying out a twentieth name — the technician, whose family had never written at all.\n\nThe mason's invoice was still on her desk.\n\nShe had already worked out what a single extra letter cost.",
+        "western_english": "The wall was rebuilt within the week, which said a great deal about the size of the discretionary budget and rather less about the institution's relationship to its own history, and the nineteen names were properly cut this time, in the fourth row, in a stone of noticeably the wrong colour because the original quarry had closed some decades earlier. The principal spoke at the dedication for eleven minutes on the subject of renewal. Ha-eun was not present for it. She had gone instead to the laboratory on the third floor, where she had propped the door open and set the ledger on the bench, and where she was copying out a twentieth name belonging to a technician whose family had never written any letters at all, having had, so far as the records showed, nobody left to write them. The mason's invoice lay on her desk. She had worked out the cost of one additional letter.",
+        "translation_like": "They rebuilt the memorial wall during one week, and this told to Ha-eun everything about the budget and nothing about the shame.\n\nThe nineteen names were cut at the proper way at this time, at the fourth row, at the stone which is the wrong colour because the old quarry was closed.\n\nAt the dedication, the principal spoke during eleven minutes about the renewal.\n\nHa-eun did not attend it. She was at the third-floor lab with the door which is propped at the open state and the ledger at the above of the bench, and she was copying out a twentieth name — it is the technician, and his family never wrote even one time.\n\nThe invoice of the mason was still at the above of her desk.\n\nShe already calculated the price which one extra letter is costing.",
+        "literary": "A week is a remarkable interval in which to rebuild a wall, and it disclosed rather more about the institution's finances than about its conscience: the nineteen names cut properly at last, in the fourth row, in stone of an obviously wrong colour, the original quarry having closed in some decade nobody at the dedication could name. The principal spoke for eleven minutes on renewal, which is the word institutions use when they mean forgetting performed at greater expense. Ha-eun was elsewhere. In the third-floor laboratory, with the door propped and the ledger open on the bench, she was copying out a twentieth name — a technician, whose family had never written at all, there being no family — and on her desk, when she returned to it, lay the mason's invoice, from which she had already extracted the only figure that interested her, which was the price of one more letter.",
+        "weak_serial": "The academy rebuilt the memorial wall over the course of a single week. The nineteen names were properly carved into the fourth row this time, although the stone was a different colour than the original because the quarry that supplied it had closed. A dedication ceremony was held, and the principal gave a speech about renewal that lasted around eleven minutes. Ha-eun did not go to the ceremony. She was working in the third-floor laboratory instead, with the door propped open and the ledger on the bench in front of her. She was copying out a twentieth name, which belonged to a technician whose family had never sent any letters to the academy. The mason's invoice was on her desk, and she had already calculated how much it would cost to add one more letter to the wall."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-END-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-END-01",
+          "ST-PAY-01",
+          "ST-HOOK-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 37
+      }
+    },
+    {
+      "id": "cs-059",
+      "genre": "hunter-gate",
+      "function": "ending",
+      "variants": {
+        "kwn_english": "The hearing lasted nineteen minutes.\n\nThey ruled the anchor recovery unauthorized, fined him two months' rate, and entered a commendation into the same file on the same day, because the panel could not agree which one he had earned.\n\nSe-chan signed both.\n\nOutside, the team leader was waiting with a coffee he had not been asked for.\n\n“Two months.”\n\n“Two months,” Se-chan agreed.\n\n“…The seal reading. You could have told me that in the corridor instead of walking past me.”\n\n“I did tell you. You were counting.”\n\nHe took the coffee, and did not say the rest, which was that the next gate on the board was a two-anchor gate, and that somebody was going to have to walk back in for both of them.",
+        "western_english": "The hearing occupied nineteen minutes of a Tuesday morning and produced a result that the guild's disciplinary office would later describe, in its own minutes, as unusual: the recovery was ruled unauthorized and a fine of two months' rate imposed, and on the same day a commendation was entered into the same file, the panel having proved unable to agree upon which of the two the conduct had earned. Se-chan signed both documents. The team leader was waiting for him in the corridor outside with a coffee that had not been requested, and observed that two months was two months, and then, after some hesitation, that the business about the closing seal might have been explained to him at the time rather than delivered over a shoulder. Se-chan replied that it had been explained, and that the leader had been counting. He did not mention the two-anchor gate presently listed on the board.",
+        "translation_like": "The hearing continued during nineteen minutes.\n\nThey decided that the anchor recovery is the unauthorized one, gave him a fine of two months of his rate, and put a commendation to the inside of the same file at the same day, because the panel could not make an agreement about the thing which he earned.\n\nSe-chan signed the both of them.\n\nAt the outside, the team leader was waiting with a coffee which he was not asked for.\n\n“It is two months.”\n\n“It is two months,” Se-chan agreed with him.\n\n“…About the seal reading. You could have told that to me at the corridor instead of walking past at the side of me.”\n\n“I did tell it to you. You were doing the counting.”\n\nHe received the coffee, and did not say the rest part, and the rest part is that the next gate at the board is a two-anchor gate, and some person is going to have to walk to the inside again for the both of them.",
+        "literary": "Institutional judgment, when it is genuinely divided, does not compromise; it simply files both verdicts and hopes the contradiction will keep. The hearing took nineteen minutes and produced a fine of two months' rate for an unauthorized recovery, and, on the same afternoon and into the same file, a commendation for the same act, the panel having found itself unable to determine which of the two the man deserved and unwilling to determine that he deserved neither. He signed both without comment, which the clerk found unnerving. In the corridor afterward there was a coffee he had not asked for, and a team leader who wished, in the roundabout manner of proud men, to be told sooner next time — to which the only honest reply was that he had been told, and had been counting instead, and that counting is what men at thresholds do.",
+        "weak_serial": "The disciplinary hearing about the anchor recovery lasted nineteen minutes in total. The panel ruled that the recovery had been unauthorized and issued Se-chan a fine equal to two months of his rate. On the same day, they also entered a commendation into his file, because the members of the panel could not agree on whether his actions deserved punishment or praise. Se-chan signed both of the documents without arguing about either one. When he came out into the corridor, the team leader was waiting there with a coffee for him. They talked briefly about the fine, and the team leader said that Se-chan could have explained the seal reading to him during the incident rather than walking past him. Se-chan said that he had explained it and that the team leader had been counting the chimes at the time."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-END-01",
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-END-01",
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-END-01",
+          "ST-DLG-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-060",
+      "genre": "regression",
+      "function": "ending",
+      "variants": {
+        "kwn_english": "March came and the subway announcement came with it, on the ninth, on page four, three lines long.\n\nThe loan officer telephoned at eight in the morning to say nothing in particular for four minutes.\n\nHa-ram let him.\n\n“…You said to ask you afterward,” he managed at last. “About what else happens in March.”\n\n“I did.”\n\n“Then I am asking.”\n\nShe looked at the deposit book, at the lot she now owned, at the calendar where the twenty-second was circled in a hand she had used at twenty-six.\n\n“Not on a telephone,” Ha-ram said. “Come to the lot. Bring the branch manager, and bring whoever signs for the branch when the manager is away.”",
+        "western_english": "The announcement appeared on the ninth of March, on the fourth page, in three lines of the sort of type that newspapers reserve for infrastructure, and the loan officer telephoned at eight the following morning to say nothing in particular for the better part of four minutes, which Ha-ram permitted him to do. When he arrived at his question at last, it was the one she had told him to ask: what else was going to happen in March. She considered, while he waited, the deposit book, and the lot that was now hers, and the calendar on the wall where the twenty-second stood circled in a hand she had first used at the age of twenty-six. She told him that it was not a matter for a telephone, and asked him to come out to the lot, and to bring the branch manager, and also whoever it was that signed on the branch's behalf when the manager was away.",
+        "translation_like": "The March came and the subway announcement came together with it, at the ninth day, at the page four, and it was three lines of long.\n\nThe loan officer made a telephone at the eight at the morning for saying nothing of particular thing during four minutes.\n\nHa-ram permitted him to do it.\n\n“…You said that I should ask to you at the after time,” he finally managed to say. “About the another thing which happens at the March.”\n\n“Yes, I did it.”\n\n“Then, I am doing the asking.”\n\nShe looked at the deposit book, at the lot which she is owning at now, at the calendar where the twenty-second day is circled by a hand which she used at the twenty-six years old.\n\n“Not at a telephone,” Ha-ram said. “Please come to the lot. Please bring the branch manager, and bring also the person who is signing for the branch at the time when the manager is at the away state.”",
+        "literary": "Prophecy, once vindicated, becomes merely a fact, and facts are administered rather than marvelled at. The announcement ran on the ninth of March, on the fourth page, in three lines of the grey institutional type that newspapers reserve for tunnels and bridges, and the loan officer telephoned the following morning at eight to say, for something close to four minutes, absolutely nothing — the particular nothing of a careful man circling the edge of a question he suspects will cost him his caution. She let him circle. When he arrived, finally, at the asking, she was looking at a calendar on which the twenty-second had been circled in the handwriting of a woman of twenty-six, which is to say in the handwriting of someone who had already died once and had learned from it that certain conversations cannot be conducted down a wire.",
+        "weak_serial": "The subway announcement was published on the ninth of March, on page four of the newspaper, and it was only three lines long. The loan officer telephoned Ha-ram at eight the next morning and spent about four minutes talking without really getting to the point. Eventually he brought up the fact that she had told him to ask her afterward about what else was going to happen in March, and said that he was now asking her. Ha-ram looked at the deposit book and at the lot that she had purchased with the loan, and also at her calendar, where she had circled the twenty-second of the month. She told him that this was not something she wanted to discuss over the telephone. She asked him to come out to the lot and to bring the branch manager with him, along with whoever signed for the branch when the manager was not available."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-05",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-END-01",
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-END-01",
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 33
+      }
     }
   ],
   "register_cases": [
