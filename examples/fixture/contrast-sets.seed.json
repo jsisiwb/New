@@ -4458,6 +4458,277 @@
         "min_gap_prose_vs_translation_like": 40,
         "min_gap_structure_vs_western_english": 37
       }
+    },
+    {
+      "id": "cs-086",
+      "genre": "academy",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "Eleven ledgers came out of the fire. The twelfth had covered nineteen seventy-one.\n\nHa-eun spread the survivors on the floor of the empty lab and worked the gap by subtraction: what the eleven recorded, what they referenced, what they would have referenced if the year between them had existed.\n\nBy four in the morning she had nine of the missing names.\n\nAt five she stopped, because the tenth was not going to come, and because a name you reconstruct is not a name.\n\nShe wrote the nine on the board.\n\nUnder them, she wrote: *one more, not yet recovered* — and left the line open.",
+        "western_english": "Eleven of the twelve ledgers had come out of the archive with her, and the twelfth, which she had been unable to carry, had covered the year nineteen seventy-one. She spread the survivors across the floor of the empty laboratory and set about the gap by subtraction, comparing what the eleven recorded against what they referred to and against what they would necessarily have referred to had the intervening year existed at all. This produced, by four o'clock in the morning, nine of the missing names. At five she stopped, having established that the tenth was not going to emerge from the method and having concluded, after some time sitting with it, that a name arrived at by reconstruction is not in any meaningful sense a name. She wrote the nine on the board, and beneath them a line which she left open.",
+        "translation_like": "Eleven ledgers came out from the fire. The twelfth one was covering the nineteen seventy-one.\n\nHa-eun spread the survivor ones at the floor of the empty lab and worked at the gap by the subtraction: the thing which the eleven ones recorded, the thing which they referenced, the thing which they would have referenced if the year at the between of them was existing.\n\nUntil the four at the morning, she had nine of the missing names.\n\nAt the five, she stopped, because the tenth one is not going to come, and because a name which you are reconstructing is not a name.\n\nShe wrote the nine ones at the board.\n\nAt the under of them, she wrote: *one more one, it is not recovered yet* — and left the line at the open state.",
+        "literary": "Eleven had come out of the fire and the twelfth had not, and the twelfth had covered nineteen seventy-one, which is the way of such things: the volume one cannot carry is invariably the volume one required. She laid the survivors across the floor of the empty laboratory and addressed the absence by subtraction, which is the only honest method available to a person working from a hole — what the eleven said, what the eleven pointed toward, what the eleven would have been obliged to point toward had the missing year been permitted to exist. Nine names by four in the morning. At five she stopped, not from exhaustion but from scruple, having understood that a name which has been inferred is not a name but a hypothesis wearing one, and she left the tenth line empty on the board.",
+        "weak_serial": "Ha-eun had rescued eleven of the twelve ledgers from the archive fire, and the one she had been unable to carry covered the year nineteen seventy-one. She laid the eleven surviving volumes out on the floor of the empty laboratory and tried to work out what the missing volume had contained. Her method was to compare what the eleven ledgers recorded with what they referred to, and to identify what they would have referred to if the missing year had been included. By four in the morning she had identified nine of the missing names using this approach. She stopped working at five because she could not establish the tenth name and because she did not think a reconstructed name should be treated as accurate. She wrote the nine names on the board and left a blank line underneath them."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-OPEN-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-087",
+      "genre": "regression",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "The loan officer got out through the hatch. Ha-ram did not tell him she had known about it.\n\nHe stood on the loading dock with his jacket smoking at one cuff and asked the question she had been waiting four lives to be asked.\n\n“How did you know about the hatch?”\n\n“I read it in a report.”\n\n“There's no report.”\n\n“Not yet.”\n\nHe looked at her for a long moment. Then he took out his pen, and wrote something on the back of his hand, and showed it to her.\n\nA date. Eleven years from now.\n\n“Then read this one too,” he said. “Because I've been trying to reach that one for longer than you've been alive.”",
+        "western_english": "He came out through the service hatch with one cuff of his jacket smoking, and stood on the loading dock behind the branch in the particular silence of a man who has recently declined to die, and then he asked her the question she had been waiting through four lives to be asked, which was how she had known about the hatch. She told him that she had read about it in a report. He observed, accurately, that no such report existed. She agreed that it did not exist yet. He considered her for some while, and then took out his pen and wrote a date on the back of his hand and turned it toward her — a date eleven years in the future — and told her that he had been attempting to reach it for longer than she had been alive.",
+        "translation_like": "The loan officer went out through the hatch. Ha-ram did not tell to him that she was knowing about it.\n\nHe stood at the loading dock while his jacket is making smoke at one cuff, and asked the question which she was waiting during four lives for being asked.\n\n“How did you know about the hatch?”\n\n“I read it at a report.”\n\n“A report is not existing.”\n\n“Not yet.”\n\nHe looked at her during a long moment. After that, he took out his pen, and wrote some thing at the back side of his own hand, and showed it to her.\n\nIt is a date. It is eleven years from the now.\n\n“Then, please read this one also,” he said. “Because I have been trying for reaching that one during more long time than the time which you were alive.”",
+        "literary": "He emerged through the service hatch with one cuff of his jacket smoking and stood on the loading dock in the specific silence that follows a near thing, and then he asked her — and she had waited four lives to be asked — how she had come to know that the hatch was there. A report, she said. There is no report, he said, which was true. Not yet, she said, which was also true and considerably worse. He looked at her for what felt to her like the whole of the interval between one life and the next. Then he produced a pen, wrote a date upon the back of his own hand, and turned it toward her: eleven years hence. He had been trying, he told her, to reach that date for longer than she had been alive.",
+        "weak_serial": "The loan officer managed to escape the fire through the service hatch in the strongroom. Ha-ram did not tell him that she had known the hatch was there in advance. He stood outside on the loading dock afterward with one of his jacket cuffs still smoking, and he asked her how she had known about it. She told him that she had read about it in a report, and he pointed out that no such report existed. She replied that it did not exist yet. He looked at her for a while without saying anything. Then he took out a pen and wrote a date on the back of his hand and showed it to her. The date was eleven years in the future. He told her that he had been trying to reach that date for longer than she had been alive."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-088",
+      "genre": "system-progression",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "They came down. All eleven of them, ninety-nine floors, in under an hour.\n\n[Party reassembled at Floor 11.]\n[Inverted Mercy: healing conversion active.]\n\nThe healer reached him first and said nothing at all, which was how he knew how fast she had run.\n\n“You asked,” she said finally.\n\n“I asked.”\n\n“You've never asked.”\n\n“I know.”\n\nShe put both hands against his chest and the conversion began, and the thing wearing his build took the first of it and did not understand what had hit it, because it had been built from a version of him that never called for help.\n\n*That's the difference. That's the only difference. It's enough.*",
+        "western_english": "They descended ninety-nine floors in rather less than an hour, all eleven of them, which was not a thing the party had ever attempted and not a thing the tower had been designed to permit. The system registered the reassembly at floor eleven and noted the conversion as active. The healer reached him before the others and said nothing whatsoever, from which he understood how hard she had run. When she did speak it was to observe that he had asked, and he agreed that he had, and she observed further that he had never asked before, and he agreed with that as well. Then she set both hands against his chest and the conversion began, and the entity wearing his build received the first of it without comprehension, having been assembled from a version of the man who had never once called for help.",
+        "translation_like": "They came to the down. All of the eleven persons of them, ninety-nine floors, at the inside of one hour.\n\n[The party is reassembled at the Floor 11.]\n[Inverted Mercy: the healing conversion is at the active state.]\n\nThe healer reached to him at the first, and said nothing at all, and by that method he knew about the speed which she used for running.\n\n“You did the asking,” she finally said.\n\n“I did the asking.”\n\n“You never did the asking at the before time.”\n\n“I know about it.”\n\nShe put her own both hands at the against of his chest and the conversion started, and the thing which is wearing his build received the first part of it and did not understand the thing which hit it, because it was built from a version of him which never called for the help.\n\n*That is the difference. That is the only one difference. It is enough.*",
+        "literary": "They came down ninety-nine floors in under an hour, all eleven of them, which the tower had not been built to permit and the party had never previously attempted, and the system recorded the reassembly in its usual flat idiom as though it were noting a change of weather. The healer arrived before the others and said nothing at all, and it was the nothing that told him how she had run. When she spoke it was only to say that he had asked, and he said that he had, and she said that he never asked, and he said that he knew. Then her hands were against his chest and the conversion took hold, and the thing wearing his own build received it without the least comprehension — having been assembled, as it had been, out of a man who had never in a hundred floors called for anyone.",
+        "weak_serial": "The rest of the party descended ninety-nine floors in less than an hour to reach Dan-ho on floor eleven. The system registered the party as reassembled and showed that the Inverted Mercy conversion was now active. The healer arrived before the others and did not say anything at first, which indicated to him how quickly she had run to get there. Eventually she said that he had asked for help, and he agreed. She pointed out that he had never asked for help before, and he said that he knew. She placed both hands on his chest and began healing him, which activated the conversion into damage output. The entity that was using his build took the first portion of that damage and did not appear to anticipate it, because it had been created from a version of him that had never asked anyone for assistance."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
+    },
+    {
+      "id": "cs-089",
+      "genre": "hunter-gate",
+      "function": "ending",
+      "variants": {
+        "kwn_english": "Line three went through.\n\nNot to the clerk. Past her, to an auditor who had been waiting four years for one piece of paper that said *unregistered aperture* in a hand that was not the Association's.\n\nShe called him at midnight.\n\n“Where did you get the phrase?”\n\n“From the rejection notice,” Se-chan said. “It's their own wording. I just made them read it back.”\n\n“Do you understand what you've done?”\n\n“I've closed a gate and billed for a crowbar.”\n\n“You have created,” the auditor said, “the first written record in twenty years of a gate the Association did not create.”\n\nA pause.\n\n“Bring the serial numbers.”",
+        "western_english": "The third line was processed, though not by the clerk to whom it had been handed: it passed her desk and reached an auditor who had spent four years waiting for a single sheet of paper bearing the phrase unregistered aperture in handwriting other than the Association's own. She telephoned at midnight to ask where he had obtained the wording. He told her that he had taken it from the rejection notice, it being the Association's own phrasing, and that he had merely arranged for them to read it back. She asked whether he understood what he had done. He replied that he had closed a gate and billed for a crowbar. She told him that he had produced the first written record in twenty years of a gate the Association had not itself created, and then, after a pause, asked him to bring the serial numbers.",
+        "translation_like": "The line three passed through.\n\nNot to the clerk person. It went past her, to an auditor who was waiting during four years for one piece of paper which is saying *unregistered aperture* at a hand which is not the hand of the Association.\n\nShe called to him at the midnight.\n\n“From where did you get the phrase?”\n\n“From the rejection notice,” Se-chan said. “It is their own wording. I only made them for reading it back.”\n\n“Do you understand about the thing which you did?”\n\n“I closed a gate and made the bill for a crowbar.”\n\n“You created,” the auditor said, “the first written record during twenty years about a gate which the Association did not create.”\n\nThere was one pause.\n\n“Please bring the serial numbers.”",
+        "literary": "The third line went through. Not to the clerk, who had stamped it with the mild irritation of a woman processing an eccentricity, but past her and onward to an auditor who had spent four years waiting for exactly one sheet of paper: a document bearing the phrase unregistered aperture in a hand that was not the Association's own. She telephoned at midnight to ask where he had found the wording, and he told her the truth, which was that it was theirs — lifted verbatim from their own rejection and returned to them across a desk where somebody would be obliged to countersign it. Did he understand what he had done, she asked. He said that he had closed a gate and billed for a crowbar. She told him what he had in fact created, and then she asked for the serial numbers.",
+        "weak_serial": "The third line on Se-chan's invoice was processed, but it did not stop with the clerk who received it. It was forwarded to an auditor who had been waiting for four years to obtain a document containing the phrase unregistered aperture written by someone outside the Association. She telephoned him at midnight to ask where the phrase had come from. He explained that he had copied it from the rejection notice, since it was the Association's own wording, and that he had simply arranged for them to acknowledge it. She asked whether he understood the significance of what he had done. He said that he had closed a gate and submitted a bill for a crowbar. She told him that he had created the first written record in twenty years of a gate that the Association had not created itself, and then asked him to bring her the serial numbers."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-END-01",
+          "ST-DLG-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-END-01",
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-END-01",
+          "ST-DLG-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-090",
+      "genre": "romance-fantasy",
+      "function": "ending",
+      "variants": {
+        "kwn_english": "Verena signed page nine at the registry, alone, with three servants as her witnesses.\n\n[Head of household: seated.]\n\nThe stone took eleven seconds to accept it, which the clerk said was normal and which Verena, who had read the statutes at fourteen, knew was not.\n\nOutside, the steward was waiting with the strongbox.\n\n“The margrave's mother has sent for you.”\n\n“She may send twice.” Verena took the box. “We have somewhere to be first.”\n\n“Where, my lady?”\n\n“Haldon Street.” She stepped into the carriage. “I would like to meet the pawnbroker who has been holding a duke's seal die for eleven months and never once sold it.”",
+        "western_english": "The signing took place at the registry rather than at either house, with three servants standing as witnesses, which was unusual but not irregular, and the stone recorded the head of household as seated after an interval of eleven seconds. The clerk described the interval as normal. Verena, who had read the marriage and succession statutes at the age of fourteen with the attention other girls give to poetry, was aware that it was not. The steward was waiting outside with the strongbox and reported that the margrave's mother had sent for her. She replied that the lady was at liberty to send a second time, took the box, and directed the carriage instead toward Haldon Street, on the grounds that she wished to meet a pawnbroker who had held a duke's seal die for eleven months without once offering it for sale.",
+        "translation_like": "Verena signed the page nine at the registry, at the alone state, with three servant persons as her own witnesses.\n\n[Head of household: it is seated.]\n\nThe stone used eleven seconds for accepting it, and the clerk said that it is the normal thing, and Verena, who read the statutes at the fourteen years old, knew that it is not.\n\nAt the outside, the steward was waiting together with the strongbox.\n\n“The mother of the margrave sent for you.”\n\n“She may do the sending two times.” Verena took the box. “There is a place where we have to be at the first.”\n\n“Where is it, my lady?”\n\n“It is the Haldon Street.” She stepped to the inside of the carriage. “I want for meeting the pawnbroker who has been holding the seal die of a duke during eleven months and never sold it even one time.”",
+        "literary": "She signed at the registry rather than at either house, with three servants for witnesses — irregular, but not improper, and the distinction between those two words had been the whole of her education. The stone considered the matter for eleven seconds before recording the head of household as seated. The clerk called the interval normal. Verena, who had read the succession statutes at fourteen with the attention other girls reserve for poetry, knew that it was nothing of the kind, and filed the knowledge where she filed such things. Outside, the steward held the strongbox and reported that the margrave's mother had sent for her. She observed that the lady might send again, and gave the driver an address on Haldon Street, where a pawnbroker had for eleven months declined to sell a duke's seal die.",
+        "weak_serial": "Verena went to the registry to sign page nine of the contract, and she brought three of the servants along to act as witnesses instead of holding the ceremony at either of the two houses. The registry stone recorded her as the seated head of household after about eleven seconds. The clerk told her that this delay was normal, but Verena had read the succession statutes when she was fourteen and knew that it was not normal. When she came out, the steward was waiting with the strongbox and told her that the margrave's mother had sent a summons for her. Verena said that the woman could send again later and took the strongbox from him. She then told the driver to take the carriage to Haldon Street, because she wanted to speak with the pawnbroker who had been holding the duke's seal die for eleven months without selling it."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-END-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-END-01",
+          "ST-PAY-01",
+          "ST-HOOK-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-END-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 37
+      }
     }
   ],
   "register_cases": [
