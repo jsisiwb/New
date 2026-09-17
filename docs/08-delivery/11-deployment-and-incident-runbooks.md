@@ -247,7 +247,69 @@ checkpoints. So back up PostgreSQL with PITR and treat Temporal as reconstructib
 
 ### 8.2 Restore
 
-Not exercised. Post-restore integrity checks that the schema makes possible:
+**Evidence classification (read this before citing anything below as proof).**
+
+| Procedure | Status |
+| --- | --- |
+| Local **disposable** logical restore drill (`pnpm drill:restore`) | **executed**, automated, verified in CI |
+| Staging restore | **not executed** — no staging environment exists |
+| Production restore | **not executed** — no production environment exists |
+| Point-in-time recovery (PITR) | **not executed** — no WAL archive is configured |
+| Off-site backup verification | **not executed** |
+| RTO/RPO measurement | **not measured** |
+
+Only the first row is evidence. The drill's machine-readable report records the same distinction in its
+`scope` block, and `tools/run-restore-drill.mjs` fails if the report ever starts claiming otherwise.
+
+#### 8.2.1 The executed drill
+
+`pnpm drill:restore` creates its own disposable databases, applies every migration through `0011`, seeds
+representative multi-tenant data through the **real** lifecycle (`createManuscriptVersion` →
+`approveManuscriptVersion` → `commitDelta`, plus a quarantined rejected draft), captures a custom-format
+`pg_dump`, restores it with `pg_restore` into a second disposable database, and verifies 22 invariants.
+
+```bash
+# Requires a local PostgreSQL 16 and DATABASE_URL. The drill never touches the database in that URL;
+# it uses the connection only to CREATE and DROP its own `yeonjae_drill_<id>_{source,restored}`.
+DATABASE_URL=postgres://yeonjae:***@127.0.0.1:5432/yeonjae_test pnpm drill:restore
+```
+
+Verified invariants: migration count and version, tables/indexes/triggers restored, RLS policy count,
+`FORCE ROW LEVEL SECURITY` still set, per-workspace row counts, canon version contiguity, manuscript
+content hashes, evidence code-point offsets and quote hashes, accepted-only pointers, quarantine preserved
+and excluded, exactly one terminal job event, job checkpoints, attempt-level provider provenance
+(migration `0011`), per-workspace cost totals, derived-row orphans, sequence non-collision, **cross-workspace
+RLS still enforced in the restored database**, whole-database logical checksum equality, and the source
+database unchanged.
+
+#### 8.2.2 Target verification — do this before any destructive step
+
+The drill refuses a target that is not provably safe, and a human following this runbook should apply the
+same rules (`packages/db/src/restore-safety.ts` is the executable form):
+
+1. The host must be **local**. A remote or managed host is refused outright.
+2. The database **name** must carry a word-delimited disposable marker (`disposable`, `drill`, `scratch`,
+   `throwaway`).
+3. The name must not contain a protected word (`prod`, `production`, `staging`, `live`, `main`, `master`,
+   `primary`, `customer`, `tenant`) — even alongside a disposable marker. Ambiguity resolves to refusal.
+4. Destruction requires an **explicit acknowledgement** separate from supplying the URL.
+5. Only databases **created by this drill** are dropped.
+6. **`NODE_ENV` is never consulted.** It describes what a process believes about itself, not what database
+   it is pointed at.
+
+```bash
+# Confirm the target before doing anything destructive. Never paste a full URL into a shared channel.
+psql "$TARGET_URL" -tAc "select current_database(), inet_server_addr(), version()"
+```
+
+#### 8.2.3 Abort conditions
+
+Abort — do not continue — if any of these hold: the target name is unexpected; `current_database()` does
+not match the intended name; the host is not local; the source dump is smaller than expected or
+`pg_dump` exited non-zero; the restore reports any error with `--exit-on-error`; or any post-restore check
+below returns rows.
+
+#### 8.2.4 Post-restore verification (manual form of the automated checks)
 
 ```sql
 -- Every project's canon_version must equal its highest commit version.
@@ -261,13 +323,39 @@ SELECT ch.id FROM chapters ch
   JOIN manuscript_versions m ON m.id = ch.accepted_version_id
  WHERE ch.status = 'accepted' AND m.status <> 'accepted';
 
+-- Content hashes must still match the stored text (the `sha256:` prefix is part of the stored value).
+SELECT id FROM manuscript_versions
+ WHERE content_hash <> 'sha256:' || encode(sha256(convert_to(text, 'UTF8')), 'hex');
+
+-- Evidence offsets are Unicode code-point offsets into NFC text (ADR-0030) and must still address the quote.
+SELECT e.id FROM evidence_spans e JOIN manuscript_versions m ON m.id = e.manuscript_version_id
+ WHERE substring(m.text FROM e.start_cp + 1 FOR e.end_cp - e.start_cp) <> e.quote;
+
+-- Row-level security must survive the restore: policies present AND forced.
+SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+ WHERE n.nspname = 'public' AND c.relrowsecurity AND NOT c.relforcerowsecurity;
+
 -- No live lease should outlive its deadline after a restore.
 SELECT id, holder_workflow_id, expires_at FROM target_leases
  WHERE released_at IS NULL AND expires_at <= now();
 ```
 
-Both queries should return zero rows. Stale leases are self-healing (an expired lease may be stolen), so the
-third is informational.
+All but the last should return zero rows. Stale leases are self-healing (an expired lease may be stolen),
+so the last query is informational.
+
+#### 8.2.5 Cleanup, evidence retention and redaction
+
+Drop only what the restore created, after the verification above has passed. Retain the drill report
+(`coverage/restore-drill-report.json`) as the evidence artifact: it contains identifiers, counts,
+checksums and outcomes only. **Never** retain or paste a complete connection URL, a password, or dump
+bytes — a logical dump of real data is customer manuscript content. Redact host and credential material
+before sharing any output; the tooling does this by construction (`describeTarget`, `redactConnectionUrl`).
+
+#### 8.2.6 Escalation
+
+Escalate to the data owner before touching any database that is not local and disposable. A restore
+against staging or production is out of scope for this runbook and for the tooling in this repository.
+
 
 ### 8.3 Application rollback
 
@@ -288,6 +376,83 @@ recorded as applied.
 
 If a file was applied and later edited, the runner refuses to proceed. Recover by restoring the original
 content and expressing the change as a new migration.
+
+---
+
+## 8A. Secret rotation
+
+**Evidence classification.** Configuration *boundaries* are tested (`apps/api/src/secret-boundaries.test.ts`,
+15 tests): a missing or malformed secret fails closed, no path defaults a secret into existence, and no
+secret reaches a log field, a rendered log line, a metric label or an error message. **A live credential
+rotation has not been executed** — this repository has no deployment environment, no secret manager and no
+credentials. The procedures below are written to be followed by an operator who has those things; nothing
+here claims a rotation occurred.
+
+### 8A.1 Rules that apply to every rotation
+
+- Rotate **one** secret at a time and verify before starting the next.
+- Never paste a secret value into a terminal that is logged, a ticket, a chat channel or a PR.
+- Never echo a complete connection URL; use the redacted form (`user@host:port/database`).
+- A failed boot after a rotation is the **designed** outcome of a wrong value — read the startup error,
+  which names the missing variable and never its value.
+- Keep the old value retrievable until the new one is verified. Destroying the old value first turns a
+  reversible mistake into an outage.
+
+### 8A.2 Session/auth secret (`SESSION_SECRET`)
+
+Sessions are stored as **hashes** of high-entropy random tokens (`packages/db/src/identity.ts`), so there
+is no signing key whose rotation silently invalidates a cookie's integrity — rotating the session secret
+invalidates sessions by design.
+
+1. Generate the new value in the secret manager. Do not generate it on a developer machine.
+2. Deploy with the new value. **Expect every existing session to be rejected**; users re-authenticate.
+3. Verify: an unauthenticated request to a protected route returns `401` with an RFC 9457 problem
+   document and no token material (CI asserts this shape on every push).
+4. Abort condition: if any request succeeds with a pre-rotation cookie, stop and investigate — an accepted
+   old credential after cutover is the failure this rotation exists to prevent.
+
+An overlap window is deliberately **not** implemented. Dual-secret acceptance is the mechanism by which an
+old credential keeps working after cutover, and for a token-hash scheme it buys nothing that a brief
+re-authentication does not.
+
+### 8A.3 Database credentials (`DATABASE_URL`, `DATABASE_MIGRATION_URL`)
+
+The application role (`yeonjae_app`) is deliberately least-privilege (migration `0007`) and is **not** the
+migration role. Rotate the password, not the role.
+
+1. In PostgreSQL: `ALTER ROLE yeonjae_app PASSWORD '<new value from the secret manager>'`. Run this from a
+   session whose history is not persisted.
+2. Update `DATABASE_URL` in the secret manager and restart the API and worker.
+3. Verify: `/ready` returns success (it performs a real query), and `pnpm cli db:migrate` reports only
+   skipped migrations.
+4. Abort condition: `/ready` fails after restart. Roll back the secret value; the old password is still
+   valid until it is explicitly changed again.
+5. Restart safety: accepted work is not duplicated by a restart. The chapter loop is Postgres-checkpointed
+   and idempotent per step (`job_steps.idempotency_key`), and acceptance is a single atomic canon commit —
+   a worker that restarts mid-run resumes from its checkpoint rather than re-accepting.
+
+### 8A.4 Provider credentials (`LLM_PROVIDER_*_API_KEY`)
+
+No live provider is configured; the worker refuses to start without an explicit
+`YEONJAE_PROVIDER_MODE`, and the only implemented mode is `replay`, which cannot make a network call.
+There is therefore **no provider credential in use to rotate today**. When a live mode exists:
+
+1. Add the new key alongside the old one in the secret manager.
+2. Deploy; confirm `yeonjae_provider_attempts_total` shows successful attempts on the new key.
+3. Revoke the old key at the provider, then remove it from the secret manager.
+4. Verify no provider error message reaches a log or a response body carrying key material — the gateway's
+   failure classifier returns a fixed enum member and never echoes the provider's text.
+
+### 8A.5 Object storage and KMS (`OBJECT_STORAGE_*`, `KMS_KEY_REF`)
+
+Not applicable today: no object storage and no KMS integration exist
+(`docs/08-delivery/06-operations-runbooks-outline.md`). The variable names are reserved in `.env.example`
+and asserted present by the secret-boundary suite so the runbook and the configuration cannot drift apart.
+
+### 8A.6 What a real rotation still requires
+
+A deployment environment, a secret manager, provider accounts and an operator with authority over them.
+None exist in this repository, so `docs/08-delivery/09-progress.md` keeps "real credential rotation" open.
 
 ---
 

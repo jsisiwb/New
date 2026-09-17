@@ -39,6 +39,7 @@ export interface LlmCallRow {
   repair_attempts: number;
   error: unknown;
   fallback_from_model_id: string | null;
+  attempt_records: unknown;
   artifact_ref: unknown;
   created_at: Date;
 }
@@ -77,6 +78,7 @@ export interface LlmCallInsert {
   repairAttempts: number;
   error?: unknown;
   fallbackFromModelId?: string | undefined;
+  attemptRecords?: readonly Readonly<Record<string, unknown>>[] | undefined;
   artifactRef?: unknown;
 }
 
@@ -115,8 +117,8 @@ async function insertLlmCallRow(pool: Pool, r: LlmCallInsert): Promise<void> {
     `INSERT INTO llm_calls (id, workspace_id, project_id, job_id, activity_id, idempotency_key, role, prompt_version_id, prompt_hash, pack_id, pack_hash,
        production_policy_version, narrative_identity_version_id, narrative_block_hash, output_language_contract_hash, tradition_contract_hash,
        output_language_check, model_id, model_class, provider, params, input_hash, output_hash, usage, cost_cents, latency_ms, attempt, status,
-       finish_reason, schema_valid, repair_attempts, error, fallback_from_model_id, artifact_ref)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18,$19,$20,$21::jsonb,$22,$23,$24::jsonb,$25,$26,$27,$28,$29,$30,$31,$32::jsonb,$33,$34::jsonb)`,
+       finish_reason, schema_valid, repair_attempts, error, fallback_from_model_id, artifact_ref, attempt_records)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18,$19,$20,$21::jsonb,$22,$23,$24::jsonb,$25,$26,$27,$28,$29,$30,$31,$32::jsonb,$33,$34::jsonb,$35::jsonb)`,
     [
       r.id,
       r.workspaceId,
@@ -152,6 +154,7 @@ async function insertLlmCallRow(pool: Pool, r: LlmCallInsert): Promise<void> {
       JSON.stringify(r.error ?? null),
       r.fallbackFromModelId ?? null,
       JSON.stringify(r.artifactRef ?? null),
+      JSON.stringify(r.attemptRecords ?? []),
     ],
   );
 }
@@ -269,6 +272,24 @@ export interface GatewayAuditLike {
   repair_attempts: number;
   fallback_from_model_id?: string | undefined;
   error?: { class: string; message: string } | undefined;
+  /** Per-attempt provider provenance (B-4-2, migration 0011). Never prompts, prose or credentials. */
+  attempt_records?:
+    | readonly {
+        readonly attempt: number;
+        readonly model_id: string;
+        readonly provider: string;
+        readonly outcome: 'succeeded' | 'failed';
+        readonly failure_class?: string | undefined;
+        readonly error_class?: string | undefined;
+        readonly cost_cents: number;
+        readonly usage: {
+          readonly input: number;
+          readonly output: number;
+          readonly cached: number;
+        };
+        readonly latency_ms: number;
+      }[]
+    | undefined;
   input_hash: string;
   output_hash?: string | undefined;
   output: { text?: string | undefined; json?: unknown } | undefined;
@@ -340,6 +361,9 @@ export class PgAuditStore {
       output_language_contract_hash: row.output_language_contract_hash ?? undefined,
       tradition_contract_hash: row.tradition_contract_hash ?? undefined,
       output_language_check: row.output_language_check as GatewayAuditLike['output_language_check'],
+      attempt_records: (Array.isArray(row.attempt_records)
+        ? row.attempt_records
+        : []) as GatewayAuditLike['attempt_records'],
       model_id: row.model_id,
       model_class: row.model_class as GatewayAuditLike['model_class'],
       provider: row.provider,
@@ -403,6 +427,7 @@ export class PgAuditStore {
       repairAttempts: record.repair_attempts,
       error: record.error,
       fallbackFromModelId: record.fallback_from_model_id,
+      attemptRecords: record.attempt_records,
       activityId: record.activity_id,
       artifactRef,
     });

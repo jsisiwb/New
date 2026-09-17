@@ -364,6 +364,8 @@ describe('Gateway call path', () => {
       audit: new MemoryAuditStore(),
     });
     await expect(gw.call(req)).rejects.toMatchObject({ code: 'PROVIDER_FAILED' });
-    expect(replay.misses).toHaveLength(2);
+    // ONE miss, not two: a missing recording is a non-retryable request failure, so the gateway no longer
+    // reroutes it to a second provider to reach the same refusal (B-4-2 fallback authorization).
+    expect(replay.misses).toHaveLength(1);
   });
 });

@@ -8,11 +8,11 @@ Everything else in `docs/` describes design; only this file claims what exists a
 | Item | Value |
 | --- | --- |
 | Project | Yeonjae Studio — English manuscripts in the Korean serialized-webnovel tradition |
-| Phase | **Checkpoint 7 — interface and hardening: complete and merged upstream** via [PR #10](https://github.com/jsisiwb/New/pull/10) at merge commit `59d62752f31261a0c86921603993f37992194dd2`, with post-merge CI and planning validation green; **Phase 4 — MVP hardening is next and has not started** (scope in the Phase 4 section below). Checkpoint 6 merged via upstream PR #9 at `6195700`; Checkpoint 5 merged via upstream PR #8 at `c8cfb59`; Checkpoints 0–4 in PRs #1–#4 |
+| Phase | **Checkpoint 7 — interface and hardening: complete and merged upstream** via [PR #10](https://github.com/jsisiwb/New/pull/10) at merge commit `59d62752f31261a0c86921603993f37992194dd2`, with post-merge CI and planning validation green; **Phase 4 — MVP hardening is ACTIVE and incomplete**: four tranches implement the CREDENTIAL-FREE DETERMINISTIC portions of B-4-1, B-4-2, B-4-3, B-4-4 and B-4-6. Every item needing a paid provider, a deployment environment, repository administration or a human reviewer remains **not run**: the live 20-chapter × five-night validation, the real-provider outage drill, staging/production restore, PITR, live credential rotation, the contrast corpus expansion and the bilingual human review. Neither B-4-1, B-4-2, B-4-5 nor Phase 4 is complete (scope and status in the Phase 4 section below). Checkpoint 6 merged via upstream PR #9 at `6195700`; Checkpoint 5 merged via upstream PR #8 at `c8cfb59`; Checkpoints 0–4 in PRs #1–#4 |
 | Default branch | `hoplite/ainos-1ac771f8` in `jsisiwb/New` — the upstream base/default development branch, **now at the Checkpoint 7 merge commit `59d62752f31261a0c86921603993f37992194dd2`** (parents: Checkpoint 6 merge `6195700a068b04108e26f87affd738842f39a15a` and Checkpoint 7 head `2f51c4ecef685a28a4ab717934510d9a20a26483`) |
-| Working branch | None active for implementation. Checkpoint 7 closeout (documentation and status only) runs on a branch created at exactly the Checkpoint 7 merge commit `59d6275`; no Phase 4 implementation has begun. **Historical provenance only** (no longer written to): the Checkpoint 7 work branch `hoplite/medma-023f017e` in the fork `sigma26web/New`, whose head `2f51c4ec` is the second parent of the upstream merge, with immutable markers `hoplite/medma-023f017e--checkpoint-07-base-6195700` @ `6195700` and `hoplite/medma-023f017e--checkpoint-07-recovery-0880de6` @ `0880de6`; and the earlier forks `sigma23web/New`, `sigma24web/New` and `sigma25web/New` (sigma25web/New#1 remains open and unmerged). No published commit was ever rewritten across these continuations |
+| Working branch | Phase 4 tranches 1–6 run on `hoplite/akraiphia-akraiphnion-258b962b` in the fork **`sigma28web/New`**, created at exactly the Checkpoint 7 closeout merge commit `d63e05deca60327fac0a1e6a85597e0b31e96c1d` and open as a **draft staging PR that must not be merged** ([sigma28web/New#1](https://github.com/sigma28web/New/pull/1)). Tranches 1–2 were RECOVERED into this fork by exact fast-forward from `sigma27web/New:hoplite/epidamnos-dyrrhachion-b0570f64` @ `93137ae`: all nine commit SHAs are preserved byte-for-byte, nothing was cherry-picked, squashed, rebased or rewritten. Immutable markers: `--phase-4-base-d63e05de` @ `d63e05de`, `--phase-4-recovery-93137ae` @ `93137ae`, `--phase-4-tranche-1-complete-69efe93` @ `69efe93`, `--phase-4-tranche-2-complete-93137ae` @ `93137ae`, `--phase-4-tranche-3-complete-50d5873` @ `50d5873`, `--phase-4-tranche-4-complete-b84d21f` @ `b84d21f`. Nothing was pushed to upstream `jsisiwb/New`, nothing to `sigma27web/New`, and nothing to any base branch; no force-push and no history rewrite. Branch protection on the upstream base branch remains **unavailable/unconfigured**, so the compensating controls are procedural: fork-only implementation, no base-branch writes, a draft staging PR, green push and PR CI, exact immutable markers, and no merge without explicit authorization. **Historical provenance only** (read-only, never written to): `sigma27web/New` (tranches 1–2 and its PR #1), the Checkpoint 7 work branch `hoplite/medma-023f017e` in `sigma26web/New`, and the earlier forks `sigma23web/New`, `sigma24web/New`, `sigma25web/New`. No published commit was ever rewritten across these continuations |
 | Application code | pnpm workspace: `packages/prose`, `packages/domain`, `packages/db` (migrations 0001–0004 — 0004 adds `workflow_id`/idempotency/`pins` on `jobs`, `workflow_artifacts` content-addressed store, `dependency_edges`; `canon.commit_delta`, `canon.rollback_latest`, bitemporal helpers, `retrieval.ts` accepted-only reads, lexical search, summaries, ACS/pack persistence), `packages/canon` (deterministic verifier + acceptance), `packages/narrative` (profile store, composition, Block compiler), `packages/prompts` (25 immutable prompt families v1.0.0, registry, prompt sets), `packages/gateway` (Guard, routing, budget, repair, output-language path, audit; Mock/Replay providers — Replay gains `activity:<id>` binding), `packages/context` (Active Constraint Set compiler, 4 pack templates, query plan, structured fetch, Postgres FTS retriever + vector interface, T0–T3 assembler with ladder, provenance renderer, manifest + pack hash, validation, `buildPack`), `packages/workflows` (Postgres-checkpointed `runStep` runtime, planning/drafting/evaluation/revision/acceptance stages, `produceChapter` core loop with previous-chapter gate before spend, `workflowStatus`, `exportAccepted`; Replay fixture `examples/fixture/ch01`), `apps/cli` (incl. `chapter:produce` / `chapter:status` / `chapter:resume` / `export:accepted` operator surface over the production workflow, replay-only), `apps/api` (Checkpoint 7: Fastify `/v1` operator API — session/API-key authentication, membership-derived authorization, RLS-scoped connections, RFC 9457 problem details, `Idempotency-Key` handling, cursor pagination, security headers, health/readiness, audit log; migration 0006 adds identity, membership, row-level security on every workspace-owned table, API idempotency keys, job control columns, the append-only `job_events` log and the `exports` table; migration 0007 narrows the request-scoped role's grants to least privilege after the audit; migration 0008 adds fenced target leases; migration 0009 adds `canon.assert_lease_fence`, the in-transaction fence assertion that makes fencing atomic with the write it protects (ADR-0048); migration 0010 adds the operator-editable `/v1` write resource families; job control + SSE, accepted-only TXT/DOCX export, the canon correction/retcon/regeneration-preview/rollback HTTP surface, canon/cost/budget inspector reads, structured-log + trace-correlated observability with redaction, the per-process sliding-window rate limiter and the default-deny CORS allowlist are delivered), `apps/worker` (Checkpoint 7: Temporal worker over the proven chapter loop, ADR-0047 — deterministic workflow ids, fenced target leases, versioned prose-free activity contracts, typed retry classification, pause/resume/cancel signals, progress queries, deterministic history replay; replay-only provider routing with no live-call path), `apps/web` (Checkpoint 7: Next.js 16 / React 19 operator application covering all 11 operator work areas over the real `/v1` API, with journey, accessibility and keyboard-path tests) |
-| CI | `planning-validation.yml` (validator) + `ci.yml` (Postgres 16 service; types-fresh, typecheck, lint, format, unit + integration tests, contrast regression, CLI/API/worker/web smoke, web production build, dependency-audit gate, gitleaks) on every push/PR. Local `pnpm check` is the same sequence minus gitleaks, which is CI-only. GitHub Actions results are reported per-PR (fork PR shows the fork's runs, upstream PR the upstream's) — a PR with zero check runs is unverified, never "green". Latest upstream evidence: on the Checkpoint 7 merge commit `59d6275`, [ci](https://github.com/jsisiwb/New/actions/runs/35131086126) and [planning-validation](https://github.com/jsisiwb/New/actions/runs/35131086114) both succeeded, with all three check runs green |
+| CI | `planning-validation.yml` (validator) + `ci.yml` (Postgres 16 service; types-fresh, typecheck, lint, format, unit + integration tests, the 120-chapter replay, the chaos drills, the **disposable restore drill**, the **defensive security suite**, the **deterministic cost suite**, the contrast regression, CLI/API/worker/web smoke, web production build, dependency-audit gate, gitleaks) on every push/PR. Each of the five explicit suites is run by its own runner AND verified again from its own durable report (`coverage/{junit.xml is deliberately not used for these}`: `chaos-report.json`, `restore-drill-report.json`, `security-report.json`, `cost-report.json`), because every vitest invocation rewrites `junit.xml` — the defect D-4 repair. Local `pnpm check` is the same sequence minus gitleaks, which is **CI-only and unavailable locally**. GitHub Actions results are reported per-PR — a PR with zero check runs is unverified, never "green". Latest fork evidence: on the recovered head `93137ae` and on tranche 3 `50d5873`, both `ci` and `planning-validation` succeeded for the push and the pull_request event in `sigma28web/New` |
 
 ## Checkpoints
 
@@ -95,6 +95,25 @@ version numbering across quarantined versions.
 - Fixture manuscripts: only ch.9 (accepted) and its rejected draft exist as text; ch.12/ch.14 evidence is
   described, not addressable, until Checkpoint 5 produces them.
 - Thresholds in profiles and policies are `uncalibrated`.
+- **B-4-5 is PARTIAL.** The contrast corpus remains at **40 sets**; no expansion toward 100 has been
+  attempted (padding it with near-duplicates to reach a number would defeat its purpose). Blinded reviewer
+  tooling exists and is tested, but **generated packets are not human review**: no reviewer has seen one,
+  no judgment exists, and calibration stays `uncalibrated`.
+- **Phase 4 external blockers, all still open.** Live 20-chapter × five-night validation (B-4-1b) and the
+  real-provider outage drill (B-4-2b) need paid providers. Staging restore, production restore, PITR,
+  off-site backup and RTO/RPO (B-4-3c) need a deployment environment. Live credential rotation (B-4-3d)
+  needs a secret manager and real credentials. Bilingual human review (B-4-5c) needs human reviewers. Real
+  billing calibration (B-4-6c) needs live providers and provider invoices. None of these has been
+  simulated, approximated or claimed.
+- **Restore evidence is scoped to a local disposable database.** The drill proves a logical
+  `pg_dump`/`pg_restore` round trip. It is not PITR, not a staging restore, not a production restore, not
+  off-site backup verification, and it measures no RTO/RPO.
+- **Cost evidence is synthetic/replay.** Monetary values come from fixtures served by the replay provider.
+  No live call, no price table, no invoice — `real_billing_calibrated` is `false` in the durable report.
+- **Security coverage is the automated application surface only.** There is no WAF, no network-layer
+  control and no external penetration test, and metrics and rate limiting remain per process.
+- gitleaks is **unavailable locally** in the development sandbox; it runs in CI only.
+- Upstream **branch protection is unavailable/unconfigured**; the compensating controls are procedural.
 
 ## Unresolved risks (see `03-risk-analysis.md`)
 
@@ -175,7 +194,7 @@ limitations in the final row remain open and are recorded rather than closed:
 | Dependency-audit CI gate | **done**: the step named "high+ fails" ended in `|| (echo … && exit 0)`, so every finding became a success and the gate never existed. `tools/audit-gate.mjs` replaces it: high and critical advisories fail the build, an advisory that must be tolerated needs an entry in `.audit-allowlist.json` carrying a justification, scope and expiry, and an expired or incomplete entry suppresses nothing. Verified by injecting a synthetic high advisory — the gate fails, a current allowlist entry lets it pass, and an expired entry does not |
 | Remaining `/v1` write families | **done**: migration 0010 adds the operator-editable resource families the API plan names — story specification versions, assumption decisions, directions, concept candidates and selections, register profiles, narrative-identity / naming-registry / terminology-policy documents, planning documents (series blueprint, arcs, chapter contracts, scene plans) and chapter review decisions. The design decision that shapes the migration: `workflow_artifacts` is content-addressed and `putArtifact` refuses a retry that produces different bytes, which is exactly the determinism guarantee the production loop depends on and exactly why an operator EDIT cannot live there. Operator state therefore sits beside the artifacts, versioned, recording the artifact it descends from as provenance; nothing the workflow produced is mutated. The invariants are enforced by the DATABASE, not by route handlers, because a rule that lives in one handler is bypassable by the CLI, a worker, or the next route: optimistic concurrency is a `UNIQUE (project, …, version)` key so two writers racing the same version cannot both win (the test drives the real race and asserts one refusal); triggers refuse to rewrite or unpin a pinned identity version and to rewrite a locked plan version, through any caller including raw SQL; concept selection commits the selection row and every winner/loser transition in one transaction, mirroring `candidate_selections` (0005), so no reader can observe two selected concepts and nothing can promote a rejected one. Two boundaries are stated in the responses rather than implied: a chapter review decision answers `canon_accepted: false` (approval is the operator SIGNAL that feeds the Checkpoint 2–6 acceptance path, never a shortcut around evidence verification, winner-only propagation and the atomic commit), and an assumption decision answers `spec_updated: false` and names the follow-up (promotion is a new spec version with its own concurrency check — never a silent rewrite of the spec downstream planning already read). An operator-authored spec is validated with the SAME `story-spec.schema.json` validator the production loop uses on its own output. The chapter trace is redacted BY SHAPE: it selects artifact metadata and excludes `llm_output` in the query itself, so prompts, provider payloads and raw model text have no path into the response rather than being stripped from one. All new tables get the same FORCE RLS workspace policy and 0007's least-privilege grants, with no DELETE (these families are append-only history). 35 tests (9 database invariant + 26 API contract) covering unauthenticated access, the viewer/editor/owner matrix, a forged workspace header, cross-workspace id parity with a nonexistent one, stale `expected_version`, a genuine concurrent-edit race, duplicate `Idempotency-Key` replay and changed-payload refusal, pinned/locked refusal, concept winner-only propagation with retained losers, non-NFC normalization, deterministic cursor pagination and trace redaction |
 | `apps/web` — the operator application | **done**: a Next.js 16 / React 19 app in the pnpm workspace with all 11 operator work areas — authentication; workspace and project selection; story specification and assumption review; directions and concept comparison; bible and register profiles; narrative identity and terminology; planning; chapters and production; candidate and scorecard review; canon and change operations; operations (jobs, SSE, costs, budgets, export). It calls the REAL `/v1` API: there is no mock, fixture or local store behind the client, because a UI backed by a static success path proves nothing about whether the product works. Security: the session secret is the server's HttpOnly cookie and is never readable by this code, so it cannot be written to browser storage; only the CSRF token lives in memory, is attached to unsafe methods automatically, and dies with a reload (re-read via `/v1/me`); a 401 revokes local authenticated state immediately while a 403 deliberately does NOT, since signing an operator out for lacking a role would be a bug; roles are presentation-only and every action is re-authorized server-side; an unrecognised error body is never rendered. SSE follows the persisted `job_events` log rather than the transport: reconnect sends the last APPLIED id (not the last received), duplicates are suppressed by sequence, a replayed non-terminal event can never relabel a terminal status (the bug that makes an operator cancel a finished run), a terminal event closes the stream, heartbeats reach neither the UI nor assistive technology, and disconnected/reconnecting is shown in words. Accessibility is centralized in shared primitives: status is always a WORD with colour as decoration, error summaries take focus and link to their fields, live regions are polite and carry only meaningful transitions, destructive canon operations confirm with a MATERIAL-versus-CONTEXTUAL impact summary from the server's own dry run, retcon and rollback additionally require typing the operation name, focus moves into a dialog and returns to its trigger, focus is never suppressed, and layouts are responsive with `prefers-reduced-motion` honoured. 63 tests: 19 unit (SSE replay semantics and API client contract) and 44 journey tests rendering the real screens against a transport that speaks the real `/v1` contract, including an axe pass on every work area and two keyboard-only critical paths. CI gains the web production build, a startup smoke test that asserts the shell and its landmarks actually render, and explicit guards that fail the build if the web journey or accessibility suites silently did not run |
-| Remaining Checkpoint 7 scope | **none — Checkpoint 7 is complete and merged upstream** (PR #10 at `59d6275`, post-merge CI and planning validation green). The following limitations are **open, not closed**, and Checkpoint 7 never claimed them: rate limiting and metrics are per process; fencing prevents a stale result from committing but does **not** abort an already-running provider request; **no live-provider validation has occurred**; evaluator thresholds remain **uncalibrated** (deterministic replay agreement only, ADR-0029); vector retrieval remains an interface; **no production deployment has occurred**. Closing these is Phase 4 — MVP hardening, which has not started |
+| Remaining Checkpoint 7 scope | **none — Checkpoint 7 is complete and merged upstream** (PR #10 at `59d6275`, post-merge CI and planning validation green). The following limitations are **open, not closed**: rate limiting and metrics are **per process**; fencing prevents a stale result from committing but does **not** abort an already-running provider request; **no live-provider validation has occurred**; evaluator thresholds remain **uncalibrated** (deterministic replay agreement only, ADR-0029); vector retrieval remains an interface; **no production deployment has occurred**; gitleaks is **unavailable locally** (CI-only); upstream **branch protection is unavailable/unconfigured**. Closing these is Phase 4 — MVP hardening, which is ACTIVE. Phase 4's four implemented tranches close only the credential-free deterministic halves of B-4-1, B-4-2, B-4-3, B-4-4 and B-4-6; they do not close any limitation in this row except that restore is no longer "not exercised" **for a local disposable database only**, and that tenant-isolation coverage is now derived from the live schema. Every other limitation listed here remains open |
 
 Honest scope note (ADR-0043): Checkpoint 7 is the largest checkpoint in the roadmap. Its platform and API
 foundation, job control, SSE, accepted-only export, durable orchestration, atomic lease fencing, the canon
@@ -265,17 +284,321 @@ green. Branch naming note: the platform's Git broker only publishes to this thre
 derived from it, so the recovery and base markers carry that prefix rather than the bare names in the
 continuation brief; their SHAs are exactly as specified.
 
-## Phase 4 — MVP hardening (next; not started)
+## Phase 4 — MVP hardening (active; incomplete)
 
-**Status: not started.** Nothing in this section has been implemented, run or measured. It records the
-roadmap scope that follows the Checkpoint 7 merge so the next session starts from a truthful baseline. Each
-item exists precisely because the corresponding Checkpoint 7 limitation is open, not closed.
+**Status: active and incomplete.** Four tranches have been implemented, all of them the CREDENTIAL-FREE,
+DETERMINISTIC portions of their scope items. Every item that needs a paid provider, a deployment
+environment, repository administration or a human reviewer remains **not run**, and Phase 4 as a whole is
+**not complete**. Each item exists precisely because the corresponding Checkpoint 7 limitation is open.
+
+| # | Scope item | Status | Closes which open limitation |
+| --- | --- | --- | --- |
+| 1a | 120-chapter compressed continuity validation, **deterministic** | **done** (evidence below) | long-form continuity was previously proven only to chapter 3 |
+| 1b | Live 20-chapter validation, five consecutive nights | **not run** — needs paid providers | no live-provider validation has occurred |
+| 2a | Deterministic chaos and provider-fallback drills (B-4-2) | **done** (evidence below) | fallback was previously untested and unclassified |
+| 2b | Chaos/fallback under a REAL provider outage | **not run** — needs paid providers | requires live provider access |
+| 3a | **Local disposable** logical backup/restore drill (B-4-3) | **done** (evidence below) | restore was previously "not exercised" |
+| 3b | Secret-configuration boundary tests + rotation runbooks (B-4-3) | **done** (evidence below) | rotation had no tests and no procedure |
+| 3c | Staging restore, production restore, PITR, off-site backup, RTO/RPO | **not run** — no staging/production exists | unchanged |
+| 3d | Live credential rotation | **not run** — no secret manager or credentials | unchanged |
+| 4 | Defensive security suite and CI security gates (B-4-4) | **done for the automated surfaces** (evidence below) | tenant/operator boundaries were covered only where suites happened to touch them |
+| 5a | Contrast corpus expansion toward 100 sets (B-4-5) | **not started** — corpus remains at **40 sets** | unchanged |
+| 5b | Blinded reviewer tooling (B-4-5) | **done** (evidence below) — tooling only, **not** human-review evidence | unchanged |
+| 5c | Bilingual human review and threshold calibration | **not run** — needs human reviewers | thresholds remain `uncalibrated` |
+| 6a | Deterministic cost/attempt accounting (B-4-6) | **done** (evidence below) | attempt-level spend was recorded but never read |
+| 6b | Attempt-level cost API surface (B-4-6) | **done** (evidence below) | retry/fallback visibility had no API |
+| 6c | Real billing calibration against provider invoices | **not run** — needs live providers and invoices | unchanged |
+
+### Phase 4 tranche 5 — blinded reviewer tooling (B-4-5, automation portion only)
+
+**The protocol is not invented here.** `docs/07-quality/01-testing-strategy.md` §6 specifies it exactly:
+30 chapters, 3 bilingual reviewers, blind 1–5 on TWO scales ("natural English" and "reads as a Korean
+webnovel of this genre") plus free comments, Spearman ≥ 0.8 between each judge and its scale, feeding
+threshold calibration (ADR-0029). `packages/eval/src/review-packet.ts` implements that shape and refuses
+to generate a short packet rather than silently weakening it.
+
+**Blinding.** A packet carries no model id, provider, route, variant class or prompt version — asserted by
+test. The A/B side assignment lives only in the manifest, hashed into the packet so the key provably
+existed at generation without being shipped. Ordering and side assignment come from a seeded PRNG, so a
+run is reproducible for the operator and unguessable from the packet alone, and each reviewer gets an
+independent order so nobody can copy a neighbour's positional habit.
+
+**Intake fails closed.** `importResponses` rejects an incomplete set, a duplicate response, a response
+from another packet, merged reviewer identities, a missing reviewer identity, a rating outside 1–5 or
+non-integer, and a packet whose content hash no longer matches — returning nothing accepted rather than
+importing part of a set, because an agreement figure computed over partially-reviewed data would be worse
+than none.
+
+**What it CANNOT do, by construction.** It never invents a reviewer name or a judgment; a generated packet
+is `status: 'generated'` and nothing in the module can advance that; `reviewReport` returns
+`calibration: 'uncalibrated'` and `requires_human_approval: true` unconditionally; and
+`recommendThresholds` returns a RECOMMENDATION with its blockers, never a threshold and never
+`contrast_calibrated`. One test exists solely to pin that a packet with no responses yields zero reviewers
+and NaN agreement.
+
+**Evidence.** 28 tests. Also included: Spearman with average-rank tie handling (a reviewer who used only
+part of the scale must not get an order-dependent correlation) returning NaN rather than a fabricated
+number when a series has no variance.
+
+**What this is NOT.** **Not human-review evidence.** No reviewer has been contacted, no packet has been
+reviewed, no judgment exists. Thresholds remain `uncalibrated` and B-4-5 remains **partial** — the corpus
+is still 40 sets and the bilingual review has not run.
+
+### Phase 4 tranche 6 — deterministic cost and attempt accounting (B-4-6, deterministic portion)
+
+**What exists.** `packages/db/src/cost-accounting.ts` reads `llm_calls` together with migration 0011's
+`attempt_records`, which nothing previously did — so "how many ACTUAL provider attempts was this spend"
+and "did a retry or a fallback happen" had no implementation. `/v1/projects/:id/cost-attempts` exposes it,
+grouped by role, model, provider, model class, job, policy version or outcome.
+
+**The arithmetic rule it enforces.** `llm_calls.cost_cents` is the authoritative total;
+`attempt_records[].cost_cents` attributes that total and is never added to it. An attribution that does
+not reconstruct the total is a reported violation.
+
+**Money is exact integer MILLICENTS internally, cents at the boundary.** The gateway computes
+`(tokens × pricePerMTokCents) / 1_000_000`, which is **fractional** — a replay-priced call costs `0.3`
+cents — and `cost_cents` is an unconstrained `numeric` that stores it exactly. The release-gate review
+found that the first implementation parsed only the integral part, so **every sub-cent call reported as
+zero** (defect D-6, repaired). Values are now scaled to integer millicents before any arithmetic, summed
+as integers so no float drift accumulates, and exposed in both forms: `*_millicents` is the exact integer
+for comparison and summation, `*_cents` is the human-facing decimal derived from it. Every summary states
+its currency and unit.
+
+**Truthfulness.** Summaries state their BASIS. `billed` is deliberately not a representable value — a
+provider invoice is not something this system observes — and the only basis reachable today is
+`recorded_replay`. Usage a provider never reported stays **unknown** rather than becoming zero.
+
+**Evidence.** `pnpm test:costs` → 13 scenarios, all passed, durable report at
+`coverage/cost-report.json` declaring `basis: synthetic_replay`, `real_billing_calibrated: false`,
+`live_provider_calls: 0`. Scenarios: first-attempt success; retry then success (two attempts, one model —
+not a fallback); fallback then success; all routes fail; cancellation and pre-dispatch budget denial;
+replay unable to double-charge (the audit's unique idempotency key refuses the second write);
+partial vs absent usage; aggregation across all seven dimensions with attempts exceeding calls where
+retried; time-window filtering; tenant isolation through an RLS-scoped connection; 1000 one-cent calls
+totalling exactly 1000; **a sub-cent cost preserved rather than truncated, and 1000 calls of 0.3 cents
+summing to exactly 300 000 millicents**; a deliberately broken attribution detected; no prose or
+credentials in any dimension key. Plus 9 API tests (totals reconciled against a direct SQL sum on the
+exact integer field, sub-cent cost reported exactly, malformed window refused with 422, cross-tenant read
+indistinguishable from absent).
+
+**What this is NOT.** Synthetic/replay evidence. No live provider call, no price table consulted, no
+invoice reconciled. **Real billing calibration has not occurred.** Metrics and rate limiting remain
+**per process** — that limitation is unchanged by this tranche.
+
+### Phase 4 tranche 4 — defensive security suite and CI gates (B-4-4, automated portion)
+
+**Defensive only.** Every case drives the application's own local test client with inert inputs and
+asserts refusal. No scanner, no brute-force, no credential harvesting, no command-execution
+demonstration, and no offensive tooling was created.
+
+**The substantive gap it closed was an inventory problem, not a missing assertion.** RLS coverage is now
+DERIVED FROM THE LIVE SCHEMA: every table carrying a `workspace_id` must have RLS enabled, forced and
+policied; every other public table must be explicitly classified as isolated through a parent row,
+self-scoped on its own id (`workspaces`), or intentionally global with a stated reason (the immutable
+prompt registry, identity, schema metadata). **A new tenant-owned table shipping without a policy now
+fails CI** — which no test naming tables by hand would catch. The inventory also pins that attempt
+provenance is a jsonb column on `llm_calls`, not an `attempt_records` table, so it inherits that table's
+policy.
+
+**Also covered:** SELECT/INSERT/UPDATE/DELETE isolation, isolation through joins, isolation for a query
+carrying no workspace predicate at all, nothing visible without a workspace context, no tenant residue on
+a pooled connection; manuscript text staying data (a story paragraph cannot override the identity,
+language or tradition contract, because the Guard hashes the rendered system prompt rather than trusting
+it); export filenames that cannot traverse or inject a header; telemetry carrying no prose or prompts,
+with bounded label cardinality and causal error chains reduced to classes and codes; and forwarded headers
+unable to mint a rate-limit identity without an explicit trusted proxy.
+
+**Evidence.** `pnpm test:security` → **178 tests, 16 declared scenarios** across the `rls`,
+`input_output`, `telemetry` and `rate_limit` surfaces; durable report at `coverage/security-report.json`
+declaring `defensive_only: true`, `live_provider_calls: 0`. CI runs it and verifies the report separately.
+
+**Open limitations, unchanged:** rate limiting and metrics are **per process**; there is no WAF, no
+network-layer control and no external penetration test; no production deployment exists to test against.
+
+### Phase 4 tranche 3 — disposable backup/restore drill and secret boundaries (B-4-3, credential-free portion)
+
+**Evidence classification — the distinction matters more than the result.**
+
+| Procedure | Status |
+| --- | --- |
+| Local **disposable** logical restore drill | **executed**, automated, verified in CI |
+| Staging restore | **not executed** — no staging environment exists |
+| Production restore | **not executed** — no production environment exists |
+| Point-in-time recovery (PITR) | **not executed** — no WAL archive configured |
+| Off-site backup verification | **not executed** |
+| RTO/RPO measurement | **not measured** |
+| Live credential rotation | **not executed** — no secret manager, no credentials |
+
+**What the drill does.** `pnpm drill:restore` creates its own disposable PostgreSQL 16 databases, applies
+migrations 0001–0011, seeds two workspaces of representative data through the **real** lifecycle
+(`createManuscriptVersion` → `approveManuscriptVersion` → `commitDelta`, plus a quarantined rejected
+draft), captures a custom-format `pg_dump`, restores it with `pg_restore`, and verifies **22 invariants**:
+migration count/version, tables/indexes/triggers, RLS policy count and `FORCE ROW LEVEL SECURITY` still
+set, per-workspace row counts, canon version contiguity, manuscript content hashes, evidence code-point
+offsets and quote hashes, accepted-only pointers, quarantine preserved and excluded, exactly one terminal
+job event, job checkpoints, attempt-level provider provenance, per-workspace cost totals, derived-row
+orphans, sequence non-collision, **cross-workspace RLS still enforced in the restored database**,
+whole-database logical checksum equality, and the source database verified unchanged.
+
+The fixture goes through the real lifecycle because the schema refuses the shortcut
+(`ILLEGAL_TRANSITION`, `CANON_WRITE_OUTSIDE_COMMIT`). A drill whose fixture bypassed the invariants would
+verify data the product can never produce.
+
+**Safety.** `packages/db/src/restore-safety.ts` defaults every guard to refusal: the host must be local,
+the database NAME must carry a word-delimited disposable marker, a protected word
+(`prod`/`staging`/`live`/`customer`/…) refuses even alongside a marker, destruction needs an
+acknowledgement independent of supplying the URL, and only databases the drill created are dropped.
+**`NODE_ENV` is never consulted** — it says what a process believes about itself, not what database it is
+pointed at. Passwords and complete connection URLs never reach a log, an error or the report. 33 guard
+tests.
+
+**Secret boundaries (rotation validation, not rotation).** 15 tests prove a missing or malformed secret
+fails closed, no path defaults a secret into existence, CORS is default-deny and rejects a credentialed
+wildcard, the worker refuses to start without an explicit provider mode, no secret reaches a log field or
+a rendered log line, a database error carries a redacted target rather than a URL, and the provider
+failure classifier returns a fixed enum member without echoing key material. The observability layer is
+an ALLOWLIST, so the test that matters is the one proving an *unanticipated* field name is not logged
+verbatim. Runbooks (§8.2, §8A of `11-deployment-and-incident-runbooks.md`) carry prerequisites, target
+verification, abort conditions, post-restore verification, cleanup, evidence retention, redaction and
+escalation, and state plainly that no live rotation occurred.
+
+**Evidence.** 62 tests via `pnpm drill:restore` (33 guards + 29 drill assertions), durable report at
+`coverage/restore-drill-report.json` whose `scope` block records `pitr_tested: false`,
+`staging_restore_tested: false`, `production_restore_tested: false`, `offsite_backup_tested: false`,
+`rto_rpo_measured: false`. The runner fails if the report ever starts claiming otherwise.
+
+
+### Phase 4 tranche 2 — deterministic chaos and provider-fallback drills (B-4-2, deterministic portion)
+
+**Two production defects were found and fixed** (this is why the tranche exists rather than only adding
+tests):
+
+1. **Fallback was unauthorized.** `Gateway.call` treated EVERY thrown provider error as a reason to move to
+   the next route. A rejected request, an authentication failure, a content refusal and an unrecognized
+   fault were all rerouted — re-sending the same bytes to a second paid model to reach the same refusal, and
+   turning one deterministic failure into N. Fixed by `packages/gateway/src/failures.ts`: a provider adapter
+   states its own verdict by throwing `ProviderFailure`, anything else is classified from its shape, and an
+   UNRECOGNIZED failure defaults to **non-retryable** so an unknown fault cannot multiply spend. Only
+   `retryable_transport`, `retryable_throttled` and `retryable_provider` authorize a reroute. Regression
+   tests: `failures.test.ts` (9) and scenarios GW-05…GW-08, which assert the second provider's call count is
+   **0**.
+2. **Fallback had no attempt-level provenance.** `llm_calls` recorded one row per CALL, so a call that fell
+   back named the winning model and `fallback_from_model_id` but recorded neither why route 1 was abandoned
+   nor what each attempt cost. Migration **0011** adds `attempt_records` (validated by a trigger, because a
+   CHECK constraint cannot contain a subquery) and the gateway now emits one entry per ACTUAL attempt. The
+   row's summed `cost_cents` remains the authoritative total; attempt entries attribute it and must not be
+   added to it. Regression tests: GW-09, GW-11, GW-17, GW-22.
+
+**What exists.** `packages/gateway/src/fallback.chaos.test.ts` (22 gateway scenarios, `GW-nn`) and
+`packages/workflows/src/chaos.integration.test.ts` (11 workflow/control-plane scenarios, `WF-nn`) run
+against the REAL `Gateway`, the REAL `produceChapter` loop and real PostgreSQL 16, with faults injected only
+at the provider boundary. `packages/gateway/src/chaos-report.ts` merges a machine-readable report
+(`coverage/chaos-report.json`) carrying scenario ids, outcomes and short invariant labels — never prose,
+prompts, provider payloads or credentials, which the report writer and the runner both assert.
+`pnpm test:chaos` (`tools/run-chaos-drills.mjs`) is the explicit command: it refuses to start without
+`DATABASE_URL`, deletes any stale report first, and fails unless every declared scenario reported `passed`
+with no duplicate ids, no live provider call and no secret-shaped content. `ci.yml` runs it and additionally
+greps `coverage/junit.xml` for both matrix names, so a skipped or filtered suite fails the build.
+
+**Invariants proved (33 scenarios).** Fallback only for policy-retryable failures (GW-01…GW-04) and never
+for a rejected request, auth failure, content refusal or unknown fault (GW-05…GW-08); every route
+unavailable and an unconfigured fallback both fail closed (GW-09, GW-10); malformed output exhausts its
+bounded repair budget on its own route before rerouting and fails closed when every route is invalid
+(GW-11, GW-12); non-English output is regenerated once, rerouted once, then fails closed (GW-13); budget
+denial precedes dispatch and a fallback cannot spend past the reservation (GW-14, GW-15); a missing identity
+contract never reaches a provider (GW-16); each actual attempt has its own audit entry with its own verdict
+(GW-17); a fallback call retains every pinned policy/prompt/identity/contract value and still runs the
+output-language check (GW-18); a lost response followed by a retry reads the recorded call instead of
+spending again (GW-19); usage is stored verbatim rather than guessed (GW-20); the surfaced error names its
+`failure_class` without prose, prompts or secrets (GW-21); fallback order follows configured priority
+deterministically (GW-22). On the workflow side: a crash after extraction leaves canon untouched and resumes
+to exactly one commit (WF-01, WF-02); two concurrent runs of one chapter produce one acceptance and one
+canon transition (WF-03); pause and cancel requested before dispatch stop the run at a step boundary with
+no canon, no manuscript and no spend (WF-04, WF-05); a completed run emits exactly one terminal event and a
+late cancel cannot rewrite it (WF-06, WF-07); a genuine replay miss fails closed without substituting a
+draft (WF-08); a rerun re-reads recorded spend and refuses a second canon transition (WF-09, WF-10); and
+control requested on an already-terminal job is refused rather than reopening it (WF-11).
+
+**Measured (this session, local).** `pnpm test:chaos` — 33 scenarios, 64 tests, **20.5 s**, 0 live provider
+calls. Repository test counts moved from **56 files / 790 tests** to **59 files / 824 tests**.
+
+**What this tranche explicitly does NOT claim.**
+
+- **No real provider outage was exercised.** Every fault is injected deterministically at the provider
+  boundary. A mock/replay fallback drill is valid evidence about this system's decision logic and is **not**
+  evidence that a vendor failed over successfully in production.
+- Fencing still does **not** abort an already-running provider request. The lease fence prevents a stale
+  result from committing; it does not cancel an in-flight HTTP call. Unchanged by this tranche.
+- No provider credential, paid scheduled workflow or live call was added.
+- B-4-2's live half and Phase 4 as a whole remain **incomplete**.
+
+### Phase 4 tranche 1 — deterministic 120-chapter continuity replay (B-4-1, deterministic portion)
+
+**What exists.** `packages/workflows/src/longform-replay.integration.test.ts` produces exactly 120
+sequential chapters to acceptance in one project on real PostgreSQL 16 migrations, through the SAME
+`produceChapter` the CLI and the Temporal worker run — real context packs, real deterministic checks, all
+six replayed evaluators, the real approval lock, the real extraction, the real atomic acceptance commit, the
+real L1 summary, the real accepted-only index and the real dependency edges. Only the model responses are
+replaced. `packages/workflows/src/longform-fixture.ts` generates every chapter-scoped recording as a pure
+function of the chapter number over the existing `examples/fixture/` story bible, so no manuscripts are
+added to Git; `longform-harness.ts` wires the generated seed to the production `Gateway` (Guard, budget,
+Postgres audit store, English output-language check) with the `ReplayProvider`.
+`pnpm test:replay-120` (`tools/run-longform-replay.mjs`) is the explicit command; it refuses to start
+without `DATABASE_URL` and fails unless the suite's own completion evidence records a full 120-chapter run
+with zero replay misses and zero live provider calls. `ci.yml` runs it and additionally greps
+`coverage/junit.xml` for the suite's completion marker, so a skipped or filtered suite fails the build.
+
+**What it proves (18 tests).** Exactly 120 chapters, each accepted exactly once, with 120 accepted
+manuscript versions and a final canon version of 122; every accepted manuscript passes the English
+output-language check at confidence ≥ 0.99 and every scene passed the gateway's own check; canon advances
+monotonically by exactly 1 per acceptance with no gaps or repeats and each acceptance commit's
+`base_canon_version` is its predecessor's output; chapter k's pack carries chapter k−1's L1 summary,
+verbatim tail, exact ending hook and committed canon deltas — asserted at the boundaries 1→2, 59→60 and
+119→120, and asserted to be the immediate predecessor rather than an older chapter. Long-range continuity is
+structural, not decorative: a porter-share fact asserted in chapter 1 is superseded at chapters 21, 41, 61,
+81 and 101, each supersede citing the canon id the previous one created and each superseded row closed and
+pointing at its replacement; three promises opened in chapter 1 are paid at chapters 3, 60 and **120** (119
+chapters after setup); a relationship state changed at chapter 2 is superseded at chapter 119. Idempotency:
+re-running chapters 1, 2, 59, 60, 119 and 120 replays every step from its checkpoint and changes no counter
+(model-spend records, accepted versions, canon commits, summaries, search documents, dependency edges,
+terminal job events), with zero duplicate `llm_calls` idempotency keys and no second terminal job event; a
+chapter interrupted after extraction leaves canon untouched and, on resume, commits exactly once. Isolation:
+a quarantined non-accepted candidate appears in no canon evidence, no accepted corpus, no summary, no search
+document, no dependency edge and no export. Determinism: an independent run of the same seed against a clean
+schema reproduces identical active-constraint-set, manuscript-content and L1-summary hashes and identical
+context-pack content (normalized for the UUIDs the database allocates, which legitimately differ between
+independent runs; byte-exact pack stability WITHIN a run is what replay depends on and is proved by the
+rerun test requiring every step to replay from its checkpoint).
+
+**Measured (this session, local).** 120 chapters accepted in **25.2–27.2 s** across runs (≈ 210–227 ms per
+chapter), **0 replay misses**, **0 live provider calls**. Suite total 18 tests. Repository test counts moved
+from **55 files / 772 tests** (baseline at `d63e05de`) to **56 files / 790 tests**.
+
+**What this tranche explicitly does NOT claim.**
+
+- The live 20-chapter nightly validation for five consecutive nights **has not run**. No live model was
+  called, no provider credential was added, and no scheduled paid workflow exists. A deterministic replay is
+  **not** a substitute for live evidence and is not offered as one.
+- **B-4-1 is not complete** and **Phase 4 is not complete**.
+- Evaluator thresholds remain **`uncalibrated`** (ADR-0029); this tranche changed no calibration status.
+- **No production deployment has occurred.**
+- Branch protection on the upstream base branch remains **unavailable/unconfigured**.
+- Metrics and rate limiting remain **per process**; this tranche changed neither.
+- Fencing still does **not** abort an already-running provider request.
+- Vector retrieval remains an **interface** only (ADR-0045).
+
+**Prerequisites for the live half (documented, not executed).** A funded provider credential held in the
+secret manager and never in the repository; an explicit per-night budget ceiling enforced by the existing
+`Gateway` budget; a nightly schedule that is opt-in and separate from normal CI (normal CI must stay
+credential-free); recording of each night's run id, chapter count, spend and evaluator scores; and five
+consecutive successful nights before any claim of B-4-1 completion. None of this is authorized or
+implemented in this tranche.
 
 | # | Scope item | Closes which open limitation |
 | --- | --- | --- |
-| 1 | 120-chapter compressed continuity validation | long-form continuity is still proven only to chapter 3 (B-4-1 remains the compressed long-form run) |
+| 1 | 120-chapter compressed continuity validation | **deterministic half done in tranche 1** (above); long-form continuity is now exercised to chapter 120 deterministically |
 | 2 | Live 20-chapter nightly validation for five consecutive nights | no live-provider validation has occurred; every model call to date is replayed |
-| 3 | Provider fallback and chaos drills | fencing prevents a stale result from committing but does not abort an already-running provider request; fallback behaviour is untested under real provider failure |
+| 3 | Provider fallback and chaos drills | **deterministic half done in tranche 2** (above): fallback is now classified and authorized, and 33 deterministic scenarios run in CI. Still open: fencing does not abort an already-running provider request, and fallback under a REAL provider failure is untested |
 | 4 | Backup/restore and recovery drills | no production deployment has occurred and no restore has ever been exercised |
 | 5 | Security test expansion | the RLS/least-privilege/rate-limit surfaces are tested but not adversarially exercised at MVP scale |
 | 6 | Bilingual reviewer evaluation and threshold calibration | evaluator thresholds remain `uncalibrated` (ADR-0029); contrast agreement is deterministic replay agreement, not measured judge quality |

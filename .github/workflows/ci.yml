@@ -67,6 +67,121 @@ jobs:
             echo "::error::apps/web journey tests did not run"; exit 1; }
           grep -q "has no accessibility violations" coverage/junit.xml || {
             echo "::error::apps/web accessibility tests did not run"; exit 1; }
+      - name: 120-chapter continuity replay actually ran (B-4-1 deterministic portion)
+        # Same reasoning as the guards above. This suite is the only long-form evidence that chapter k
+        # inherits chapter k−1's ACCEPTED state across 120 links, that canon advances exactly once per
+        # acceptance, and that retry/resume duplicates nothing — a silent skip would turn all of that
+        # into an unverified claim.
+        run: |
+          grep -q "B-4-1 120-chapter replay completion evidence" coverage/junit.xml || {
+            echo "::error::the 120-chapter continuity replay did not run"; exit 1; }
+      - name: 120-chapter continuity replay, explicit run with its no-skip guard
+        # `pnpm test:replay-120` refuses to start without DATABASE_URL and fails unless the suite's own
+        # completion evidence records a full 120-chapter run with zero replay misses and zero live
+        # provider calls. No credentials and no paid provider are involved.
+        run: pnpm test:replay-120
+        env:
+          CI: 'true'
+      - name: Chaos and fallback drills, explicit run with its no-skip guard
+        # `pnpm test:chaos` refuses to start without DATABASE_URL and fails unless the chaos report records
+        # every declared scenario as passed, with no duplicate ids and no live provider call. Deterministic
+        # faults only: no credentials and no paid provider are involved.
+        run: pnpm test:chaos
+        env:
+          CI: 'true'
+      - name: Deterministic chaos and provider-fallback drills actually ran (B-4-2)
+        # The fallback matrix is the only evidence that fallback is AUTHORIZED rather than merely possible:
+        # a rejected request, an auth failure or an unknown fault must not be rerouted to a second paid
+        # model. A silent skip would turn that into an unverified claim.
+        #
+        # This guard reads the suite's OWN durable report rather than coverage/junit.xml, because every
+        # vitest invocation rewrites junit.xml — so a grep here would only ever see the last suite that
+        # ran, which is exactly how the first version of this guard failed. The report is written by the
+        # suites themselves and verified independently by the runner above.
+        run: |
+          node -e '
+            const r = require("./coverage/chaos-report.json");
+            const ids = (r.scenarios ?? []).map((s) => s.id);
+            const gw = ids.filter((i) => i.startsWith("GW-")).length;
+            const wf = ids.filter((i) => i.startsWith("WF-")).length;
+            if (gw < 22) { console.error(`::error::gateway fault matrix reported ${gw} scenarios, expected >= 22`); process.exit(1); }
+            if (wf < 11) { console.error(`::error::workflow fault matrix reported ${wf} scenarios, expected >= 11`); process.exit(1); }
+            if ((r.scenarios ?? []).some((s) => s.outcome !== "passed")) { console.error("::error::a chaos scenario did not pass"); process.exit(1); }
+            console.log(`chaos matrices ran: ${gw} gateway + ${wf} workflow scenarios`);
+          '
+      - name: Disposable backup/restore drill, explicit run with its no-skip guard (B-4-3)
+        # `pnpm drill:restore` creates its own disposable PostgreSQL databases, applies every migration,
+        # seeds representative multi-tenant data, dumps and restores it, and verifies 22 invariants
+        # (schema, RLS policies AND enforcement, immutable chains, canon continuity, evidence offsets,
+        # accepted-only boundaries, quarantine exclusion, job/checkpoint state, attempt provenance, cost
+        # totals, sequence safety). It refuses to run without DATABASE_URL and refuses any target that is
+        # not local, explicitly marked disposable and created by the drill itself.
+        #
+        # This is a LOGICAL dump/restore. The guard fails if the report ever claims PITR, staging,
+        # production or off-site coverage, none of which are exercised here.
+        run: pnpm drill:restore
+        env:
+          CI: 'true'
+      - name: Restore drill completion evidence (read from its own durable report)
+        # Same reasoning as the chaos guard: every vitest invocation rewrites coverage/junit.xml, so this
+        # reads the drill's dedicated report instead.
+        run: |
+          node -e '
+            const r = require("./coverage/restore-drill-report.json");
+            if (r.passed !== true) { console.error("::error::the restore drill did not pass"); process.exit(1); }
+            if (r.source_unchanged !== true) { console.error("::error::the drill did not verify the source unchanged"); process.exit(1); }
+            const passed = (r.invariants ?? []).filter((i) => i.outcome === "passed").length;
+            if (passed < 22) { console.error(`::error::restore drill reported ${passed} passing invariants, expected >= 22`); process.exit(1); }
+            console.log(`restore drill: ${passed} invariants passed on PostgreSQL ${r.postgres_version}`);
+          '
+      - name: Defensive security suite, explicit run with its no-skip guard (B-4-4)
+        # `pnpm test:security` runs the tenant-isolation, authentication/authorization, input/output,
+        # telemetry and rate-limit boundary suites and verifies its own durable report. Defensive only:
+        # the suites drive the app's local test client with inert inputs and assert REFUSAL. No scanner,
+        # no brute-force, no credential harvesting, no command-execution demonstration.
+        #
+        # The RLS half needs real PostgreSQL 16, so the runner refuses to start without DATABASE_URL —
+        # a silently skipped isolation suite proves nothing about tenant isolation.
+        run: pnpm test:security
+        env:
+          CI: 'true'
+      - name: Defensive security evidence (read from its own durable report)
+        run: |
+          node -e '
+            const r = require("./coverage/security-report.json");
+            const s = r.scenarios ?? [];
+            if (r.defensive_only !== true) { console.error("::error::security report does not declare itself defensive-only"); process.exit(1); }
+            if (s.some((x) => x.outcome !== "passed")) { console.error("::error::a security scenario did not pass"); process.exit(1); }
+            for (const surface of ["rls", "input_output", "telemetry", "rate_limit"]) {
+              if (!s.some((x) => x.surface === surface)) { console.error(`::error::no scenario covers the ${surface} surface`); process.exit(1); }
+            }
+            if (s.length < 16) { console.error(`::error::security suite reported ${s.length} scenarios, expected >= 16`); process.exit(1); }
+            console.log(`defensive security: ${s.length} scenarios passed`);
+          '
+      - name: Deterministic cost and attempt accounting, explicit run with its no-skip guard (B-4-6)
+        # `pnpm test:costs` replays 13 fixture scenarios through the real append-only audit and verifies
+        # its own durable report: every actual attempt attributable, per-attempt attribution
+        # reconstructing (never adding to) the authoritative total, retries and fallbacks visible, a
+        # replay unable to double-charge, partial/unknown usage staying unknown, integer arithmetic, and
+        # tenant isolation.
+        #
+        # The evidence is SYNTHETIC/replay. The guard fails if the report ever claims real billing
+        # calibration, which would need a provider invoice this system does not observe.
+        run: pnpm test:costs
+        env:
+          CI: 'true'
+      - name: Deterministic cost evidence (read from its own durable report)
+        run: |
+          node -e '
+            const r = require("./coverage/cost-report.json");
+            const s = r.scenarios ?? [];
+            if (r.basis !== "synthetic_replay") { console.error(`::error::unexpected cost basis ${r.basis}`); process.exit(1); }
+            if (r.real_billing_calibrated !== false) { console.error("::error::cost report claims real billing calibration"); process.exit(1); }
+            if (r.live_provider_calls !== 0) { console.error("::error::cost report records a live provider call"); process.exit(1); }
+            if (s.some((x) => x.outcome !== "passed")) { console.error("::error::a cost scenario did not pass"); process.exit(1); }
+            if (s.length < 13) { console.error(`::error::cost suite reported ${s.length} scenarios, expected >= 13`); process.exit(1); }
+            console.log(`deterministic cost accounting: ${s.length} scenarios passed (basis ${r.basis})`);
+          '
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
