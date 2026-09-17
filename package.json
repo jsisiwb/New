@@ -21,6 +21,7 @@
     "test:replay-120": "node tools/run-longform-replay.mjs",
     "test:chaos": "node tools/run-chaos-drills.mjs",
     "drill:restore": "node tools/run-restore-drill.mjs",
+    "test:security": "node tools/run-security-suite.mjs",
     "gen:types": "tsx tools/gen-types.ts",
     "check:types-fresh": "tsx tools/gen-types.ts --check",
     "validate:planning": "python3 tools/validate-planning-package.py --quiet",

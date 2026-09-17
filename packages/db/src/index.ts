@@ -12,3 +12,4 @@ export * from './operator-resources.js';
 export * from './restore-safety.js';
 export * from './restore-drill.js';
 export * from './restore-report.js';
+export * from './security-report.js';
