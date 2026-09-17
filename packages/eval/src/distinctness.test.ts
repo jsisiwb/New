@@ -180,6 +180,13 @@ describe('the audit catches the ways a corpus gets padded', () => {
     }
   });
 
+  /**
+   * Explicit timeout: the brute-force cross-check below is deliberately O(sets² × classes) — it exists to
+   * recompute the maximum INDEPENDENTLY of `auditDistinctness`, so it must not share its optimizations.
+   * At 100 accepted sets that is ~24,750 trigram-Jaccard comparisons, which overruns vitest's 20 s
+   * default on a loaded runner. The assertion is unchanged; only the budget is stated rather than
+   * assumed. (Pre-existing at `4df7d92f`, where it fails identically; unrelated to cancellation.)
+   */
   it('keeps the reported maximum a same-class figure', () => {
     // `maxObserved` is the number the corpus's headroom is quoted against. Adding cross-class comparison
     // must not silently redefine it into a different, higher measurement.
@@ -194,7 +201,7 @@ describe('the audit catches the ways a corpus gets padded', () => {
           brute = Math.max(brute, similarity(a.variants[cls], b.variants[cls]));
         }
     expect(report.maxObserved?.score).toBeCloseTo(brute, 12);
-  });
+  }, 120_000);
 
   it('flags a duplicate set id', () => {
     const a = makeSet(
