@@ -353,8 +353,16 @@ grouped by role, model, provider, model class, job, policy version or outcome.
 
 **The arithmetic rule it enforces.** `llm_calls.cost_cents` is the authoritative total;
 `attempt_records[].cost_cents` attributes that total and is never added to it. An attribution that does
-not reconstruct the total is a reported violation. Money is integer cents end to end (no float), and every
-summary states its currency and unit.
+not reconstruct the total is a reported violation.
+
+**Money is exact integer MILLICENTS internally, cents at the boundary.** The gateway computes
+`(tokens × pricePerMTokCents) / 1_000_000`, which is **fractional** — a replay-priced call costs `0.3`
+cents — and `cost_cents` is an unconstrained `numeric` that stores it exactly. The release-gate review
+found that the first implementation parsed only the integral part, so **every sub-cent call reported as
+zero** (defect D-6, repaired). Values are now scaled to integer millicents before any arithmetic, summed
+as integers so no float drift accumulates, and exposed in both forms: `*_millicents` is the exact integer
+for comparison and summation, `*_cents` is the human-facing decimal derived from it. Every summary states
+its currency and unit.
 
 **Truthfulness.** Summaries state their BASIS. `billed` is deliberately not a representable value — a
 provider invoice is not something this system observes — and the only basis reachable today is
@@ -367,9 +375,11 @@ not a fallback); fallback then success; all routes fail; cancellation and pre-di
 replay unable to double-charge (the audit's unique idempotency key refuses the second write);
 partial vs absent usage; aggregation across all seven dimensions with attempts exceeding calls where
 retried; time-window filtering; tenant isolation through an RLS-scoped connection; 1000 one-cent calls
-totalling exactly 1000; a deliberately broken attribution detected; no prose or credentials in any
-dimension key. Plus 8 API tests (totals reconciled against a direct SQL sum, malformed window refused with
-422, cross-tenant read indistinguishable from absent).
+totalling exactly 1000; **a sub-cent cost preserved rather than truncated, and 1000 calls of 0.3 cents
+summing to exactly 300 000 millicents**; a deliberately broken attribution detected; no prose or
+credentials in any dimension key. Plus 9 API tests (totals reconciled against a direct SQL sum on the
+exact integer field, sub-cent cost reported exactly, malformed window refused with 422, cross-tenant read
+indistinguishable from absent).
 
 **What this is NOT.** Synthetic/replay evidence. No live provider call, no price table consulted, no
 invoice reconciled. **Real billing calibration has not occurred.** Metrics and rate limiting remain
