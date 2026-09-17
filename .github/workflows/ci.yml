@@ -109,6 +109,31 @@ jobs:
             if ((r.scenarios ?? []).some((s) => s.outcome !== "passed")) { console.error("::error::a chaos scenario did not pass"); process.exit(1); }
             console.log(`chaos matrices ran: ${gw} gateway + ${wf} workflow scenarios`);
           '
+      - name: Disposable backup/restore drill, explicit run with its no-skip guard (B-4-3)
+        # `pnpm drill:restore` creates its own disposable PostgreSQL databases, applies every migration,
+        # seeds representative multi-tenant data, dumps and restores it, and verifies 22 invariants
+        # (schema, RLS policies AND enforcement, immutable chains, canon continuity, evidence offsets,
+        # accepted-only boundaries, quarantine exclusion, job/checkpoint state, attempt provenance, cost
+        # totals, sequence safety). It refuses to run without DATABASE_URL and refuses any target that is
+        # not local, explicitly marked disposable and created by the drill itself.
+        #
+        # This is a LOGICAL dump/restore. The guard fails if the report ever claims PITR, staging,
+        # production or off-site coverage, none of which are exercised here.
+        run: pnpm drill:restore
+        env:
+          CI: 'true'
+      - name: Restore drill completion evidence (read from its own durable report)
+        # Same reasoning as the chaos guard: every vitest invocation rewrites coverage/junit.xml, so this
+        # reads the drill's dedicated report instead.
+        run: |
+          node -e '
+            const r = require("./coverage/restore-drill-report.json");
+            if (r.passed !== true) { console.error("::error::the restore drill did not pass"); process.exit(1); }
+            if (r.source_unchanged !== true) { console.error("::error::the drill did not verify the source unchanged"); process.exit(1); }
+            const passed = (r.invariants ?? []).filter((i) => i.outcome === "passed").length;
+            if (passed < 22) { console.error(`::error::restore drill reported ${passed} passing invariants, expected >= 22`); process.exit(1); }
+            console.log(`restore drill: ${passed} invariants passed on PostgreSQL ${r.postgres_version}`);
+          '
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
