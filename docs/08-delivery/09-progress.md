@@ -383,6 +383,16 @@ and no duplicated cost. Resume after a cancellation replays completed steps and 
 Existing uncancelled retry, fallback and replay behaviour is unchanged, and a caller that supplies no
 cancellation options behaves exactly as before.
 
+**CI evidence on the final head `e14883b11d39e426f6fb1ed1bcf7545643025cbd`** (draft staging PR
+[sigma30web/New#1](https://github.com/sigma30web/New/pull/1), which must not be merged): all three checks
+succeeded —
+[ci / typecheck+lint+format+types+tests with PostgreSQL 16](https://github.com/sigma30web/New/actions/runs/35256652318),
+[planning-validation](https://github.com/sigma30web/New/actions/runs/35256652586) and
+[secret scanning (gitleaks)](https://github.com/sigma30web/New/actions/runs/35256652318). Final local
+totals on the same head: **70 test files / 1,048 tests / 0 skipped** (554.87 s) against PostgreSQL 16.14,
+plus replay-120, 49 chaos scenarios, 23 restore-drill invariants, 16 defensive-security scenarios, 14 cost
+scenarios and the contrast regression. Gitleaks is unavailable locally and ran in CI only.
+
 **Evidence.** 40 deterministic tests, all of which fail against the previous implementation:
 `packages/gateway/src/cancellation.test.ts` (31) and
 `apps/worker/src/active-cancellation.integration.test.ts` (9, against real PostgreSQL 16). Mid-call
