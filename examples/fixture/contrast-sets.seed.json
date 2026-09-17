@@ -3375,6 +3375,277 @@
         "min_gap_prose_vs_translation_like": 39,
         "min_gap_structure_vs_western_english": 33
       }
+    },
+    {
+      "id": "cs-066",
+      "genre": "academy",
+      "function": "hook",
+      "variants": {
+        "kwn_english": "The aptitude crystal cracked before Ha-eun touched it.\n\n“Step back from the plinth.”\n\n“I haven't stepped forward yet.”\n\nThe proctor looked at the crystal, then at the queue of forty candidates behind her, then at the crystal again.\n\n“…Nobody move.”\n\nIt had cracked along an old line. Someone had repaired this crystal before — badly, with resin, the way you repair a thing you intend to keep using.\n\n*They've had a crystal that breaks on somebody, and they kept it in service.*\n\nHa-eun put her hands behind her back so nobody could accuse them of anything.\n\n“I'd like the next one, please. And the maintenance log.”",
+        "western_english": "The aptitude examination was administered on the ground floor of the east wing, at a plinth that had stood in the same position since the building's completion, and the crystal upon it cracked audibly while Ha-eun was still some distance away and had not yet put out her hand. The proctor instructed her to step back from the plinth, and she pointed out, not unreasonably, that she had not yet stepped toward it. He looked then at the crystal, and at the queue of forty candidates behind her, and at the crystal a second time, and told the hall that nobody was to move. What became apparent on closer inspection was that the fracture had followed an older line, and that the older line had at some point been filled with resin, in the manner of a repair undertaken by someone who intends to go on using the object, which raised a question about the maintenance log that Ha-eun proceeded to ask.",
+        "translation_like": "The aptitude crystal became cracked at the before time when Ha-eun touched it.\n\n“Please step back from the plinth.”\n\n“I did not step to the front yet.”\n\nThe proctor looked at the crystal, after that at the queue of forty persons of candidates at the behind of her, after that at the crystal again.\n\n“…Nobody should move.”\n\nIt was cracked at the along of an old line. Some person repaired this crystal at the before time — at a bad way, with the resin, like the method which you use for repairing a thing which you are intending for using continuously.\n\n*They were having a crystal which is breaking at some person, and they kept it at the service state.*\n\nHa-eun put her own hands at the behind of her back so that nobody can make an accusation about them.\n\n“I want the next one, please. And the maintenance log also.”",
+        "literary": "The crystal announced itself before she did. There was a sound — small, domestic, the sound of a teacup meeting a hard sink — and the aptitude stone on its two-hundred-year-old plinth opened along a seam, while the girl to whom it was reacting stood four paces distant with her hands at her sides and nothing whatever to confess. The proctor said what proctors say. Ha-eun observed, with the unhurried pedantry that would in time make her enemies of a great many people, that she had not yet stepped forward. And then, examining the fracture as the hall fell into the peculiar stillness of forty adolescents discovering that an institution can be surprised, she saw that the seam was old and had been filled with resin — filled, that is, by someone who had known the stone would break again and had elected to go on using it anyway.",
+        "weak_serial": "Ha-eun was waiting in the queue for the aptitude examination when the crystal on the plinth cracked. She had not touched it or even stepped toward it at that point. The proctor told her to step back from the plinth, and she replied that she had not moved forward yet. He looked at the crystal and at the other forty candidates waiting in the hall, and then told everyone to stay where they were. When Ha-eun examined the crack more closely, she saw that it had followed an older fracture line that had been filled in with resin at some point. This suggested that the crystal had broken before and had been repaired so that it could continue to be used. She asked the proctor for the next crystal and also for the maintenance log."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-PARA-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-067",
+      "genre": "hunter-gate",
+      "function": "hook",
+      "variants": {
+        "kwn_english": "There was a gate in the elevator shaft, and the building manager had been renting it out.\n\n“Forty a night,” he said, when they finally got him into the stairwell. “Nobody goes past the second chamber. It's safe.”\n\n“Nine people are missing.”\n\n“Nine people went in past the second chamber.”\n\nSe-chan looked down the shaft. No Association seal. No anchor registration. No serial number, because a gate nobody reports never gets one.\n\nWhich meant the closing fee didn't exist.\n\nWhich meant nobody had ever been paid to close it, and it had been open for eleven months.\n\n“…Get everyone out of this building.”",
+        "western_english": "The aperture had formed, at some point during the preceding year, in the disused elevator shaft of a twelve-storey residential building in a district not otherwise noted for such events, and the building manager — a man of enterprising disposition who had recognized an asset where the Association would have recognized an emergency — had been letting access to it at forty thousand won a night. He explained this in the stairwell with a certain defensiveness, maintaining that nobody was permitted past the second chamber and that the arrangement was accordingly safe. It was put to him that nine people were missing. He replied that the nine had gone past the second chamber. Se-chan, looking down the shaft, observed the absence of any Association seal, any anchor registration and any serial number, and drew from those absences the conclusion that the gate had stood open and unpaid-for since the previous winter.",
+        "translation_like": "There was a gate at the inside of the elevator shaft, and the building manager was doing the renting of it to the people.\n\n“It is forty at one night,” he said, at the time when they finally brought him to the stairwell. “No person is going past the second chamber. It is the safe one.”\n\n“Nine persons of people are missing.”\n\n“Nine persons of people went to the inside past the second chamber.”\n\nSe-chan looked at the down of the shaft. There was no Association seal. There was no anchor registration. There was no serial number, because a gate which nobody is reporting never receives one.\n\nBecause of that, the closing fee was not existing.\n\nBecause of that, no person was ever paid for closing it, and it was at the open state during eleven months.\n\n“…Please take every person to the outside of this building.”",
+        "literary": "It is a peculiarity of catastrophe that it is so often preceded not by negligence but by enterprise. The gate had opened in the disused elevator shaft of an ordinary residential block, and the building manager, confronted with a hole in the world, had done what a certain kind of man will always do with a hole in the world, which is to charge admission. Forty a night. Nobody past the second chamber, he said, in the stairwell, in the tone of a man reciting a rule he has privately amended. Nine were missing. The nine, he explained, had gone past the second chamber. And Se-chan, leaning into that shaft and finding no seal, no registration, no serial number — finding, in short, no evidence that the aperture existed at all in the only sense the Association recognized — understood that it had therefore never been anybody's job to close it.",
+        "weak_serial": "A gate had opened inside the disused elevator shaft of a residential building, and the building manager had been charging people forty thousand won a night to enter it. When the investigators brought him into the stairwell to question him, he told them that nobody was allowed to go past the second chamber and that the arrangement was therefore safe. They pointed out that nine people were currently missing, and he responded that those nine had gone past the second chamber. Se-chan looked down into the shaft and noticed that there was no Association seal, no anchor registration, and no serial number for the gate. This meant that no closing fee had ever been assigned to it, so nobody had been paid to close it. The gate had apparently been open for around eleven months. He told the others to evacuate the building."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-068",
+      "genre": "regression",
+      "function": "hook",
+      "variants": {
+        "kwn_english": "She woke up owing money to a man who would not be born for two years.\n\nThe debt notice was on the table. Her own handwriting. Her own signature, dated eleven days from now.\n\nHa-ram had come back four times. Every time, she woke on the same Tuesday, in the same room, with nothing on the table.\n\n*Somebody else is doing this.*\n\nShe read the amount. She read the name.\n\nThen she read the line at the bottom, which was not in her handwriting, and which said:\n\n*You keep buying the lot. Buy something else.*",
+        "western_english": "She had returned four times before, and each of those returns had been identical in every particular that mattered: the same Tuesday, the same narrow room above the stationer's, the same grey light, and a table with nothing on it. The fifth return was not identical. There was a debt notice lying on the table, written in her own hand and signed with her own signature and dated eleven days into a future that had not yet occurred, recording a sum owed to a man who would not be born for another two years. Ha-ram sat down with it. She read the amount, and then the name, and then — at the foot of the page, in a hand that was emphatically not her own — a single line of instruction advising her that she kept buying the lot and recommending that she buy something else instead.",
+        "translation_like": "She woke up at the state of owing the money to a man who will not be born until two years.\n\nThe debt notice was at the above of the table. It is her own handwriting. It is her own signature, and the date is eleven days from the now.\n\nHa-ram came back four times. At every time, she woke up at the same Tuesday, at the same room, with nothing at the above of the table.\n\n*Some other person is doing this thing.*\n\nShe read the amount. She read the name.\n\nAfter that, she read the line at the bottom side, which is not at her own handwriting, and which was saying:\n\n*You are continuously buying the lot. Please buy some other thing.*",
+        "literary": "There is a particular horror reserved for those who have made a routine of resurrection, and it is not death but variation. Ha-ram had come back four times, and four times the world had performed its small unvarying overture: the Tuesday, the room above the stationer's, the light the colour of dishwater, the bare table. On the fifth occasion the table was not bare. It held a debt notice written in her own hand, signed with her own signature, dated eleven days into a week that had not yet been permitted to happen, and recording a sum owed to a man whose birth was still two years distant. She read the figure. She read the name. And then, at the foot of the page, in handwriting that belonged to nobody she had ever met, she read an instruction.",
+        "weak_serial": "Ha-ram woke up on a Tuesday morning in the same room where she had woken up during each of her four previous returns. This time, however, there was a debt notice sitting on the table, which had not been there before. The notice was written in her own handwriting and carried her own signature, and it was dated eleven days in the future. The amount was owed to a man who would not be born for another two years. She considered the fact that all four of her previous returns had been identical, which suggested that somebody else was involved in what was happening. She read through the amount and the name on the notice. At the bottom of the page there was an additional line written in handwriting that was not hers, which told her that she kept buying the lot and that she should buy something else."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-MON-02"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 37
+      }
+    },
+    {
+      "id": "cs-069",
+      "genre": "romance-fantasy",
+      "function": "hook",
+      "variants": {
+        "kwn_english": "The betrothal contract arrived with a page missing, and the missing page was numbered.\n\n“An oversight,” the envoy said.\n\n“Page nine,” Verena said. “Between the dowry schedule and the succession clause.”\n\n“A copying error, my lady.”\n\n“Then the copyist numbered the error and then continued numbering after it.” She turned the stack around so he could see the foot of page eight, and the foot of page ten. “Your house has sent me a document that knows what it is hiding.”\n\nThe envoy did not touch the papers.\n\n“Tell your duke,” Verena said, “that I will sign page nine first, and the rest afterward.”",
+        "western_english": "The contract of betrothal was delivered on a Thursday by an envoy of some seniority, bound in the customary manner and consisting, by the envoy's account, of the customary number of pages, and it was some little while before Verena observed that one of them was absent. The absence was not of the sort that can be attributed to carelessness, since the pagination continued unbroken on either side of it: page eight concluded, page ten commenced, and between them the ninth had been omitted by a copyist who had nonetheless troubled to count it. The envoy offered the word oversight, and then the phrase copying error, and Verena turned the stack toward him so that he might examine the feet of both surrounding sheets. She then requested that he inform his duke that she would sign the ninth page first and the remainder of the document afterward.",
+        "translation_like": "The betrothal contract arrived with one page which is missing, and the missing page was having a number.\n\n“It is an oversight,” the envoy said.\n\n“It is the page nine,” Verena said. “It is at the between of the dowry schedule and the succession clause.”\n\n“It is a copying error, my lady.”\n\n“Then, the copyist person gave a number to the error and after that continued the numbering at the after of it.” She turned the stack to the around direction so that he can see the foot of the page eight, and the foot of the page ten. “Your own house sent to me a document which is knowing the thing which it is hiding.”\n\nThe envoy did not touch the papers.\n\n“Please tell to your duke,” Verena said, “that I will sign the page nine at the first, and all of the rest at the after time.”",
+        "literary": "A document may lie in two ways: by what it says, and by the arithmetic of what it does not. The betrothal contract arrived bound and beribboned and short by exactly one sheet, and the sheet in question had not been lost in any sense that the word will bear, since the pagination proceeded serenely from eight to ten without so much as a stammer — the copyist having counted the page, assigned it its number, and then declined to produce it. Oversight, said the envoy, who had presumably been chosen for his seniority rather than his imagination. A copying error, he added. Verena turned the stack toward him and let him look at the foot of page eight and the foot of page ten, and thought that there is no more eloquent confession available to a great house than a number with nothing under it.",
+        "weak_serial": "The betrothal contract was delivered to Verena by an envoy from the duke's household. After looking through the document, she noticed that one of the pages was not included. The envoy described this as an oversight and then as a copying error. Verena pointed out that the missing sheet was page nine, which fell between the dowry schedule and the succession clause, and that the pagination continued correctly on both sides of the gap. She showed him the bottom of page eight and the bottom of page ten so that he could see the numbering for himself. She said that this meant the document had been prepared by someone who knew what was being left out of it. The envoy did not respond or touch the papers. She asked him to tell the duke that she would sign page nine before signing anything else."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-DLG-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-070",
+      "genre": "system-progression",
+      "function": "hook",
+      "variants": {
+        "kwn_english": "[You have been reported.]\n\nDan-ho read it three times. There was no such notification. There had never been such a notification.\n\n[Reporting party: Floor 12 — designation withheld.]\n[Allegation: unauthorized descent.]\n[Status: under review by an entity that does not accept appeals.]\n\nThe descent gate behind him was already closing.\n\n*Twelve floors down. Somebody on floor twelve reported me for coming to get them.*\n\n[Correction.]\n[Reporting party: Floor 12 — you.]",
+        "western_english": "The notification arrived some minutes after he had passed through the descent gate, and Dan-ho read it three times before accepting that he had read it correctly, since no such notification was documented anywhere in the system's published behaviour and none had been observed by any climber of his acquaintance. He had been reported. The reporting party was identified only as Floor 12, with the designation withheld; the allegation was unauthorized descent; and the status indicated that the matter was under review by an entity which did not entertain appeals. Behind him the descent gate had begun to close. He was considering the obvious question — who on the twelfth floor would report a man for coming down to assist them — when the window amended itself, and supplied, in place of the withheld designation, the second person pronoun.",
+        "translation_like": "[You became reported.]\n\nDan-ho read it three times. Such kind of notification was not existing. Such kind of notification never existed at the before time.\n\n[Reporting party: The Floor 12 — the designation is withheld.]\n[Allegation: It is the unauthorized descent.]\n[Status: It is at the under review by an entity which is not accepting the appeals.]\n\nThe descent gate at the behind of him was already closing itself.\n\n*It is twelve floors to the down. Some person at the floor twelve reported about me because I am coming for getting them.*\n\n[It is a correction.]\n[Reporting party: The Floor 12 — it is you.]",
+        "literary": "There are notifications the system issues and notifications it does not, and every climber learns the difference the way a prisoner learns which doors are decorative. This one belonged to no category Dan-ho had ever seen or heard described. He had been reported. The party was given as Floor 12, the designation withheld; the allegation was unauthorized descent; and the matter stood under review by an entity which, the window noted without apparent irony, did not accept appeals. Behind him the descent gate had commenced its slow bureaucratic closing. He had time to entertain the obvious and human question — what soul on the twelfth floor would denounce a man for descending toward it — and rather less time to entertain the answer, which the window supplied of its own accord, in the form of a single amended word.",
+        "weak_serial": "Dan-ho received a system notification after he passed through the descent gate, and he read it three times because he had never seen a notification of that type before. The message stated that he had been reported by a party on floor twelve whose designation was withheld, that the allegation was unauthorized descent, and that the matter was under review by an entity that did not accept appeals. Meanwhile, the descent gate behind him had started to close. He wondered why anyone on the twelfth floor would report him when he was descending in order to help them. Then the notification updated itself and showed the reporting party again. This time, instead of withholding the designation, it identified the reporting party as Dan-ho himself."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
     }
   ],
   "register_cases": [
