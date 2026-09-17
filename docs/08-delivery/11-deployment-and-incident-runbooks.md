@@ -266,7 +266,7 @@ Only the first row is evidence. The drill's machine-readable report records the 
 `pnpm drill:restore` creates its own disposable databases, applies every migration through `0011`, seeds
 representative multi-tenant data through the **real** lifecycle (`createManuscriptVersion` →
 `approveManuscriptVersion` → `commitDelta`, plus a quarantined rejected draft), captures a custom-format
-`pg_dump`, restores it with `pg_restore` into a second disposable database, and verifies 22 invariants.
+`pg_dump`, restores it with `pg_restore` into a second disposable database, and verifies 23 invariants.
 
 ```bash
 # Requires a local PostgreSQL 16 and DATABASE_URL. The drill never touches the database in that URL;

@@ -26,6 +26,7 @@ const SUITES = [
 const REQUIRED_INVARIANTS = [
   'migration_count_matches',
   'migration_0011_present',
+  'cancellation_provenance_restored',
   'tables_restored',
   'indexes_restored',
   'triggers_restored',
@@ -99,9 +100,18 @@ if (!String(report.postgres_version ?? '').startsWith('16.'))
   problems.push(
     `the drill ran against PostgreSQL ${String(report.postgres_version)}, expected 16.x`,
   );
-if (!String(report.migration_version ?? '').startsWith('0011'))
+/**
+ * The restored schema must be at least the migration this guard was written against.
+ *
+ * Compared with `localeCompare` on the zero-padded migration name rather than `startsWith`, which was the
+ * defect: `startsWith('0011')` accepted ONLY 0011 and rejected every later migration, so the guard failed
+ * the moment a new migration landed — the opposite of the "or later" it claimed to check. Migration names
+ * are zero-padded and therefore sort lexicographically in application order.
+ */
+const MIN_MIGRATION = '0011';
+if (String(report.migration_version ?? '').slice(0, 4) < MIN_MIGRATION)
   problems.push(
-    `the restored schema is at ${String(report.migration_version)}, expected 0011 or later`,
+    `the restored schema is at ${String(report.migration_version)}, expected ${MIN_MIGRATION} or later`,
   );
 
 const reported = new Map((report.invariants ?? []).map((i) => [String(i.id), String(i.outcome)]));

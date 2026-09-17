@@ -577,7 +577,7 @@ network-layer control and no external penetration test; no production deployment
 **What the drill does.** `pnpm drill:restore` creates its own disposable PostgreSQL 16 databases, applies
 migrations 0001–0011, seeds two workspaces of representative data through the **real** lifecycle
 (`createManuscriptVersion` → `approveManuscriptVersion` → `commitDelta`, plus a quarantined rejected
-draft), captures a custom-format `pg_dump`, restores it with `pg_restore`, and verifies **22 invariants**:
+draft), captures a custom-format `pg_dump`, restores it with `pg_restore`, and verifies **23 invariants**:
 migration count/version, tables/indexes/triggers, RLS policy count and `FORCE ROW LEVEL SECURITY` still
 set, per-workspace row counts, canon version contiguity, manuscript content hashes, evidence code-point
 offsets and quote hashes, accepted-only pointers, quarantine preserved and excluded, exactly one terminal
