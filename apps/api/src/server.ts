@@ -14,6 +14,8 @@
 import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import {
+  COST_DIMENSIONS,
+  costSummary,
   createSession,
   entitiesOfType,
   isTerminalStatus,
@@ -75,6 +77,7 @@ import { ApiError, PROBLEM_CONTENT_TYPE, toProblem } from './problem.js';
 import {
   asObject,
   encodeCursor,
+  FieldErrors,
   parsePage,
   requireEnum,
   requireInt,
@@ -859,6 +862,62 @@ export function buildApi(options: ApiOptions): FastifyInstance {
           input_tokens: Number(r.input_tokens),
           output_tokens: Number(r.output_tokens),
         })),
+      };
+    });
+  });
+
+  /**
+   * Attempt-level cost and provenance summary (B-4-6).
+   *
+   * The `/costs` route above answers "what did this cost, grouped by role/model/chapter". It cannot
+   * answer "how many provider attempts was that, and did a retry or a fallback happen" — because that
+   * lives in migration 0011's per-attempt provenance rather than in the call row. This route reads both
+   * together through the shared accounting module, so a dashboard figure traces to audit rows rather
+   * than being recomputed in the browser.
+   *
+   * Every number is an integer count of cents with the currency and unit stated, and the summary labels
+   * its BASIS. `recorded_replay` is the only basis this deployment can produce: it is what the gateway
+   * observed from replay/mock providers, not a provider invoice, and the field exists so a reader cannot
+   * mistake one for the other.
+   */
+  app.get('/v1/projects/:projectId/cost-attempts', async (req) => {
+    const scope = await scoped(pool, req);
+    requireRole(scope, 'viewer');
+    const projectId = requireUuid(
+      (req.params as { projectId?: string }).projectId,
+      'params.projectId',
+    );
+    const query = req.query as { dimension?: string; since?: string; until?: string };
+    const dimension = requireEnum(query.dimension ?? 'role', COST_DIMENSIONS, 'query.dimension');
+    // A malformed timestamp is a client error, not something to silently ignore: a dashboard that
+    // quietly dropped its filter would show a total for the wrong window.
+    const parseWhen = (value: string | undefined, field: string): Date | undefined => {
+      if (value === undefined || value === '') return undefined;
+      const when = new Date(value);
+      if (Number.isNaN(when.getTime())) {
+        const errors = new FieldErrors();
+        errors.add(field, 'iso8601');
+        errors.throwIfAny(`${field} must be an ISO 8601 timestamp.`);
+      }
+      return when;
+    };
+    const since = parseWhen(query.since, 'query.since');
+    const until = parseWhen(query.until, 'query.until');
+
+    return inScope(pool, scope, async (c) => {
+      await projectOr404(c, projectId);
+      const summary = await costSummary(c, projectId, dimension, { since, until });
+      return {
+        dimension: summary.dimension,
+        basis: summary.basis,
+        currency: summary.currency,
+        unit: summary.unit,
+        total_cost_cents: summary.total_cost_cents,
+        calls: summary.calls,
+        // Actual provider attempts behind those calls: greater than `calls` whenever a retry happened.
+        attempts: summary.attempts,
+        window: { since: since?.toISOString() ?? null, until: until?.toISOString() ?? null },
+        items: summary.items,
       };
     });
   });
