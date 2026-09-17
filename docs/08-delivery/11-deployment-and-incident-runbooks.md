@@ -685,6 +685,76 @@ entry) and Gitleaks.
 
 ---
 
+## 10A. Bilingual reviewer round (B-4-5c) — operator procedure
+
+This is the **externally blocked** half of B-4-5. The tooling exists and is tested
+(`packages/eval/src/review-packet.ts`); what has never happened is the round itself. This section is the
+operator procedure for when reviewers are actually available. **Executing it requires people. Nothing here
+may be simulated, and no step below may be performed by an agent on a reviewer's behalf.**
+
+### 10A.1 Preconditions, all verifiable before contacting anybody
+
+| Precondition | How to verify | Current state |
+| --- | --- | --- |
+| Corpus is at or above the review size | `pnpm validate:contrast` prints the set count; the protocol needs ≥ 30 passages | 100 sets — satisfied |
+| Contrast regression is green at the exact head | `pnpm validate:contrast` → `PASSED`, 0 skipped | satisfied |
+| Corpus hash is pinned in the result document | `corpus hash` line of the same output | satisfied |
+| Three reviewer identities exist, assigned by a human | operator record outside this repository | **not satisfied — no reviewer has been contacted** |
+
+Record the corpus hash before generating packets. A round whose packets were cut from a different corpus
+than the one under calibration proves nothing, and the hash is the only thing that detects it afterward.
+
+### 10A.2 Generate
+
+`generatePackets(pairs, { seed })` produces one packet per reviewer slot plus one private manifest each.
+
+- The **seed** must be recorded with the round. It is the only way to regenerate the exact packet a
+  reviewer saw, and a round that cannot be regenerated cannot be audited.
+- Each reviewer gets an independent item order and an independent A/B side assignment, so neither a
+  neighbour's packet nor a positional habit leaks the answer.
+- A packet carries **no** model id, provider, route, variant class or prompt version — only the genre and
+  narrative function, so a reviewer can be told what kind of passage this is and never which system wrote
+  it. Verify before sending: the packet JSON must contain no variant-class token.
+- Generation **refuses** to produce a short packet rather than silently weakening the protocol.
+- Ship the packets. **Keep the manifests.** The manifest is the answer key; sending it to a reviewer voids
+  the round.
+
+### 10A.3 Collect
+
+Every response is a human rating on both scales — "natural English" and "reads as a Korean webnovel of
+this genre" — as an integer from 1 to 5, plus free comments. `importResponses` is **fail-closed and
+accepts nothing partial**: it rejects a response for an item the packet does not contain, a duplicate
+response, a missing or empty reviewer identity, merged reviewer identities in one packet, a rating outside
+1–5 or non-integer, a missing scale, an incomplete set, and a packet whose content hash no longer matches.
+On any problem it returns zero accepted responses, because an agreement figure computed over partially
+reviewed data is worse than none.
+
+Do not "fix" a rejected import by editing the responses. Find out what actually happened: crossed packets,
+an altered packet, or a reviewer who did not finish.
+
+### 10A.4 Report and decide
+
+`reviewReport` computes pairwise Spearman per scale with average-rank tie handling, and returns `NaN`
+rather than a fabricated number when a reviewer's series has no variance. `recommendThresholds` then
+reports whether the protocol's preconditions are met — fewer than three reviewers, fewer than 30 passages,
+or any scale whose minimum pairwise Spearman is below 0.8 are returned as explicit blockers.
+
+**What the tooling will never do, by construction:** a generated packet is `status: 'generated'` and
+nothing in the module can advance it; `reviewReport` returns `calibration: 'uncalibrated'` and
+`requires_human_approval: true` unconditionally; and `recommendThresholds` returns a recommendation with
+its blockers, never a threshold value and never `contrast_calibrated`. Moving a threshold is a human
+decision recorded as a reviewed change to the pinned Production Policy (ADR-0041), backed by accepted
+human evidence. Until that happens, evaluators stay **uncalibrated** (ADR-0029) and B-4-5 stays
+incomplete.
+
+### 10A.5 What a completed round does not establish
+
+A passing round calibrates the judges against three human reviewers on this corpus. It is not evidence of
+live-model prose quality, it does not validate any live provider, and it does not close any other Phase 4
+item.
+
+---
+
 ## 11. Not applicable / not yet written
 
 | Topic | Status |
@@ -692,7 +762,7 @@ entry) and Gitleaks.
 | `apps/web` startup, build and deployment | **Does not exist.** Outstanding Checkpoint 7 scope. |
 | Object storage, KMS, OAuth, live providers | Named in `.env.example` as planned; no code path reads them. |
 | Secret rotation for provider keys | No provider credential path exists to rotate. |
-| Threshold calibration | Evaluators are **uncalibrated**; contrast validation is deterministic replay agreement only (ADR-0029). |
+| Threshold calibration | Evaluators are **uncalibrated**; contrast validation is deterministic replay agreement only (ADR-0029). The bilingual reviewer round that would calibrate them has an operator procedure in §10A and **has never been executed** — no reviewer has been contacted and no human judgment exists. |
 | Tenant offboarding, PITR restore, deploy rollout | Designed in `06-operations-runbooks-outline.md`; **never exercised**. |
 
 ---
