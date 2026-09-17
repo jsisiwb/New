@@ -172,6 +172,90 @@ run(
       expect(still.rows[0]?.mapping).toEqual({ role: 'x' });
     });
 
+    /**
+     * Review finding R-2. Migration 0012 and ADR-0049 both asserted that `llm_calls` is "INSERT/SELECT
+     * only for `yeonjae_app`". The database said otherwise: 0007 narrowed the scoped role table by table
+     * and never listed `llm_calls`, so the role still held UPDATE and DELETE. The append-only trigger made
+     * it unexploitable, but a grant layer that contradicts its own documentation is the gap that becomes a
+     * real hole the day someone has a legitimate reason to narrow that trigger. 0013 makes the claim true.
+     */
+    it('holds only INSERT and SELECT on the gateway audit, matching what the migration claims', async () => {
+      const grants = await pool.query<{ privilege_type: string }>(
+        `SELECT privilege_type FROM information_schema.role_table_grants
+          WHERE table_name = 'llm_calls' AND grantee = $1 ORDER BY privilege_type`,
+        [APP_ROLE],
+      );
+      expect(grants.rows.map((r) => r.privilege_type)).toEqual(['INSERT', 'SELECT']);
+
+      // And the privilege is genuinely gone at the connection, not merely absent from a catalogue view.
+      const update = await asAppRole(pool, `UPDATE llm_calls SET cost_cents = 0`);
+      expect(update.permitted).toBe(false);
+      expect(update.code).toBe(INSUFFICIENT_PRIVILEGE);
+      const del = await asAppRole(pool, `DELETE FROM llm_calls`);
+      expect(del.permitted).toBe(false);
+      expect(del.code).toBe(INSUFFICIENT_PRIVILEGE);
+    });
+
+    /**
+     * Review finding R-3. 0012's trigger refused a `cancelled` row with no provenance but never asked the
+     * converse, so a row could claim BOTH that the call succeeded and that an operator cancelled it. No
+     * application path produces that, which is exactly why the trigger has to be the guard: it is the only
+     * one that applies to raw SQL, a future writer, or a restore from a doctored dump. A self-contradictory
+     * audit row is worse than a missing one — a reader reconciling spend cannot tell which half to believe.
+     */
+    it('refuses cancellation provenance on a call that was not cancelled', async () => {
+      const ws = await pool.query<{ id: string }>(
+        `INSERT INTO workspaces (name) VALUES ('grant-audit') RETURNING id`,
+      );
+      const workspaceId = ws.rows[0]?.id ?? '';
+      const project = await pool.query<{ id: string }>(
+        `INSERT INTO projects (workspace_id, title, production_policy_version)
+         VALUES ($1, 'p', 'policy/standard@1') RETURNING id`,
+        [workspaceId],
+      );
+      const projectId = project.rows[0]?.id ?? '';
+      const provenance = {
+        reason: 'operator_cancelled',
+        outcome: 'operator_cancelled',
+        remote_cancellation: 'unsupported',
+        usage_status: 'unknown',
+        billing_status: 'unknown',
+        response_discarded: false,
+        before_first_attempt: true,
+      };
+      const insert = (status: string, cancellation: unknown): Promise<unknown> =>
+        pool.query(
+          `INSERT INTO llm_calls
+             (id, workspace_id, project_id, idempotency_key, role, prompt_version_id, prompt_hash,
+              production_policy_version, model_id, model_class, provider, params, input_hash, usage,
+              cost_cents, status, cancellation)
+           VALUES (canon.uuid_v7(), $1, $2, $3, 'r', 'prompt/x@1.0.0', 'sha256:p',
+                   'policy/standard@1', 'm', 'M', 'mock', '{}'::jsonb, 'sha256:i', '{}'::jsonb,
+                   0, $4, $5::jsonb)`,
+          [
+            workspaceId,
+            projectId,
+            `r3-${status}-${cancellation === null ? 'none' : 'prov'}`,
+            status,
+            cancellation === null ? null : JSON.stringify(cancellation),
+          ],
+        );
+
+      // A succeeded or failed call may not carry a cancellation story.
+      await expect(insert('succeeded', provenance)).rejects.toThrow(/CANCELLATION_INVALID/);
+      await expect(insert('failed', provenance)).rejects.toThrow(/CANCELLATION_INVALID/);
+      // Every rule 0012 already enforced still holds after 0013 replaced the function.
+      await expect(insert('cancelled', null)).rejects.toThrow(/CANCELLATION_INVALID/);
+      await expect(insert('cancelled', { ...provenance, billing_status: 'known' })).rejects.toThrow(
+        /CANCELLATION_INVALID/,
+      );
+      await expect(
+        insert('cancelled', { ...provenance, reason: 'because-i-said-so' }),
+      ).rejects.toThrow(/CANCELLATION_INVALID/);
+      // And the legitimate row is still accepted.
+      await expect(insert('cancelled', provenance)).resolves.toBeDefined();
+    });
+
     it('every workspace-owned table has RLS enabled, forced, and at least one policy', async () => {
       // 0006 covers this today; the assertion exists so a later migration that adds a tenant table without a
       // policy fails here instead of in production. Tables listed as intentionally global are excluded.
