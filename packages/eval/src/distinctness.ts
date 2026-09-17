@@ -71,6 +71,11 @@ export interface DistinctnessFinding {
   readonly setA: string;
   readonly setB: string;
   readonly variant: VariantClass;
+  /**
+   * The class the text was compared AGAINST in set B. Equal to `variant` for a same-class finding;
+   * different for a cross-class finding, where it names the class the passage was reused as.
+   */
+  readonly variantB: VariantClass;
   readonly score: number;
   /** A short shared fragment, so a reviewer sees WHY the pair was flagged. */
   readonly evidence: string;
@@ -83,7 +88,14 @@ export interface StructuralFinding {
 
 export interface DistinctnessReport {
   readonly setCount: number;
+  /** Every cross-set comparison performed, same-class and cross-class alike. */
   readonly comparisons: number;
+  /**
+   * The same-class subset of `comparisons`. Reported separately because it is the figure the corpus's
+   * headroom and `maxObserved` are defined against, and collapsing the two would make either one
+   * unverifiable from the report alone.
+   */
+  readonly sameClassComparisons: number;
   readonly threshold: number;
   readonly method: 'character_trigram_jaccard';
   readonly nearDuplicates: readonly DistinctnessFinding[];
@@ -131,9 +143,14 @@ function sharedFragment(a: string, b: string): string {
  * contrast set whose two sides are the same text discriminates nothing), or a set whose expected ranking
  * does not name every class it ships.
  *
- * Near-duplicate checks compare the SAME variant class across every pair of sets, because that is where
- * padding shows up: a new set built by renaming characters in an existing one produces a `kwn_english`
- * passage nearly identical to that set's `kwn_english`.
+ * Near-duplicate checks compare every variant class of one set against every variant class of every
+ * other set. Same-class comparison is where the commonest padding shows up — a new set built by renaming
+ * characters in an existing one produces a `kwn_english` passage nearly identical to that set's
+ * `kwn_english`. Cross-class comparison closes the obvious way around that: a passage copied out of one
+ * set and relabelled as a DIFFERENT class in another set shares no same-class partner and would otherwise
+ * pass silently, while being exactly the reuse this gate exists to catch. Both use the same threshold;
+ * pairs inside one set are deliberately excluded, because five renderings of one passage are supposed to
+ * resemble each other and are governed instead by `identical_variant_pair_within_set`.
  */
 export function auditDistinctness(
   sets: readonly ContrastSet[],
@@ -192,6 +209,7 @@ export function auditDistinctness(
   }
 
   let comparisons = 0;
+  let sameClassComparisons = 0;
   let maxObserved: DistinctnessReport['maxObserved'] = null;
   for (let i = 0; i < sets.length; i += 1) {
     for (let j = i + 1; j < sets.length; j += 1) {
@@ -200,21 +218,28 @@ export function auditDistinctness(
       if (!a || !b) continue;
       for (const cls of VARIANT_CLASSES) {
         const ta = a.variants[cls];
-        const tb = b.variants[cls];
-        if (typeof ta !== 'string' || typeof tb !== 'string') continue;
-        comparisons += 1;
-        const score = similarity(ta, tb);
-        if (maxObserved === null || score > maxObserved.score)
-          maxObserved = { score, setA: a.id, setB: b.id };
-        if (score >= threshold)
-          nearDuplicates.push({
-            id: 'near_duplicate_variant',
-            setA: a.id,
-            setB: b.id,
-            variant: cls,
-            score: Math.round(score * 1000) / 1000,
-            evidence: sharedFragment(ta, tb),
-          });
+        if (typeof ta !== 'string') continue;
+        for (const clsB of VARIANT_CLASSES) {
+          const tb = b.variants[clsB];
+          if (typeof tb !== 'string') continue;
+          comparisons += 1;
+          if (cls === clsB) sameClassComparisons += 1;
+          const score = similarity(ta, tb);
+          // `maxObserved` stays the SAME-class maximum, because that is the number the corpus's headroom
+          // has always been reported against and a cross-class figure would silently redefine it.
+          if (cls === clsB && (maxObserved === null || score > maxObserved.score))
+            maxObserved = { score, setA: a.id, setB: b.id };
+          if (score >= threshold)
+            nearDuplicates.push({
+              id: cls === clsB ? 'near_duplicate_variant' : 'cross_class_duplicate_variant',
+              setA: a.id,
+              setB: b.id,
+              variant: cls,
+              variantB: clsB,
+              score: Math.round(score * 1000) / 1000,
+              evidence: sharedFragment(ta, tb),
+            });
+        }
       }
     }
   }
@@ -222,6 +247,7 @@ export function auditDistinctness(
   return {
     setCount: sets.length,
     comparisons,
+    sameClassComparisons,
     threshold,
     method: 'character_trigram_jaccard',
     nearDuplicates,

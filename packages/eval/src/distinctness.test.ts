@@ -80,12 +80,16 @@ describe('the accepted corpus passes its own audit', () => {
     expect(report.passed).toBe(true);
   });
 
-  it('compared every same-class pair of sets', () => {
+  it('compared every cross-set pair, same-class and cross-class', () => {
     // Derived from the corpus, never a literal: a hardcoded count silently turns into stale evidence the
-    // moment a set is added, and the property worth pinning is that EVERY same-class pair was compared.
+    // moment a set is added, and the property worth pinning is that EVERY pair was compared.
     const n = corpus.sets.length;
+    const pairs = (n * (n - 1)) / 2;
     expect(report.setCount).toBe(n);
-    expect(report.comparisons).toBe(((n * (n - 1)) / 2) * VARIANT_CLASSES.length);
+    // Every class of one set against every class of the other, so a passage relabelled as a different
+    // class in another set is still compared against its source.
+    expect(report.comparisons).toBe(pairs * VARIANT_CLASSES.length ** 2);
+    expect(report.sameClassComparisons).toBe(pairs * VARIANT_CLASSES.length);
   });
 
   it('leaves real headroom under the threshold, so the gate is not borderline', () => {
@@ -138,6 +142,58 @@ describe('the audit catches the ways a corpus gets padded', () => {
       ) as ContrastSet['variants'],
     };
     expect(auditDistinctness([base, reskin]).passed).toBe(false);
+  });
+
+  it('flags a passage copied out of one set and relabelled as a different class in another', () => {
+    // The padding shape a same-class-only audit cannot see: reuse that is REVERSED across classes has no
+    // same-class partner to be compared against, so it would otherwise pass while being exactly the
+    // copying this gate exists to catch.
+    const [original, other] = corpus.sets;
+    if (original === undefined || other === undefined)
+      throw new Error('the accepted corpus is too small');
+    const crossed: ContrastSet = {
+      ...other,
+      id: 'cs-fake-crossclass',
+      variants: {
+        ...other.variants,
+        // original's kwn_english, worn as a different class.
+        weak_serial: original.variants.kwn_english,
+      },
+    };
+    const report = auditDistinctness([original, crossed]);
+    expect(report.passed).toBe(false);
+    const finding = report.nearDuplicates.find((f) => f.id === 'cross_class_duplicate_variant');
+    expect(finding).toBeDefined();
+    // The finding must name BOTH classes, or a reviewer cannot see what was reused as what.
+    expect([finding?.variant, finding?.variantB].sort()).toEqual(['kwn_english', 'weak_serial']);
+    expect(finding?.score).toBeGreaterThanOrEqual(NEAR_DUPLICATE_THRESHOLD);
+    expect((finding?.evidence ?? '').length).toBeGreaterThan(10);
+  });
+
+  it('does not flag the five renderings inside one legitimate set', () => {
+    // Intra-set classes are five renderings of ONE passage and are supposed to resemble each other; the
+    // accepted corpus reaches ~0.81 there. Only `identical_variant_pair_within_set` governs that case, so
+    // the cross-class check must never be applied within a set or every real set would fail.
+    for (const set of corpus.sets) {
+      const report = auditDistinctness([set]);
+      expect(report.nearDuplicates).toEqual([]);
+    }
+  });
+
+  it('keeps the reported maximum a same-class figure', () => {
+    // `maxObserved` is the number the corpus's headroom is quoted against. Adding cross-class comparison
+    // must not silently redefine it into a different, higher measurement.
+    const report = auditDistinctness(corpus.sets);
+    let brute = -1;
+    for (let i = 0; i < corpus.sets.length; i += 1)
+      for (let j = i + 1; j < corpus.sets.length; j += 1)
+        for (const cls of VARIANT_CLASSES) {
+          const a = corpus.sets[i];
+          const b = corpus.sets[j];
+          if (!a || !b) continue;
+          brute = Math.max(brute, similarity(a.variants[cls], b.variants[cls]));
+        }
+    expect(report.maxObserved?.score).toBeCloseTo(brute, 12);
   });
 
   it('flags a duplicate set id', () => {
