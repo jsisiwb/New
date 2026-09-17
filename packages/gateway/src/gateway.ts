@@ -7,6 +7,19 @@
 import { createHash } from 'node:crypto';
 import { checkOutputLanguage, toNfcText } from '@yeonjae/prose';
 import { uuidv7, validatorFor, type Uuid } from '@yeonjae/domain';
+import {
+  cancellationErrorOf,
+  composeCancellation,
+  isAuthoritativeCancellation,
+  isCancellationError,
+  raceCancellation,
+  watchDurableCancellation,
+  type CancellationHandle,
+  type CancellationInput,
+  type CancellationReason,
+  type RemoteCancellationStatus,
+  type TimerFns,
+} from './cancellation.js';
 import { classifyProviderFailure, isRetryable, type FailureClass } from './failures.js';
 import { guardRequest, type GuardContext } from './guard.js';
 import { DEFAULT_PARAMS } from './mock-provider.js';
@@ -67,12 +80,37 @@ export interface AuditRecord {
   readonly cost_cents: number;
   readonly latency_ms: number;
   readonly attempt: number;
-  readonly status: 'succeeded' | 'failed' | 'fallback_succeeded' | 'budget_blocked';
+  readonly status: 'succeeded' | 'failed' | 'fallback_succeeded' | 'budget_blocked' | 'cancelled';
   readonly finish_reason: FinishReason;
   readonly schema_valid: boolean;
   readonly repair_attempts: number;
   readonly fallback_from_model_id?: string | undefined;
   readonly error?: { class: string; message: string } | undefined;
+  /**
+   * Truthful cancellation provenance (Phase 4 active-request cancellation). Present only on a call that
+   * was cancelled, so an existing non-cancelled record is byte-identical to what it was before.
+   *
+   * `usage_status` is the field that keeps this honest: aborting a socket is not evidence that zero
+   * tokens were produced or that nothing will be billed, so unknown usage is recorded as `unknown` and
+   * never coerced to a comfortable zero.
+   */
+  readonly cancellation?:
+    | {
+        readonly reason: CancellationReason;
+        readonly outcome:
+          CancellationReason | 'provider_failed' | 'late_result_discarded' | 'cancel_too_late';
+        readonly remote_cancellation: RemoteCancellationStatus;
+        /** `reported` when the provider returned usage anyway; `unknown` when it did not. Never 0. */
+        readonly usage_status: 'reported' | 'unknown';
+        /** `unknown` unless the provider reported usage we could price. Never presented as zero. */
+        readonly billing_status: 'known' | 'unknown';
+        readonly requested_at?: string | undefined;
+        readonly aborted_at?: string | undefined;
+        readonly response_discarded: boolean;
+        /** True when the abort happened before any provider request was issued. */
+        readonly before_first_attempt: boolean;
+      }
+    | undefined;
   /**
    * Attempt-level provenance (B-4-2). `attempt_records` carries one entry per ACTUAL provider attempt, so
    * a fallback that succeeded on route 2 still shows why route 1 was abandoned. Cost is attributed per
@@ -151,6 +189,30 @@ export interface GatewayOptions {
   readonly clock?: (() => Date) | undefined;
   /** Per-call token estimate for reservation; defaults to prompt estimate + max_tokens. */
   readonly tokensPerWord?: number | undefined;
+  /** Injectable timers so a test can drive a deadline or a poll interval without sleeping. */
+  readonly timers?: TimerFns | undefined;
+  /** Poll cadence for the durable cancellation observer. Defaults to `DURABLE_CANCEL_POLL_MS`. */
+  readonly cancelPollMs?: number | undefined;
+}
+
+/**
+ * Per-call cancellation wiring. Every field is optional, so an existing caller that supplies none keeps
+ * exactly the previous behaviour — the compatibility property the non-cancelled regression tests assert.
+ */
+export interface GatewayCallOptions {
+  /**
+   * Upstream signals to honour, each labelled with what it MEANS. Labelling at the source is what lets
+   * the audit distinguish an operator's cancel from a Temporal activity cancellation from a shutdown.
+   */
+  readonly cancellation?: readonly CancellationInput[] | undefined;
+  /** Deadline for the whole call. Fires as `timeout`, which is a fault and not an operator decision. */
+  readonly timeoutMs?: number | undefined;
+  /**
+   * Durable intent probe, polled while a provider request is in flight. This is what makes a durable
+   * `jobs.control = 'cancel'` reach an ALREADY-RUNNING provider call instead of only the next step.
+   */
+  readonly isDurablyCancelled?: (() => Promise<boolean>) | undefined;
+  readonly durableCancelReason?: CancellationReason | undefined;
 }
 
 function sha(text: string): string {
@@ -172,10 +234,59 @@ export class Gateway {
     return excludeFamily ? routes.filter((r) => r.family !== excludeFamily) : routes;
   }
 
-  async call(req: GatewayRequest): Promise<GatewayResponse> {
+  async call(req: GatewayRequest, options: GatewayCallOptions = {}): Promise<GatewayResponse> {
     // 0. idempotency: a completed call is replayed, never re-spent
     const prior = await this.opts.audit.findByIdempotencyKey(req.idempotencyKey);
     if (prior) return this.fromAudit(prior, true);
+
+    /**
+     * The cancellation handle for this call, and the bounded observer that feeds it.
+     *
+     * Composed BEFORE the Guard and the budget reservation so a cancel that is already durable costs
+     * nothing: the first `throwIfCancelled` below fires with zero provider invocations and zero spend.
+     *
+     * Both are disposed in the `finally` of the attempt loop, on every exit path — success, provider
+     * failure, timeout and cancellation all release the listeners and the poll timer.
+     */
+    const handle = composeCancellation(options.cancellation ?? [], {
+      ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
+      ...(this.opts.timers ? { setTimer: this.opts.timers } : {}),
+    });
+    const watcher = options.isDurablyCancelled
+      ? watchDurableCancellation({
+          handle,
+          isCancelled: options.isDurablyCancelled,
+          ...(options.durableCancelReason ? { reason: options.durableCancelReason } : {}),
+          ...(this.opts.cancelPollMs !== undefined ? { intervalMs: this.opts.cancelPollMs } : {}),
+          ...(this.opts.timers ? { timers: this.opts.timers } : {}),
+        })
+      : undefined;
+    const release = (): void => {
+      watcher?.dispose();
+      handle.dispose();
+    };
+
+    try {
+      return await this.execute(req, handle);
+    } finally {
+      release();
+    }
+  }
+
+  private async execute(req: GatewayRequest, handle: CancellationHandle): Promise<GatewayResponse> {
+    /**
+     * Read through a function so every check is a FRESH evaluation.
+     *
+     * A listener flips `signal.aborted` asynchronously, which TypeScript's control-flow analysis cannot
+     * see: after one `if (handle.signal.aborted)` it narrows the property to `false` and reports every
+     * later check as statically unreachable — the same narrowing trap the workflow's signal flags and the
+     * SSE stream's write-after-disconnect both document.
+     */
+    const cancelled = (): boolean => handle.signal.aborted;
+    const cancelRequestedAt = (): string | undefined =>
+      handle.reason() !== undefined
+        ? (this.opts.clock ?? (() => new Date()))().toISOString()
+        : undefined;
 
     // 1. Guard (fail closed)
     const guard = guardRequest(req, this.opts.guardContext);
@@ -187,6 +298,30 @@ export class Gateway {
     const params: ModelParams = { ...DEFAULT_PARAMS, ...(req.params ?? {}) };
     const primary = routes[0];
     if (!primary) throw new GatewayError('PROVIDER_FAILED', 'no primary route');
+
+    /**
+     * Cancellation observed BEFORE the budget reservation and before the first attempt.
+     *
+     * Ordering is the point: reserving budget and then aborting would leave a reservation to unwind, and
+     * a cancelled call that never contacted a provider must record zero attempts, zero cost and
+     * `before_first_attempt: true` — the "cancel before start makes no provider call" invariant.
+     */
+    if (cancelled()) {
+      const err = cancellationErrorOf(handle);
+      await this.opts.audit.append(
+        this.cancelledRecord(req, guard, primary, params, {
+          error: err,
+          actualCost: 0,
+          attempt: 0,
+          attemptRecords: [],
+          repairAttempts: 0,
+          beforeFirstAttempt: true,
+          requestedAt: cancelRequestedAt(),
+        }),
+      );
+      throw err;
+    }
+
     const predicted = costCents(primary, {
       input: req.pack.tokenEstimate,
       output: params.max_tokens,
@@ -225,6 +360,39 @@ export class Gateway {
     let lastFailureClass: FailureClass | undefined;
     const attemptRecords: NonNullable<AuditRecord['attempt_records']>[number][] = [];
     const validator = req.outputSchemaRef ? validatorFor(req.outputSchemaRef) : undefined;
+    /** Usage a provider reported for an attempt that was then discarded by a cancellation race. */
+    let discardedUsage: ProviderResponse['usage'] | undefined;
+    let responseDiscarded = false;
+
+    /**
+     * Settle the call as cancelled: one audit row, the reservation released at ACTUAL cost, and the
+     * cancellation error rethrown. Called from every point where the handle has fired.
+     */
+    const settleCancelled = async (
+      err: unknown,
+      route: RouteEntry,
+      beforeFirstAttempt: boolean,
+    ): Promise<never> => {
+      const cancelled = isCancellationError(err) ? err : cancellationErrorOf(handle);
+      await this.opts.audit.append(
+        this.cancelledRecord(req, guard, route, params, {
+          error: cancelled,
+          actualCost,
+          attempt,
+          attemptRecords,
+          repairAttempts,
+          beforeFirstAttempt,
+          requestedAt: cancelRequestedAt(),
+          responseDiscarded,
+          ...(discardedUsage ? { discardedUsage } : {}),
+          ...(fallbackFrom ? { fallbackFrom } : {}),
+        }),
+      );
+      // Released at ACTUAL cost, never at the prediction: a cancelled call must not leave phantom spend
+      // reserved against the project, and must not refund spend that genuinely happened.
+      await reservation.release(actualCost);
+      throw cancelled;
+    };
 
     try {
       while (routeIdx < routes.length && attempt < 4) {
@@ -233,21 +401,79 @@ export class Gateway {
         const provider = this.opts.providers.get(route.provider);
         if (!provider)
           throw new GatewayError('PROVIDER_FAILED', `provider ${route.provider} not configured`);
+        /**
+         * The gate before EVERY attempt.
+         *
+         * This single check is what makes "no retry after cancellation", "no repair after cancellation"
+         * and "no fallback after cancellation" one property rather than three: retry, bounded repair and
+         * route fallback are all expressed in this repository as another iteration of this loop, so
+         * refusing to start an iteration refuses all three at once.
+         */
+        if (cancelled())
+          // `before_first_attempt` is read from the recorded attempts rather than the counter: it is the
+          // same fact (no provider was contacted yet) stated in terms of the durable evidence.
+          await settleCancelled(cancellationErrorOf(handle), route, attemptRecords.length === 0);
         attempt++;
         let res: ProviderResponse;
         try {
-          res = await provider.complete({
-            modelId: route.modelId,
-            system: req.pack.renderedSystem,
-            user: req.pack.renderedUser,
-            params,
-            trace: {
-              role: req.role,
-              activityId: req.activityId,
-              idempotencyKey: req.idempotencyKey,
+          /**
+           * The provider receives the composed signal AND the call is raced against it.
+           *
+           * Both are necessary. The signal lets a cooperative adapter abort its own socket promptly; the
+           * race guarantees the gateway stops waiting even for an adapter that ignores the signal, which
+           * is the difference between "cancellation is supported" and "cancellation is hoped for".
+           *
+           * `raceCancellation` also consumes a late settlement, so a provider that answers after the
+           * abort produces a discarded result rather than an unhandled rejection or a double settle.
+           */
+          res = await raceCancellation(
+            provider.complete(
+              {
+                modelId: route.modelId,
+                system: req.pack.renderedSystem,
+                user: req.pack.renderedUser,
+                params,
+                trace: {
+                  role: req.role,
+                  activityId: req.activityId,
+                  idempotencyKey: req.idempotencyKey,
+                },
+              },
+              handle.signal,
+            ),
+            handle,
+            (outcome) => {
+              // A late SUCCESS is discarded (its content must never be persisted or reach canon) but its
+              // usage is preserved truthfully, because tokens the provider reported were really produced.
+              // A late FAILURE must not overwrite the authoritative cancellation.
+              responseDiscarded = true;
+              if (outcome.ok) discardedUsage = outcome.value.usage;
             },
-          });
+          );
         } catch (err) {
+          if (isCancellationError(err)) {
+            /**
+             * A cancellation is settled here and never classified as a provider failure: an operator's
+             * decision is not a fault, and must not be rerouted, repaired or retried.
+             *
+             * The attempt is still recorded first. It really happened — a request went to a provider —
+             * and dropping it would leave the call's `attempt` counter without a matching attribution,
+             * which is exactly the reconciliation `verifyCostInvariants` checks. Its cost is whatever the
+             * provider reported (usually nothing), never an invented figure.
+             */
+            attemptRecords.push({
+              attempt,
+              model_id: route.modelId,
+              provider: route.provider,
+              outcome: 'failed',
+              failure_class: 'cancelled',
+              error_class: 'CANCELLED',
+              cost_cents: 0,
+              usage: err.detail.usage ?? { input: 0, output: 0, cached: 0 },
+              latency_ms: 0,
+            });
+            await settleCancelled(err, route, false);
+          }
           // Fallback is authorized ONLY for a policy-retryable failure. A rejected request, an auth
           // failure, a content refusal or an unrecognized fault stops here: re-sending the same bytes to
           // the next paid model would multiply spend without any prospect of a different answer.
@@ -481,6 +707,93 @@ export class Gateway {
       output_hash: outText !== undefined ? sha(outText) : undefined,
       output,
       created_at: now.toISOString(),
+    };
+  }
+
+  /**
+   * The audit row for a cancelled call.
+   *
+   * TRUTHFULNESS IS THE ONLY DESIGN RULE HERE. Three things are deliberately NOT inferred:
+   *
+   *  * remote state — `remote_cancellation` comes from the adapter's own verdict and defaults to
+   *    `unknown`. Nothing claims the provider stopped computing without a positive acknowledgement.
+   *  * usage — usage the provider actually reported (including on a discarded late success) is recorded;
+   *    usage it never reported is `unknown`, not zero. A missing token count and a real zero are
+   *    different facts and only one of them is safe to sum.
+   *  * billing — `billing_status` is `known` only when priced usage exists. An aborted socket is not
+   *    evidence that nothing will be billed.
+   *
+   * Cost stays integer-safe: it reuses the same `costCents` arithmetic as every other row, so the
+   * millicent reconciliation in `@yeonjae/db`'s cost accounting continues to balance.
+   */
+  private cancelledRecord(
+    req: GatewayRequest,
+    guard: ReturnType<typeof guardRequest>,
+    route: RouteEntry,
+    params: ModelParams,
+    input: {
+      readonly error: unknown;
+      readonly actualCost: number;
+      readonly attempt: number;
+      readonly attemptRecords: NonNullable<AuditRecord['attempt_records']>;
+      readonly repairAttempts: number;
+      readonly beforeFirstAttempt: boolean;
+      readonly requestedAt?: string | undefined;
+      readonly responseDiscarded?: boolean | undefined;
+      readonly discardedUsage?: ProviderResponse['usage'] | undefined;
+      readonly fallbackFrom?: string | undefined;
+    },
+  ): AuditRecord {
+    const cancelled = isCancellationError(input.error) ? input.error : undefined;
+    const reason: CancellationReason = cancelled?.reason ?? 'operator_cancelled';
+    const now = (this.opts.clock ?? (() => new Date()))();
+    const reportedUsage = input.discardedUsage ?? cancelled?.detail.usage;
+    // Only usage the provider genuinely reported is priced. A cancelled call with no reported usage
+    // carries the cost already accrued by earlier completed attempts and nothing invented for this one.
+    const cost = reportedUsage
+      ? input.actualCost + costCents(route, reportedUsage)
+      : input.actualCost;
+    const base = this.record(
+      req,
+      guard,
+      route,
+      params,
+      undefined,
+      cost,
+      'cancelled',
+      'error',
+      false,
+      input.repairAttempts,
+      {
+        class: 'CANCELLED',
+        // Reason only: no prompt, prose, provider payload or header ever reaches an audit message.
+        message: `call cancelled (${reason})`,
+      },
+      input.fallbackFrom,
+      undefined,
+      undefined,
+      input.attempt,
+      input.attemptRecords,
+    );
+    return {
+      ...base,
+      // Usage on the row itself stays the observed value; `usage_status` below states whether it is real.
+      ...(reportedUsage ? { usage: reportedUsage } : {}),
+      cancellation: {
+        reason,
+        outcome: input.responseDiscarded
+          ? 'late_result_discarded'
+          : isAuthoritativeCancellation(reason)
+            ? reason
+            : 'timeout',
+        remote_cancellation: cancelled?.remoteCancellation ?? 'unknown',
+        usage_status: reportedUsage ? 'reported' : 'unknown',
+        billing_status: reportedUsage ? 'known' : 'unknown',
+        ...(input.requestedAt ? { requested_at: input.requestedAt } : {}),
+        aborted_at: cancelled?.detail.abortedAt ?? now.toISOString(),
+        response_discarded: input.responseDiscarded ?? false,
+        before_first_attempt: input.beforeFirstAttempt,
+      },
     };
   }
 

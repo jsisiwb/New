@@ -12,6 +12,8 @@
  * call rather than spending again on a guess.
  */
 
+import { isCancellationError } from './cancellation.js';
+
 export type FailureClass =
   /** Transport/availability fault: the request may not have been seen. Fallback is authorized. */
   | 'retryable_transport'
@@ -21,6 +23,12 @@ export type FailureClass =
   | 'retryable_provider'
   /** The request itself is wrong (4xx, bad schema, content refusal, auth). Fallback is NOT authorized. */
   | 'non_retryable_request'
+  /**
+   * The call was cancelled (operator intent, activity cancellation, worker shutdown, lease loss, or a
+   * deadline). Never retried, repaired or rerouted: there is no second model that can satisfy a request
+   * whose requester has withdrawn it.
+   */
+  | 'cancelled'
   /** Anything unrecognized. Treated as non-retryable so an unknown fault cannot multiply spend. */
   | 'non_retryable_unknown';
 
@@ -69,6 +77,10 @@ const REQUEST =
  * and an unrecognized shape is `non_retryable_unknown` — never a silent retry.
  */
 export function classifyProviderFailure(err: unknown): FailureClass {
+  // Checked FIRST and before `ProviderFailure`, because the transport regex below matches the word
+  // "aborted" — the historical behaviour would have classified every cancellation as a retryable
+  // transport fault and rerouted an operator's cancel to the next paid model.
+  if (isCancellationError(err)) return 'cancelled';
   if (err instanceof ProviderFailure) return err.failureClass;
 
   const status = numericStatus(err);
