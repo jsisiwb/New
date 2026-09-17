@@ -2562,6 +2562,278 @@
         "min_gap_prose_vs_translation_like": 43,
         "min_gap_structure_vs_western_english": 37
       }
+    },
+    {
+      "id": "cs-051",
+      "genre": "regression",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "Her mother was alive, and complaining about the rice.\n\n“Too much water again. You always did this.”\n\nHa-ram stood in the kitchen doorway and could not make her face work.\n\n*You said this on a Tuesday. I have heard this exact sentence before, and the last time I heard it I was twenty-six and had nine days left with you.*\n\n“Are you going to stand there, or are you going to eat?”\n\n“I'm going to eat,” Ha-ram said.\n\nShe ate two bowls of rice that was, in fact, too wet, and said nothing about the clinic, or the scan, or the November she had already survived once.\n\n*Not yet. If I say it now, you'll only think I'm strange.*\n\n*In April you'll think I'm right.*",
+        "western_english": "The apartment had not changed, which was the difficulty: the same cabinet with the door that did not close, the same radio murmuring at a volume calibrated years ago for a husband who no longer lived there, and her mother at the counter making the same complaint about the same rice, in words that Ha-ram recognized with the particular horror of a woman hearing a recording of a life she had already finished. She had been twenty-six when she heard it before. There had been nine days left then, though nobody in the kitchen had known it. Standing now in the doorway, unable to arrange her features into anything her mother would find ordinary, she considered the scan she would not mention and the clinic she would not mention and the November that she had, in the strictest sense, already survived, and she decided — for reasons she would spend some weeks defending to herself — to say none of it, and to eat the rice.",
+        "translation_like": "Her own mother was at the alive state, and was complaining about the rice.\n\n“There is too much water again. You were always doing this thing.”\n\nHa-ram stood at the doorway of the kitchen and could not make her own face to work.\n\n*You said this at a Tuesday. I heard this exact sentence at the before time, and at the last time when I heard it, I was twenty-six years old and I had nine days which were remaining together with you.*\n\n“Are you going to stand at there, or are you going to eat?”\n\n“I am going to eat,” Ha-ram said.\n\nShe ate two bowls of the rice which was, in the truth, too much wet, and she said nothing about the clinic, or about the scan, or about the November which she already survived one time.\n\n*Not yet. If I say it at now, you will only think that I am a strange person.*\n\n*At the April, you will think that I am correct.*",
+        "literary": "Grief, properly understood, is a form of scheduling, and the returned are its most incompetent administrators. The kitchen was exactly as it had been: the cabinet that would not close, the radio pitched for an absent man, the rice too wet, the complaint about the rice arriving on schedule and in the identical words, so that Ha-ram found herself standing in the doorway of a sentence she had already heard, at an age she had already been, in a November she had already outlived. To hear one's mother alive is not a joy but an argument — the whole architecture of mourning, laboriously constructed, dismantled in a single ordinary reproach about water. She ate two bowls. She said nothing of the clinic. There is a cruelty in knowing, and a deeper one in the timing of the telling, and she had learned in her first life that the truth delivered early is not a warning but a symptom.",
+        "weak_serial": "Ha-ram came into the kitchen and found her mother preparing food and complaining that there was too much water in the rice, which was something she had said many times in the past. Ha-ram stood in the doorway for a while because she was having difficulty controlling her expression. She remembered hearing the same complaint when she was twenty-six years old, about nine days before her mother died. Her mother asked whether she was going to stand there or come and eat, and Ha-ram said that she would eat. She had two bowls of the rice even though it really was too wet. She did not say anything about the clinic or the scan or about the month of November. She decided that it would be better to wait until April before bringing any of it up."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-OPEN-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-MON-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-052",
+      "genre": "romance-fantasy",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "The dressmaker had sewn the wrong initials into the lining.\n\nNot wrong, Verena corrected herself. Old. The initials she had worn until she was eleven, before the adoption papers, before the name that opened doors.\n\n“Shall I unpick them, my lady?”\n\nVerena looked at the two letters for a long moment.\n\n“How much thread would it take to do them in gold?”\n\n“…Gold, my lady? Inside the lining? No one will see it.”\n\n“I will see it.”\n\nThe dressmaker began to thread her needle, and did not ask again, and did not look up when the lady of the house turned to the window and stayed there until her eyes were dry.",
+        "western_english": "It was a small error of the sort that occurs in any household where the staff have served long enough to remember more than they are asked to: the dressmaker, working from an old pattern book, had embroidered into the lining of the gown the initials Verena had carried until the age of eleven, before the adoption papers and the new name and the long careful construction of a woman who could be admitted anywhere. She offered to unpick them. Verena, who had spent eighteen years learning to treat her own history as an administrative matter, found that she did not wish them unpicked, and asked instead what quantity of thread would be required to work them again in gold. The dressmaker observed, reasonably, that no one would ever see them there. Her mistress replied that she would see them, and then went to the window and remained at it for some while, and the dressmaker threaded her needle and did not look up.",
+        "translation_like": "The dressmaker sewed the wrong initials to the inside of the lining.\n\nNot the wrong ones, Verena corrected her own thought. The old ones. They are the initials which she wore until she was eleven years old, at the before of the adoption papers, at the before of the name which is opening the doors.\n\n“Shall I remove them by unpicking, my lady?”\n\nVerena looked at the two letters during a long moment.\n\n“How much amount of thread would be necessary for doing them at the gold color?”\n\n“…The gold, my lady? At the inside of the lining? No person will see it.”\n\n“I will see it.”\n\nThe dressmaker started putting the thread to her needle, and did not ask again one more time, and did not look at the up side at the time when the lady of the house turned to the window and stayed at there until her own eyes became dry.",
+        "literary": "A name is a door, and an adopted name is a door installed over a wall in which there had previously been no opening at all — serviceable, admired, and never quite forgotten by the masonry. The dressmaker had worked from an old book and had therefore embroidered, in the concealed place where linings are embroidered, two letters belonging to a child who had ceased to exist on paper at the age of eleven. She offered, with the tact of long service, to remove them. And Verena, who had spent the better part of two decades administering her own past as though it were a tenancy in some distant county, discovered that what she wanted was not erasure but gold: the thing made permanent precisely where no one would ever be invited to look. She went to the window afterward. The needle went on behind her, and neither woman said anything further about it.",
+        "weak_serial": "Verena's dressmaker had embroidered a set of initials into the lining of a new gown, but they were the initials that Verena had used as a child before she was adopted and given a different name. The dressmaker noticed the mistake and offered to unpick the stitching and correct it. Verena looked at the letters for a while and then asked how much thread it would take to redo them in gold instead. The dressmaker pointed out that the lining was on the inside of the gown, so nobody would ever be able to see the embroidery. Verena replied that she would be able to see it herself. The dressmaker began threading her needle to do the work. Verena went over to the window and stood there for some time without saying anything else."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-OPEN-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-053",
+      "genre": "system-progression",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "[Title acquired: One Who Was Carried.]\n\nDan-ho read it twice before he understood it wasn't an insult.\n\n[Condition: survive one hundred floors without dealing the killing blow. Reward: all damage taken below fifty percent is redistributed to the party's highest-health member.]\n\nA hundred floors. He had not landed a kill since the third.\n\n*They've been protecting me for ninety-seven floors and the system finally noticed.*\n\n“What'd you get?” the healer asked, not looking up from her rations.\n\nDan-ho closed the window.\n\n“A way to pay you back.”",
+        "western_english": "The title arrived at the top of the ninety-seventh landing, in the flat institutional typeface the system used for all of its awards, and Dan-ho read it twice before he was satisfied that it had not been intended as a rebuke. One Who Was Carried. The condition attached to it was the survival of one hundred floors without dealing a killing blow, which was an accurate if unflattering description of his ascent, since he had not landed a kill since the third floor and had spent every floor thereafter standing behind people who had. The reward was a redistribution: damage he took below half his health would be transferred to whichever member of the party was strongest at that moment. When the healer asked what he had received, without looking up from the rations she was sorting, he closed the window and told her it was a way to pay her back, and she assumed, as he had intended, that he was joking.",
+        "translation_like": "[Title is acquired: One Who Was Carried.]\n\nDan-ho read it two times before the time he understood that it is not an insult.\n\n[Condition: please survive one hundred floors without dealing the killing blow. Reward: all of the damage which is taken at the below of fifty percent is redistributed to the party member who is having the most high health.]\n\nOne hundred floors. He did not land a kill since the third floor.\n\n*They have been protecting me during ninety-seven floors, and the system finally noticed about it.*\n\n“What is the thing which you got?” the healer asked, but she was not looking at the up side from her rations.\n\nDan-ho closed the window.\n\n“It is a method for paying you back.”",
+        "literary": "There is a species of shame available only to the competent — the shame of the man who has been kept alive by others and has kept, throughout, an exact private ledger of the debt — and Dan-ho had been carrying his up the tower one floor at a time since the third. The system, which understands nothing and records everything, chose the ninety-seventh landing to name it. One Who Was Carried. He read it twice, looking for the insult, and found instead the flat indifference of an accountant: a condition stating what he had in fact done, and a reward proposing that the arrangement be reversed, that the harm which came for him below half his strength should go instead to whoever among his companions could best afford it. The healer asked what he had received. He closed the window before answering, which was itself an answer, though she did not look up to see it.",
+        "weak_serial": "Dan-ho received a system title on the ninety-seventh floor of the tower. The title was called One Who Was Carried, and he read it twice to make sure that it was not meant as an insult. The condition for the title was surviving one hundred floors without dealing a killing blow, which described his situation accurately, since he had not made a kill since the third floor. The reward was that damage he took below fifty percent health would be redistributed to whichever party member currently had the highest health. He thought about the fact that his party had been protecting him for most of the climb. The healer asked him what he had received without looking up from her rations. He closed the window and told her it was a way to pay her back."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-10",
+          "TRN-14",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-054",
+      "genre": "academy",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "The name on the memorial wall had been sanded off, and badly.\n\nHa-eun found it by touch, the way you find a scar. Fourth row, ninth from the left. The stone remembered the letters even if the academy had decided not to.\n\n“That one's not a student,” a groundskeeper said behind her. “That one's a whole year.”\n\n“A year?”\n\n“Nineteen of them. Third-floor lab.” He went back to his rake. “They sanded it after the families stopped writing.”\n\nHa-eun took out her practice chalk and wrote the nineteen names she had found in the ledger, one under the other, down the blank stone.\n\nBy morning the rain had taken them.\n\nShe came back at six with more chalk.",
+        "western_english": "The memorial wall stood at the north edge of the grounds, where the academy's older buildings gave way to a lawn nobody crossed in winter, and it had been sanded in one place by a hand that was either unskilled or in a hurry. Ha-eun located the erasure by touch rather than by sight, in the fourth row, ninth from the left, the stone having retained the shape of the letters in the way that stone does. A groundskeeper, passing with his rake, informed her that the missing entry had not been a student at all but an entire year — nineteen of them, in a laboratory on the third floor — and that the sanding had been undertaken once the families had stopped writing letters. She had, as it happened, read the nineteen names in a ledger the week before. She wrote them onto the blank stone in practice chalk, one beneath another, and in the morning the rain had removed them, and she returned at six o'clock with more chalk.",
+        "translation_like": "The name at the memorial wall was removed by the sanding, and it was done at a bad way.\n\nHa-eun found it by the touching, like the method which you use for finding a scar. The fourth row, the ninth one from the left side. The stone was remembering the letters even if the academy decided that it will not do it.\n\n“That one is not a student,” a groundskeeper said at the behind of her. “That one is one whole year.”\n\n“One year?”\n\n“Nineteen persons of them. It is the third-floor lab.” He returned to his own rake. “They did the sanding after the time when the families stopped the writing.”\n\nHa-eun took out her practice chalk and wrote the nineteen names which she found at the ledger, one at the under of the other one, to the down direction of the blank stone.\n\nUntil the morning, the rain took them away.\n\nShe came back at the six with more chalk.",
+        "literary": "Institutions do not lie so much as they edit, and the fourth row of the memorial wall had been edited with a sanding block by someone who understood neither stone nor shame. Ha-eun found the erasure the way one finds a scar in the dark, which is to say by the small refusal of the surface to be uniform. The groundskeeper, who had raked this lawn for longer than she had been alive and had accordingly arrived at the unsentimental clarity of men who tend the grounds of institutions, told her that the absence was not a boy or a girl but a year — nineteen of them, a laboratory, a third floor — and that the sanding had followed, at a decent interval, the cessation of letters from the families. She had read the names. She wrote them in chalk. The rain, which is impartial and therefore also a kind of institution, took them by morning.",
+        "weak_serial": "Ha-eun went to look at the memorial wall at the north end of the academy grounds and found a place in the fourth row where a name had been sanded away. She located it by running her fingers over the surface, since the stone still held the shape of the letters. A groundskeeper who was working nearby told her that the sanded entry had not been a single student but an entire year group of nineteen students who had died in a laboratory on the third floor. He also said that the academy had removed the entry after the families of those students stopped writing letters about it. Ha-eun had seen the nineteen names in a ledger earlier, so she used her practice chalk to write them on the blank section of stone. The rain washed the chalk away overnight, and she returned the next morning at six o'clock with more chalk."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-OPEN-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 37
+      }
+    },
+    {
+      "id": "cs-055",
+      "genre": "hunter-gate",
+      "function": "emotional_beat",
+      "variants": {
+        "kwn_english": "The guild paid out for his left hand on a Friday.\n\nSe-chan signed for it, folded the slip, and went to the practice hall, where the grip trainer was still set to the weight he had used the month before.\n\nHe set it lower. Then lower again.\n\n“You're not supposed to be in here,” the coordinator said from the door.\n\n“I'm not supposed to be a lot of things.”\n\n“Se-chan.”\n\nHe got twelve reps. Last month it had been ninety.\n\n“Twelve,” he said, and wrote it in the log in handwriting that was going to have to get better. “Put me down for tomorrow. Same hall. Same hour.”\n\n“…And if it's twelve again tomorrow?”\n\n“Then I'll write twelve again.”",
+        "western_english": "The compensation for his left hand was settled on a Friday, in the guild's disbursement office, by a clerk who had processed a great many such settlements and had learned to conduct them briskly. Se-chan signed, folded the slip into his jacket, and walked down to the practice hall, where the grip trainer stood at the setting he had used the previous month and which was now a kind of joke. He reduced it, and reduced it again. The training coordinator appeared in the doorway to observe that he was not permitted in the hall, an observation he did not contest so much as extend. He completed twelve repetitions. The figure for the previous month had been ninety. He entered the twelve in the log, in handwriting that would require improvement, and asked to be scheduled for the following day at the same hour, and when she asked what he would do if the number were twelve again, he said that he would write twelve again.",
+        "translation_like": "The guild paid the money for his left hand at a Friday.\n\nSe-chan signed for it, folded the slip paper, and went to the practice hall, where the grip trainer was still at the setting of the weight which he used at the before month.\n\nHe set it to the more low position. After that, more low again.\n\n“You are not supposed to be at the inside of here,” the coordinator said from the door.\n\n“I am not supposed to be many kinds of things.”\n\n“Se-chan.”\n\nHe got twelve reps. At the last month, it was ninety.\n\n“It is twelve,” he said, and wrote it at the log with the handwriting which is going to have to become better. “Please put me down for the tomorrow. The same hall. The same hour.”\n\n“…And, if it is twelve again at the tomorrow?”\n\n“Then, I will write twelve again.”",
+        "literary": "Compensation is the state's way of concluding a conversation, and the guild concluded this one on a Friday with a slip of paper and a clerk's practiced brevity. What the slip did not address, because no slip addresses it, was the grip trainer standing in the practice hall at a setting arrived at the month before by a man who no longer existed in quite that configuration. Se-chan lowered it. He lowered it again, and the second lowering was the harder of the two, as the second admission of anything always is. The coordinator said what coordinators say. He achieved twelve repetitions against a prior figure of ninety, and entered the twelve in the log in the labored penmanship of a right hand newly promoted, and there was in the entry neither defiance nor despair but something more durable and less legible than either.",
+        "weak_serial": "Se-chan received his compensation payment for the loss of his left hand on a Friday. He signed the paperwork at the guild office, put the slip in his jacket, and then walked down to the practice hall. The grip trainer there was still set to the weight he had been using during the previous month, so he lowered the setting, and then lowered it again. The training coordinator came to the doorway and told him that he was not supposed to be in the hall. He completed twelve repetitions, which was much lower than the ninety he had managed the month before. He wrote the number twelve into the training log, using his right hand since his handwriting had to change. Then he asked the coordinator to schedule him for the same hall at the same hour the following day."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-OPEN-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-DLG-01"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-CAD-02"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-DLG-01"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 33
+      }
     }
   ],
   "register_cases": [
