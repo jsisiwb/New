@@ -115,8 +115,9 @@ selection; default production under `standard.v1` still generates one candidate.
 | B-4-2 | P0 | Chaos suite completion; provider fallback drills | 4d |
 | B-4-3 | P0 | Backup/restore, secret rotation, runbooks | 3d |
 | B-4-4 | P0 | Security test suite; dependency & secret scanning gates | 3d |
-| B-4-5 | P0 | Bilingual reviewer evaluation round; threshold calibration to `contrast_calibrated` (requires B-6-3 ≥ 40 sets); contrast set to 100 | 4d |
+| B-4-5 | P0 | Bilingual reviewer evaluation round; threshold calibration to `contrast_calibrated`. **B-4-5a (contrast corpus to 100 distinct sets) is implemented and merged upstream** (PR #13); the remaining work is the human review and calibration round, which needs reviewers | 4d |
 | B-4-6 | P1 | Cost calibration; dashboards | 3d |
+| B-4-7 | P0 | Safe cancellation of already-running provider requests. **Automated scope implemented** (abort-signal propagation through gateway/retry/repair/fallback, Temporal activity and lease-loss signals, durable-intent probe, truthful cancelled-call accounting in migration 0012). Remaining: **confirmed remote cancellation and real post-abort billing against a live provider API**, which needs paid provider access | 2d |
 
 ## Phase 5 — Beta (summary items)
 

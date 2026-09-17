@@ -50,6 +50,7 @@
 | [0046](0046-chapter-production-implementation.md) | Chapter-production implementation: previous-chapter gate before spend, replay activity-id binding, global canon identity with per-test DB isolation |
 | [0047](0047-temporal-adapter-over-checkpointed-steps.md) | Temporal orchestrates the proven chapter loop as one durable activity over its Postgres checkpoints, not as decomposed activities |
 | [0048](0048-atomic-lease-fencing.md) | Lease fencing is asserted inside the transaction it protects (raising `LEASE_LOST`), closing the time-of-check/time-of-use gap a pre-step ownership read leaves open |
+| [0049](0049-active-request-cancellation.md) | Durable cancellation aborts the in-flight provider request (composed signal plus a race), is never retried/repaired/rerouted, and records remote-cancellation status and post-abort billing as `unknown` rather than as a zero |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

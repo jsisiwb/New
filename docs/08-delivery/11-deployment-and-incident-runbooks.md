@@ -516,8 +516,10 @@ that was in flight when it lost the lease.
 
 ### 9.4 Stuck, paused or cancelled job
 
-Control is an **intent observed at checkpoint boundaries**, never inside a unit of work — which is what
-makes a pause safe: the next step has not begun, so nothing is torn in half and no partial canon exists.
+Control is a durable **intent**. A **pause** is observed at checkpoint boundaries, never inside a unit of
+work — which is what makes it safe: the next step has not begun, so nothing is torn in half and no partial
+canon exists. A **cancel** is observed at those boundaries *and* reaches a provider request that is
+already running (Phase 4 item 7a), so an operator no longer waits for the current model call to finish.
 
 ```bash
 curl -X POST .../v1/jobs/<jobId>:pause    -H 'cookie: …' -H 'x-csrf-token: …'
@@ -525,9 +527,47 @@ curl -X POST .../v1/jobs/<jobId>:resume   -H 'cookie: …' -H 'x-csrf-token: …
 curl -X POST .../v1/jobs/<jobId>:cancel   -H 'cookie: …' -H 'x-csrf-token: …'
 ```
 
+Cancellation is **owner-only** (pause and resume are editor operations), authorized by the same
+membership-derived, RLS-scoped checks as every other protected job mutation, and idempotent: repeating it —
+or racing two requests — changes nothing, emits no duplicate event and duplicates no cost. A terminal job
+accepts nothing and answers `applied: false` with a reason rather than a silent success.
+
 A cancel that loses the race with the atomic commit is reported `too_late` and the job settles `completed`.
 It is **not** relabelled: a job marked `cancelled` while canon advanced would be a self-contradictory state,
 and the ignored request is recorded in the job's history instead.
+
+**Reading a cancelled provider call.** A cancelled call writes one `llm_calls` row with
+`status = 'cancelled'` and a `cancellation` object. Five fields matter when an operator asks "what did that
+cost, and did it stop?":
+
+```bash
+psql "$DATABASE_URL" -c "SELECT created_at, model_id, cost_cents,
+    cancellation->>'reason'              AS reason,
+    cancellation->>'remote_cancellation' AS remote,
+    cancellation->>'usage_status'        AS usage,
+    cancellation->>'billing_status'      AS billing,
+    cancellation->>'response_discarded'  AS discarded
+  FROM llm_calls WHERE status = 'cancelled' AND project_id = '<projectId>' ORDER BY created_at DESC;"
+```
+
+* `reason` is one of `operator_cancelled`, `timeout`, `activity_cancelled`, `worker_shutdown`,
+  `lease_lost`. The **first** cause to fire wins, so an operator's own action is never reported as a
+  provider fault because a deadline expired a moment later. An operator cancellation is never retried,
+  repaired or rerouted to another model.
+* `remote` answers **only what is known**: `acknowledged` (the provider positively confirmed the
+  cancellation), `unsupported` (no remote cancellation exists for that adapter), or `unknown`. **Do not
+  read anything other than `acknowledged` as "the provider stopped working."** Aborting our request closes
+  our socket; it is not evidence about the provider's compute. Every provider in this repository today is
+  deterministic and cannot acknowledge, so expect `unsupported` or `unknown`.
+* `usage` / `billing` are `reported`/`known` only when the provider actually returned usage. Otherwise both
+  are `unknown` — **not zero**. A cancelled call with `billing_status = unknown` may still appear on a
+  future invoice; reconcile it from the invoice, not from this row. `cost_cents` is exact for the usage that
+  was reported and is never inflated by a guess.
+* `discarded` records that a response arrived after the abort. Its content is thrown away and can never
+  reach an artifact or canon; only its usage is kept.
+
+Cancellation provenance is append-only (migration 0002's trigger, still enforced): it cannot be rewritten
+after the fact by any caller, including raw SQL.
 
 A job that looks stuck: read its `current_step` and `job_steps`. A `running` step whose lease has expired is
 a dead worker (§9.3), not a hung job.
@@ -807,6 +847,12 @@ item.
   not that the judges match human reviewers.
 - **No production deployment has occurred.** §7, §8.2 and §8.3 are derived from the code, not from
   operational experience.
-- **Fencing does not abort in-flight spend** (§9.3).
+- **Fencing does not abort in-flight spend** (§9.3). Losing a lease now also aborts the local provider
+  request (Phase 4 item 7a), but see the next point: aborting our request is not the same as stopping the
+  provider's work or its billing.
+- **Remote cancellation is unconfirmed.** Cancellation reliably aborts the LOCAL request and reliably
+  prevents any further attempt, repair or fallback. Whether the provider stopped generating, and what it
+  will bill, is recorded as `unknown`/`unsupported` rather than assumed (§9.4). Confirming remote
+  cancellation needs a live provider API and **has not been done**.
 - **Rate limiting is per-process** (§9.8): it resets on restart and is not shared between instances.
 - **Vector retrieval is an interface only** — no embedder exists (ADR-0045).

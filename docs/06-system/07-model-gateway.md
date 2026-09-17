@@ -29,6 +29,16 @@
     NFR-A fields; OpenTelemetry span.
 11. **Concurrency** — workspace/provider token buckets; fairness across projects.
 12. **Privacy** — provider allowlist per workspace; payload minimization checks (no user identity).
+13. **Cancellation** — `Provider.complete(req, signal?)` receives a composed `AbortSignal`, and the
+    gateway races the call against it, so a durable cancellation reaches a request that is ALREADY RUNNING
+    rather than only the next workflow step (ADR-0049). No further attempt, bounded repair or route
+    fallback may begin after an authoritative cancellation, and a cancellation is classified `cancelled` —
+    never as a retryable provider failure. Five stable reasons (`operator_cancelled`, `timeout`,
+    `activity_cancelled`, `worker_shutdown`, `lease_lost`) are carried distinctly, first-cause-wins. A
+    cancelled call writes one audit row whose `cancellation` object records what is KNOWN: remote
+    cancellation is `acknowledged` only on a positive provider acknowledgement, and post-abort usage and
+    billing are `unknown` rather than zero (migration 0012 enforces both rules in the database). A
+    response arriving after the abort is discarded; its usage is kept, its content never is.
 
 ## 2. Request contract
 
