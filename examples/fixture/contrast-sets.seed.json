@@ -5000,6 +5000,277 @@
         "min_gap_prose_vs_translation_like": 40,
         "min_gap_structure_vs_western_english": 37
       }
+    },
+    {
+      "id": "cs-096",
+      "genre": "academy",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "The mason's deposit had been paid by the academy, eleven days before the lab.\n\nHa-eun found the countersignature on the third read. Not the bursar. Not the principal.\n\nThe proctor. Forty years younger, and already senior enough to authorize a memorial nobody had yet needed.\n\n“You bought the stone first,” she said.\n\nHe did not deny it, which was the part that would keep her awake.\n\n“I bought nineteen names' worth of stone,” the proctor said, “because I had read the same receipts you have, and I could not stop it, and I could at least refuse to let them pretend afterward that it had been a surprise.”\n\n“…And the twentieth?”\n\n“He signed the resin. I couldn't put him on a wall he'd proved was coming.”",
+        "western_english": "The mason's deposit had come from the academy's own funds and had been paid eleven days before the laboratory, which she had established on the first reading; what took her until the third was the countersignature, which belonged neither to the bursar nor to the principal but to the proctor — forty years younger and already of sufficient seniority to authorize a memorial for which there was not yet any occasion. She put it to him that he had bought the stone in advance. He did not deny it, and it was the absence of denial rather than the fact itself that she would afterward find difficult. He had purchased, he said, nineteen names' worth of stone, having read the same receipts she had and having been unable to prevent what they predicted, and had wished at least to deny the institution the subsequent pretence of surprise.",
+        "translation_like": "The deposit of the mason was paid by the academy, at eleven days before the lab.\n\nHa-eun found the countersignature at the third reading. It is not the bursar. It is not the principal.\n\nIt is the proctor. He was forty years more young, and he was already senior enough for doing the authorization of a memorial which no person needed yet.\n\n“You bought the stone at the first,” she said.\n\nHe did not do the denying of it, and that was the part which will keep her at the awake state.\n\n“I bought the stone of nineteen names' amount,” the proctor said, “because I read the same receipts which you have, and I could not stop it, and I could at the least do the refusing for letting them pretend at the after time that it was a surprise.”\n\n“…And, what about the twentieth one?”\n\n“He signed the resin. I could not put him at a wall which he proved that it is coming.”",
+        "literary": "The deposit had come from the academy's own funds, eleven days in advance of the laboratory, and that much she had on the first reading. The third reading gave her the countersignature, which was not the bursar's and was not the principal's. It belonged to the proctor: forty years younger, and already senior enough to commission a memorial for which the world had not yet supplied an occasion. She said that he had bought the stone first. He did not deny it — and it was the not denying, rather than the buying, that she knew would keep her awake for some considerable time. He had bought nineteen names' worth of it, he said, having read the receipts she had read and having been unable to stop what they described, and having wished at minimum to deny them the pretence of astonishment.",
+        "weak_serial": "Ha-eun determined that the mason's deposit had been paid out of the academy's own funds eleven days before the laboratory incident occurred. When she read the document for the third time, she noticed the countersignature, which did not belong to the bursar or to the principal. It belonged to the proctor, who would have been about forty years younger at the time and was already senior enough to authorize a memorial. She said to him that he had purchased the stone before anyone had died. He did not deny this. He explained that he had paid for enough stone to hold nineteen names because he had read the same receipts that she had read, had been unable to prevent the incident, and had wanted to prevent the academy from claiming afterward that it had been unexpected. She asked about the twentieth name, and he said that the technician had signed for the resin."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-09",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-097",
+      "genre": "regression",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "The date on the back of his hand was the date of the first gate.\n\nNot the one the records give. The real one — the warehouse, eleven days earlier, filed as a gas leak.\n\n“You're not trying to reach a date,” Ha-ram said. “You're trying to reach an event.”\n\n“I am trying,” the loan officer said, “to reach the eleven days.”\n\n“Why?”\n\n“Because whoever opened that warehouse did it on purpose, and the only way to prove it is to be standing in the building when it happens, and every time I come back I land four months too late.” He flexed his burned hand. “You landed on the eighth of March.”\n\n“…I did.”\n\n“Then you are the first of us who can still get there.”",
+        "western_english": "The date written on the back of his hand did not correspond to any event she could immediately place, and it was some minutes before she understood that it corresponded to the first gate — not the aperture over Gangnam which the records name, but the earlier one in the Incheon warehouse, filed at the time as a gas leak and never subsequently revisited. She observed that he was not attempting to reach a date but an event. He agreed, and specified further that what he was attempting to reach was the interval of eleven days between the two, on the grounds that the warehouse had been opened deliberately and that the only available proof required a witness inside the building. Every return, he said, had deposited him some four months too late; she had arrived on the eighth of March.",
+        "translation_like": "The date at the back side of his hand was the date of the first gate.\n\nNot the one which the records are giving. It is the real one — it is the warehouse, at eleven days more early, and it was filed as a gas leak.\n\n“You are not trying for reaching a date,” Ha-ram said. “You are trying for reaching an event.”\n\n“I am trying,” the loan officer said, “for reaching the eleven days.”\n\n“Why is it?”\n\n“Because the person who opened that warehouse did it on the purpose, and the only method for proving it is the standing at the inside of the building at the time when it is happening, and at every time when I am coming back, I am landing at four months too late.” He flexed his own burned hand. “You landed at the eighth of March.”\n\n“…Yes, I did.”\n\n“Then, you are the first one among us who can still arrive to there.”",
+        "literary": "It took her some minutes to place the date, and when she placed it the placing was not a relief. It was not the Gangnam aperture, which the records give and the public remembers. It was the earlier one — the warehouse at Incheon, eleven days before, filed as a gas leak and buried under the ordinary paperwork of ordinary catastrophe. He was not trying to reach a date at all, then, but an event; and not even the event, as it turned out, but the eleven days between the two, because a thing opened deliberately requires a witness standing inside the building and every one of his returns had set him down some four months after the only moment that would have served. She had landed on the eighth of March. He flexed his burned hand and told her what that made her.",
+        "weak_serial": "Ha-ram eventually worked out that the date written on the back of the loan officer's hand was the date of the first gate. It was not the Gangnam gate that appears in the official records, but the earlier one that opened in a warehouse in Incheon eleven days before and was recorded at the time as a gas leak. She pointed out to him that he was trying to reach an event rather than a date, and he agreed, saying that what he actually wanted was the eleven-day interval between the two openings. He explained that whoever opened the warehouse gate had done so deliberately, and that proving it would require a witness inside the building at the time. He said that each of his returns had placed him about four months too late. Ha-ram had arrived on the eighth of March, which meant she could still get there."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-MON-02"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-098",
+      "genre": "system-progression",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "The corrective encounter did not die. It stopped.\n\n[Instance terminated: source record resolved.]\n[Archive entry — Dan-ho, Floor 12 — status updated: survived.]\n\nSurvived.\n\nDan-ho read it and understood, eleven floors above where he had died, that the merge had never been the offer.\n\nThe offer was the asking. The record had said *carried* for a hundred floors because the system had never once observed him accept help — and a man who will not be carried cannot be recorded as having survived being carried.\n\n[Copy designation withdrawn. Single record active.]\n\nThe healer was still holding him up.\n\n“What happened?”\n\n“I stopped being two people.”",
+        "western_english": "The corrective encounter did not die in any sense the party could observe; it simply stopped, and the system recorded the instance as terminated on the grounds that its source record had been resolved. The archive entry for Dan-ho on floor twelve was then updated from carried to survived. He read the word from eleven floors above the place where he had died and understood that the merge, which had presented itself as the system's offer, had never been the offer at all. The record had said carried for a hundred floors because the apparatus had never once observed him accept assistance, and a man who refuses to be carried cannot be recorded as having survived being carried. The copy designation was withdrawn, a single record became active, and the healer was still holding him upright.",
+        "translation_like": "The corrective encounter did not die. It stopped.\n\n[The instance is terminated: the source record is resolved.]\n[Archive entry — Dan-ho, the Floor 12 — the status is updated: he survived.]\n\nHe survived.\n\nDan-ho read it and understood, at the eleven floors at the above of the place where he died, that the merge was never the offer.\n\nThe offer was the asking. The record was saying *carried* during one hundred floors because the system never observed him for accepting the help even one time — and a man who will not be carried cannot be recorded as the person who survived the being carried.\n\n[The copy designation is withdrawn. One single record is at the active state.]\n\nThe healer was still holding him at the up position.\n\n“What happened?”\n\n“I stopped being two persons of people.”",
+        "literary": "It did not die. That was the first surprise. It stopped — and the system, with the incuriosity of all filing systems, recorded the instance as terminated on the grounds that its source record had been resolved. Then the archive entry for a man on the twelfth floor changed a single word, from carried to survived, and Dan-ho read it eleven floors above the place where he had died and understood the whole shape of the thing at once. The merge had never been the offer. The asking had been the offer. The record had read carried for a hundred floors because the apparatus had never in all that time observed him accept a thing from anyone, and one cannot be recorded as having survived a rescue one has spent a lifetime refusing to have happened.",
+        "weak_serial": "The corrective encounter did not die but simply stopped functioning. The system recorded that the instance had been terminated because its source record was resolved. The archive entry for Dan-ho on floor twelve was then updated, changing his status from carried to survived. He read this from floor eleven, which was above the floor where his original had died. He realized that the merge option had never actually been the system's offer. The real condition was asking for help. His record had said carried for a hundred floors because the system had never observed him accepting assistance from anyone, and someone who refuses to be carried cannot be recorded as having survived being carried. The system then withdrew the copy designation and made a single record active. The healer was still supporting him, and she asked what had happened."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
+    },
+    {
+      "id": "cs-099",
+      "genre": "hunter-gate",
+      "function": "status_window",
+      "variants": {
+        "kwn_english": "The auditor pulled the eighth anchor's record on her own terminal, with him watching.\n\n[Anchor 8 — serial 4471-M]\n[Recovered: Mapo, March. Recovering party: guild (name withheld)]\n[Assigned gate: Mapo #9]\n[Gate status: scheduled]\n[Projected opening: 11 days]\n\nScheduled.\n\nGates are not scheduled. Gates open.\n\n“Read the last line out loud,” Se-chan said. “I want to hear somebody official say it.”\n\nThe auditor did not read it out loud.\n\nShe photographed the screen, twice, and then wrote the serial on her wrist in ink, the way people do when they have stopped trusting paper.",
+        "western_english": "She retrieved the record for the eighth anchor on her own terminal rather than requesting it through the registry, and she did so with him standing where he could see the screen, which was itself a decision of some significance in an office of that kind. The record gave the serial, the recovery in Mapo in March, a recovering party whose guild name was withheld, and an assigned gate designated Mapo number nine. Beneath that it gave a status of scheduled and a projected opening eleven days hence. Gates are not scheduled; gates open. Se-chan asked her to read the final line aloud, on the grounds that he wished to hear an official say it, and she did not read it aloud. She photographed the screen twice and then wrote the serial number on her wrist in ink.",
+        "translation_like": "The auditor pulled out the record of the eighth anchor at her own terminal, while he is watching it.\n\n[Anchor 8 — the serial is 4471-M]\n[Recovered: it is the Mapo, the March. The recovering party: it is a guild (the name is withheld)]\n[Assigned gate: it is the Mapo #9]\n[Gate status: it is scheduled]\n[Projected opening: it is 11 days]\n\nIt is scheduled.\n\nThe gates are not scheduled. The gates are opening.\n\n“Please read the last line at the loud voice,” Se-chan said. “I want for hearing some official person say it.”\n\nThe auditor did not read it at the loud voice.\n\nShe took a photograph of the screen, two times, and after that wrote the serial at her own wrist with the ink, like the method which the people are using at the time when they stopped the trusting about the paper.",
+        "literary": "She pulled the record on her own terminal rather than through the registry, and did it where he could see the screen, which in an office of that kind is not a courtesy but a statement. The lines came up in the flat municipal typeface that has never in its history been asked to carry anything remarkable: a serial, a recovery at Mapo in March, a recovering party withheld, an assigned gate numbered nine. And then the status, which was scheduled, and the projected opening, which was eleven days. Gates are not scheduled. Gates open, the way weather arrives, and the whole apparatus of anchors and fees and liabilities exists precisely because nobody has ever been able to say when. He asked her to read the last line aloud. She photographed it instead, twice.",
+        "weak_serial": "The auditor looked up the record for the eighth anchor using her own terminal while Se-chan watched the screen. The record listed the serial number as 4471-M and showed that the anchor had been recovered in Mapo during March by a guild whose name was withheld. It also showed that the anchor was assigned to a gate designated Mapo number nine. The status of that gate was listed as scheduled, with a projected opening in eleven days. This was unusual, because gates are not normally scheduled in advance; they simply open. Se-chan asked her to read the last line out loud because he wanted to hear an official person say it. She did not read it aloud. Instead she took two photographs of the screen and wrote the serial number on her wrist in ink."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-100",
+      "genre": "romance-fantasy",
+      "function": "status_window",
+      "variants": {
+        "kwn_english": "The deposit slip carried a chancery seal, and a chancery seal can be read.\n\nVerena laid it on the registry stone a second time.\n\n[Deposit — seal die, ducal, house Averne]\n[Depositor: steward, household of Aldren]\n[Instruction: hold. Do not sell. Release to: seated head of household.]\n[Standing: honoured, 11 months]\n\nRelease to the seated head.\n\nThere had been no seated head for eleven years. The steward had deposited a duke's seal against a chair that could not be filled — and had died nine months into an instruction that only she could now satisfy.\n\nVerena put out her hand for the die.\n\n*You left it for whoever finally sat down.*\n\n*Thank you.*",
+        "western_english": "A deposit slip bearing a chancery seal may be read at a registry stone, which is a fact of no interest whatever until the moment it becomes decisive, and Verena laid the slip against the stone for a second time in as many days. The record it produced was brief and complete. The item was a ducal seal die of the house of Averne; the depositor was the steward of the household of Aldren; the instruction was that it be held and not sold and released only to the seated head of that household; and the standing had been honoured for eleven months. There had been no seated head for eleven years. The steward had deposited a duke's seal against a chair that could not at the time be occupied, and had died nine months into an instruction only she was now in a position to satisfy.",
+        "translation_like": "The deposit slip was carrying a chancery seal, and a chancery seal can be read.\n\nVerena put it at the registry stone at a second time.\n\n[Deposit — it is the seal die, the ducal one, the house Averne]\n[Depositor: it is the steward, of the household of Aldren]\n[Instruction: please hold it. Do not sell it. Release it to: the seated head of household.]\n[Standing: it is honoured, during 11 months]\n\nRelease it to the seated head person.\n\nThere was no seated head during eleven years. The steward deposited the seal of a duke at the against of a chair which cannot be filled — and he died at nine months to the inside of an instruction which only she can satisfy at now.\n\nVerena put out her own hand for the die.\n\n*You left it for the person who finally sat down.*\n\n*Thank you.*",
+        "literary": "A chancery seal upon a deposit slip may be read at a registry stone, which is among the dullest facts in the empire's administration until the afternoon on which it ceases to be dull. She laid the slip against the stone for the second time in two days and the record came up entire: a ducal seal die of the house of Averne; a depositor described as the steward of the household of Aldren; an instruction to hold and not to sell and to release only into the hand of the seated head of that household; and a standing honoured through eleven months. There had been no seated head for eleven years. A servant had therefore deposited a duke's seal against a chair nobody could occupy, and had died nine months into an arrangement that had required, all along, somebody to sit down.",
+        "weak_serial": "The deposit slip had a chancery seal on it, which meant that it could be read using the registry stone. Verena took it back to the registry and placed it against the stone a second time. The record showed that the deposited item was a ducal seal die belonging to the house of Averne, and that the depositor was the steward of the household of Aldren. The instruction attached to the deposit said that the item should be held rather than sold and should only be released to the seated head of that household. The standing had been honoured for eleven months. Since there had not been a seated head of the household for eleven years, this meant the steward had deposited the seal against a position that nobody could occupy. He had also died about nine months after making the deposit. Verena held out her hand for the die."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 37
+      }
     }
   ],
   "register_cases": [
