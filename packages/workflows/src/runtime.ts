@@ -24,6 +24,8 @@ import {
 import { type Generated, type Uuid, validatorFor } from '@yeonjae/domain';
 import {
   type Gateway,
+  type CancellationInput,
+  type GatewayCallOptions,
   type GatewayRequest,
   type GatewayResponse,
   type NarrativeIdentityRef,
@@ -84,6 +86,28 @@ export interface WorkflowContext {
   readonly bindings: Record<string, string>;
   /** Target lease held by this run, re-verified at every step boundary. */
   readonly lease?: HeldLease | undefined;
+  /**
+   * Active-request cancellation wiring for model calls made by this run.
+   *
+   * Optional so the CLI and every existing test path behave exactly as before when it is absent. When
+   * present, `callModel` hands it to the gateway, which is what carries a durable cancel — or a Temporal
+   * activity cancellation, or a worker shutdown, or a lost lease — into a provider request that is
+   * ALREADY IN FLIGHT, instead of only into the next step boundary.
+   */
+  readonly cancellation?: RunCancellation | undefined;
+}
+
+/**
+ * How a run observes cancellation while a provider call is running.
+ *
+ * `signals` are upstream aborts labelled with what they mean; `isDurablyCancelled` is the bounded probe
+ * of the durable intent. Both are optional on their own: the orchestrated path supplies both, and a path
+ * that supplies neither keeps the previous step-boundary-only semantics.
+ */
+export interface RunCancellation {
+  readonly signals?: readonly CancellationInput[] | undefined;
+  readonly isDurablyCancelled?: (() => Promise<boolean>) | undefined;
+  readonly timeoutMs?: number | undefined;
 }
 
 export interface StepTrace {
@@ -194,7 +218,20 @@ export async function runStep<T>(
     const wf = asWorkflowError(err, step);
     await failJobStep(ctx.pool, key, { code: wf.code, message: wf.detail, data: wf.options.data });
     await updateJob(ctx.pool, ctx.job.id, {
-      status: wf.code === 'APPROVAL_BLOCKED' ? 'needs_attention' : 'failed',
+      /**
+       * A cancelled step must not settle the job as `failed`.
+       *
+       * `failed` is a fault an operator is asked to retry; a cancellation is the operator's own decision
+       * (or a definitive loss of ownership). `cancelling` is the honest intermediate state here: the
+       * terminal `cancelled` is written by `checkpointControl` / the orchestrator's cleanup, which is the
+       * single place allowed to declare a job terminal, so nothing here retracts or pre-empts that.
+       */
+      status:
+        wf.code === 'APPROVAL_BLOCKED'
+          ? 'needs_attention'
+          : wf.code === 'CANCELLED'
+            ? 'cancelling'
+            : 'failed',
       currentStep: step,
       error: wf.toJSON(),
     });
@@ -443,7 +480,14 @@ export async function modelCall<T = unknown>(
   };
   let res: GatewayResponse;
   try {
-    res = await ctx.gateway.call(req);
+    /**
+     * The call options are built here, per call, rather than held on the gateway.
+     *
+     * A gateway instance is shared across jobs, so a cancellation handle installed on it would let one
+     * job's cancel abort another job's call. Scoping the wiring to the individual request keeps the blast
+     * radius exactly one model call, which is the unit an operator cancelled.
+     */
+    res = await ctx.gateway.call(req, callOptionsFor(ctx));
   } catch (err) {
     throw asWorkflowError(err, input.step);
   }
@@ -463,6 +507,16 @@ export async function modelCall<T = unknown>(
 }
 
 /** Pack-less calls still need a pack id column: derive a stable v8 UUID from the activity id. */
+function callOptionsFor(ctx: WorkflowContext): GatewayCallOptions {
+  const c = ctx.cancellation;
+  if (!c) return {};
+  return {
+    ...(c.signals ? { cancellation: c.signals } : {}),
+    ...(c.isDurablyCancelled ? { isDurablyCancelled: c.isDurablyCancelled } : {}),
+    ...(c.timeoutMs !== undefined ? { timeoutMs: c.timeoutMs } : {}),
+  };
+}
+
 function packlessId(activityId: string): string {
   const hex = createHash('sha256').update(activityId, 'utf8').digest('hex').slice(0, 32);
   const b = Buffer.from(hex, 'hex');

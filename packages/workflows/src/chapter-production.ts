@@ -68,6 +68,7 @@ import { pickRevisionDimension, reviseVersion } from './revision.js';
 import {
   saveArtifact,
   type HeldLease,
+  type RunCancellation,
   type StepTrace,
   type WorkflowContext,
   type WorkflowPins,
@@ -92,6 +93,12 @@ export interface ChapterProductionInput {
    * before its next durable side effect. Absent for the single-operator CLI path, which has no rival.
    */
   readonly lease?: HeldLease | undefined;
+  /**
+   * Active-request cancellation wiring (Phase 4). Carried into the workflow context so a durable cancel,
+   * a Temporal activity cancellation, a worker shutdown or a lost lease aborts a provider call that is
+   * already in flight rather than waiting for the next step boundary. Absent for the CLI path.
+   */
+  readonly cancellation?: RunCancellation | undefined;
 }
 
 export interface ChapterProductionDeps {
@@ -199,6 +206,7 @@ export async function makeContext(
   projectId: string,
   chapterNo: number,
   lease?: HeldLease,
+  cancellation?: RunCancellation,
 ): Promise<{ ctx: WorkflowContext; mainTimelineId: string; identity: ComposedIdentity }> {
   const project = await getProject(deps.pool, projectId);
   const registry = deps.registry ?? PromptRegistry.fromDirectory();
@@ -322,6 +330,7 @@ export async function makeContext(
     trace: [],
     bindings,
     ...(lease ? { lease } : {}),
+    ...(cancellation ? { cancellation } : {}),
   };
   return { ctx, mainTimelineId: main.id, identity };
 }
@@ -337,6 +346,7 @@ export async function produceChapter(
     input.projectId,
     input.chapterNo,
     input.lease,
+    input.cancellation,
   );
   const specVersion = input.specVersion ?? 1;
   const chapterNo = input.chapterNo;

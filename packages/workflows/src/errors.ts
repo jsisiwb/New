@@ -2,6 +2,8 @@
  * Workflow errors are actionable: every code names the step that failed, what the operator can do, and
  * carries the structured data the CLI prints. Nothing here is retried silently.
  */
+import { isCancellationError } from '@yeonjae/gateway';
+
 export type WorkflowErrorCode =
   | 'INTAKE_INVALID'
   | 'NO_PROVIDER'
@@ -37,6 +39,15 @@ export type WorkflowErrorCode =
   // CONCURRENT_CALL, which is a transient contention the caller may retry: LEASE_LOST means another worker
   // now owns the target, so this run must stop rather than race it.
   | 'LEASE_LOST'
+  /**
+   * The run was cancelled while work was in flight: an operator's durable cancel, a Temporal activity
+   * cancellation, a worker shutdown, a lost lease or a call deadline.
+   *
+   * Deliberately NOT folded into MODEL_CALL_FAILED. A cancellation is an operator decision (or a
+   * definitive loss of ownership), and treating it as a model failure would make it retryable — which
+   * would start another paid call for work that has been withdrawn.
+   */
+  | 'CANCELLED'
   | 'INTERNAL';
 
 export type RecommendedAction =
@@ -86,6 +97,23 @@ export function asWorkflowError(err: unknown, step: string): WorkflowError {
       ? err
       : new WorkflowError(err.code, err.detail, { ...err.options, step });
   }
+  /**
+   * A cancellation is recognized BEFORE any message or code matching below.
+   *
+   * The gateway surfaces it as `CancellationError`, whose message contains the word "cancelled"; several
+   * patterns below would otherwise have classified it as a retryable model failure and the runtime would
+   * have marked the job `failed` instead of preserving the cancellation. Detection is by error shape,
+   * never by text.
+   */
+  if (isCancellationError(err))
+    return new WorkflowError('CANCELLED', `run cancelled (${err.reason})`, {
+      step,
+      // Never retriable: the requester withdrew the work, or another holder owns the target.
+      retriable: false,
+      recommendedActions: err.reason === 'timeout' ? ['retry_step'] : ['review_conflicts'],
+      data: { reason: err.reason, remote_cancellation: err.remoteCancellation },
+      cause: err,
+    });
   const e = err as { code?: unknown; detail?: unknown; message?: unknown; data?: unknown };
   const message = typeof e.message === 'string' ? e.message : String(err);
   const code = typeof e.code === 'string' ? e.code : undefined;
