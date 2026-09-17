@@ -2,7 +2,7 @@
   "format": "yeonjae.contrast-fixtures.v1",
   "provenance": "Reviewed synthetic replay fixtures for the five-class contrast corpus. Authored deterministically for regression, NOT recorded model output and NOT calibration evidence (ADR-0029); live judge calibration is B-4-5 and has not happened.",
   "pins": {
-    "corpus_hash": "sha256:9dade5ee17f5986ac7dfdfd04235673a0b122556499e09c828b85609b6a9263a",
+    "corpus_hash": "sha256:daeb192b6aaa9c2cb099590d05c0e4bddb2d2b494d812d81c45eaa85fd512d41",
     "policy_id": "policy/standard",
     "policy_version": 1,
     "policy_hash": "sha256:54d8e9ece695727db761981483f34a15230746a538504105ce70da4ae3ad779a",
@@ -21273,7 +21273,1187 @@
       "score": 82,
       "issue_kinds": [],
       "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "kwn_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-091:kwn_english:prose",
+      "score": 89,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "kwn_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-091:kwn_english:structure",
+      "score": 88,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "kwn_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-091:kwn_english:genre",
+      "score": 84,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "kwn_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-091:kwn_english:voice",
+      "score": 91,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "western_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-091:western_english:prose",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "western_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-091:western_english:structure",
+      "score": 52,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 8,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-091: Western-novel pacing — the hook arrives after the scene-setting and the exposition beat is deferred (ST-HOOK-01, ST-OPEN-01)."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "western_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-091:western_english:genre",
+      "score": 55,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-091: the academy reader fantasy and its devices are replaced by Western-epic framing."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "western_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-091:western_english:voice",
+      "score": 61,
+      "issue_kinds": [
+        "voice_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-091: the register hierarchy flattens into neutral literary dialogue; speakers stop being distinguishable."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "translation_like",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-091:translation_like:prose",
+      "score": 47,
+      "issue_kinds": [
+        "translation_like_english"
+      ],
+      "drift_flags": [
+        "translation_like"
+      ],
+      "claim": "set cs-091: calqued English — omitted articles, transferred prepositions and transliterated idiom (TRN-01, TRN-02, TRN-14)."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "translation_like",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-091:translation_like:structure",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "translation_like",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-091:translation_like:genre",
+      "score": 83,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "translation_like",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-091:translation_like:voice",
+      "score": 86,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "literary",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-091:literary:prose",
+      "score": 68,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [
+        "literary"
+      ],
+      "claim": "set cs-091: essayistic register and over-long paragraphs displace the scene (EP-LEN-01, EP-LEN-03)."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "literary",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-091:literary:structure",
+      "score": 70,
+      "issue_kinds": [
+        "serial_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 6,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-091: interiority replaces escalation; the serialized cadence stalls (ST-HOOK-01)."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "literary",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-091:literary:genre",
+      "score": 58,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-091: interiority displaces the academy devices the exposition beat needs."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "literary",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-091:literary:voice",
+      "score": 59,
+      "issue_kinds": [
+        "register_error"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-091: essayistic narration absorbs the characters' distinct voices."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "weak_serial",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-091:weak_serial:prose",
+      "score": 58,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "weak_serial",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-091:weak_serial:structure",
+      "score": 51,
+      "issue_kinds": [
+        "weak_ending"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 10,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-091: the exposition beat has no local payoff and the ending does not pull forward (ST-PAY-01, ST-END-01)."
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "weak_serial",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-091:weak_serial:genre",
+      "score": 79,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-091",
+      "variant": "weak_serial",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-091:weak_serial:voice",
+      "score": 82,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "kwn_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-092:kwn_english:prose",
+      "score": 89,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "kwn_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-092:kwn_english:structure",
+      "score": 89,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "kwn_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-092:kwn_english:genre",
+      "score": 88,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "kwn_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-092:kwn_english:voice",
+      "score": 91,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "western_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-092:western_english:prose",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "western_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-092:western_english:structure",
+      "score": 55,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 7,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-092: Western-novel pacing — the hook arrives after the scene-setting and the exposition beat is deferred (ST-HOOK-01, ST-OPEN-01)."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "western_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-092:western_english:genre",
+      "score": 56,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-092: the regression reader fantasy and its devices are replaced by Western-epic framing."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "western_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-092:western_english:voice",
+      "score": 61,
+      "issue_kinds": [
+        "voice_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-092: the register hierarchy flattens into neutral literary dialogue; speakers stop being distinguishable."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "translation_like",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-092:translation_like:prose",
+      "score": 46,
+      "issue_kinds": [
+        "translation_like_english"
+      ],
+      "drift_flags": [
+        "translation_like"
+      ],
+      "claim": "set cs-092: calqued English — omitted articles, transferred prepositions and transliterated idiom (TRN-01, TRN-02, TRN-14)."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "translation_like",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-092:translation_like:structure",
+      "score": 81,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "translation_like",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-092:translation_like:genre",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "translation_like",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-092:translation_like:voice",
+      "score": 85,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "literary",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-092:literary:prose",
+      "score": 68,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [
+        "literary"
+      ],
+      "claim": "set cs-092: essayistic register and over-long paragraphs displace the scene (EP-LEN-01, EP-LEN-03)."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "literary",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-092:literary:structure",
+      "score": 72,
+      "issue_kinds": [
+        "serial_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 6,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-092: interiority replaces escalation; the serialized cadence stalls (ST-HOOK-01)."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "literary",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-092:literary:genre",
+      "score": 58,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-092: interiority displaces the regression devices the exposition beat needs."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "literary",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-092:literary:voice",
+      "score": 58,
+      "issue_kinds": [
+        "register_error"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-092: essayistic narration absorbs the characters' distinct voices."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "weak_serial",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-092:weak_serial:prose",
+      "score": 57,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "weak_serial",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-092:weak_serial:structure",
+      "score": 54,
+      "issue_kinds": [
+        "weak_ending"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 7,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-092: the exposition beat has no local payoff and the ending does not pull forward (ST-PAY-01, ST-END-01)."
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "weak_serial",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-092:weak_serial:genre",
+      "score": 75,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-092",
+      "variant": "weak_serial",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-092:weak_serial:voice",
+      "score": 82,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "kwn_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-093:kwn_english:prose",
+      "score": 89,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "kwn_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-093:kwn_english:structure",
+      "score": 89,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "kwn_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-093:kwn_english:genre",
+      "score": 87,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "kwn_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-093:kwn_english:voice",
+      "score": 88,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "western_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-093:western_english:prose",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "western_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-093:western_english:structure",
+      "score": 56,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 8,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-093: Western-novel pacing — the hook arrives after the scene-setting and the exposition beat is deferred (ST-HOOK-01, ST-OPEN-01)."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "western_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-093:western_english:genre",
+      "score": 52,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-093: the system-progression reader fantasy and its devices are replaced by Western-epic framing."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "western_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-093:western_english:voice",
+      "score": 63,
+      "issue_kinds": [
+        "voice_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-093: the register hierarchy flattens into neutral literary dialogue; speakers stop being distinguishable."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "translation_like",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-093:translation_like:prose",
+      "score": 50,
+      "issue_kinds": [
+        "translation_like_english"
+      ],
+      "drift_flags": [
+        "translation_like"
+      ],
+      "claim": "set cs-093: calqued English — omitted articles, transferred prepositions and transliterated idiom (TRN-01, TRN-02, TRN-14)."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "translation_like",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-093:translation_like:structure",
+      "score": 81,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "translation_like",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-093:translation_like:genre",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "translation_like",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-093:translation_like:voice",
+      "score": 84,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "literary",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-093:literary:prose",
+      "score": 70,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [
+        "literary"
+      ],
+      "claim": "set cs-093: essayistic register and over-long paragraphs displace the scene (EP-LEN-01, EP-LEN-03)."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "literary",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-093:literary:structure",
+      "score": 73,
+      "issue_kinds": [
+        "serial_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 7,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-093: interiority replaces escalation; the serialized cadence stalls (ST-HOOK-01)."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "literary",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-093:literary:genre",
+      "score": 58,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-093: interiority displaces the system-progression devices the exposition beat needs."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "literary",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-093:literary:voice",
+      "score": 58,
+      "issue_kinds": [
+        "register_error"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-093: essayistic narration absorbs the characters' distinct voices."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "weak_serial",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-093:weak_serial:prose",
+      "score": 60,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "weak_serial",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-093:weak_serial:structure",
+      "score": 55,
+      "issue_kinds": [
+        "weak_ending"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 9,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-093: the exposition beat has no local payoff and the ending does not pull forward (ST-PAY-01, ST-END-01)."
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "weak_serial",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-093:weak_serial:genre",
+      "score": 77,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-093",
+      "variant": "weak_serial",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-093:weak_serial:voice",
+      "score": 78,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "kwn_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-094:kwn_english:prose",
+      "score": 90,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "kwn_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-094:kwn_english:structure",
+      "score": 87,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "kwn_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-094:kwn_english:genre",
+      "score": 88,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "kwn_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-094:kwn_english:voice",
+      "score": 91,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "western_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-094:western_english:prose",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "western_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-094:western_english:structure",
+      "score": 52,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 6,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-094: Western-novel pacing — the hook arrives after the scene-setting and the hook beat is deferred (ST-HOOK-01, ST-OPEN-01)."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "western_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-094:western_english:genre",
+      "score": 55,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-094: the hunter-gate reader fantasy and its devices are replaced by Western-epic framing."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "western_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-094:western_english:voice",
+      "score": 61,
+      "issue_kinds": [
+        "voice_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-094: the register hierarchy flattens into neutral literary dialogue; speakers stop being distinguishable."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "translation_like",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-094:translation_like:prose",
+      "score": 49,
+      "issue_kinds": [
+        "translation_like_english"
+      ],
+      "drift_flags": [
+        "translation_like"
+      ],
+      "claim": "set cs-094: calqued English — omitted articles, transferred prepositions and transliterated idiom (TRN-01, TRN-02, TRN-14)."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "translation_like",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-094:translation_like:structure",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "translation_like",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-094:translation_like:genre",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "translation_like",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-094:translation_like:voice",
+      "score": 82,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "literary",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-094:literary:prose",
+      "score": 70,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [
+        "literary"
+      ],
+      "claim": "set cs-094: essayistic register and over-long paragraphs displace the scene (EP-LEN-01, EP-LEN-03)."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "literary",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-094:literary:structure",
+      "score": 70,
+      "issue_kinds": [
+        "serial_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 10,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-094: interiority replaces escalation; the serialized cadence stalls (ST-HOOK-01)."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "literary",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-094:literary:genre",
+      "score": 60,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-094: interiority displaces the hunter-gate devices the hook beat needs."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "literary",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-094:literary:voice",
+      "score": 60,
+      "issue_kinds": [
+        "register_error"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-094: essayistic narration absorbs the characters' distinct voices."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "weak_serial",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-094:weak_serial:prose",
+      "score": 59,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "weak_serial",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-094:weak_serial:structure",
+      "score": 51,
+      "issue_kinds": [
+        "weak_ending"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 7,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-094: the hook beat has no local payoff and the ending does not pull forward (ST-PAY-01, ST-END-01)."
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "weak_serial",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-094:weak_serial:genre",
+      "score": 77,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-094",
+      "variant": "weak_serial",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-094:weak_serial:voice",
+      "score": 78,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "kwn_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-095:kwn_english:prose",
+      "score": 89,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "kwn_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-095:kwn_english:structure",
+      "score": 88,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "kwn_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-095:kwn_english:genre",
+      "score": 88,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "kwn_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-095:kwn_english:voice",
+      "score": 88,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "western_english",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-095:western_english:prose",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "western_english",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-095:western_english:structure",
+      "score": 51,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 7,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-095: Western-novel pacing — the hook arrives after the scene-setting and the hook beat is deferred (ST-HOOK-01, ST-OPEN-01)."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "western_english",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-095:western_english:genre",
+      "score": 55,
+      "issue_kinds": [
+        "western_novel_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-095: the romance-fantasy reader fantasy and its devices are replaced by Western-epic framing."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "western_english",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-095:western_english:voice",
+      "score": 63,
+      "issue_kinds": [
+        "voice_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-095: the register hierarchy flattens into neutral literary dialogue; speakers stop being distinguishable."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "translation_like",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-095:translation_like:prose",
+      "score": 49,
+      "issue_kinds": [
+        "translation_like_english"
+      ],
+      "drift_flags": [
+        "translation_like"
+      ],
+      "claim": "set cs-095: calqued English — omitted articles, transferred prepositions and transliterated idiom (TRN-01, TRN-02, TRN-14)."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "translation_like",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-095:translation_like:structure",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 1,
+        "local_payoff_present": true,
+        "ending_type_detected": "forward_pull"
+      }
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "translation_like",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-095:translation_like:genre",
+      "score": 80,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "translation_like",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-095:translation_like:voice",
+      "score": 84,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "literary",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-095:literary:prose",
+      "score": 69,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [
+        "literary"
+      ],
+      "claim": "set cs-095: essayistic register and over-long paragraphs displace the scene (EP-LEN-01, EP-LEN-03)."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "literary",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-095:literary:structure",
+      "score": 70,
+      "issue_kinds": [
+        "serial_drift"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 11,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-095: interiority replaces escalation; the serialized cadence stalls (ST-HOOK-01)."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "literary",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-095:literary:genre",
+      "score": 59,
+      "issue_kinds": [
+        "literary_drift"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-095: interiority displaces the romance-fantasy devices the hook beat needs."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "literary",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-095:literary:voice",
+      "score": 59,
+      "issue_kinds": [
+        "register_error"
+      ],
+      "drift_flags": [],
+      "claim": "set cs-095: essayistic narration absorbs the characters' distinct voices."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "weak_serial",
+      "dimension": "prose",
+      "activity_key": "activity:contrast:cs-095:weak_serial:prose",
+      "score": 59,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "weak_serial",
+      "dimension": "structure",
+      "activity_key": "activity:contrast:cs-095:weak_serial:structure",
+      "score": 50,
+      "issue_kinds": [
+        "weak_ending"
+      ],
+      "drift_flags": [],
+      "evidence": {
+        "hook_sentence_index": 11,
+        "local_payoff_present": false,
+        "ending_type_detected": "flat_close"
+      },
+      "claim": "set cs-095: the hook beat has no local payoff and the ending does not pull forward (ST-PAY-01, ST-END-01)."
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "weak_serial",
+      "dimension": "genre",
+      "activity_key": "activity:contrast:cs-095:weak_serial:genre",
+      "score": 75,
+      "issue_kinds": [],
+      "drift_flags": []
+    },
+    {
+      "set_id": "cs-095",
+      "variant": "weak_serial",
+      "dimension": "voice",
+      "activity_key": "activity:contrast:cs-095:weak_serial:voice",
+      "score": 79,
+      "issue_kinds": [],
+      "drift_flags": []
     }
   ],
-  "fixture_hash": "sha256:b249ee1ec49b64b57516a861ad93c3a16b836f7e6401067f1c0dfa9eab1b5e40"
+  "fixture_hash": "sha256:758027e691e45ee0c2f9f973a15789cea35ba6783a94ac88834ab09f4a032f93"
 }

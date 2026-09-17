@@ -4729,6 +4729,277 @@
         "min_gap_prose_vs_translation_like": 40,
         "min_gap_structure_vs_western_english": 37
       }
+    },
+    {
+      "id": "cs-091",
+      "genre": "academy",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "A ledger is not a record of what happened. It is a record of what was billed.\n\nThat is why the academy's ledgers survive four decades of institutional embarrassment while its incident files do not: nobody destroys an invoice, because an invoice is somebody else's money and somebody else remembers it.\n\nSo you do not read a ledger for names. You read it for purchases.\n\nResin. Nineteen sets of laboratory gloves in a room rated for twelve. A mason's deposit paid eleven days before anybody died.\n\nHa-eun had stopped looking for the truth in the files years ago.\n\nShe was reading the receipts.",
+        "western_english": "It is worth being precise about what a ledger is, since the distinction governs everything that follows: a ledger records not what occurred but what was billed for, and the two categories overlap only where money changed hands. This is the reason the academy's ledgers have survived four decades of institutional discomfort while its incident files have not. An invoice is somebody else's money, and somebody else remembers it; an incident report is nobody's money at all. One does not, therefore, read a ledger in search of names. One reads it in search of purchases — resin; nineteen sets of laboratory gloves issued to a room certified for twelve; a mason's deposit paid eleven days before any death had been recorded — and Ha-eun had given up on the files some years previously in favour of the receipts.",
+        "translation_like": "A ledger is not a record about the thing which happened. It is a record about the thing which was billed.\n\nThat is the reason why the ledgers of the academy are surviving during four decades of the institutional embarrassment and the incident files of it are not doing that: no person is destroying an invoice, because an invoice is the money of some other person and some other person is remembering about it.\n\nSo, you do not read a ledger for the names. You read it for the purchases.\n\nIt is the resin. It is nineteen sets of the laboratory gloves at a room which is rated for twelve. It is a deposit of a mason which was paid at eleven days before any person died.\n\nHa-eun stopped the looking for the truth at the files at years ago.\n\nShe was reading the receipts.",
+        "literary": "A ledger is not a record of events. It is a record of what was invoiced, and the two coincide only at the precise points where money moved — a distinction upon which the whole of this business turns. It explains, for instance, why the academy's ledgers have come serenely through four decades of institutional embarrassment while its incident files have not: an invoice is another party's money, and another party remembers it, whereas a report of an accident belongs to nobody and may therefore be mislaid by anyone. It follows that one does not consult a ledger for names. One consults it for purchases. Resin. Nineteen sets of laboratory gloves drawn for a room certified to hold twelve. A mason's deposit, paid eleven days before there was anything for a mason to do.",
+        "weak_serial": "A ledger does not record what actually happened at an institution. It records what was billed for, which is a different thing. This is the reason that the academy's ledgers have survived for four decades while the incident files from the same period have not. An invoice involves money belonging to an outside party, and that party keeps their own copy and remembers the transaction, whereas an internal report has no such external record. Because of this, it is not useful to search a ledger for names. It is more useful to look at the purchases that were made. The relevant purchases included resin, nineteen sets of laboratory gloves for a room that was only rated for twelve people, and a mason's deposit that was paid eleven days before anyone had died. Ha-eun had stopped looking through the incident files years earlier and was working from the receipts instead."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "ST-EXP-02",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-092",
+      "genre": "regression",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "Two returners in the same decade is not a coincidence. It is a mechanism.\n\nOne person going back is a miracle, and miracles happen to one person. Two people going back to the same eleven-year window, from different endings, arriving at different ages — that is a door, and doors are built.\n\nWhich raises the question nobody who returns ever wants to ask.\n\nNot *why me*.\n\n*Who else, and how many times, and are any of them still here?*\n\nHa-ram had one name now, written on the back of a hand.\n\nShe was going to need the rest.",
+        "western_english": "The presence of two returners within a single decade is not, on any reasonable analysis, a coincidence, and the distinction matters a great deal. One person moving backward through time is a miracle, and a miracle is by definition singular and requires no explanation beyond itself. Two people moving backward into the same eleven-year window, from different deaths and arriving at different ages, is not a miracle at all but a mechanism — which is to say a door, and doors are constructed by somebody for some purpose. This in turn raises the question that returners are least inclined to put to themselves, which is not the familiar complaint of why me but the considerably more disquieting matter of who else, how many times, and whether any of them remain.",
+        "translation_like": "Two returner persons at the same decade is not a coincidence thing. It is a mechanism thing.\n\nOne person who is going back is a miracle, and the miracles are happening to one person. Two persons of people who are going back to the same eleven-year window, from the different endings, and arriving at the different ages — that thing is a door, and the doors are built by someone.\n\nBecause of that, the question is raised which no person who is returning ever wants for asking.\n\nIt is not the *why is it me*.\n\n*Who is the other person, and how many times, and is any one of them still at here?*\n\nHa-ram was having one name at now, and it was written at the back side of a hand.\n\nShe is going to need all of the rest ones.",
+        "literary": "One person moving backward through time is a miracle, and a miracle may be borne, because a miracle is singular and asks nothing of the person it happens to beyond gratitude or despair. Two people moving backward into the same eleven-year window, from different deaths, arriving at different ages, is not a miracle at all. It is a mechanism. It is, more precisely, a door — and a door implies a carpenter, a purpose, a side from which it was hung. From which follows the question that no returner has ever willingly put to herself, it being so much more comfortable to ask why me and to receive, as one always does, no answer: who else has come through, and how many times, and is any one of them still walking about in the world wearing a face she might recognize.",
+        "weak_serial": "The fact that there were two returners in the same decade was significant and probably not a coincidence. A single person travelling backward in time could be considered a miracle, and miracles generally happen to individuals. However, two people travelling back into the same eleven-year period, from different points of death and arriving at different ages, suggested a mechanism rather than a miracle. If it was a mechanism, then it functioned like a door, and doors are built by someone for a particular reason. This raised a question that returners generally avoid thinking about. The question was not why it had happened to her specifically. The question was who else had come back, how many times it had happened, and whether any of those people were still present. Ha-ram now had one name, which had been written on the back of a hand, and she would need to find the others."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-13"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-MON-02"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "ST-MON-02"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-093",
+      "genre": "system-progression",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "The tower does not kill climbers. It archives them.\n\nA death on any floor produces a record, and a record is a thing the system can instantiate. That is the whole of the copy mechanic, and nobody explains it, because the guides are written by people who have never died and therefore have never been read back.\n\nA copy inherits the build. It does not inherit the death.\n\nSo it climbs clean — no deaths recorded, every title available — and it never understands why the floors feel easier than the stories say.\n\nDan-ho had cleared one hundred of them without once being told he was the second attempt.",
+        "western_english": "It is not accurate, though it is universally said, that the tower kills climbers. The tower archives them. A death upon any floor generates a record, and a record is an object which the system is capable of instantiating, and in that single unremarkable fact the entire copy mechanic consists. Nobody explains this to a new conscript, for the sufficient reason that the guides are composed by people who have never died and have therefore never been read back into the structure. A copy inherits the build but does not inherit the death. It ascends, accordingly, with a clean record and the full complement of titles available to it, and remains permanently unable to account for the discrepancy between the difficulty it encounters and the difficulty described in the stories. Dan-ho had cleared one hundred floors without being informed that he was a second attempt.",
+        "translation_like": "The tower is not killing the climber persons. It is doing the archiving of them.\n\nA death at any floor is producing a record, and a record is a thing which the system can do the instantiation of. That is the whole of the copy mechanic thing, and no person is explaining about it, because the guides are written by the people who never died and because of that they were never read back.\n\nA copy is inheriting the build. It is not inheriting the death.\n\nSo, it is climbing at the clean state — there are no deaths which are recorded, every title is available — and it never understands the reason why the floors are feeling more easy than the thing which the stories are saying.\n\nDan-ho cleared one hundred of them without being told even one time that he is the second attempt.",
+        "literary": "The tower does not kill; it archives — a distinction the conscripts are never taught and would not, in any case, believe. A death on any floor produces a record, and a record is a thing the system can instantiate, and in that flat administrative fact lies the whole of the copy mechanic. The guides say nothing of it. The guides are written by men who have never died and have therefore never been read back into the world, and a man who has not been read back cannot describe the experience of ascending with somebody else's build and none of his predecessor's injuries. A copy inherits the build; it does not inherit the death. It climbs clean, with every title available to it, and spends a hundred floors quietly failing to understand why the stories are so much worse than the thing itself.",
+        "weak_serial": "It is commonly said that the tower kills climbers, but what actually happens is that it archives them. When a climber dies on any floor, the system generates a record of that death, and the system is capable of instantiating a new entity from such a record. This is the basis of the copy mechanic. New conscripts are generally not told about this, because the guides that explain tower mechanics are written by people who have never died and therefore have never experienced being instantiated. A copy inherits the build of the original climber but does not inherit the recorded death. As a result, a copy climbs with a clean record and has access to all of its titles, and it does not understand why the floors seem less difficult than other climbers have described. Dan-ho had cleared one hundred floors without ever being informed that he was a second attempt."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
+    },
+    {
+      "id": "cs-094",
+      "genre": "hunter-gate",
+      "function": "hook",
+      "variants": {
+        "kwn_english": "The auditor brought nine serial numbers to the meeting and left with eight.\n\n“Read the eighth again,” Se-chan said.\n\nShe read it again. Then she checked it against the file, and then against the register, and then she put the paper down very carefully, the way you put down something that has started ticking.\n\n“This anchor was recovered in Mapo.”\n\n“It was.”\n\n“In March.”\n\n“It was.”\n\n“Hunter Kang,” the auditor said. “This anchor is currently registered to a gate that has not opened yet.”",
+        "western_english": "The meeting had been arranged for a Thursday in a room the audit office used when it did not wish to be observed, and the auditor arrived with nine serial numbers and departed with eight, which is the sort of arithmetic that does not appear in minutes. It was the eighth that occasioned the difficulty. She read it, and checked it against the recovery file, and then against the central register, and then set the sheet down upon the table with the particular care of a person handling an object that has begun to make a sound. The anchor had been recovered in Mapo, she observed, and in March, and Se-chan confirmed both particulars. She then informed him that the same anchor stood registered, at that moment, to a gate which had not yet opened.",
+        "translation_like": "The auditor brought nine serial numbers to the meeting and went out with eight ones.\n\n“Please read the eighth one again,” Se-chan said.\n\nShe read it again. After that, she checked it at the against of the file, and after that at the against of the register, and after that she put the paper down at a very careful way, like the method which you use for putting down a thing which started the ticking.\n\n“This anchor was recovered at the Mapo.”\n\n“Yes, it was.”\n\n“At the March.”\n\n“Yes, it was.”\n\n“Hunter Kang,” the auditor said. “This anchor is at now registered to a gate which did not open yet.”",
+        "literary": "She came to the meeting with nine serial numbers and left with eight, which is the kind of subtraction that never finds its way into minutes. The eighth was the trouble. She read it once, and then again; checked it against the recovery file and then against the central register; and then set the sheet upon the table with the studied gentleness of a woman handling something that has begun, faintly, to tick. Recovered in Mapo, she said. He agreed. In March, she said. He agreed again, and watched her arrive by the same road he had travelled a week before, and waited for her to say the thing aloud, because it was a thing that had to be said aloud by somebody with standing: the anchor was registered, at that moment, to a gate that had not yet opened.",
+        "weak_serial": "The auditor came to the meeting with nine anchor serial numbers, and by the end of it she was working with eight of them. Se-chan asked her to read the eighth number again. She read it a second time and then compared it against the recovery file and afterward against the central register. She then put the sheet of paper down on the table carefully. She noted that this particular anchor had been recovered in Mapo, and Se-chan confirmed that this was correct. She also noted that the recovery had taken place in March, and he confirmed that as well. She then told him that according to the register, the anchor was currently assigned to a gate that had not opened yet."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-DLG-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-095",
+      "genre": "romance-fantasy",
+      "function": "hook",
+      "variants": {
+        "kwn_english": "The pawnbroker on Haldon Street had been expecting her for eleven months.\n\nHe did not say so. He simply reached under the counter without being asked and set the seal die down on the cloth, and then set beside it a second thing Verena had not come for.\n\nA ledger page, torn at the spine.\n\n“I don't buy stolen goods, my lady,” he said. “I hold them. There's a difference, and the difference is written on that page.”\n\nVerena turned it around.\n\nIt was a deposit slip. Eleven months old. Signed by the countess's steward — who had been sworn to her father, and who had been dead for nine of those months.",
+        "western_english": "The pawnbroker's premises on Haldon Street occupied the ground floor of a narrow building between a chandler and a shuttered bakery, and the man himself had been expecting her, as it emerged, for the better part of eleven months, although he had the good manners not to say so. He reached beneath his counter without being asked, laid the seal die upon the cloth, and then set down beside it a second object for which she had not come: a page torn from a ledger at the spine. He remarked that he did not purchase stolen goods but merely held them, and that the distinction was recorded on the page in question. Verena turned it toward herself. It proved to be a deposit slip of eleven months' standing, signed by the countess's steward, who had been dead for nine of them.",
+        "translation_like": "The pawnbroker at the Haldon Street was expecting her during eleven months.\n\nHe did not say about it. He only reached at the under of the counter without being asked and put the seal die down at the above of the cloth, and after that put at the side of it a second thing which Verena did not come for.\n\nIt is a ledger page, and it is torn at the spine.\n\n“I am not buying the stolen goods, my lady,” he said. “I am holding them. There is a difference, and the difference is written at that page.”\n\nVerena turned it to the around direction.\n\nIt was a deposit slip. It is eleven months old. It is signed by the steward of the countess — who was sworn to her own father, and who was at the dead state during nine months of them.",
+        "literary": "He had been expecting her for eleven months, and was too well-bred, or too careful, to mention it. The shop was narrow and smelled of brass polish and other people's emergencies. He reached beneath the counter unprompted and laid the seal die on the cloth — which was the thing she had come for — and then, beside it, a thing she had not: a single leaf torn from a ledger at the spine, the stitching still attached in three places like a small violence committed on paper. He did not buy stolen goods, he said; he held them; and the difference was written on the page. She turned it toward herself and found a deposit slip eleven months old, bearing the signature of a steward who had been in the ground for nine of them.",
+        "weak_serial": "Verena visited the pawnbroker's shop on Haldon Street, and it became clear that he had been anticipating her arrival for around eleven months. He did not mention this directly. Instead he reached under the counter without being asked and placed the duke's seal die on the cloth in front of her. He then placed a second item next to it, which was a page that had been torn out of a ledger. He explained that he did not purchase stolen property but held it instead, and that the distinction was documented on the page he had produced. Verena turned the page around so that she could read it. It was a deposit slip dated eleven months earlier, and it had been signed by the countess's steward, who had been dead for nine of those eleven months."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-HOOK-01",
+          "ST-OPEN-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-HOOK-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-PARA-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 37
+      }
     }
   ],
   "register_cases": [
