@@ -8,11 +8,11 @@ Everything else in `docs/` describes design; only this file claims what exists a
 | Item | Value |
 | --- | --- |
 | Project | Yeonjae Studio — English manuscripts in the Korean serialized-webnovel tradition |
-| Phase | **Checkpoint 7 — interface and hardening: complete and merged upstream** via [PR #10](https://github.com/jsisiwb/New/pull/10) at merge commit `59d62752f31261a0c86921603993f37992194dd2`, with post-merge CI and planning validation green; **Phase 4 — MVP hardening is ACTIVE and incomplete**: four tranches implement the CREDENTIAL-FREE DETERMINISTIC portions of B-4-1, B-4-2, B-4-3, B-4-4 and B-4-6. Every item needing a paid provider, a deployment environment, repository administration or a human reviewer remains **not run**: the live 20-chapter × five-night validation, the real-provider outage drill, staging/production restore, PITR, live credential rotation, the contrast corpus expansion and the bilingual human review. Neither B-4-1, B-4-2, B-4-5 nor Phase 4 is complete (scope and status in the Phase 4 section below). Checkpoint 6 merged via upstream PR #9 at `6195700`; Checkpoint 5 merged via upstream PR #8 at `c8cfb59`; Checkpoints 0–4 in PRs #1–#4 |
-| Default branch | `hoplite/ainos-1ac771f8` in `jsisiwb/New` — the upstream base/default development branch, **now at the Checkpoint 7 merge commit `59d62752f31261a0c86921603993f37992194dd2`** (parents: Checkpoint 6 merge `6195700a068b04108e26f87affd738842f39a15a` and Checkpoint 7 head `2f51c4ecef685a28a4ab717934510d9a20a26483`) |
-| Working branch | Phase 4 tranches 1–6 run on `hoplite/akraiphia-akraiphnion-258b962b` in the fork **`sigma28web/New`**, created at exactly the Checkpoint 7 closeout merge commit `d63e05deca60327fac0a1e6a85597e0b31e96c1d` and open as a **draft staging PR that must not be merged** ([sigma28web/New#1](https://github.com/sigma28web/New/pull/1)). Tranches 1–2 were RECOVERED into this fork by exact fast-forward from `sigma27web/New:hoplite/epidamnos-dyrrhachion-b0570f64` @ `93137ae`: all nine commit SHAs are preserved byte-for-byte, nothing was cherry-picked, squashed, rebased or rewritten. Immutable markers: `--phase-4-base-d63e05de` @ `d63e05de`, `--phase-4-recovery-93137ae` @ `93137ae`, `--phase-4-tranche-1-complete-69efe93` @ `69efe93`, `--phase-4-tranche-2-complete-93137ae` @ `93137ae`, `--phase-4-tranche-3-complete-50d5873` @ `50d5873`, `--phase-4-tranche-4-complete-b84d21f` @ `b84d21f`. Nothing was pushed to upstream `jsisiwb/New`, nothing to `sigma27web/New`, and nothing to any base branch; no force-push and no history rewrite. Branch protection on the upstream base branch remains **unavailable/unconfigured**, so the compensating controls are procedural: fork-only implementation, no base-branch writes, a draft staging PR, green push and PR CI, exact immutable markers, and no merge without explicit authorization. **Historical provenance only** (read-only, never written to): `sigma27web/New` (tranches 1–2 and its PR #1), the Checkpoint 7 work branch `hoplite/medma-023f017e` in `sigma26web/New`, and the earlier forks `sigma23web/New`, `sigma24web/New`, `sigma25web/New`. No published commit was ever rewritten across these continuations |
+| Phase | **Checkpoint 7 — complete and merged upstream** via [PR #10](https://github.com/jsisiwb/New/pull/10) at `59d62752f31261a0c86921603993f37992194dd2`. **Phase 4 — MVP hardening is ACTIVE and incomplete**, but its credential-free DETERMINISTIC portions are now **MERGED UPSTREAM** via [PR #12](https://github.com/jsisiwb/New/pull/12) at merge commit `99e6bf5ccf962c2283589745ccbef7983cb682d6` (parents: `d63e05deca60327fac0a1e6a85597e0b31e96c1d` and `fecd79ede8142a2485959e688f679c1785a88b82`), with post-merge CI, planning validation and secret scanning all successful. Merged: the deterministic halves of B-4-1, B-4-2, B-4-3, B-4-4 and B-4-6, plus B-4-5's blinded reviewer tooling. Still **not run** because each needs a paid provider, a deployment environment, repository administration or a human reviewer: the live 20-chapter × five-night validation, the real-provider outage drill, staging/production restore, PITR, live credential rotation, the contrast corpus expansion and the bilingual human review. **Neither B-4-1, B-4-2, B-4-5 nor Phase 4 is complete.** Checkpoint 6 merged via upstream PR #9 at `6195700`; Checkpoint 5 via PR #8 at `c8cfb59`; Checkpoints 0–4 in PRs #1–#4 |
+| Default branch | `hoplite/ainos-1ac771f8` in `jsisiwb/New` — the upstream base/default development branch, **now at the Phase 4 deterministic-integration merge commit `99e6bf5ccf962c2283589745ccbef7983cb682d6`** (parents: Checkpoint 7 closeout `d63e05deca60327fac0a1e6a85597e0b31e96c1d` and the Phase 4 deterministic head `fecd79ede8142a2485959e688f679c1785a88b82`). The fork bases `hoplite/ainos-1ac771f8` in `sigma28web/New` and in the current writable fork `sigma29web/New` are **synchronized at the same SHA** `99e6bf5c…`, verified with `git ls-remote` against all three remotes |
+| Working branch | **Active:** `hoplite/morgantina-64e49616` in the writable fork `sigma29web/New`, open as a **draft staging PR that must not be merged** ([sigma29web/New#1](https://github.com/sigma29web/New/pull/1)). It was created at exactly the merge commit `99e6bf5ccf962c2283589745ccbef7983cb682d6` and then **fast-forwarded** — not cherry-picked, rebased or squashed — to `73d3747879b3c088e88efdcb0213ed72475748c7`, preserving all three recovered commit SHAs exactly: `4eb15e30d116f0c563c36e35e9bcd5ecbc630f69`, `f32b8744e8f03ef9a01c048b59c445bb745dfdfe` and `73d3747879b3c088e88efdcb0213ed72475748c7`. The recovery source is `hoplite/akraiphia-akraiphnion-258b962b-contrast-corpus-100` in `sigma28web/New`, whose draft PR [sigma28web/New#2](https://github.com/sigma28web/New/pull/2) remains **open, draft and unmerged** and was not modified. Markers on the current branch: `--phase-4-base-99e6bf5c` @ `99e6bf5c…`, `--recovered-sigma28-pr2-73d3747` @ `73d3747…`, and the corpus milestones `--contrast-050-e123bbe`, `--contrast-060-db71047`, `--contrast-070-8a2b8cc`, `--contrast-080-240b116`, `--contrast-090-c8fec97`. **HISTORICAL PROVENANCE ONLY (no longer written to):** the Phase 4 tranche branch `hoplite/akraiphia-akraiphnion-258b962b` @ `fecd79ede8142a2485959e688f679c1785a88b82`, whose head is the second parent of the upstream merge; its staging PR [sigma28web/New#1](https://github.com/sigma28web/New/pull/1) is **closed without being merged** (the work reached upstream through PR #12 instead). Its ten markers are retained and unmoved: `--phase-4-base-d63e05de`, `--phase-4-recovery-93137ae`, `--phase-4-tranche-1-complete-69efe93`, `--phase-4-tranche-2-complete-93137ae`, `--phase-4-tranche-3-complete-50d5873`, `--phase-4-tranche-4-complete-b84d21f`, `--phase-4-tranche-5-automation-8dd4468`, `--phase-4-tranche-6-automation-6a35bc9`, `--release-review-start-8dd4468a`, `--release-review-passed-fecd79e`. Also historical: tranches 1–2 were recovered by exact fast-forward from `sigma27web/New` @ `93137ae` with all nine commit SHAs preserved, and the earlier forks `sigma23web`–`sigma27web/New`. No published commit was ever rewritten across these continuations. Upstream branch protection remains **unavailable/unconfigured**, so the compensating controls stay procedural: fork-only implementation, no base-branch writes, draft staging PRs, green push and PR CI, immutable markers, no force-push, and no merge without explicit authorization |
 | Application code | pnpm workspace: `packages/prose`, `packages/domain`, `packages/db` (migrations 0001–0004 — 0004 adds `workflow_id`/idempotency/`pins` on `jobs`, `workflow_artifacts` content-addressed store, `dependency_edges`; `canon.commit_delta`, `canon.rollback_latest`, bitemporal helpers, `retrieval.ts` accepted-only reads, lexical search, summaries, ACS/pack persistence), `packages/canon` (deterministic verifier + acceptance), `packages/narrative` (profile store, composition, Block compiler), `packages/prompts` (25 immutable prompt families v1.0.0, registry, prompt sets), `packages/gateway` (Guard, routing, budget, repair, output-language path, audit; Mock/Replay providers — Replay gains `activity:<id>` binding), `packages/context` (Active Constraint Set compiler, 4 pack templates, query plan, structured fetch, Postgres FTS retriever + vector interface, T0–T3 assembler with ladder, provenance renderer, manifest + pack hash, validation, `buildPack`), `packages/workflows` (Postgres-checkpointed `runStep` runtime, planning/drafting/evaluation/revision/acceptance stages, `produceChapter` core loop with previous-chapter gate before spend, `workflowStatus`, `exportAccepted`; Replay fixture `examples/fixture/ch01`), `apps/cli` (incl. `chapter:produce` / `chapter:status` / `chapter:resume` / `export:accepted` operator surface over the production workflow, replay-only), `apps/api` (Checkpoint 7: Fastify `/v1` operator API — session/API-key authentication, membership-derived authorization, RLS-scoped connections, RFC 9457 problem details, `Idempotency-Key` handling, cursor pagination, security headers, health/readiness, audit log; migration 0006 adds identity, membership, row-level security on every workspace-owned table, API idempotency keys, job control columns, the append-only `job_events` log and the `exports` table; migration 0007 narrows the request-scoped role's grants to least privilege after the audit; migration 0008 adds fenced target leases; migration 0009 adds `canon.assert_lease_fence`, the in-transaction fence assertion that makes fencing atomic with the write it protects (ADR-0048); migration 0010 adds the operator-editable `/v1` write resource families; job control + SSE, accepted-only TXT/DOCX export, the canon correction/retcon/regeneration-preview/rollback HTTP surface, canon/cost/budget inspector reads, structured-log + trace-correlated observability with redaction, the per-process sliding-window rate limiter and the default-deny CORS allowlist are delivered), `apps/worker` (Checkpoint 7: Temporal worker over the proven chapter loop, ADR-0047 — deterministic workflow ids, fenced target leases, versioned prose-free activity contracts, typed retry classification, pause/resume/cancel signals, progress queries, deterministic history replay; replay-only provider routing with no live-call path), `apps/web` (Checkpoint 7: Next.js 16 / React 19 operator application covering all 11 operator work areas over the real `/v1` API, with journey, accessibility and keyboard-path tests) |
-| CI | `planning-validation.yml` (validator) + `ci.yml` (Postgres 16 service; types-fresh, typecheck, lint, format, unit + integration tests, the 120-chapter replay, the chaos drills, the **disposable restore drill**, the **defensive security suite**, the **deterministic cost suite**, the contrast regression, CLI/API/worker/web smoke, web production build, dependency-audit gate, gitleaks) on every push/PR. Each of the five explicit suites is run by its own runner AND verified again from its own durable report (`coverage/{junit.xml is deliberately not used for these}`: `chaos-report.json`, `restore-drill-report.json`, `security-report.json`, `cost-report.json`), because every vitest invocation rewrites `junit.xml` — the defect D-4 repair. Local `pnpm check` is the same sequence minus gitleaks, which is **CI-only and unavailable locally**. GitHub Actions results are reported per-PR — a PR with zero check runs is unverified, never "green". Latest fork evidence: on the recovered head `93137ae` and on tranche 3 `50d5873`, both `ci` and `planning-validation` succeeded for the push and the pull_request event in `sigma28web/New` |
+| CI | `planning-validation.yml` (validator) + `ci.yml` (Postgres 16 service; types-fresh, typecheck, lint, format, unit + integration tests, the 120-chapter replay, the chaos drills, the disposable restore drill, the defensive security suite, the deterministic cost suite, the contrast regression, CLI/API/worker/web smoke, web production build, dependency-audit gate, gitleaks) on every push/PR. Each of the five explicit hardening suites is run by its own runner AND verified again from its own durable report (`coverage/chaos-report.json`, `restore-drill-report.json`, `security-report.json`, `cost-report.json`) rather than from `coverage/junit.xml`, which every later vitest invocation overwrites — the defect D-4 repair. `pnpm check` runs the same sequence including all five suites (the defect D-7 repair); gitleaks is the one documented CI-only difference and is **unavailable locally**. **Latest upstream evidence: on the Phase 4 deterministic-integration merge commit `99e6bf5c`, [ci](https://github.com/jsisiwb/New/actions/runs/35205393002) and [planning-validation](https://github.com/jsisiwb/New/actions/runs/35205392869) both succeeded, with secret scanning green.** A PR with zero check runs is unverified, never "green" |
 
 ## Checkpoints
 
@@ -88,17 +88,22 @@ version numbering across quarantined versions.
 
 ## Known failures / gaps
 
-- Contrast sets: 40 sets in the repo (5 genres × 8 narrative functions), meeting the ≥ 40 pre-calibration
-  target of B-6-3. The judge calibration run itself is still outstanding: the expectations in
-  `contrast-sets.seed.json` are authored starting expectations, not measured judge output, and thresholds
-  stay `uncalibrated` until B-4-5 runs them against live judges with bilingual reviewers.
+- Contrast sets: 100 sets in the repo (5 genres × 8 narrative functions, two or three sets per cell),
+  above the ≥ 40 pre-calibration target of B-6-3. The judge calibration run itself is still outstanding:
+  the expectations in `contrast-sets.seed.json` are authored starting expectations, not measured judge
+  output, and thresholds stay `uncalibrated` until B-4-5 runs them against live judges with bilingual
+  reviewers.
 - Fixture manuscripts: only ch.9 (accepted) and its rejected draft exist as text; ch.12/ch.14 evidence is
   described, not addressable, until Checkpoint 5 produces them.
 - Thresholds in profiles and policies are `uncalibrated`.
-- **B-4-5 is PARTIAL.** The contrast corpus remains at **40 sets**; no expansion toward 100 has been
-  attempted (padding it with near-duplicates to reach a number would defeat its purpose). Blinded reviewer
-  tooling exists and is tested, but **generated packets are not human review**: no reviewer has seen one,
-  no judgment exists, and calibration stays `uncalibrated`.
+- **B-4-5 is PARTIAL.** Its automated portion **B-4-5a is implemented**: the contrast corpus is now
+  **100 accepted sets**, expanded from 40 by authoring `cs-041`–`cs-100` in validated five-set batches
+  under the deterministic distinctness and coverage gate (`packages/eval/src/distinctness.ts`), which was
+  not weakened and whose 0.60 near-duplicate threshold was not moved. See "B-4-5a corpus expansion" below
+  for the metrics. **This is not human calibration.** Blinded reviewer tooling exists and is tested, but
+  **generated packets are not human review**: no reviewer has seen one, no judgment exists, the bilingual
+  reviewer round specified in `docs/07-quality/01-testing-strategy.md` §6 has not run, and calibration
+  stays `uncalibrated`. B-4-5 remains incomplete until that reviewer process is executed.
 - **Phase 4 external blockers, all still open.** Live 20-chapter × five-night validation (B-4-1b) and the
   real-provider outage drill (B-4-2b) need paid providers. Staging restore, production restore, PITR,
   off-site backup and RTO/RPO (B-4-3c) need a deployment environment. Live credential rotation (B-4-3d)
@@ -286,10 +291,7 @@ continuation brief; their SHAs are exactly as specified.
 
 ## Phase 4 — MVP hardening (active; incomplete)
 
-**Status: active and incomplete.** Four tranches have been implemented, all of them the CREDENTIAL-FREE,
-DETERMINISTIC portions of their scope items. Every item that needs a paid provider, a deployment
-environment, repository administration or a human reviewer remains **not run**, and Phase 4 as a whole is
-**not complete**. Each item exists precisely because the corresponding Checkpoint 7 limitation is open.
+**Status: active and incomplete — deterministic portions MERGED UPSTREAM.** The credential-free deterministic work reached the upstream base branch through [PR #12](https://github.com/jsisiwb/New/pull/12) at merge commit `99e6bf5ccf962c2283589745ccbef7983cb682d6` (parents `d63e05de…` and `fecd79ede…`), with post-merge CI, planning validation and secret scanning all successful. Baseline evidence at that merge: **67 test files / 985 tests / 0 skipped** against PostgreSQL 16; 40 contrast sets, 800 evaluations, 280/280 agreement, 0 false positives, 0 false negatives, thresholds **`uncalibrated`**; no live-provider calls; no credentials. Every item that needs a paid provider, a deployment environment, repository administration or a human reviewer remains **not run**, so **Phase 4 is NOT complete** and neither is B-4-1, B-4-2 or B-4-5. The fork staging PR #1 was **closed without being merged** — the work reached upstream through PR #12 — and its branch is retained as historical provenance only.
 
 | # | Scope item | Status | Closes which open limitation |
 | --- | --- | --- | --- |
@@ -302,12 +304,74 @@ environment, repository administration or a human reviewer remains **not run**, 
 | 3c | Staging restore, production restore, PITR, off-site backup, RTO/RPO | **not run** — no staging/production exists | unchanged |
 | 3d | Live credential rotation | **not run** — no secret manager or credentials | unchanged |
 | 4 | Defensive security suite and CI security gates (B-4-4) | **done for the automated surfaces** (evidence below) | tenant/operator boundaries were covered only where suites happened to touch them |
-| 5a | Contrast corpus expansion toward 100 sets (B-4-5) | **not started** — corpus remains at **40 sets** | unchanged |
+| 5a | Contrast corpus expansion toward 100 sets (B-4-5) | **done for the automated scope** — corpus expanded 40 → **100 accepted sets**, 2,000 evaluations, 700/700 agreement, thresholds unmoved (evidence below); **not** human calibration | the corpus no longer falls short of its pre-calibration target |
 | 5b | Blinded reviewer tooling (B-4-5) | **done** (evidence below) — tooling only, **not** human-review evidence | unchanged |
 | 5c | Bilingual human review and threshold calibration | **not run** — needs human reviewers | thresholds remain `uncalibrated` |
 | 6a | Deterministic cost/attempt accounting (B-4-6) | **done** (evidence below) | attempt-level spend was recorded but never read |
 | 6b | Attempt-level cost API surface (B-4-6) | **done** (evidence below) | retry/fallback visibility had no API |
 | 6c | Real billing calibration against provider invoices | **not run** — needs live providers and invoices | unchanged |
+
+### B-4-5a corpus expansion — 100 accepted sets (automated scope complete; NOT calibration)
+
+**Status: B-4-5a automated corpus expansion is implemented.** The corpus is **100 accepted sets**
+(`cs-001`–`cs-100`); the target was 100. `cs-041`–`cs-100` were authored as continuation work in the
+writable fork `sigma29web/New` on `hoplite/morgantina-64e49616`, in twelve validated five-set batches,
+each committed and pushed only after passing the full gate.
+
+**This is not human calibration and does not complete B-4-5.** No bilingual reviewer has seen a packet,
+no human judgment exists, no threshold was changed, and evaluator calibration remains `uncalibrated`
+(ADR-0029). The distinctness report continues to state `proves_literary_diversity: false` about itself: a
+surface-similarity score is a necessary condition for corpus quality and never a sufficient one.
+
+**Final metrics, measured at the accepted state.**
+
+| Measure | Before | After |
+| --- | --- | --- |
+| Accepted sets | 40 | **100** |
+| Evaluations (sets × 5 variants × 4 dimensions) | 800 | **2,000** |
+| Expected-dimension assertions | 280 | **700** |
+| Agreement | 280/280 | **700/700** |
+| False positives / false negatives | 0 / 0 | **0 / 0** |
+| Highest same-class similarity between two sets | 0.341 (`cs-020`/`cs-022`) | **0.419** (`cs-083`/`cs-088`) |
+| Near-duplicate threshold | 0.60 | **0.60 (unchanged)** |
+| Corpus hash | `sha256:ba75bf8e…3ef0` | `sha256:4c9ef2225e0e72ada566401183c453b19b7383c29cfac1a5617958aaeadbb97b` |
+| Evaluator calibration | `uncalibrated` | `uncalibrated` |
+
+**Coverage is balanced by construction, not by accident:** 20 sets per genre; 12 or 13 per narrative
+function; all 40 genre × function cells occupied by two or three sets each; 40 distinct lint codes
+expected across the corpus; the coverage audit reports no concentrated genre.
+
+**What was authored.** Each set is five parallel renderings of one passage (`kwn_english`,
+`western_english`, `translation_like`, `literary`, `weak_serial`) in original English prose composed
+directly in the Korean serialized-webnovel tradition (ADR-0026), with authored `prose_rank`,
+`structure_rank`, `min_gap_*` and expected lint codes. The frozen replay fixtures were regenerated from
+the enlarged corpus at every batch (800 → 2,000 entries) and reviewed as a diff before acceptance, so
+generation and validation stayed separate programs.
+
+**Adversarial review beyond the automated gate.** All 60 new sets were audited for the failure modes a
+similarity score cannot see, with **zero findings**: no variant's prose contains a class name, rank word
+or other answer-leaking token; no two classes inside a set exceed 0.85 similarity; `kwn_english` is
+tighter than both long registers in every set; `weak_serial` is an undivided block and `western_english`
+a single paragraph in every set; no variant is shorter than 60 words; and every set's authored ranks obey
+the corpus contract (kwn_english first on both dimensions, translation_like last on prose, weak_serial
+last on structure). Two batches raised the corpus-wide maximum similarity — `cs-047`/`cs-060` to 0.414 and
+`cs-083`/`cs-088` to 0.419 — and both pairs were inspected individually rather than accepted on their
+number. Each is a deliberate cross-set continuity pair sharing a cast and a device vocabulary while
+differing in narrative function, conflict progression and outcome, which is the same device the original
+corpus already uses for Do-yoon across `cs-001`, `cs-009` and `cs-016`. No set was quarantined and none
+was rejected after authoring.
+
+**Defect found and repaired (D-8).** Two distinctness tests asserted a literal corpus size of 40, so the
+first legitimate addition converted them from checks into stale evidence. They now derive the count from
+the loaded corpus and pin the property that actually matters — that every same-class pair was compared —
+and a regression test was added pinning that additions land in new genre × function cells rather than
+piling into existing ones. Documentation counts are kept synchronized with the corpus file, and three
+documents that hardcoded "40 sets exist today" now reference the corpus instead.
+
+**Reviewer tooling was exercised at the new scale rather than assumed.** Packet generation over all 100
+sets produces three packets covering every set exactly once, with independent item order and independent
+A/B side assignment per reviewer, status `generated`, and zero variant-class or provenance tokens in the
+blinded payload.
 
 ### Phase 4 tranche 5 — blinded reviewer tooling (B-4-5, automation portion only)
 
@@ -342,7 +406,7 @@ number when a series has no variance.
 
 **What this is NOT.** **Not human-review evidence.** No reviewer has been contacted, no packet has been
 reviewed, no judgment exists. Thresholds remain `uncalibrated` and B-4-5 remains **partial** — the corpus
-is still 40 sets and the bilingual review has not run.
+is now 100 sets, but that is an automated expansion under a deterministic gate — the bilingual review has not run.
 
 ### Phase 4 tranche 6 — deterministic cost and attempt accounting (B-4-6, deterministic portion)
 
