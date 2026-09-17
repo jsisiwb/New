@@ -40,6 +40,7 @@ export interface LlmCallRow {
   error: unknown;
   fallback_from_model_id: string | null;
   attempt_records: unknown;
+  cancellation: unknown;
   artifact_ref: unknown;
   created_at: Date;
 }
@@ -79,6 +80,7 @@ export interface LlmCallInsert {
   error?: unknown;
   fallbackFromModelId?: string | undefined;
   attemptRecords?: readonly Readonly<Record<string, unknown>>[] | undefined;
+  cancellation?: GatewayAuditLike['cancellation'] | undefined;
   artifactRef?: unknown;
 }
 
@@ -117,8 +119,8 @@ async function insertLlmCallRow(pool: Pool, r: LlmCallInsert): Promise<void> {
     `INSERT INTO llm_calls (id, workspace_id, project_id, job_id, activity_id, idempotency_key, role, prompt_version_id, prompt_hash, pack_id, pack_hash,
        production_policy_version, narrative_identity_version_id, narrative_block_hash, output_language_contract_hash, tradition_contract_hash,
        output_language_check, model_id, model_class, provider, params, input_hash, output_hash, usage, cost_cents, latency_ms, attempt, status,
-       finish_reason, schema_valid, repair_attempts, error, fallback_from_model_id, artifact_ref, attempt_records)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18,$19,$20,$21::jsonb,$22,$23,$24::jsonb,$25,$26,$27,$28,$29,$30,$31,$32::jsonb,$33,$34::jsonb,$35::jsonb)`,
+       finish_reason, schema_valid, repair_attempts, error, fallback_from_model_id, artifact_ref, attempt_records, cancellation)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18,$19,$20,$21::jsonb,$22,$23,$24::jsonb,$25,$26,$27,$28,$29,$30,$31,$32::jsonb,$33,$34::jsonb,$35::jsonb,$36::jsonb)`,
     [
       r.id,
       r.workspaceId,
@@ -155,6 +157,7 @@ async function insertLlmCallRow(pool: Pool, r: LlmCallInsert): Promise<void> {
       r.fallbackFromModelId ?? null,
       JSON.stringify(r.artifactRef ?? null),
       JSON.stringify(r.attemptRecords ?? []),
+      r.cancellation ? JSON.stringify(r.cancellation) : null,
     ],
   );
 }
@@ -266,12 +269,48 @@ export interface GatewayAuditLike {
   cost_cents: number;
   latency_ms: number;
   attempt: number;
-  status: 'succeeded' | 'failed' | 'fallback_succeeded' | 'budget_blocked';
+  status: 'succeeded' | 'failed' | 'fallback_succeeded' | 'budget_blocked' | 'cancelled';
   finish_reason: 'stop' | 'length' | 'content_filter' | 'error';
   schema_valid: boolean;
   repair_attempts: number;
   fallback_from_model_id?: string | undefined;
   error?: { class: string; message: string } | undefined;
+  /**
+   * Cancellation provenance (migration 0012). Absent on a call that was not cancelled, so existing rows
+   * and existing non-cancelled behaviour are untouched.
+   *
+   * The shape MIRRORS `@yeonjae/gateway`'s `AuditRecord['cancellation']` structurally rather than
+   * importing it, exactly as the rest of `GatewayAuditLike` does: `packages/db` must not depend on the
+   * gateway. The literal unions are duplicated deliberately so a divergence is a compile error at the
+   * seam instead of a silently widened column, and migration 0012's trigger enforces the same membership
+   * in the database for every writer including raw SQL.
+   */
+  cancellation?:
+    | {
+        readonly reason:
+          | 'operator_cancelled'
+          | 'timeout'
+          | 'activity_cancelled'
+          | 'worker_shutdown'
+          | 'lease_lost';
+        readonly outcome:
+          | 'operator_cancelled'
+          | 'timeout'
+          | 'activity_cancelled'
+          | 'worker_shutdown'
+          | 'lease_lost'
+          | 'provider_failed'
+          | 'late_result_discarded'
+          | 'cancel_too_late';
+        readonly remote_cancellation: 'not_requested' | 'acknowledged' | 'unsupported' | 'unknown';
+        readonly usage_status: 'reported' | 'unknown';
+        readonly billing_status: 'known' | 'unknown';
+        readonly requested_at?: string | undefined;
+        readonly aborted_at?: string | undefined;
+        readonly response_discarded: boolean;
+        readonly before_first_attempt: boolean;
+      }
+    | undefined;
   /** Per-attempt provider provenance (B-4-2, migration 0011). Never prompts, prose or credentials. */
   attempt_records?:
     | readonly {
@@ -364,6 +403,9 @@ export class PgAuditStore {
       attempt_records: (Array.isArray(row.attempt_records)
         ? row.attempt_records
         : []) as GatewayAuditLike['attempt_records'],
+      ...(row.cancellation && typeof row.cancellation === 'object'
+        ? { cancellation: row.cancellation as NonNullable<GatewayAuditLike['cancellation']> }
+        : {}),
       model_id: row.model_id,
       model_class: row.model_class as GatewayAuditLike['model_class'],
       provider: row.provider,
@@ -428,6 +470,7 @@ export class PgAuditStore {
       error: record.error,
       fallbackFromModelId: record.fallback_from_model_id,
       attemptRecords: record.attempt_records,
+      ...(record.cancellation ? { cancellation: record.cancellation } : {}),
       activityId: record.activity_id,
       artifactRef,
     });
