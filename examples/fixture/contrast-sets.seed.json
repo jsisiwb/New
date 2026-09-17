@@ -3646,6 +3646,277 @@
         "min_gap_prose_vs_translation_like": 39,
         "min_gap_structure_vs_western_english": 33
       }
+    },
+    {
+      "id": "cs-071",
+      "genre": "hunter-gate",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "“Nine serial numbers,” the auditor said. “All recovered by porters. All credited to guilds.”\n\n“Nine that I recovered.”\n\n“Nine that you recovered.” She turned the file. “Now look at the closing fees.”\n\nSe-chan looked.\n\nSame guild. Nine different names on the paperwork, nine different seals — and one account number underneath all of them.\n\n“That's the Association's own disbursement account.”\n\n“That,” the auditor said, “is the account that pays the widening liability. They have been paying themselves to lose gates they never lost.”\n\n“…And the elevator shaft?”\n\n“Wasn't a mistake. It was inventory.”",
+        "western_english": "The auditor had assembled the file over a period of some months, and she presented it in the manner of a woman who has grown accustomed to being disbelieved: nine serial numbers, each belonging to an anchor recovered by a porter and credited to a guild, and all nine of them recovered, as it happened, by the man now sitting across from her. She then directed his attention to the closing fees, which is where the arrangement became visible. The paperwork bore nine different guild names and nine different seals. Beneath all nine, however, stood a single account number, and the account number belonged to the Association's own disbursement office — the same office from which the widening liability is paid — so that the institution had for some years been paying itself in respect of gates it had never lost, and the aperture in the elevator shaft had not been an oversight but a holding.",
+        "translation_like": "“It is nine serial numbers,” the auditor said. “All of them were recovered by the porter persons. All of them were credited to the guilds.”\n\n“It is nine which I recovered.”\n\n“It is nine which you recovered.” She turned the file around. “At now, please look at the closing fees.”\n\nSe-chan looked at them.\n\nIt is the same guild. There were nine different names at the paperwork, nine different seals — and there was one account number at the under of all of them.\n\n“That is the disbursement account of the Association itself.”\n\n“That one,” the auditor said, “is the account which is paying the widening liability. They have been paying to themselves for losing the gates which they never lost.”\n\n“…And, what about the elevator shaft?”\n\n“It was not a mistake. It was the inventory.”",
+        "literary": "There is a quality of fraud so large that it ceases to look like fraud at all and begins to resemble weather, and the auditor had spent some months assembling the file that would make it look like a crime again. Nine serial numbers. Nine anchors, each recovered by a porter and credited to a guild; all nine recovered, as the record plainly stated and as nobody had previously troubled to notice, by the same porter. It was the closing fees that gave it away, as closing fees generally do. Nine guild names. Nine seals, each one distinct and properly registered. And beneath them, in the small print where institutions keep the truth they have no intention of concealing because they do not expect anyone to read it, a single account number, belonging to the Association's own disbursement office.",
+        "weak_serial": "The auditor showed Se-chan a file that she had put together containing nine anchor serial numbers. Each of the nine anchors had been recovered by a porter and credited to a guild, and all nine of them were ones that Se-chan had personally recovered during his career. She then directed his attention to the records of the closing fees that had been paid out for those recoveries. The paperwork showed nine different guild names along with nine different official seals. However, the same account number appeared underneath all nine of the entries, and that account belonged to the Association's own disbursement office. This was also the account used to pay the widening liability, which meant the Association had been paying itself for gates that were never actually lost. She also told him that the gate in the elevator shaft had been deliberate rather than an oversight."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-072",
+      "genre": "regression",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "The handwriting at the bottom of the debt notice belonged to the loan officer.\n\nNot the one who had telephoned. The one from three lives ago, who had refused her, and whose branch had closed, and who had died in a fire she had never managed to prevent.\n\nHa-ram laid the two documents side by side. The loop on the g. The way the date was written with a stop after the year.\n\n*He came back too.*\n\n*He has been coming back longer than I have.*\n\nShe looked again at the line he had written.\n\n*You keep buying the lot.*\n\nNot advice. A count.",
+        "western_english": "She had seen the handwriting before, though it took her most of an afternoon to place it, and when she did place it the identification was not welcome. It did not belong to the officer who had telephoned her in March. It belonged to the officer of three lives previously — the one who had declined her application, whose branch had subsequently closed, and who had died in a fire that she had attempted without success to prevent on two separate occasions. Laid side by side, the documents agreed in every particular that matters to such comparisons: the loop of the g, the full stop placed after the year in the date. She understood from this that he had returned as well, and, from the phrasing of the line he had written at the foot of the notice, that he had been returning for considerably longer than she had.",
+        "translation_like": "The handwriting at the bottom side of the debt notice was belonging to the loan officer.\n\nNot the one who made the telephone. It is the one from the three lives ago, who refused her, and the branch of whom became closed, and who died at a fire which she never succeeded for preventing.\n\nHa-ram put the two documents at the side by side. It is the loop at the g letter. It is the method which the date is written with a stop at the after of the year.\n\n*He also came back.*\n\n*He has been coming back during more long time than me.*\n\nShe looked one more time at the line which he wrote.\n\n*You are continuously buying the lot.*\n\nIt is not the advice. It is a counting.",
+        "literary": "Handwriting is the last thing a man surrenders, and it had taken her the better part of an afternoon to place this specimen, because the placing required her to look somewhere she had long ago decided not to look. It was not the officer of March. It was the officer of three lives previously: the one who had refused her, whose branch had closed in the following winter, and who had died in a fire she had twice attempted and twice failed to prevent. The documents, laid side by side on the table, agreed in the loop of the g and in the small pedantic full stop after the year. So he had come back as well. And the line at the foot of the notice — you keep buying the lot — was not, she understood with a cold that began somewhere behind her sternum, an item of advice at all.",
+        "weak_serial": "Ha-ram spent some time trying to identify the handwriting on the bottom of the debt notice. Eventually she recognized it as belonging to a loan officer, but not the one who had telephoned her in March. It belonged to a different officer from three lives earlier, who had turned down her loan application at the time. That officer's branch had closed afterward, and he had died in a fire that she had tried and failed to prevent. She placed the two documents next to each other and compared the letters, including the loop on the letter g and the full stop that was written after the year in the date. The comparison confirmed that the handwriting was the same. This meant that he had also been returning, and based on the wording of his note, he had been doing so for longer than she had."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01",
+          "ST-MON-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01",
+          "ST-MON-02"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 37
+      }
+    },
+    {
+      "id": "cs-073",
+      "genre": "romance-fantasy",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "Page nine was a survivorship clause, and it named a third party.\n\n“Read it aloud,” Verena said.\n\nThe envoy read it aloud. On the death of both signatories without issue, the estate passed not to the crown, and not to the duke's house, but to the household of the late Countess Aldren.\n\n“The countess has been dead eleven years.”\n\n“Her household has not.” Verena took the page back. “Her household is a steward, a dressmaker and a groom — and all three of them have been in my father's service since the year I was made a ward.”\n\nShe folded page nine into her sleeve.\n\n“Tell your duke I will not be marrying his son. I will be marrying his accountant's employer.”",
+        "western_english": "The ninth page, when it was at length produced, proved to contain a survivorship clause of the kind that is ordinarily unremarkable, and it named a third party. Verena asked the envoy to read it aloud, which he did: upon the death of both signatories without issue the estate would pass neither to the crown nor to the duke's own house but to the household of the late Countess Aldren, who had been dead for eleven years. It was pointed out to him that a dead woman cannot inherit. Verena observed in reply that a household can, and that this particular household consisted of a steward, a dressmaker and a groom, all three of whom had been in her father's service since the year of her wardship, and she then declined the marriage in terms that the envoy found difficult to relay.",
+        "translation_like": "The page nine was a survivorship clause, and it was naming a third party person.\n\n“Please read it at the loud voice,” Verena said.\n\nThe envoy read it at the loud voice. At the death of the both signatory persons without the issue, the estate is passing not to the crown, and not to the house of the duke, but to the household of the late Countess Aldren.\n\n“The countess is at the dead state during eleven years.”\n\n“Her own household is not at that state.” Verena took the page back. “Her household is one steward, one dressmaker and one groom — and all of the three persons have been at the service of my father since the year when I was made to be a ward.”\n\nShe folded the page nine to the inside of her sleeve.\n\n“Please tell to your duke that I will not do the marrying with his son. I will do the marrying with the employer of his accountant.”",
+        "literary": "A survivorship clause is the dullest instrument in the whole apparatus of inheritance, which is precisely why it is where one hides things. Page nine, produced at last and read aloud by an envoy whose voice thinned considerably as he proceeded, provided that upon the death of both signatories without issue the estate should pass neither to the crown nor to the duke's house but to the household of the late Countess Aldren — a woman eleven years in her grave, and therefore, one might suppose, incapable of benefiting from anything. But a household is not a woman. A household is a steward and a dressmaker and a groom, and Verena had eaten in the kitchen with all three of them in the year she was made a ward, and she stood now with the page in her hand and the whole shape of it opening in front of her like a door she had been walking toward for eighteen years.",
+        "weak_serial": "The missing ninth page turned out to contain a survivorship clause that named a third party. Verena asked the envoy to read the clause aloud, and he did so. It stated that if both signatories died without issue, the estate would not go to the crown or to the duke's house, but instead to the household of the late Countess Aldren. Verena noted that the countess had died eleven years earlier. She then explained that the household itself still existed and consisted of a steward, a dressmaker, and a groom. All three of those people had been working in her father's service since the year that she was made a ward of the family. She put the page into her sleeve and told the envoy that she would not be marrying the duke's son."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-074",
+      "genre": "system-progression",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "[Reporting party: Floor 12 — you.]\n\nDan-ho had never been on floor twelve. He had gone up past it in a sealed lift with nine other conscripts and no memory of the interval.\n\n[Archive located.]\n[Climber: Dan-ho. Floor 12. Status: carried.]\n[Party: eleven. Survivors: one.]\n\nOne.\n\n*They didn't carry me up. They carried me out. And the system logged me as the only survivor of a party it then assigned me to again.*\n\n[Correction accepted. Reporting party is the original.]\n[You are the copy.]",
+        "western_english": "He had never set foot on the twelfth floor, or believed he had not: the ascent past it had been made in a sealed lift, in the company of nine other conscripts, with no recollection whatever of the interval. The archive, when the window produced it, took a different view. It recorded a climber named Dan-ho on floor twelve, with a status of carried, in a party of eleven of whom exactly one survived. He considered the number for some while. What it implied was not that he had been carried up the tower but that he had been carried out of it, and that the system had logged him as the sole survivor of a party to which it had subsequently reassigned him, and the window, having accepted his correction, concluded by informing him which of the two Dan-hos was the original.",
+        "translation_like": "[Reporting party: The Floor 12 — it is you.]\n\nDan-ho was never at the floor twelve. He went to the up past it at the inside of a sealed lift together with nine other persons of conscripts and without any memory about the interval.\n\n[The archive is located.]\n[Climber: Dan-ho. It is the Floor 12. Status: he is at the carried state.]\n[Party: eleven persons. Survivors: one person.]\n\nIt is one person.\n\n*They did not carry me to the up. They carried me to the outside. And the system made a log about me as the only one survivor of a party which it after that assigned me to one more time.*\n\n[The correction is accepted. The reporting party is the original one.]\n[You are the copy one.]",
+        "literary": "He had never been on the twelfth floor. That was the thing he knew, in the way one knows the shape of one's own hand: the ascent past it had been conducted in a sealed lift with nine other conscripts and had left no interval in him at all, not even the interval's absence. The archive disagreed, and archives do not argue. A climber named Dan-ho, on floor twelve, status carried, in a party of eleven, of whom one survived. One. He turned the figure over and found beneath it the appalling and perfectly ordinary explanation — that he had not been carried up the tower but out of it, and that the apparatus which keeps the records had noted him as the single survivor of a company to which it had then, with the serene indifference of all filing systems, assigned him a second time.",
+        "weak_serial": "Dan-ho had never been on the twelfth floor as far as he knew, because he had travelled past it in a sealed lift together with nine other conscripts and did not remember anything about that part of the ascent. The system then located an archive record, which listed a climber named Dan-ho on floor twelve with a status of carried. The record also stated that the party had consisted of eleven members and that only one of them had survived. He thought about what this meant and concluded that he had not been carried up the tower but rather carried out of it, and that the system had recorded him as the sole survivor and had later assigned him to the same party again. The window then accepted his correction and informed him that the reporting party was the original and that he was the copy."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
+    },
+    {
+      "id": "cs-075",
+      "genre": "academy",
+      "function": "reveal",
+      "variants": {
+        "kwn_english": "The maintenance log had one line for the crystal, and it was a purchase order.\n\nNot a repair. A purchase — of resin, four decades ago, signed by a technician.\n\nHa-eun found his name in her own ledger. Twentieth from the top. The one whose family had never written.\n\n“He repaired it,” the proctor said. “So?”\n\n“He repaired it eleven days before the lab.” She turned the ledger around. “He knew the crystal cracked on somebody specific. He wanted it kept in service long enough to prove it.”\n\n“Prove what?”\n\n“That the academy's aptitude test can tell which students it has already decided to lose.”",
+        "western_english": "The maintenance log proved to contain a single entry relating to the crystal, and the entry was not a record of repair but a purchase order for resin, dated four decades previously and signed by a technician of the third-floor laboratory. Ha-eun located the same name in her own ledger, at the twentieth position, being the man whose family had never written. The proctor's response was that a technician had repaired a crystal, which did not seem to him remarkable. She directed his attention to the dates: the resin had been purchased eleven days before the laboratory incident, from which she inferred that the technician had known the crystal fractured in the presence of particular individuals and had wished it to remain in service for long enough that the pattern could be demonstrated — the pattern being the academy's capacity to identify, at intake, the students it intended to lose.",
+        "translation_like": "The maintenance log was having one line about the crystal, and it was a purchase order.\n\nNot a repair one. It is a purchase — of the resin, at four decades ago, and it is signed by a technician person.\n\nHa-eun found his own name at her own ledger. It is the twentieth one from the top side. It is the one whose family never wrote.\n\n“He did the repairing of it,” the proctor said. “So, what about it?”\n\n“He did the repairing of it eleven days at the before of the lab.” She turned the ledger to the around direction. “He knew that the crystal is cracking at some specific person. He wanted that it will be kept at the service during enough long time for proving it.”\n\n“For proving what thing?”\n\n“That the aptitude test of the academy can tell about the students which it already decided for losing.”",
+        "literary": "The log had one line for the crystal and the line was not what a log ought to contain. It was not a repair record at all but a purchase order — resin, four decades old, signed in the cramped deferential hand of a laboratory technician. Ha-eun knew the name before she looked, and looked anyway, and found it twentieth from the top of her own ledger: the man with no family to write letters. The proctor could not see it. A technician had mended a crystal; institutions are full of men who mend things. But the resin had been bought eleven days before the laboratory, and eleven days is not the interval of a man tidying an object. It is the interval of a man building an exhibit, who has understood something about his employer's intake procedure and has calculated how long the evidence must be kept in service.",
+        "weak_serial": "Ha-eun obtained the maintenance log and found that it contained only one entry relating to the aptitude crystal. The entry was not a repair record but a purchase order for resin, dated about forty years earlier and signed by a technician. She checked the name against her own ledger and found that it was the twentieth name on her list, belonging to the technician whose family had never written any letters. The proctor said that a technician repairing a crystal did not seem significant to him. Ha-eun pointed out that the resin had been purchased eleven days before the laboratory incident took place. She explained that the technician must have known the crystal cracked in response to specific students and had wanted it to stay in use long enough to demonstrate that the academy could identify which students it intended to lose."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-09",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-DLG-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-DLG-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-DLG-01",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
     }
   ],
   "register_cases": [

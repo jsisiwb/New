@@ -194,7 +194,7 @@ concurrent chapter jobs per workspace; Temporal task latency; DB connection pool
   `ch09.rejected-draft.txt`), knowledge ledger, the three-chapter continuity fixture
   `examples/fixture/ch01`, `examples/fixture/ch02` and `examples/fixture/ch03` (authored scene prose plus
   generated replay recordings — built by `tools/build-ch01-fixture.py`, `tools/build-ch02-fixture.py` and
-  `tools/build-ch03-fixture.py`, and **never** edited by hand), the 70 contrast sets in the repo (the ≥ 40 target of B-6-3 met),
+  `tools/build-ch03-fixture.py`, and **never** edited by hand), the 75 contrast sets in the repo (the ≥ 40 target of B-6-3 met),
   register cases, the possession micro-fixture `source-story.micro.json` (ADR-0039);
   `examples/narrative-profiles/`: language, tradition, four MVP genre profiles and the composed identity;
   `examples/production-policies/`: economy / standard / premium policy versions (ADR-0041).
