@@ -36,7 +36,7 @@ import {
   type ProviderResponse,
 } from '@yeonjae/gateway';
 import { JobControlStop, PgAuditStore } from '@yeonjae/db';
-import { createHarness, IDENTITY_VERSION } from '@yeonjae/workflows/testkit';
+import { createHarness, IDENTITY_VERSION, REPLAY_ROUTING } from '@yeonjae/workflows/testkit';
 import {
   ArtifactLlmOutputStore,
   produceChapter,
@@ -210,7 +210,9 @@ run('active provider-request cancellation (durable state)', () => {
   // ---- A. the durable intent reaches an ACTIVE provider call -------------------------------------------
 
   it('stops a mid-run job without committing canon, and never as an ordinary failure', async () => {
+    let commitsBeforeCancel = 0;
     const { error, fired } = await whileRunning(async (jobId) => {
+      commitsBeforeCancel = await canonCommits();
       await requestJobControl(pool, { jobId, control: 'cancel', actorUserId });
     });
 
@@ -229,7 +231,7 @@ run('active provider-request cancellation (durable state)', () => {
     const isCancelled = error instanceof WorkflowError && error.code === 'CANCELLED';
     expect(isControlStop || isCancelled).toBe(true);
 
-    expect(await canonCommits()).toBe(0);
+    expect(await canonCommits()).toBe(commitsBeforeCancel);
     expect(await canonVersion()).toBeLessThan(3);
     expect(await chapterStatus()).not.toBe('accepted');
 
@@ -398,27 +400,170 @@ run('active provider-request cancellation (durable state)', () => {
 
   it('reaches the provider call through an activity-cancellation signal', async () => {
     const controller = new AbortController();
-    const { error, fired } = await whileRunning(
-      async () => {
-        // This is the signal `Context.current().cancellationSignal` supplies in the real activity.
-        controller.abort(new CancellationError('activity_cancelled'));
-      },
-      { signal: controller.signal },
-    );
 
-    expect(fired).toBe(true);
+    // Explicit barrier to prove the targeted provider call is active before cancellation is triggered.
+    // Targeting `arc_plan:1` reproduces the exact scenario of the CI flake where story-bible setup
+    // has legitimately committed canon (2 commits) before the active provider request is cancelled.
+    const open = { release: (): void => undefined };
+    const parked = new Promise<void>((resolve) => {
+      open.release = resolve;
+    });
+
+    let targetedCallActive = false;
+    let providerReceivedSignalAbort = false;
+    let signalListenerRegistered = false;
+
+    let markTargetedCallActive: () => void = () => undefined;
+    const targetedCallActivePromise = new Promise<void>((resolve) => {
+      markTargetedCallActive = resolve;
+    });
+
+    const synchronizedProvider: Provider = {
+      name: 'replay',
+      complete: async (req: ProviderRequest, signal?: AbortSignal): Promise<ProviderResponse> => {
+        // Non-targeted calls (e.g. story_spec) proceed normally through the replay provider
+        if (req.trace?.activityId !== 'arc_plan:1') {
+          return harness.provider.complete(req, signal);
+        }
+
+        targetedCallActive = true;
+
+        return new Promise<ProviderResponse>((resolve, reject) => {
+          const onAbort = (): void => {
+            providerReceivedSignalAbort = signal?.aborted ?? false;
+            const upstream: unknown = signal?.reason;
+            reject(
+              upstream instanceof CancellationError
+                ? upstream
+                : new CancellationError('activity_cancelled', {
+                    remoteCancellation: 'unsupported',
+                  }),
+            );
+          };
+
+          if (signal?.aborted) {
+            onAbort();
+            return;
+          }
+
+          signal?.addEventListener('abort', onAbort, { once: true });
+          signalListenerRegistered = true;
+
+          // Notify the barrier that the targeted provider call is active and in-flight
+          markTargetedCallActive();
+
+          void parked.then(() => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve(undefined as unknown as ProviderResponse);
+          });
+        });
+        throw new Error('the parked provider was never meant to answer');
+      },
+    };
+
+    const gateway = new Gateway({
+      providers: new Map([['replay', synchronizedProvider]]),
+      routing: REPLAY_ROUTING,
+      budget: new MemoryBudget(1_000_000),
+      audit: new PgAuditStore(
+        pool,
+        { workspaceId, projectId },
+        new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+      ),
+      guardContext: { pinnedIdentityVersionId: IDENTITY_VERSION },
+      minEnglishConfidence: 0.99,
+    });
+
+    // Start production workflow with activity-cancellation signal wiring
+    let error: unknown;
+    const producePromise = produceChapter(
+      { pool, gateway, bindings: harness.bindings },
+      {
+        ...harness.input(1),
+        cancellation: durableCancellation({ signal: controller.signal }),
+      },
+    ).catch((err: unknown) => {
+      error = err;
+    });
+
+    // 1. Explicit barrier: prove the targeted provider call is active before triggering cancellation
+    await targetedCallActivePromise;
+    expect(targetedCallActive).toBe(true);
+
+    // 2. Capture the authoritative durable state immediately before cancellation
+    const commitsBeforeCancel = await canonCommits();
+    const versionBeforeCancel = await canonVersion();
+    const callCountBeforeCancel = await llmCallCount();
+
+    // Story-bible setup has legitimately committed before this cancellation
+    expect(commitsBeforeCancel).toBe(2);
+    expect(versionBeforeCancel).toBe(2);
+
+    // 3. Trigger activity cancellation deterministically
+    // This is the signal `Context.current().cancellationSignal` supplies in the real activity.
+    controller.abort(new CancellationError('activity_cancelled'));
+
+    try {
+      await producePromise;
+    } finally {
+      open.release();
+    }
+
+    // 4. Assert the targeted active provider request receives cancellation
+    expect(providerReceivedSignalAbort).toBe(true);
+    expect(signalListenerRegistered).toBe(true);
+
+    // 5. Assert the workflow returns the expected cancellation classification
+    expect(error).toBeDefined();
+    expect(error instanceof WorkflowError).toBe(true);
     expect((error as WorkflowError).code).toBe('CANCELLED');
-    // Classified as itself, not as an operator cancellation: the two demand different operator responses.
     expect((error as WorkflowError).options.data?.reason).toBe('activity_cancelled');
-    expect(await canonCommits()).toBe(0);
+
+    // 6. Assert no retry, repair, or fallback occurs, and no additional provider attempt begins
+    const cancelled = await cancelledCalls();
+    expect(cancelled).toHaveLength(1);
+    const c = cancelled[0]?.cancellation;
+    expect(c?.reason).toBe('activity_cancelled');
+    expect(c?.before_first_attempt).toBe(false);
+
+    const callRows = await pool.query<{
+      attempt: number;
+      repair_attempts: number;
+      fallback_from_model_id: string | null;
+    }>(
+      `SELECT attempt, repair_attempts, fallback_from_model_id FROM llm_calls WHERE project_id = $1 AND status = 'cancelled'`,
+      [projectId],
+    );
+    expect(callRows.rows[0]?.attempt).toBe(1);
+    expect(callRows.rows[0]?.repair_attempts).toBe(0);
+    expect(callRows.rows[0]?.fallback_from_model_id).toBeNull();
+
+    // Exactly one call (the cancelled arc_plan call) added to the audit after the pre-cancel count
+    expect(await llmCallCount()).toBe(callCountBeforeCancel + 1);
+
+    // 7. Assert no artifact or canon mutation occurs after cancellation; legitimate pre-cancel commits unchanged
+    expect(await canonCommits()).toBe(commitsBeforeCancel);
+    expect(await canonVersion()).toBe(versionBeforeCancel);
+    expect(await chapterStatus()).not.toBe('accepted');
+
+    // Regression assertion: under the old scheduler-dependent implementation, the test asserted
+    // `expect(await canonCommits()).toBe(0)`. When cancellation caught arc_plan in flight after
+    // legitimate story-bible setup, this failed because commitsBeforeCancel was 2, not 0.
+    expect(commitsBeforeCancel).toBeGreaterThan(0);
+    expect(await canonCommits()).not.toBe(0);
+
+    // 8. Cost and accounting invariants hold with no duplicate or unattributed rows
+    expect(await verifyCostInvariants(pool, projectId)).toEqual([]);
   }, 300_000);
 
   // ---- C. lease loss still prevents every protected write ---------------------------------------------
 
   it('keeps lease fencing authoritative: a fenced-out run commits nothing', async () => {
     const mine = await acquire('worker-a');
+    let commitsBeforeLoss = 0;
     const { error, fired } = await whileRunning(
       async () => {
+        commitsBeforeLoss = await canonCommits();
         await releaseTargetLease(pool, mine);
         await acquire('worker-b');
       },
@@ -428,7 +573,7 @@ run('active provider-request cancellation (durable state)', () => {
     expect(fired).toBe(true);
     // Unchanged behaviour: lease loss remains LEASE_LOST, and cancellation did not weaken it.
     expect((error as WorkflowError).code).toBe('LEASE_LOST');
-    expect(await canonCommits()).toBe(0);
+    expect(await canonCommits()).toBe(commitsBeforeLoss);
     expect(await chapterStatus()).not.toBe('accepted');
   }, 300_000);
 
