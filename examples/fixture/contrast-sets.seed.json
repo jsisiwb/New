@@ -3104,6 +3104,277 @@
         "min_gap_prose_vs_translation_like": 43,
         "min_gap_structure_vs_western_english": 33
       }
+    },
+    {
+      "id": "cs-061",
+      "genre": "system-progression",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "A title is not a reward. A title is a contract the system wrote about you while you weren't looking.\n\nEvery title has a condition, and the condition is always a description of something you already did. That is the part people miss. You do not earn a title by trying; you earn it by being, for long enough, a particular kind of person in front of a system that keeps records.\n\nWhich means titles are the only honest mirror in the tower.\n\nDan-ho had eleven of them.\n\nNine were about surviving. Two were about who had kept him alive.",
+        "western_english": "It is commonly supposed by those who have not spent long in the tower that a title functions as a reward, granted in recognition of some achievement and carrying with it a corresponding benefit, and this supposition is not so much wrong as it is backwards. A title is better understood as a contract which the system has drawn up concerning a climber, in his absence and without his consent, on the basis of a condition that describes something he has already done. One does not, therefore, earn a title by making the attempt; one earns it by having been, over a sufficient interval and in full view of an apparatus that records everything, a particular sort of person. This makes the title list the single honest mirror available to anyone inside the structure, and Dan-ho possessed eleven of them, of which nine concerned his survival and two concerned the people responsible for it.",
+        "translation_like": "A title is not a reward thing. A title is a contract which the system wrote about you during the time when you were not looking at it.\n\nEvery title is having a condition, and the condition is always a description about a thing which you already did. That is the part which the people are missing. You do not earn a title by the trying; you earn it by the being, during enough long time, one particular kind of person at the front of a system which is keeping the records.\n\nBecause of that, the titles are the only one honest mirror at the inside of the tower.\n\nDan-ho was having eleven of them.\n\nNine of them were about the surviving. Two of them were about the person who kept him at the alive state.",
+        "literary": "There is a persistent misapprehension among climbers — encouraged, one suspects, by the guides, which are written by men selling classes rather than by men finishing dungeons — that a title constitutes a reward, a small civic honour bestowed upon merit. It does not. A title is a contract composed about a man in his absence, by an apparatus that neither admires nor despises him, upon a condition which is invariably a description of what he has already, unwittingly, been. One cannot pursue such a thing; one can only turn out to have satisfied it. And since the system is incapable of flattery, having no use for it, a man's title list is the one surface in that entire vertical country which returns his face at its actual size — which is why Dan-ho read his own eleven, from time to time, with the reluctance of a man consulting a ledger he has been avoiding.",
+        "weak_serial": "Many climbers assume that titles in the tower are rewards for achievements, but that is not really how the system works. Each title has a condition attached to it, and the condition always describes something that the climber has already done rather than something they are trying to do. This means that titles cannot be pursued directly. A climber receives one by having behaved in a particular way for a long enough period while the system was recording their activity. Because the system does not exaggerate or flatter anyone, the list of titles a person holds is a fairly accurate record of what they have actually been doing. Dan-ho had eleven titles at this point in his climb. Nine of them were related to survival, and the remaining two were about the people who had kept him alive."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-HOOK-01"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-062",
+      "genre": "academy",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "The academy does not expel students. It reassigns them.\n\nThere is no expulsion clause, because expulsion would end the contract, and the contract is the asset. So a student who fails is moved — to maintenance, to the archive, to the third-floor labs — and remains, on paper, enrolled.\n\nEnrolled students do not appear in the incident statistics. Only staff do. And a reassigned student is not staff either.\n\nThey are nothing, administratively.\n\nThe nineteen names in Ha-eun's ledger had all been nothing for four decades.",
+        "western_english": "Prospective families are frequently reassured to learn that the academy has never in its history expelled a student, and the claim is entirely true, though not in the sense in which it is generally received. There exists no expulsion clause in the enrolment contract, for the straightforward reason that expulsion would terminate the contract, and the contract — with its nine-year claim upon a graduate's employment and its total claim upon a withdrawn student's training — is the institution's principal asset. A student who fails is accordingly reassigned: to maintenance, to the archive, to the laboratories on the third floor. He remains enrolled on paper. Enrolled students do not appear in the incident statistics, which record only staff, and a reassigned student is not staff, so that the nineteen names in Ha-eun's ledger had occupied, for four decades, an administrative category containing nothing at all.",
+        "translation_like": "The academy is not doing the expulsion to the students. It is doing the reassignment of them.\n\nAn expulsion clause is not existing, because the expulsion would finish the contract, and the contract is the asset thing. So, a student who is failing becomes moved — to the maintenance, to the archive, to the third-floor labs — and he is remaining at the enrolled state at the paper.\n\nThe enrolled students are not appearing at the incident statistics. Only the staff persons are doing it. And a reassigned student is also not a staff person.\n\nThey are the nothing, at the administrative way.\n\nAll of the nineteen names at the ledger of Ha-eun were the nothing during four decades.",
+        "literary": "It is among the academy's proudest and most frequently repeated facts that it has never expelled a student, and the fact is unimpeachable, in the manner of facts constructed for the purpose. There is no expulsion clause. There could not be one: expulsion would dissolve the contract, and the contract — that instrument which claims nine years of a graduate's labour and the entirety of a withdrawn student's learning — is the only thing the institution genuinely owns. The failing student is therefore reassigned, which is to say relocated within the sentence rather than removed from it: to maintenance, to the archive, to the laboratories on the third floor, where he continues, on paper, to be enrolled. Enrolled students are absent from the incident statistics, those being reserved for staff. A reassigned student is not staff. He is, administratively speaking, nothing whatever.",
+        "weak_serial": "One thing that the academy often mentions is that it has never expelled a student, and this is technically accurate. The enrolment contract does not contain an expulsion clause, because expelling a student would end the contract, and the contract is valuable to the institution. When a student fails, they are reassigned to another part of the academy instead, such as maintenance, the archive, or the laboratories on the third floor. On paper, those students are still enrolled. The incident statistics that the academy publishes only cover staff members, and enrolled students are not included in them. A reassigned student does not count as staff either, so they do not appear anywhere in the records. The nineteen names in Ha-eun's ledger had been in this administrative position for about forty years."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "ST-EXP-02",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-063",
+      "genre": "hunter-gate",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "Every gate has an anchor, and every anchor belongs to somebody.\n\nThat sentence is the entire economy.\n\nThe Association sets the seal. The guild that recovers the anchor gets the closing fee. The guild that loses one pays for the widening, which is why no guild has ever reported losing one. They report theft. They report sabotage. Twice, memorably, they reported weather.\n\nSe-chan had recovered nine anchors as a porter, under nine different guild names, none of them his.\n\nHe had kept the serial numbers.",
+        "western_english": "The economics of gate closure are more straightforward than the industry's public statements would suggest, and rest upon a single fact: every gate possesses an anchor, and every anchor is owned. The Association sets the closing seal and pays a fee to whichever guild recovers the anchor, while a guild that loses one becomes liable for the cost of the resulting widening — an arrangement which has produced, in the two decades of its operation, not one single reported loss. Guilds report theft instead. They report sabotage. On two occasions which are still discussed in the disbursement office they reported adverse weather. Se-chan, who had worked those years as a porter rather than a contractor, had personally recovered nine anchors under nine different guild names, none of which were his own, and had retained, without mentioning it to anyone, the serial numbers.",
+        "translation_like": "Every gate is having an anchor, and every anchor is belonging to some person.\n\nThat sentence is the whole economy thing.\n\nThe Association is setting the seal. The guild which is recovering the anchor is getting the closing fee money. The guild which is losing one of them is paying for the widening, and that is the reason why no guild ever reported about losing one even one time. They are reporting the theft. They are reporting the sabotage. At two times, which are memorable, they reported the weather.\n\nSe-chan recovered nine anchors as a porter person, at the under of nine different guild names, and no one of them was his own.\n\nHe kept the serial numbers.",
+        "literary": "The whole of the gate economy rests upon a proposition so plain that it is almost never stated: every gate has an anchor, and every anchor belongs to someone. From this follows the seal, which the Association sets; and the closing fee, which goes to whichever guild recovers the stone; and the liability for widening, which falls upon whichever guild does not. And from that last clause follows the most instructive statistic in the industry, which is that no guild has ever, in twenty years, reported losing an anchor. They report theft. They report sabotage. Twice — and the disbursement clerks still speak of it — they reported weather. Se-chan had recovered nine of the things while employed as a porter, under nine guild names of which not one was his, and had kept, quietly and without any particular plan, the serial numbers.",
+        "weak_serial": "The system for closing gates works according to a fairly simple economic arrangement. Every gate contains an anchor, and each anchor has an owner. The Association is responsible for setting the closing seal, and the guild that recovers the anchor from inside the gate receives a closing fee for doing so. If a guild loses an anchor, that guild has to pay the cost of the resulting widening. Because of this liability, no guild has ever filed a report saying that it lost an anchor. Instead they file reports about theft or sabotage, and on two occasions they filed reports blaming the weather. Se-chan recovered nine anchors over the course of his career as a porter, and each one was credited to a different guild rather than to him. He kept a record of the serial numbers."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "ST-EXP-02",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-064",
+      "genre": "regression",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "The problem with knowing the future is that it is only ever valuable before it is provable.\n\nA prediction is worth a building on the eighth of March and worth nothing on the tenth. In between, for about thirty hours, it is worth exactly as much as the number of people willing to be embarrassed by you.\n\nThat is the whole skill. Not memory — memory is free. Timing, and the correct choice of witness.\n\nHa-ram had two names on her list who would be embarrassed for her.\n\nThe third name was the one she was saving.",
+        "western_english": "What is generally misunderstood about foreknowledge is that its value is not constant but perishable, and perishes precisely at the moment of its vindication. A prediction concerning the subway line was worth a commercial lot on the eighth of March and was worth nothing whatever on the tenth, the announcement having by then converted it into common information available to anyone with a newspaper. Between those two dates, for something in the region of thirty hours, it was worth exactly as much as the number of persons prepared to risk public embarrassment on the strength of it. This, rather than the remembering, is the actual discipline; memory costs nothing and is possessed in equal measure by every returned person. Ha-ram maintained a list, and on it were two names who would be embarrassed for her, and a third which she was reserving.",
+        "translation_like": "The problem about knowing the future is that it is only having the value at the before time of the proving.\n\nA prediction is worth one building at the eighth of March and is worth nothing at the tenth. At the between of them, during about thirty hours, it is worth exactly the same amount with the number of the people who are willing for being embarrassed by you.\n\nThat is the whole skill thing. Not the memory — the memory is free. It is the timing, and the correct choosing of the witness person.\n\nHa-ram was having two names at her own list who will be embarrassed for her.\n\nThe third name was the one which she was saving.",
+        "literary": "Foreknowledge is a perishable commodity, and what spoils it is not time but confirmation. On the eighth of March a prediction concerning a tunnel was worth a parcel of land; on the tenth, the announcement having made it the property of anyone with four pages of newsprint, it was worth nothing at all. Between these two conditions lies an interval of roughly thirty hours during which the prediction is worth precisely the number of people prepared to be humiliated on its behalf — and it is in the management of that interval, rather than in the tedious business of remembering, that the entire art consists. Memory is free; every returned soul has it, and most of them die of it. Timing is expensive. And the selection of a witness, Ha-ram had come to think, is the most expensive thing of all.",
+        "weak_serial": "One difficulty with having knowledge of future events is that the knowledge only has value while it cannot yet be proven. A prediction about the subway line was valuable enough to buy a commercial lot on the eighth of March, but by the tenth of March it was worth nothing at all, because the announcement had already been published and anyone could read it. In the roughly thirty hours between those two points, the value of the prediction depended entirely on how many people were willing to risk embarrassing themselves by acting on it. This is the part that actually requires skill, since remembering the events themselves does not require any effort. What matters is the timing and the choice of who to tell. Ha-ram had a list with two names on it of people who would take that risk for her, and a third name that she was holding in reserve."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "TRN-14"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02",
+          "ST-MON-02"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 37
+      }
+    },
+    {
+      "id": "cs-065",
+      "genre": "romance-fantasy",
+      "function": "exposition",
+      "variants": {
+        "kwn_english": "A household's secrets are not kept by the family. They are kept by the staff, and the staff are paid quarterly.\n\nThis is the part the nobility never learn, because they are raised to look through a servant the way one looks through a window.\n\nA steward knows the accounts. A dressmaker knows the measurements, which is to say the pregnancies. A groom knows every journey that was not entered in the book.\n\nVerena had been a ward before she was a lady, and a ward eats in the kitchen.\n\nShe knew all four of the quarter days by heart.",
+        "western_english": "It is an error peculiar to the nobility, and one that their upbringing makes nearly inevitable, to suppose that a household's secrets are the property of the family that generates them. They are not. They are held by the staff, who are paid four times in the year and who consequently possess both the information and a recurring occasion to consider its market value. A steward is acquainted with the accounts. A dressmaker is acquainted with the measurements, and therefore with the pregnancies. A groom can recite every journey that was never entered into the travel book. Verena had the advantage, if it may be called one, of having been a ward before she became a lady, and a ward takes her meals in the kitchen; she had learned the four quarter days there, and had never subsequently forgotten them.",
+        "translation_like": "The secrets of a household are not kept by the family. They are kept by the staff persons, and the staff persons are receiving the payment at the quarterly way.\n\nThis is the part which the nobility is never learning, because they are raised for looking through a servant person like the method which one is using for looking through a window.\n\nA steward is knowing the accounts. A dressmaker is knowing the measurements, and that means the pregnancies. A groom is knowing every journey which was not entered to the inside of the book.\n\nVerena was a ward at the before time of being a lady, and a ward is eating at the kitchen.\n\nShe was knowing all of the four quarter days by her own heart.",
+        "literary": "The nobility are educated, from an early and impressionable age, to look through a servant in the manner in which one looks through a window — attending to the garden beyond and never once to the glass — and from this single habit of vision descends the whole catastrophe. A household's secrets do not belong to the household. They belong to the staff, who are paid quarterly, and who therefore enjoy four annual opportunities to reflect upon what they know and what it might be worth to somebody. The steward has the accounts. The dressmaker has the measurements and thus the pregnancies. The groom has every journey the travel book declines to mention. Verena, having been a ward before she was ever a lady, had taken her meals in the kitchen among these people, and had learned the quarter days there as other girls learn their catechism.",
+        "weak_serial": "The secrets of an aristocratic household are generally not kept by the family members themselves. They are held by the staff, who are paid on a quarterly basis. Most nobles never realize this, because they are brought up to ignore servants almost entirely. The steward of a house has access to the accounts and knows the financial situation. The dressmaker takes the measurements and therefore knows about any pregnancies before they are announced. The groom knows about all of the journeys that were never recorded in the travel book. Verena had been a ward in the household before she was formally adopted and became a lady, and during that period she took her meals in the kitchen along with the staff. As a result she knew when all four of the quarter days fell during the year."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "TRN-14",
+          "TRN-16"
+        ],
+        "lint_western_english": [
+          "ST-EXP-01",
+          "ST-EXP-02",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-EXP-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
     }
   ],
   "register_cases": [
