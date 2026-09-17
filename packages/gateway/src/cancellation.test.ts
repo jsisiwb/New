@@ -332,6 +332,141 @@ describe('race safety', () => {
     }
   });
 
+  /**
+   * Review finding R-1. `reportLate` runs inside the observer chain, so a callback that threw rejected
+   * that internal promise — and because nothing awaits it on the late path, the rejection surfaced as an
+   * UNHANDLED REJECTION, which can take a worker process down. That is the exact failure this module
+   * promises to prevent, so a caller's bug must not be able to cause it.
+   */
+  it('contains a throwing late-result callback instead of crashing the process', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (err: unknown): void => {
+      unhandled.push(err);
+    };
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      // Both late paths: a late SUCCESS and a late FAILURE, each with a callback that throws.
+      for (const settleLate of [
+        (g: Deferred<string>) => {
+          g.resolve('a response nobody wanted');
+        },
+        (g: Deferred<string>) => {
+          g.reject(new Error('provider died after the abort'));
+        },
+      ]) {
+        const handle = composeCancellation([]);
+        const gate = deferred<string>();
+        const raced = raceCancellation(gate.promise, handle, () => {
+          throw new Error('late-result callback exploded');
+        });
+        handle.cancel('operator_cancelled');
+        // The cancellation still wins, with its own reason intact.
+        const err = await raced.catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(CancellationError);
+        expect((err as CancellationError).reason).toBe('operator_cancelled');
+        settleLate(gate);
+        await new Promise((r) => setImmediate(r));
+        handle.dispose();
+      }
+      await new Promise((r) => setImmediate(r));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
+  /** A non-Error rejection must still arrive as an Error, never as an unhandled non-Error throw. */
+  it('normalizes a non-Error provider rejection', async () => {
+    const handle = composeCancellation([]);
+    // Built through a deferred rather than `Promise.reject('…')` so the lint rule that (correctly)
+    // forbids rejecting with a non-Error does not block the very case being tested: an ADAPTER that
+    // rejects with a bare string, which the gateway must still surface as an Error.
+    const bare = deferred<string>();
+    const raced = raceCancellation(bare.promise, handle);
+    (bare as unknown as { reject: (v: unknown) => void }).reject('a bare string');
+    const err = await raced.catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain('a bare string');
+    handle.dispose();
+  });
+
+  /**
+   * Review of the D-2 repair ("bounded one-macrotask adoption"). The four properties the brief demands:
+   * usage reported across a microtask chain IS adopted, an adapter that never settles does NOT hang the
+   * cancellation, an adapter that answers too late CANNOT retroactively claim acknowledgement, and the
+   * outcome is deterministic.
+   */
+  it('adopts an adapter verdict only within its bound, and never hangs or guesses', async () => {
+    // (a) reported across several microtasks — adopted.
+    const adopted = composeCancellation([]);
+    const g1 = deferred<string>();
+    const r1 = raceCancellation(g1.promise, adopted);
+    adopted.cancel('operator_cancelled');
+    void Promise.resolve()
+      .then(() => undefined)
+      .then(() => undefined)
+      .then(() => {
+        g1.reject(
+          new CancellationError('operator_cancelled', {
+            remoteCancellation: 'acknowledged',
+            usage: { input: 11, output: 22, cached: 0 },
+          }),
+        );
+      });
+    const e1 = (await r1.catch((e: unknown) => e)) as CancellationError;
+    expect(e1.remoteCancellation).toBe('acknowledged');
+    expect(e1.detail.usage).toEqual({ input: 11, output: 22, cached: 0 });
+    adopted.dispose();
+
+    // (b) an adapter that NEVER settles must not delay the cancellation.
+    const hung = composeCancellation([]);
+    const r2 = raceCancellation(new Promise<string>(() => undefined), hung);
+    hung.cancel('worker_shutdown');
+    const e2 = (await r2.catch((e: unknown) => e)) as CancellationError;
+    expect(e2.reason).toBe('worker_shutdown');
+    // No claim about the remote side is invented from silence.
+    expect(e2.remoteCancellation).toBe('unknown');
+    hung.dispose();
+
+    // (c) an adapter answering after the bound cannot retroactively claim acknowledgement.
+    const late = composeCancellation([]);
+    const g3 = deferred<string>();
+    const r3 = raceCancellation(g3.promise, late);
+    late.cancel('operator_cancelled');
+    setTimeout(() => {
+      g3.reject(
+        new CancellationError('operator_cancelled', { remoteCancellation: 'acknowledged' }),
+      );
+    }, 30);
+    const e3 = (await r3.catch((e: unknown) => e)) as CancellationError;
+    expect(e3.remoteCancellation).not.toBe('acknowledged');
+    await new Promise((r) => setTimeout(r, 50));
+    late.dispose();
+  });
+
+  it('never lets an adapter relabel the reason that actually fired', async () => {
+    const handle = composeCancellation([]);
+    const gate = deferred<string>();
+    const raced = raceCancellation(gate.promise, handle);
+    handle.cancel('operator_cancelled');
+    // The adapter claims this was a timeout. An operator's decision is not the adapter's to rename.
+    gate.reject(new CancellationError('timeout', { remoteCancellation: 'unknown' }));
+    const err = (await raced.catch((e: unknown) => e)) as CancellationError;
+    expect(err.reason).toBe('operator_cancelled');
+    handle.dispose();
+  });
+
+  it('keeps abort listeners bounded when many calls share one parent signal', () => {
+    const parent = new AbortController();
+    const handles = Array.from({ length: 2_000 }, () =>
+      composeCancellation([{ signal: parent.signal, reason: 'operator_cancelled' }]),
+    );
+    for (const h of handles) h.dispose();
+    // Disposed handles must be fully detached: aborting the shared parent fires none of them.
+    parent.abort();
+    expect(handles.filter((h) => h.reason() !== undefined)).toHaveLength(0);
+  });
+
   it('reports a late success as discarded without resolving the cancelled call', async () => {
     const handle = composeCancellation([]);
     const gate = deferred<string>();

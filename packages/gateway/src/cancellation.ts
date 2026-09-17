@@ -365,7 +365,21 @@ export async function raceCancellation<T>(
   const reportLate = (outcome: LateResult<T>): void => {
     if (!raceSettled || lateReported) return;
     lateReported = true;
-    onLateResult?.(outcome);
+    /**
+     * The callback is ISOLATED from the observer chain.
+     *
+     * `reportLate` runs inside `observed`'s handlers, so a callback that throws used to reject that
+     * internal promise — and because nothing awaits `observed` on the late path, the rejection surfaced
+     * as an UNHANDLED REJECTION, which can take a worker process down. That is precisely the failure this
+     * module promises to prevent, so a caller's bug must not be able to cause it: the throw is contained
+     * and the late result is still recorded as delivered.
+     */
+    try {
+      onLateResult?.(outcome);
+    } catch {
+      // Deliberately swallowed. A late-result notification is advisory bookkeeping about a response that
+      // has already been discarded; it must never alter the cancellation outcome or crash the process.
+    }
   };
   const observed: Promise<LateResult<T>> = promise.then(
     (value) => {
