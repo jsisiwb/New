@@ -912,6 +912,11 @@ export function buildApi(options: ApiOptions): FastifyInstance {
         basis: summary.basis,
         currency: summary.currency,
         unit: summary.unit,
+        // Both forms are returned deliberately. `*_millicents` is the exact integer a client should
+        // compare or sum; `*_cents` is the human-facing decimal derived from it and is FRACTIONAL for
+        // sub-cent calls, which real replay-priced calls are. Returning only the cents figure invited
+        // exactly the truncation this route was corrected for.
+        total_cost_millicents: summary.total_cost_millicents,
         total_cost_cents: summary.total_cost_cents,
         calls: summary.calls,
         // Actual provider attempts behind those calls: greater than `calls` whenever a retry happened.

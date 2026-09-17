@@ -11,9 +11,14 @@
  * Every function here keeps those separate and reports both, because conflating them is the single way
  * cost reporting silently double-counts a fallback.
  *
- * MONEY IS INTEGER CENTS. Costs are summed as integers (PostgreSQL `numeric` → string → BigInt) and never
- * pass through a float, so no rounding drift can accumulate across a long run. Every returned monetary
- * value is an integer count of cents with the currency stated explicitly.
+ * MONEY IS MILLICENTS INTERNALLY, CENTS AT THE BOUNDARY. This is the correction that matters: the gateway
+ * computes cost as `(tokens × pricePerMTokCents) / 1_000_000`, which is FRACTIONAL — a replay-priced call
+ * costs `0.3` cents — and `llm_calls.cost_cents` is an unconstrained `numeric` that stores it exactly. An
+ * earlier version of this module parsed only the integral part, so every sub-cent call reported as zero
+ * and a 1000-call run reported 0 instead of 300. Values are therefore scaled to integer MILLICENTS
+ * (cents × 1000) before any arithmetic, summed as integers so no float drift can accumulate, and exposed
+ * in both forms: `*_millicents` is the exact integer, `*_cents` is the human-facing decimal derived from
+ * it. Nothing is truncated on the way in.
  *
  * TRUTHFULNESS. Recorded usage is what the gateway observed, which is not the same as a provider invoice.
  * Summaries label their basis (`recorded_replay` here, because every call in this repository is served by
@@ -28,6 +33,11 @@ type Queryable = Pool | Client;
 /** The unit every monetary value in this module is expressed in. Stated, never assumed. */
 export const COST_CURRENCY = 'USD' as const;
 export const COST_UNIT = 'cents' as const;
+/**
+ * Integer scale for exact arithmetic. The gateway's price table is per-million-tokens in cents, so a
+ * single call's cost can carry three decimal places; millicents represent that exactly as an integer.
+ */
+export const COST_SCALE = 1000 as const;
 
 /**
  * How a summary's numbers were obtained.
@@ -57,10 +67,12 @@ export interface CallAccounting {
   readonly job_id: string | null;
   readonly role: string;
   readonly status: string;
-  /** Authoritative total for the call, in integer cents. */
+  /** Authoritative total for the call. Exact integer millicents (cents × 1000). */
+  readonly cost_millicents: number;
+  /** The same value in cents, derived from `cost_millicents`. May be fractional; never truncated. */
   readonly cost_cents: number;
-  /** Sum of the per-attempt attributions. Must equal `cost_cents` when attempts are recorded. */
-  readonly attributed_cents: number;
+  /** Sum of the per-attempt attributions, in millicents. Must equal `cost_millicents`. */
+  readonly attributed_millicents: number;
   readonly attempts: number;
   readonly failed_attempts: number;
   readonly retried: boolean;
@@ -76,6 +88,9 @@ export interface CostDimension {
   readonly calls: number;
   /** Actual provider attempts behind those calls. Greater than `calls` whenever a retry happened. */
   readonly attempts: number;
+  /** Exact integer millicents. The authoritative figure for arithmetic and comparison. */
+  readonly cost_millicents: number;
+  /** Derived from `cost_millicents`; may be fractional because sub-cent calls are real. */
   readonly cost_cents: number;
   readonly retried_calls: number;
   readonly fallback_calls: number;
@@ -87,6 +102,8 @@ export interface CostSummary {
   readonly basis: CostBasis;
   readonly currency: typeof COST_CURRENCY;
   readonly unit: typeof COST_UNIT;
+  /** Exact integer millicents; `total_cost_cents` is derived from it. */
+  readonly total_cost_millicents: number;
   readonly total_cost_cents: number;
   readonly calls: number;
   readonly attempts: number;
@@ -127,13 +144,37 @@ function parseAttempts(value: unknown): AttemptRecord[] {
   return value.filter((a): a is AttemptRecord => typeof a === 'object' && a !== null);
 }
 
-/** Integer cents from a PostgreSQL `numeric`, which node-postgres returns as a string. */
-function cents(value: string | number | null | undefined): number {
+/**
+ * Exact integer millicents from a PostgreSQL `numeric`, which node-postgres returns as a string.
+ *
+ * The gateway's cost is fractional (`0.3` cents for a replay-priced call), so parsing only the integral
+ * part would report every sub-cent call as zero — the defect this function exists to prevent. Parsing is
+ * done on the decimal STRING rather than via `Number`, so no float rounding occurs: the fractional digits
+ * are padded or truncated to exactly three places and folded into an integer.
+ *
+ * A value with more than three decimal places is rounded half-up at the millicent, which is the smallest
+ * unit this system represents; that is a deliberate, documented quantization rather than silent loss.
+ */
+function toMillicents(value: string | number | null | undefined): number {
   if (value === null || value === undefined) return 0;
-  // Money never passes through a float: parse the integral part directly.
-  const text = String(value);
-  const integral = text.includes('.') ? text.slice(0, text.indexOf('.')) : text;
-  return Number(BigInt(integral === '' || integral === '-' ? '0' : integral));
+  const text = String(value).trim();
+  if (text === '' || text === '-') return 0;
+  const negative = text.startsWith('-');
+  const unsigned = negative ? text.slice(1) : text;
+  const dot = unsigned.indexOf('.');
+  const whole = dot === -1 ? unsigned : unsigned.slice(0, dot);
+  const fractionRaw = dot === -1 ? '' : unsigned.slice(dot + 1);
+  // Four digits so the fourth can decide a half-up rounding at the third.
+  const fraction = `${fractionRaw}0000`.slice(0, 4);
+  const scaled =
+    BigInt(whole === '' ? '0' : whole) * BigInt(COST_SCALE) + BigInt(fraction.slice(0, 3));
+  const rounded = Number(fraction[3]) >= 5 ? scaled + 1n : scaled;
+  return Number(negative ? -rounded : rounded);
+}
+
+/** Millicents rendered back as a cents number for human-facing output. */
+function millicentsToCents(millicents: number): number {
+  return millicents / COST_SCALE;
 }
 
 function hasUsableUsage(usage: unknown): boolean {
@@ -173,8 +214,9 @@ export async function callAccounting(db: Queryable, projectId: string): Promise<
       job_id: row.job_id,
       role: row.role,
       status: row.status,
-      cost_cents: cents(row.cost_cents),
-      attributed_cents: ordered.reduce((sum, a) => sum + cents(a.cost_cents), 0),
+      cost_millicents: toMillicents(row.cost_cents),
+      cost_cents: millicentsToCents(toMillicents(row.cost_cents)),
+      attributed_millicents: ordered.reduce((sum, a) => sum + toMillicents(a.cost_cents), 0),
       // A call with no recorded attempts still involved one actual provider attempt; treating it as
       // zero would under-report the attempt count for every pre-0011 row.
       attempts: ordered.length === 0 ? 1 : ordered.length,
@@ -236,7 +278,8 @@ export async function costSummary(
       key: row.group_key,
       calls: Number(row.calls),
       attempts: calls.reduce((sum, c) => sum + c.attempts, 0),
-      cost_cents: cents(row.cost_cents),
+      cost_millicents: toMillicents(row.cost_cents),
+      cost_cents: millicentsToCents(toMillicents(row.cost_cents)),
       retried_calls: calls.filter((c) => c.retried).length,
       fallback_calls: calls.filter((c) => c.fell_back).length,
       usage_unknown_calls: calls.filter((c) => c.usage_unknown).length,
@@ -249,7 +292,9 @@ export async function costSummary(
     basis: options.basis ?? 'recorded_replay',
     currency: COST_CURRENCY,
     unit: COST_UNIT,
-    total_cost_cents: items.reduce((sum, i) => sum + i.cost_cents, 0),
+    total_cost_millicents: items.reduce((sum, i) => sum + i.cost_millicents, 0),
+    // Derived from the exact integer sum, so a long run cannot accumulate float drift.
+    total_cost_cents: millicentsToCents(items.reduce((sum, i) => sum + i.cost_millicents, 0)),
     calls: items.reduce((sum, i) => sum + i.calls, 0),
     attempts: items.reduce((sum, i) => sum + i.attempts, 0),
     dimension,
@@ -280,16 +325,17 @@ export async function verifyCostInvariants(
     // Every ACTUAL attempt must be attributable once provenance exists.
     if (call.attempts < 1) violations.push({ id: 'attempt_count_below_one', detail: call.call_id });
     // Attribution must reconstruct the authoritative total, never exceed or duplicate it.
-    if (call.models.length > 0 && call.attributed_cents !== call.cost_cents)
+    if (call.models.length > 0 && call.attributed_millicents !== call.cost_millicents)
       violations.push({
         id: 'attribution_does_not_match_total',
-        detail: `${call.call_id}:${String(call.attributed_cents)}!=${String(call.cost_cents)}`,
+        detail:
+          `${call.call_id}:${String(call.attributed_millicents)}!=` + String(call.cost_millicents),
       });
     // A fallback must be visible as such, not hidden behind a single-model row.
     if (call.status === 'fallback_succeeded' && !call.fell_back)
       violations.push({ id: 'fallback_not_visible', detail: call.call_id });
     // A failed attempt that charged cost is possible; a SUCCEEDED call with negative cost is not.
-    if (call.cost_cents < 0) violations.push({ id: 'negative_cost', detail: call.call_id });
+    if (call.cost_millicents < 0) violations.push({ id: 'negative_cost', detail: call.call_id });
   }
 
   // The audit is append-only, so a duplicate idempotency key within a project would mean the same

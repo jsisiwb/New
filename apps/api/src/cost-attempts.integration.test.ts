@@ -36,6 +36,7 @@ interface CostBody {
   basis: string;
   currency: string;
   unit: string;
+  total_cost_millicents: number;
   total_cost_cents: number;
   calls: number;
   attempts: number;
@@ -44,6 +45,7 @@ interface CostBody {
     key: string | null;
     calls: number;
     attempts: number;
+    cost_millicents: number;
     cost_cents: number;
     retried_calls: number;
     fallback_calls: number;
@@ -210,6 +212,7 @@ run('API: attempt-level cost and provenance summary (B-4-6)', () => {
     expect(res.statusCode, res.body).toBe(200);
     const body: CostBody = res.json();
     expect(body.total_cost_cents).toBe(12);
+    expect(body.total_cost_millicents).toBe(12_000);
     expect(body.calls).toBe(2);
     // Three actual provider attempts behind two logical calls: the abandoned route is visible.
     expect(body.attempts).toBe(3);
@@ -237,13 +240,41 @@ run('API: attempt-level cost and provenance summary (B-4-6)', () => {
       wsA,
     );
     const body: CostBody = res.json();
-    const summed = body.items.reduce((sum, i) => sum + i.cost_cents, 0);
-    expect(body.total_cost_cents).toBe(summed);
+    // Reconcile on the exact integer field: comparing decimals would pass even if a sub-cent value had
+    // been silently truncated on the way out.
+    const summed = body.items.reduce((sum, i) => sum + i.cost_millicents, 0);
+    expect(body.total_cost_millicents).toBe(summed);
     const { rows } = await pool.query<{ total: string }>(
       'SELECT coalesce(sum(cost_cents),0)::text AS total FROM llm_calls WHERE project_id = $1',
       [projectA],
     );
-    expect(String(body.total_cost_cents)).toBe(rows[0]?.total);
+    expect(body.total_cost_cents).toBeCloseTo(Number(rows[0]?.total), 10);
+  });
+
+  it('reports a sub-cent cost exactly rather than truncating it to zero', async () => {
+    // Real replay-priced calls cost a fraction of a cent, so the API must not present them as free.
+    await writeCall(wsA, projectA, 'a-subcent', {
+      role: 'summarizer',
+      status: 'succeeded',
+      modelId: 'model-a',
+      costCents: 0.3,
+      usage: { input_tokens: 100, output_tokens: 200 },
+      attempts: [
+        {
+          attempt: 1,
+          model_id: 'model-a',
+          provider: 'replay',
+          outcome: 'succeeded',
+          cost_cents: 0.3,
+        },
+      ],
+    });
+    const res = await get(`/v1/projects/${projectA}/cost-attempts?dimension=role`, cookieA, wsA);
+    const body: CostBody = res.json();
+    const summarizer = body.items.find((i) => i.key === 'summarizer');
+    expect(summarizer?.cost_millicents).toBe(300);
+    expect(summarizer?.cost_cents).toBeCloseTo(0.3, 10);
+    expect(body.total_cost_millicents).toBe(12_300);
   });
 
   it('supports every documented dimension and rejects an unknown one', async () => {

@@ -139,7 +139,8 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
     expect(call?.retried).toBe(false);
     expect(call?.fell_back).toBe(false);
     expect(call?.cost_cents).toBe(7);
-    expect(call?.attributed_cents).toBe(7);
+    expect(call?.cost_millicents).toBe(7000);
+    expect(call?.attributed_millicents).toBe(7000);
     expect(await verifyCostInvariants(pool, projectA)).toEqual([]);
   });
 
@@ -177,7 +178,7 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
     expect(call?.fell_back).toBe(false);
     // The authoritative total stays 9. Attribution reconstructs it rather than adding to it.
     expect(call?.cost_cents).toBe(9);
-    expect(call?.attributed_cents).toBe(9);
+    expect(call?.attributed_millicents).toBe(9000);
     expect(await verifyCostInvariants(pool, projectA)).toEqual([]);
   });
 
@@ -211,7 +212,7 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
     const [call] = await callAccounting(pool, projectA);
     expect(call?.fell_back).toBe(true);
     expect(call?.models).toEqual(['model-a', 'model-b']);
-    expect(call?.attributed_cents).toBe(5);
+    expect(call?.attributed_millicents).toBe(5000);
     expect(await verifyCostInvariants(pool, projectA)).toEqual([]);
   });
 
@@ -459,6 +460,66 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
     expect(own.total_cost_cents).toBe(100);
   });
 
+  it('does not truncate a sub-cent cost to zero (regression: real replay calls cost 0.3 cents)', async () => {
+    // The gateway computes (tokens x pricePerMTokCents) / 1_000_000, so a replay-priced call genuinely
+    // costs a FRACTION of a cent and `llm_calls.cost_cents` is an unconstrained numeric that stores it.
+    // An earlier version of this module parsed only the integral part, so every real call reported 0.
+    await writeCall(projectA, wsA, jobA, {
+      key: 'k-subcent',
+      role: 'drafter',
+      status: 'succeeded',
+      modelId: 'model-a',
+      costCents: 0.3,
+      usage: { input_tokens: 100, output_tokens: 200 },
+      attempts: [
+        {
+          attempt: 1,
+          model_id: 'model-a',
+          provider: 'replay',
+          outcome: 'succeeded',
+          cost_cents: 0.3,
+        },
+      ],
+    });
+    const [call] = await callAccounting(pool, projectA);
+    expect(call?.cost_millicents).toBe(300);
+    expect(call?.cost_cents).toBeCloseTo(0.3, 10);
+    expect(call?.attributed_millicents).toBe(300);
+    const summary = await costSummary(pool, projectA, 'role');
+    expect(summary.total_cost_millicents).toBe(300);
+    expect(summary.total_cost_cents).toBeCloseTo(0.3, 10);
+    // And the attribution check must not fire spuriously on a fractional value.
+    expect(await verifyCostInvariants(pool, projectA)).toEqual([]);
+  });
+
+  it('sums many sub-cent calls exactly, with no float drift and no truncation', async () => {
+    // 1000 calls of 0.3 cents is exactly 300 cents. Truncation would report 0; a float accumulator
+    // would report 299.99999999999994. Only exact integer millicents give 300000 millicents.
+    for (let i = 0; i < 1000; i += 1) {
+      await writeCall(projectA, wsA, jobA, {
+        key: `k-subcent-${String(i)}`,
+        role: 'drafter',
+        status: 'succeeded',
+        modelId: 'model-a',
+        costCents: 0.3,
+        usage: { input_tokens: 1, output_tokens: 1 },
+        attempts: [
+          {
+            attempt: 1,
+            model_id: 'model-a',
+            provider: 'replay',
+            outcome: 'succeeded',
+            cost_cents: 0.3,
+          },
+        ],
+      });
+    }
+    const summary = await costSummary(pool, projectA, 'role');
+    expect(summary.total_cost_millicents).toBe(300_000);
+    expect(Number.isInteger(summary.total_cost_millicents)).toBe(true);
+    expect(summary.total_cost_cents).toBeCloseTo(300, 10);
+  });
+
   it('uses integer arithmetic so long runs cannot drift', async () => {
     // 1000 calls of 1 cent must total exactly 1000. A float accumulator would be fine here and wrong
     // later; asserting the exact integer keeps the representation honest.
@@ -483,7 +544,8 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
     }
     const summary = await costSummary(pool, projectA, 'role');
     expect(summary.total_cost_cents).toBe(1000);
-    expect(Number.isInteger(summary.total_cost_cents)).toBe(true);
+    expect(summary.total_cost_millicents).toBe(1_000_000);
+    expect(Number.isInteger(summary.total_cost_millicents)).toBe(true);
   });
 
   it('detects an attribution that does not reconstruct the authoritative total', async () => {
@@ -591,6 +653,11 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
       { id: 'COST-time-window-filtering', outcome: 'passed', invariants: ['window_filter_exact'] },
       { id: 'COST-tenant-isolation', outcome: 'passed', invariants: ['rls_scoped_cost_reads'] },
       { id: 'COST-integer-arithmetic', outcome: 'passed', invariants: ['no_float_drift'] },
+      {
+        id: 'COST-subcent-not-truncated',
+        outcome: 'passed',
+        invariants: ['fractional_cents_preserved', 'millicent_scale_exact'],
+      },
       {
         id: 'COST-attribution-mismatch-detected',
         outcome: 'passed',
