@@ -22,6 +22,7 @@
     "test:chaos": "node tools/run-chaos-drills.mjs",
     "drill:restore": "node tools/run-restore-drill.mjs",
     "test:security": "node tools/run-security-suite.mjs",
+    "test:costs": "node tools/run-cost-suite.mjs",
     "gen:types": "tsx tools/gen-types.ts",
     "check:types-fresh": "tsx tools/gen-types.ts --check",
     "validate:planning": "python3 tools/validate-planning-package.py --quiet",
