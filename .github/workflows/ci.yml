@@ -158,6 +158,30 @@ jobs:
             if (s.length < 16) { console.error(`::error::security suite reported ${s.length} scenarios, expected >= 16`); process.exit(1); }
             console.log(`defensive security: ${s.length} scenarios passed`);
           '
+      - name: Deterministic cost and attempt accounting, explicit run with its no-skip guard (B-4-6)
+        # `pnpm test:costs` replays 13 fixture scenarios through the real append-only audit and verifies
+        # its own durable report: every actual attempt attributable, per-attempt attribution
+        # reconstructing (never adding to) the authoritative total, retries and fallbacks visible, a
+        # replay unable to double-charge, partial/unknown usage staying unknown, integer arithmetic, and
+        # tenant isolation.
+        #
+        # The evidence is SYNTHETIC/replay. The guard fails if the report ever claims real billing
+        # calibration, which would need a provider invoice this system does not observe.
+        run: pnpm test:costs
+        env:
+          CI: 'true'
+      - name: Deterministic cost evidence (read from its own durable report)
+        run: |
+          node -e '
+            const r = require("./coverage/cost-report.json");
+            const s = r.scenarios ?? [];
+            if (r.basis !== "synthetic_replay") { console.error(`::error::unexpected cost basis ${r.basis}`); process.exit(1); }
+            if (r.real_billing_calibrated !== false) { console.error("::error::cost report claims real billing calibration"); process.exit(1); }
+            if (r.live_provider_calls !== 0) { console.error("::error::cost report records a live provider call"); process.exit(1); }
+            if (s.some((x) => x.outcome !== "passed")) { console.error("::error::a cost scenario did not pass"); process.exit(1); }
+            if (s.length < 13) { console.error(`::error::cost suite reported ${s.length} scenarios, expected >= 13`); process.exit(1); }
+            console.log(`deterministic cost accounting: ${s.length} scenarios passed (basis ${r.basis})`);
+          '
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
