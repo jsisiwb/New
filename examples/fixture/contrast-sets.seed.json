@@ -3917,6 +3917,276 @@
         "min_gap_prose_vs_translation_like": 42,
         "min_gap_structure_vs_western_english": 36
       }
+    },
+    {
+      "id": "cs-076",
+      "genre": "regression",
+      "function": "status_window",
+      "variants": {
+        "kwn_english": "The branch terminal printed her credit record while she watched.\n\n[Applicant: Ha-ram]\n[Accounts: 1 — opened 09 March]\n[Prior applications: 4]\n[Earliest: 11 years ago. Status: refused.]\n\nFour.\n\nShe had made one application in this life. The machine had counted the other three.\n\n*It isn't just him. The paperwork is coming back too.*\n\nThe clerk turned the screen away, apologized for the fault, and printed a clean copy.\n\nHa-ram kept the first one.",
+        "western_english": "The terminal at the branch produced her credit record while she stood at the counter, and it produced rather more of it than she had expected. The header gave her name and recorded a single account, opened on the ninth of March; beneath that it listed four prior applications, the earliest of them eleven years old and marked refused. She had submitted one application in the course of this life. The machine had somehow retained the other three, which belonged to lives that had not, in any sense the bank's systems ought to recognize, occurred. The clerk, observing her expression, turned the screen away from her and apologized for what he described as a fault in the record service, and printed her a clean copy, which she accepted. She also kept the first one.",
+        "translation_like": "The branch terminal printed her own credit record during the time when she was watching it.\n\n[Applicant: Ha-ram]\n[Accounts: 1 — it was opened at the 09 March]\n[Prior applications: 4]\n[The most early one: it is 11 years ago. Status: it was refused.]\n\nIt is four.\n\nShe made one application at this life. The machine counted the other three ones.\n\n*It is not only him. The paperwork is also coming back.*\n\nThe clerk turned the screen to the away direction, said the apology about the fault, and printed a clean copy.\n\nHa-ram kept the first one.",
+        "literary": "A credit record is a modest document and makes no claims to metaphysics, which is what made this one insupportable. It gave her name. It gave one account, opened on the ninth of March, which was correct. And then, in the flat grey dot-matrix of an institution with no opinions, it gave four prior applications, the earliest eleven years old and refused — four, where she had made one, the remaining three belonging to lives that had not occurred and could not be said to have left anything behind them except, apparently, paperwork. The clerk turned the screen away with the practiced delicacy of a man accustomed to customers discovering unpleasant things about themselves, apologized for the fault, and printed her a clean copy. She thanked him. She kept the first.",
+        "weak_serial": "Ha-ram was at the bank branch when the terminal printed out her credit record in front of her. The record listed her name and showed one account, which had been opened on the ninth of March, and this part was accurate. However, it also showed that she had made four prior applications, with the earliest one dated eleven years ago and marked as refused. She had only submitted a single application during this particular life, which meant that the system had somehow retained records from the other three. This suggested that documents from her previous lives were persisting in some way, similar to what had happened with the handwriting on the debt notice. The clerk turned the screen away and apologized for what he called a fault in the system, then printed a clean copy for her. She kept the original printout as well."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-14",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 41,
+        "min_gap_structure_vs_western_english": 35
+      }
+    },
+    {
+      "id": "cs-077",
+      "genre": "romance-fantasy",
+      "function": "status_window",
+      "variants": {
+        "kwn_english": "The registry stone lit when Verena set page nine against it.\n\n[Household of Aldren — standing: active]\n[Members: 3]\n[Steward — sworn 11 years]\n[Dressmaker — sworn 11 years]\n[Groom — sworn 11 years]\n[Head of household: vacant. Claim accepted from: bearer of the survivorship instrument.]\n\nEleven years. All three sworn in the same month the countess died.\n\nNot inherited. Re-sworn.\n\n*Somebody kept that household alive on purpose, and left the top of it empty.*\n\nVerena put her hand flat on the stone.",
+        "western_english": "The registry stone in the sub-office of the chancery was, by long custom, consulted only by clerks, and it illuminated when Verena laid the ninth page against its face. The record it gave was brief. The household of Aldren remained in active standing and consisted of three members — a steward, a dressmaker and a groom — each of whom had been sworn eleven years previously, which is to say in the same month in which the countess had died. The position at the head of the household was recorded as vacant, and the stone noted, in the formula the chancery uses for such things, that a claim upon it would be accepted from the bearer of the survivorship instrument. What this indicated to her was that the household had not been inherited at all but deliberately re-sworn and deliberately left incomplete.",
+        "translation_like": "The registry stone became lighted at the time when Verena put the page nine at the against of it.\n\n[Household of Aldren — the standing is: active]\n[Members: 3 persons]\n[Steward — he is sworn during 11 years]\n[Dressmaker — she is sworn during 11 years]\n[Groom — he is sworn during 11 years]\n[Head of household: it is vacant. The claim is accepted from: the bearer person of the survivorship instrument.]\n\nIt is eleven years. All of the three persons were sworn at the same month when the countess died.\n\nIt is not the inherited one. It is the re-sworn one.\n\n*Some person kept that household at the alive state on the purpose, and left the top of it at the empty state.*\n\nVerena put her own hand at the flat position on the stone.",
+        "literary": "The registry stone is a clerk's instrument and has no gift for drama, which is perhaps why its disclosures land as they do. It lit under the ninth page and gave up the household of Aldren in six flat lines: active standing, three members, a steward and a dressmaker and a groom, each sworn eleven years since — which is to say each sworn in the month the countess was buried, when a household ought properly to have been dissolved and its people scattered into other service. And at the head of it, where a name belongs, the stone offered the word vacant, together with the chancery's standard formula concerning the bearer of the survivorship instrument. A household is not inherited into that condition. A household is held in it, at expense, by someone patient.",
+        "weak_serial": "Verena took page nine to the chancery sub-office and held it against the registry stone, which lit up and displayed the record. The household of Aldren was listed as being in active standing with three members: a steward, a dressmaker, and a groom. Each of the three had been sworn into the household eleven years earlier, which was the same month in which the countess had died. Normally a household would be dissolved after the death of its head, so this was unusual. The record also showed that the position of head of household was currently vacant and that a claim could be accepted from whoever held the survivorship instrument. Verena concluded from this that someone had deliberately kept the household in existence and had left the top position open. She placed her hand on the stone."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-09",
+          "TRN-13",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "EP-ADV-01"
+        ],
+        "min_gap_prose_vs_translation_like": 40,
+        "min_gap_structure_vs_western_english": 34
+      }
+    },
+    {
+      "id": "cs-078",
+      "genre": "system-progression",
+      "function": "status_window",
+      "variants": {
+        "kwn_english": "[Status — Dan-ho (copy)]\n[Floors cleared: 100]\n[Titles: 11]\n[Deaths recorded: 0]\n[Original's deaths recorded: 1]\n\nOne.\n\nDan-ho scrolled. There was a line under it that had never been there before, greyed, unselectable.\n\n[Merge available at Floor 12. Warning: merge resolves to the earlier record.]\n\nThe earlier record had died on floor twelve.\n\n*So the offer is: go down, become him, and be dead.*\n\nHe read the whole window again, slowly, looking for the part that was a lie.\n\nHe could not find one. That was the worrying part.",
+        "western_english": "The status window opened under a heading he had not previously seen, which described him as a copy, and gave beneath it the figures he expected: one hundred floors cleared, eleven titles held, no deaths recorded. Beneath those it gave one further figure, for the original, and the figure was one. He scrolled, and found a line that had not existed before that moment, greyed out and unselectable, offering a merge at floor twelve and warning in the system's characteristic flatness that a merge resolves to the earlier record. The earlier record had died on the twelfth floor. The proposition, then, was that he might descend, become the man whose place he had been occupying, and be dead. He read the window through a second time, slowly, looking for the false statement, and did not find one.",
+        "translation_like": "[Status — Dan-ho (the copy one)]\n[Floors which are cleared: 100]\n[Titles: 11 of them]\n[Deaths which are recorded: 0]\n[Deaths of the original one which are recorded: 1]\n\nIt is one.\n\nDan-ho did the scrolling. There was a line at the under of it which never was at there at the before time, at the grey colour, and it is not selectable.\n\n[The merge is available at the Floor 12. Warning: the merge is resolving to the more early record.]\n\nThe more early record died at the floor twelve.\n\n*So, the offer is this: go to the down, become him, and be at the dead state.*\n\nHe read the whole window one more time, at the slow way, and he was looking for the part which is a lie.\n\nHe could not find one. That was the part which is worrying.",
+        "literary": "The heading was new and described him, without apparent malice, as a copy. Beneath it the familiar arithmetic: a hundred floors, eleven titles, no deaths — and then, appended in the same typeface and with the same absence of ceremony, a single death belonging to the original. He scrolled, and the window produced a line greyed beyond selection which had certainly not existed an hour before, offering a merge at the twelfth floor and observing, in the manner of a clerk noting a filing convention, that a merge resolves to the earlier record. The earlier record was a corpse. So that was the offer, then, laid out with the appalling courtesy of a machine that has never once had a motive: descend, become the man, and be dead. He read it through again looking for the lie, and the absence of one was the worst of it.",
+        "weak_serial": "Dan-ho opened his status window and saw that the heading now described him as a copy rather than by his name alone. The window showed that he had cleared one hundred floors, held eleven titles, and had no recorded deaths. Below that there was an additional line showing that the original version of him had one recorded death. He scrolled down further and found a greyed-out line that had not been present before, which stated that a merge was available at floor twelve and warned that a merge would resolve to the earlier record. Since the earlier record had died on floor twelve, this meant that merging would result in his own death. He read through the entire window a second time to look for anything that might be inaccurate, but he could not find anything wrong with it."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-HOOK-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-HOOK-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 39,
+        "min_gap_structure_vs_western_english": 33
+      }
+    },
+    {
+      "id": "cs-079",
+      "genre": "academy",
+      "function": "status_window",
+      "variants": {
+        "kwn_english": "The replacement crystal read Ha-eun in four seconds, which was fast enough to be a compliment and slow enough to be a warning.\n\n[Aptitude Assessment — Ha-eun]\n[Classification: retained]\n[Output: within band]\n[Cross-reference: 1 match in maintenance records]\n[Match: resin purchase, 40 years, signatory deceased]\n\nThe fourth line was not a line the test produced.\n\nSomebody had connected the aptitude register to the maintenance ledger, on purpose, four decades ago, and left the query running.\n\n*He didn't just want it kept in service.*\n\n*He wanted it to tell the next one.*",
+        "western_english": "The replacement crystal completed its reading in four seconds, an interval which the proctors regarded as respectable without being remarkable, and produced a result sheet of the ordinary kind: classification retained, output within band, nothing on the face of it to detain anybody. It was the fourth line that did not belong. The aptitude assessment does not, in the normal course of its operation, cross-reference anything, and this one reported a single match in the maintenance records — a purchase of resin, four decades old, whose signatory was recorded as deceased. Ha-eun understood from this that somebody had at some point joined the aptitude register to the maintenance ledger deliberately, and had left the query in place, so that the connection would surface not for him but for whoever came afterward and read the sheet carefully.",
+        "translation_like": "The replacement crystal read Ha-eun during four seconds, and it was fast enough for being a compliment and slow enough for being a warning.\n\n[Aptitude Assessment — Ha-eun]\n[Classification: it is the retained one]\n[Output: it is at the inside of the band]\n[Cross-reference: 1 match at the maintenance records]\n[Match: it is the resin purchase, 40 years, and the signatory person is deceased]\n\nThe fourth line was not a line which the test is producing.\n\nSome person connected the aptitude register to the maintenance ledger, on the purpose, at four decades ago, and left the query at the running state.\n\n*He did not only want that it will be kept at the service.*\n\n*He wanted that it will tell to the next person.*",
+        "literary": "Four seconds is a respectable interval, fast enough to be taken for a compliment by those disposed to give one and slow enough to be taken for something else by those who are not. The sheet came out in the ordinary form: classification retained, output within band, the two unremarkable phrases with which an institution declines to be interested in a student. And then the fourth line, which the aptitude assessment does not generate, because the aptitude assessment cross-references nothing — one match in the maintenance records, a purchase of resin four decades old, the signatory deceased. Somebody had wired the register to the ledger on purpose and left the query running, which is what a man does when he has understood that he will not live to be asked and has decided to answer anyway.",
+        "weak_serial": "Ha-eun was assessed using the replacement crystal, and the reading took four seconds to complete. The result sheet showed that her classification was retained and that her output fell within the normal band. There was also a fourth line on the sheet, which listed a cross-reference with one match in the maintenance records. The match was the resin purchase from forty years earlier, and it noted that the person who signed for it was deceased. The aptitude assessment does not normally cross-reference any other records, so this line should not have appeared at all. Ha-eun concluded that someone had deliberately connected the aptitude register to the maintenance ledger several decades ago and had left the query active. This meant the technician had wanted the information to reach whoever came later."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-10",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-HOOK-01"
+        ],
+        "min_gap_prose_vs_translation_like": 42,
+        "min_gap_structure_vs_western_english": 36
+      }
+    },
+    {
+      "id": "cs-080",
+      "genre": "hunter-gate",
+      "function": "status_window",
+      "variants": {
+        "kwn_english": "The evacuation panel would not accept the building.\n\n[Emergency Closure Request — residential, 12 floors]\n[Gate: unregistered]\n[Anchor: none on record]\n[Closing fee: not applicable]\n[Request status: rejected — no closable asset]\n\nSe-chan read the last line, and then read it to the manager, and then read it to the forty residents in the lobby.\n\nThe system could not close a gate it had no record of. It could not create a record without an anchor. It could not register an anchor without a recovery fee, and the fee required a guild, and the guild required the gate to exist.\n\n“So nobody's coming,” the manager said.\n\n“Nobody's coming,” Se-chan agreed, and took the crowbar off the wall.",
+        "western_english": "The emergency closure request was submitted at eleven in the evening from the lobby terminal and was refused within the minute, on grounds which were, from the system's point of view, entirely coherent. The gate was unregistered. There was accordingly no anchor on record, and without an anchor no closing fee could be calculated, and without a closing fee there was no closable asset, and a request concerning no closable asset is not a request that the Association's software is able to accept. Se-chan read the rejection aloud, first to the building manager and then to the forty residents assembled in the lobby, and explained the circularity: no record without an anchor, no anchor without a fee, no fee without a guild, and no guild without a gate the system agreed existed. The manager observed that nobody was coming, and Se-chan agreed, and took the crowbar from the wall.",
+        "translation_like": "The evacuation panel would not accept the building.\n\n[Emergency Closure Request — it is residential, 12 floors]\n[Gate: it is the unregistered one]\n[Anchor: there is none at the record]\n[Closing fee: it is not applicable]\n[Request status: it is rejected — there is no closable asset]\n\nSe-chan read the last line, and after that read it to the manager, and after that read it to the forty persons of residents at the lobby.\n\nThe system could not close a gate which it is having no record about. It could not make a record without an anchor. It could not do the registration of an anchor without a recovery fee, and the fee was requiring a guild, and the guild was requiring that the gate is existing.\n\n“So, no person is coming,” the manager said.\n\n“No person is coming,” Se-chan agreed, and took the crowbar from the wall.",
+        "literary": "Bureaucracy achieves its purest form when it becomes a closed curve, and the lobby terminal produced one at eleven in the evening with no apparent sense of occasion. The request was refused. The gate was unregistered; therefore no anchor stood on record; therefore no closing fee could be reckoned; therefore there existed no closable asset, and a request concerning nothing is not a request at all. Se-chan read it to the manager and then, because forty people were standing in the lobby with their coats over their nightclothes and deserved to hear the shape of the thing, to all of them: no record without an anchor, no anchor without a fee, no fee without a guild, no guild without a gate the machine would agree was there. The manager said that nobody was coming. It was not, in fairness, a question.",
+        "weak_serial": "Se-chan submitted an emergency closure request from the terminal in the building lobby, but the system rejected it. The rejection stated that the gate was unregistered, that no anchor was on record, and that no closing fee was applicable, so there was no closable asset for the request to apply to. He read the rejection message out loud to the building manager and then to the forty residents who had gathered in the lobby. He explained that the system could not close a gate without a record of it, could not create a record without an anchor, could not register an anchor without a recovery fee, and could not issue a fee without a guild, which in turn required the gate to be officially recognized. The manager said that this meant nobody was going to come and help them. Se-chan agreed and took the crowbar down from the wall."
+      },
+      "expected": {
+        "prose_rank": [
+          "kwn_english",
+          "western_english",
+          "literary",
+          "weak_serial",
+          "translation_like"
+        ],
+        "structure_rank": [
+          "kwn_english",
+          "translation_like",
+          "literary",
+          "western_english",
+          "weak_serial"
+        ],
+        "lint_translation_like": [
+          "TRN-01",
+          "TRN-04",
+          "TRN-13",
+          "ST-SYS-01"
+        ],
+        "lint_western_english": [
+          "ST-SYS-01",
+          "ST-EXP-01",
+          "EP-LEN-01",
+          "EP-LEN-02"
+        ],
+        "lint_weak_serial": [
+          "ST-SYS-01",
+          "ST-PAY-01",
+          "ST-END-01",
+          "ST-EXP-01"
+        ],
+        "lint_literary": [
+          "ST-SYS-01",
+          "EP-LEN-01",
+          "EP-LEN-03",
+          "ST-EXP-01"
+        ],
+        "min_gap_prose_vs_translation_like": 43,
+        "min_gap_structure_vs_western_english": 37
+      }
     }
   ],
   "register_cases": [
