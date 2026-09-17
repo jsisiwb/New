@@ -9,3 +9,6 @@ export * from './identity.js';
 export * from './job-control.js';
 export * from './leases.js';
 export * from './operator-resources.js';
+export * from './restore-safety.js';
+export * from './restore-drill.js';
+export * from './restore-report.js';
