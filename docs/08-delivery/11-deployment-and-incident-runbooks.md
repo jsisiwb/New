@@ -706,15 +706,41 @@ than the one under calibration proves nothing, and the hash is the only thing th
 
 ### 10A.2 Generate
 
-`generatePackets(pairs, { seed })` produces one packet per reviewer slot plus one private manifest each.
+There is **no CLI command for this round**: `packages/eval/src/review-packet.ts` is a library, and nothing
+in `package.json` wraps it. An operator runs it through `tsx` against the loaded corpus. The exact
+signatures matter, because calling them wrongly is the easiest way to waste a reviewer's time:
+
+```ts
+// tsx scratch/round.mts — one pair per set: the positive target against its Western-drift sibling.
+import { loadCorpus } from './packages/eval/src/corpus.js';
+import { generatePackets } from './packages/eval/src/review-packet.js';
+
+const corpus = loadCorpus(); // record corpus.hash with the round
+const pairs = corpus.sets.map((s) => ({
+  setId: s.id,
+  genre: s.genre,
+  narrativeFunction: s.function,
+  left:  { setId: s.id, genre: s.genre, narrativeFunction: s.function,
+           variantClass: 'kwn_english',     text: s.variants.kwn_english },
+  right: { setId: s.id, genre: s.genre, narrativeFunction: s.function,
+           variantClass: 'western_english', text: s.variants.western_english },
+}));
+const { packets, manifests } = generatePackets(pairs, { seed: '<recorded-seed>' });
+```
+
+`generatePackets(pairs, { seed })` returns one packet per reviewer slot plus one private manifest each.
+Neither packets nor manifests are written to disk by the tooling — the operator chooses where they go, and
+they must not go to the same place.
 
 - The **seed** must be recorded with the round. It is the only way to regenerate the exact packet a
   reviewer saw, and a round that cannot be regenerated cannot be audited.
 - Each reviewer gets an independent item order and an independent A/B side assignment, so neither a
   neighbour's packet nor a positional habit leaks the answer.
-- A packet carries **no** model id, provider, route, variant class or prompt version — only the genre and
-  narrative function, so a reviewer can be told what kind of passage this is and never which system wrote
-  it. Verify before sending: the packet JSON must contain no variant-class token.
+- A packet carries **no** model id, provider, route, variant class or prompt version — a packet object
+  exposes only `packetId`, `reviewerSlot`, `seed`, `protocol`, `items`, `contentHash`, `assignmentHash`
+  and `status`, and an item only `itemId`, `genre`, `narrativeFunction`, `a` and `b`. Verify before
+  sending by checking those key sets, not by grepping the prose: the passages themselves legitimately
+  contain words like "model" and "route".
 - Generation **refuses** to produce a short packet rather than silently weakening the protocol.
 - Ship the packets. **Keep the manifests.** The manifest is the answer key; sending it to a reviewer voids
   the round.
@@ -734,8 +760,12 @@ an altered packet, or a reviewer who did not finish.
 
 ### 10A.4 Report and decide
 
-`reviewReport` computes pairwise Spearman per scale with average-rank tie handling, and returns `NaN`
-rather than a fabricated number when a reviewer's series has no variance. `recommendThresholds` then
+`reviewReport(packets, responsesByReviewer)` takes **all** reviewers' packets and a
+`Map<reviewerId, ReviewResponse[]>` of already-imported responses — not a single packet and not a raw
+array, because inter-rater agreement is undefined for one reviewer. It compares items across reviewers by
+SET rather than by item id, since each packet has its own ids and its own side assignment. It computes
+pairwise Spearman per scale with average-rank tie handling, and returns `NaN` rather than a fabricated
+number when a reviewer's series has no variance. `recommendThresholds` then
 reports whether the protocol's preconditions are met — fewer than three reviewers, fewer than 30 passages,
 or any scale whose minimum pairwise Spearman is below 0.8 are returned as explicit blockers.
 
