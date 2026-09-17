@@ -134,6 +134,30 @@ jobs:
             if (passed < 22) { console.error(`::error::restore drill reported ${passed} passing invariants, expected >= 22`); process.exit(1); }
             console.log(`restore drill: ${passed} invariants passed on PostgreSQL ${r.postgres_version}`);
           '
+      - name: Defensive security suite, explicit run with its no-skip guard (B-4-4)
+        # `pnpm test:security` runs the tenant-isolation, authentication/authorization, input/output,
+        # telemetry and rate-limit boundary suites and verifies its own durable report. Defensive only:
+        # the suites drive the app's local test client with inert inputs and assert REFUSAL. No scanner,
+        # no brute-force, no credential harvesting, no command-execution demonstration.
+        #
+        # The RLS half needs real PostgreSQL 16, so the runner refuses to start without DATABASE_URL —
+        # a silently skipped isolation suite proves nothing about tenant isolation.
+        run: pnpm test:security
+        env:
+          CI: 'true'
+      - name: Defensive security evidence (read from its own durable report)
+        run: |
+          node -e '
+            const r = require("./coverage/security-report.json");
+            const s = r.scenarios ?? [];
+            if (r.defensive_only !== true) { console.error("::error::security report does not declare itself defensive-only"); process.exit(1); }
+            if (s.some((x) => x.outcome !== "passed")) { console.error("::error::a security scenario did not pass"); process.exit(1); }
+            for (const surface of ["rls", "input_output", "telemetry", "rate_limit"]) {
+              if (!s.some((x) => x.surface === surface)) { console.error(`::error::no scenario covers the ${surface} surface`); process.exit(1); }
+            }
+            if (s.length < 16) { console.error(`::error::security suite reported ${s.length} scenarios, expected >= 16`); process.exit(1); }
+            console.log(`defensive security: ${s.length} scenarios passed`);
+          '
       - name: Deterministic contrast regression (no credentials, no provider calls)
         run: pnpm validate:contrast
       - name: CLI smoke against the migrated database
