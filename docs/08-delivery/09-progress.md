@@ -95,10 +95,12 @@ version numbering across quarantined versions.
 - Fixture manuscripts: only ch.9 (accepted) and its rejected draft exist as text; ch.12/ch.14 evidence is
   described, not addressable, until Checkpoint 5 produces them.
 - Thresholds in profiles and policies are `uncalibrated`.
-- **B-4-5 is PARTIAL.** The contrast corpus remains at **40 sets**; no expansion toward 100 has been
-  attempted (padding it with near-duplicates to reach a number would defeat its purpose). Blinded reviewer
-  tooling exists and is tested, but **generated packets are not human review**: no reviewer has seen one,
-  no judgment exists, and calibration stays `uncalibrated`.
+- **B-4-5 is PARTIAL.** The contrast corpus remains at **40 sets** — the target is 100, so **B-4-5a is
+  incomplete**. The distinctness and coverage GATE for an expansion is now implemented and tested
+  (`packages/eval/src/distinctness.ts`), and the accepted corpus passes it with 1.76x headroom, but no new
+  sets were authored. See "B-4-5a corpus expansion" below for why the count was not increased. Blinded
+  reviewer tooling exists and is tested, but **generated packets are not human review**: no reviewer has
+  seen one, no judgment exists, and calibration stays `uncalibrated`.
 - **Phase 4 external blockers, all still open.** Live 20-chapter × five-night validation (B-4-1b) and the
   real-provider outage drill (B-4-2b) need paid providers. Staging restore, production restore, PITR,
   off-site backup and RTO/RPO (B-4-3c) need a deployment environment. Live credential rotation (B-4-3d)
@@ -305,6 +307,35 @@ continuation brief; their SHAs are exactly as specified.
 | 6a | Deterministic cost/attempt accounting (B-4-6) | **done** (evidence below) | attempt-level spend was recorded but never read |
 | 6b | Attempt-level cost API surface (B-4-6) | **done** (evidence below) | retry/fallback visibility had no API |
 | 6c | Real billing calibration against provider invoices | **not run** — needs live providers and invoices | unchanged |
+
+### B-4-5a corpus expansion — GATE implemented, corpus NOT expanded
+
+**Status: incomplete and deliberately not padded.** The corpus is **40 sets**; the target is 100.
+
+**What was delivered.** `packages/eval/src/distinctness.ts` is the deterministic gate an expansion needs:
+structural integrity (duplicate ids, empty/trivial variants, identical sides within a set, ranks omitting
+a class they ship) plus same-class near-duplicate detection across every pair of sets, using
+character-trigram Jaccard over normalized text. It is explainable by construction — a failure reports both
+ids, the score and the longest shared fragment. The threshold `0.60` is calibrated against the accepted
+corpus, whose highest same-class similarity between two different authored sets is **0.341**
+(`cs-020`/`cs-022`), giving **1.76x headroom**. 19 tests, including proof that it catches a
+renamed-character copy of a real set and a punctuation-only reskin, and that it does NOT reject two
+genuinely different passages of the same genre and function.
+
+**Why the corpus was not expanded here.** Each set is five parallel renderings of one passage
+(`kwn_english`, `western_english`, `translation_like`, `literary`, `weak_serial`) averaging **467 words per
+set**, each rendering deliberately exhibiting its class's craft signature, with an authored per-set
+`prose_rank`, `structure_rank` and `min_gap_*` that the frozen replay fixtures derive scores from. Sixty
+further sets is therefore roughly **28 000 words of original, class-calibrated craft prose**, not a
+data-entry task. Producing it at volume within one automated session would have meant template repetition
+or paraphrase — which `AGENTS.md`, the B-4-5a brief and the new gate all forbid, and which would make the
+corpus measurably worse by diluting 280 real discriminations with filler.
+
+**The defensible count of 40 is preserved rather than inflated.** The gate means an incremental expansion
+can now be attempted safely, a few sets at a time, with padding rejected automatically.
+
+**Unchanged by this work:** 40 sets, 800 evaluations, 280/280 agreement, 0 false positives, 0 false
+negatives, thresholds **`uncalibrated`**. No corpus text was added, altered or removed.
 
 ### Phase 4 tranche 5 — blinded reviewer tooling (B-4-5, automation portion only)
 
