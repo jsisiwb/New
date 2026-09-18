@@ -118,6 +118,7 @@ selection; default production under `standard.v1` still generates one candidate.
 | B-4-5 | P0 | Bilingual reviewer evaluation round; threshold calibration to `contrast_calibrated`. **B-4-5a (contrast corpus to 100 distinct sets) is implemented and merged upstream** (PR #13); the remaining work is the human review and calibration round, which needs reviewers | 4d |
 | B-4-6 | P1 | Cost calibration; dashboards | 3d |
 | B-4-7 | P0 | Safe cancellation of already-running provider requests. **Automated scope implemented** (abort-signal propagation through gateway/retry/repair/fallback, Temporal activity and lease-loss signals, durable-intent probe, truthful cancelled-call accounting in migration 0012). Remaining: **confirmed remote cancellation and real post-abort billing against a live provider API**, which needs paid provider access | 2d |
+| B-4-8 | P0 | Database least privilege, RLS, migration-safety and recovery-integrity hardening. **Automated scope implemented** (ADR-0050, migration 0014): append-only, immutable and canon-history tables no longer hold redundant request-scoped `UPDATE`/`DELETE`, `EXECUTE` is no longer granted to `PUBLIC` across the `canon` schema, sequence and default privileges narrowed, 22 new deterministic tests, restore drill extended from 23 to 40 invariants covering security metadata and re-executed post-restore behaviour. Remaining: **the same model verified on a deployed cluster**, which needs staging or production infrastructure | 1d |
 
 ## Phase 5 — Beta (summary items)
 

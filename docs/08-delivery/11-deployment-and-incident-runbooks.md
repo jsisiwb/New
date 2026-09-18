@@ -76,6 +76,23 @@ leak between pooled requests.
 is not a superuser — because that is exactly the misconfiguration that would make every other isolation test
 pass for the wrong reason.
 
+The role is also **not the owner** of any protected table, which is what stops it disabling an append-only
+trigger to get around a revocation, and its grants follow each table's mutation model rather than a blanket
+`GRANT ... ON ALL TABLES` (ADR-0050, migration `0014`):
+
+| Table class | Grants to `yeonjae_app` | Second layer |
+| --- | --- | --- |
+| Append-only / immutable (`audit_log`, `job_events`, `workflow_artifacts`, `context_packs`, `active_constraint_sets`, `llm_calls`) | `INSERT`, `SELECT` | `BEFORE UPDATE OR DELETE` trigger refusing every caller, including the owner and raw SQL |
+| Canon history (`facts`, `events`, `propositions`, evidence/participant joins, `canon_commits`) | `INSERT`, `SELECT`, `UPDATE` | `canon_write_guard` (writes only inside `canon.commit_delta`) plus a statement trigger refusing `DELETE`/`TRUNCATE`. `UPDATE` is retained because `commit_delta` is `SECURITY INVOKER` |
+| Identity / ledger (`users`, `sessions`, `schema_migrations`, prompt registry) | none, or `SELECT` only | the unscoped owner path performs these operations (migration `0007`) |
+
+`EXECUTE` on `canon` functions is granted to named roles only — never `PUBLIC` — and future `canon`
+functions, future sequences and future tables inherit narrow default privileges so the model cannot widen
+silently. `packages/db/src/append-only-privileges.integration.test.ts` asserts every one of these
+properties at a real request-scoped connection, and
+`packages/db/src/migration-replay.integration.test.ts` asserts that a clean install and an upgrade
+converge on the same privilege state.
+
 ### 2.2 Migrations
 
 Forward-only and content-hashed. The runner records each file's SHA-256 and **refuses to start** if an
@@ -93,6 +110,11 @@ silent divergence between environments.
 | `0007_app_role_least_privilege` | narrowed grants after the privilege audit |
 | `0008_target_leases` | fenced target leases (TTL + monotone fence) |
 | `0009_lease_fence_assertion` | `canon.assert_lease_fence` — the in-transaction fence assertion (ADR-0048) |
+| `0010_operator_resources` | operator-authored resources (identity/plan documents, concept selections, register profiles, directions, reviews) with their shape and lock triggers |
+| `0011_attempt_provenance` | per-attempt provenance on `llm_calls` (`canon.assert_attempt_records`) |
+| `0012_cancellation_provenance` | cancellation provenance on `llm_calls`; `unknown` usage/billing is first-class and a false zero is refused (ADR-0049) |
+| `0013_llm_calls_audit_grants` | made the append-only claim true at the GRANT layer for `llm_calls` (`UPDATE`/`DELETE` revoked from `yeonjae_app`) and tightened the cancellation trigger |
+| `0014_append_only_least_privilege` | the same repair across the rest of the model (ADR-0050): `INSERT`/`SELECT` only on `audit_log`, `job_events`, `workflow_artifacts`, `context_packs`, `active_constraint_sets`; `DELETE` revoked from canon history; `EXECUTE` revoked from `PUBLIC` across `canon`; `job_events` sequence narrowed to `USAGE`; narrow default privileges for future sequences and `canon` functions |
 
 Clean-database verification (what CI does on every push):
 
@@ -263,10 +285,10 @@ Only the first row is evidence. The drill's machine-readable report records the 
 
 #### 8.2.1 The executed drill
 
-`pnpm drill:restore` creates its own disposable databases, applies every migration through `0011`, seeds
+`pnpm drill:restore` creates its own disposable databases, applies every migration through `0014`, seeds
 representative multi-tenant data through the **real** lifecycle (`createManuscriptVersion` →
 `approveManuscriptVersion` → `commitDelta`, plus a quarantined rejected draft), captures a custom-format
-`pg_dump`, restores it with `pg_restore` into a second disposable database, and verifies 23 invariants.
+`pg_dump`, restores it with `pg_restore` into a second disposable database, and verifies 40 invariants.
 
 ```bash
 # Requires a local PostgreSQL 16 and DATABASE_URL. The drill never touches the database in that URL;
@@ -281,6 +303,20 @@ and excluded, exactly one terminal job event, job checkpoints, attempt-level pro
 (migration `0011`), per-workspace cost totals, derived-row orphans, sequence non-collision, **cross-workspace
 RLS still enforced in the restored database**, whole-database logical checksum equality, and the source
 database unchanged.
+
+Since ADR-0050 the drill also treats the **security model** as a restore invariant, because rows, schema
+and a matching checksum would all still pass if the restore had lost a grant, re-enabled a disabled
+trigger, dropped `FORCE RLS` on one table, changed a function's security mode or handed `EXECUTE` back to
+`PUBLIC`. It compares source-to-target: table grants, sequence grants, function `EXECUTE` grants (including
+whether `PUBLIC` holds any), function security modes and `search_path` settings, full policy definitions,
+per-table `RLS`/`FORCE RLS`, trigger definitions with their enabled state, table owners and schema
+privileges — then asserts the application role is still `NOSUPERUSER`/`NOBYPASSRLS` and that no `canon`
+function is `PUBLIC`-executable.
+
+It then re-executes **behaviour** in the restored database as the real non-owner role, because metadata can
+look correct while the database behaves wrongly: the legitimate audit append must still succeed, and a
+direct `audit_log` update or delete, a `job_events` update, a `canon_commits` delete and an `llm_calls`
+cost rewrite must each still be refused.
 
 #### 8.2.2 Target verification — do this before any destructive step
 

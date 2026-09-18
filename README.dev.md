@@ -84,6 +84,10 @@ packages/db         migrations (forward-only, hashed; 0004 = jobs workflow_id/id
                     sessions/api_keys, row-level security on every workspace-owned table plus the non-superuser
                     role yeonjae_app the application runs as, api_idempotency_keys, job control columns, the
                     append-only job_events log and exports), identity/session helpers, pool/transaction helpers,
+                    0007/0013/0014 = least privilege for the request-scoped role: append-only and immutable
+                    tables are INSERT/SELECT only, canon history keeps the UPDATE commit_delta needs but not
+                    DELETE, EXECUTE is never granted to PUBLIC, and future objects get narrow default
+                    privileges (ADR-0050),
                     typed repository over the canon
                     schema; canon.commit_delta / canon.rollback_latest are the only canon write paths;
                     retrieval.ts = accepted-only reads for context assembly
