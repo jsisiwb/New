@@ -92,10 +92,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA canon GRANT EXECUTE ON FUNCTIONS TO yeonjae_a
 -- ---------------------------------------------------------------------------------------------------------
 -- 4. sequences: no future DML-by-default beyond what a serial INSERT needs
 -- ---------------------------------------------------------------------------------------------------------
--- job_events.seq is fed by nextval, which needs USAGE only; SELECT (currval/lastval) and UPDATE (setval)
--- are not used anywhere. 0006's `GRANT USAGE, SELECT` and its matching default privilege are therefore
--- wider than the write path. setval on the audit sequence would let a request-scoped connection rewind the
--- event stream and collide future seq values with existing rows.
+-- job_events.id is fed by nextval('job_events_id_seq'), which needs USAGE only; SELECT (currval/lastval)
+-- and UPDATE (setval) are not used anywhere — verified by searching the repository for all three. 0006's
+-- `GRANT USAGE, SELECT` and its matching default privilege are therefore wider than the write path. setval
+-- on the audit sequence would let a request-scoped connection rewind the event stream so the next insert
+-- collides with an id already written; the restore drill's `sequences_do_not_collide` invariant exists
+-- because that failure mode is real.
 REVOKE SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public FROM yeonjae_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE SELECT, UPDATE ON SEQUENCES FROM yeonjae_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO yeonjae_app;
@@ -112,7 +114,8 @@ COMMENT ON TABLE audit_log IS
 COMMENT ON TABLE job_events IS
   'Append-only job event stream. Two layers: the job_events_append_only trigger refuses UPDATE and DELETE '
   'for every caller, and yeonjae_app holds only INSERT and SELECT (migration 0014). Ordering comes from '
-  'the seq sequence, to which the role holds USAGE but not setval.';
+  'the per-job seq column; the surrogate id comes from job_events_id_seq, to which the role holds USAGE '
+  'but not setval.';
 COMMENT ON TABLE workflow_artifacts IS
   'Append-only durable workflow artifact record (checkpoint evidence). Two layers: the '
   'workflow_artifacts_append_only trigger refuses UPDATE and DELETE for every caller, and yeonjae_app '
