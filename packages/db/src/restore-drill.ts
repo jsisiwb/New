@@ -983,6 +983,23 @@ export async function runRestoreDrill(options: RunDrillOptions): Promise<Restore
   const targetDb = drillDatabaseName(drillId, 'restored');
   const created: string[] = [];
   const admin = createPool({ connectionString: options.adminUrl, max: 2 });
+  /**
+   * Attach an error listener to every drill pool.
+   *
+   * `DROP DATABASE ... WITH (FORCE)` in the cleanup below terminates any backend still attached to the
+   * database being dropped. `pg` emits that as an `error` event on the POOL, and a pool with no `error`
+   * listener turns it into an unhandled exception — which is how a drill whose 83 assertions all passed
+   * still failed the runner with "terminating connection due to administrator command".
+   *
+   * The connection is genuinely gone and the drill is finished with it, so the correct handling is to
+   * absorb the event rather than to crash. It is attached at creation, before any query, because an
+   * error that arrives during teardown must already have a listener waiting.
+   */
+  const absorbPoolErrors = (pool: Pool): Pool => {
+    pool.on('error', () => undefined);
+    return pool;
+  };
+  absorbPoolErrors(admin);
   let source: Pool | undefined;
   let target: Pool | undefined;
   const dumpDir = mkdtempSync(join(tmpdir(), 'yeonjae-drill-'));
@@ -998,8 +1015,8 @@ export async function runRestoreDrill(options: RunDrillOptions): Promise<Restore
 
     const sourceUrl = urlForDatabase(options.adminUrl, sourceDb);
     const targetUrl = urlForDatabase(options.adminUrl, targetDb);
-    source = createPool({ connectionString: sourceUrl, max: 4 });
-    target = createPool({ connectionString: targetUrl, max: 4 });
+    source = absorbPoolErrors(createPool({ connectionString: sourceUrl, max: 4 }));
+    target = absorbPoolErrors(createPool({ connectionString: targetUrl, max: 4 }));
 
     const applied = await migrate(source);
     const seeded = await seedDrillData(source);
