@@ -24,6 +24,7 @@ import {
   listCommits,
   manuscriptVersionsOf,
   needsAttention,
+  readiness,
   requestJobControl,
   revokeSession,
   timelinesOf,
@@ -293,20 +294,33 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     reply.type('text/plain; version=0.0.4; charset=utf-8').send(metrics.render()),
   );
   app.get('/ready', async (_req, reply) => {
-    try {
-      await pool.query('SELECT 1');
-      return { status: 'ready' };
-    } catch {
-      // Never echo the database error: readiness is a boolean to a load balancer, not a diagnostic channel.
-      return reply.status(503).type(PROBLEM_CONTENT_TYPE).send({
-        type: 'urn:yeonjae:error:INTERNAL_ERROR',
-        title: 'Not ready',
-        status: 503,
-        detail: 'The database is not reachable.',
-        code: 'INTERNAL_ERROR',
-        request_id: _req.id,
-      });
+    /**
+     * Readiness is more than "the pool can reach a database".
+     *
+     * `SELECT 1` passes against a database that is behind on migrations, ahead of this build, carrying a
+     * tampered ledger, or whose application role has quietly been granted BYPASSRLS — and in every one
+     * of those states this instance must NOT take traffic, because the failure would otherwise surface
+     * as a broken request or, worse, as silently absent tenant isolation.
+     *
+     * The check list is returned so an operator can see WHICH dependency is unhappy. It carries no
+     * credential, no connection string and no tenant data (asserted in the db package's tests).
+     */
+    const report = await readiness(pool);
+    if (report.ready) {
+      return {
+        status: report.degraded ? 'degraded' : 'ready',
+        checks: report.checks,
+      };
     }
+    return reply.status(503).type(PROBLEM_CONTENT_TYPE).send({
+      type: 'urn:yeonjae:error:INTERNAL_ERROR',
+      title: 'Not ready',
+      status: 503,
+      detail: 'One or more readiness checks failed.',
+      code: 'INTERNAL_ERROR',
+      request_id: _req.id,
+      checks: report.checks,
+    });
   });
 
   // ---- authentication -------------------------------------------------------------------------------
