@@ -65,12 +65,19 @@ run('migration chain replay, content-hash protection and clean-install convergen
   });
 
   it('applies the whole chain on a clean database and skips everything on a second run', async () => {
+    // The chain's length and its newest filename are read from disk rather than pinned: pinning them
+    // makes every later migration fail this case for no reason, which is how the first version of this
+    // test broke the moment 0015 landed.
+    const files = readdirSync(migrationsDir())
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
     await resetDatabase(pool);
     const first = await migrate(pool);
-    expect(first.applied.length).toBeGreaterThanOrEqual(14);
+    expect(first.applied).toEqual(files);
     expect(first.skipped).toEqual([]);
-    // The latest migration must be the privilege repair, so a renumbering mistake fails here.
-    expect(first.applied.at(-1)).toBe('0014_append_only_least_privilege.sql');
+    // Applied in name order, and the privilege repair is still part of the chain: a renumbering mistake
+    // or a lost migration fails here.
+    expect(first.applied).toContain('0014_append_only_least_privilege.sql');
 
     const before = await securityFingerprint(pool);
     const second = await migrate(pool);
@@ -86,14 +93,17 @@ run('migration chain replay, content-hash protection and clean-install convergen
   }, 180_000);
 
   it('converges on the same privilege state whether installed clean or upgraded from the prior schema', async () => {
-    // This is the property a revocation migration can silently get wrong: REVOKE only removes what an
-    // earlier migration granted, so a clean install that never held the privilege and an upgrade that did
-    // must still end up identical.
+    // The property a revocation migration can silently get wrong: REVOKE only removes what an earlier
+    // migration granted, so a clean install that never held the privilege and an upgrade that did must
+    // still end up identical. "Prior schema" means everything except the NEWEST migration, computed
+    // from disk so this stays true as the chain grows.
     const dir = migrationsDir();
     const all = readdirSync(dir)
       .filter((f) => f.endsWith('.sql'))
       .sort();
-    const upToPrior = all.filter((f) => f < '0014_');
+    const newest = all.at(-1);
+    if (newest === undefined) throw new Error('no migrations found');
+    const upToPrior = all.slice(0, -1);
     expect(upToPrior.length).toBe(all.length - 1);
 
     // Upgrade path: apply the chain as it stood before 0014, then apply the full chain on top.
@@ -104,7 +114,7 @@ run('migration chain replay, content-hash protection and clean-install convergen
       await migrate(pool, staged);
       const priorFingerprint = await securityFingerprint(pool);
       const upgrade = await migrate(pool);
-      expect(upgrade.applied).toEqual(['0014_append_only_least_privilege.sql']);
+      expect(upgrade.applied).toEqual([newest]);
       const upgraded = await securityFingerprint(pool);
       // The upgrade must actually change the security state, or the migration is a no-op.
       expect(upgraded).not.toBe(priorFingerprint);

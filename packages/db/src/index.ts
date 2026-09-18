@@ -10,6 +10,8 @@ export * from './job-control.js';
 export * from './leases.js';
 export * from './operator-resources.js';
 export * from './restore-safety.js';
+export * from './rate-limits.js';
+export * from './shared-budget.js';
 export * from './restore-drill.js';
 export * from './restore-report.js';
 export * from './security-report.js';
