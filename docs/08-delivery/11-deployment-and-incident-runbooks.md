@@ -115,6 +115,15 @@ silent divergence between environments.
 | `0012_cancellation_provenance` | cancellation provenance on `llm_calls`; `unknown` usage/billing is first-class and a false zero is refused (ADR-0049) |
 | `0013_llm_calls_audit_grants` | made the append-only claim true at the GRANT layer for `llm_calls` (`UPDATE`/`DELETE` revoked from `yeonjae_app`) and tightened the cancellation trigger |
 | `0014_append_only_least_privilege` | the same repair across the rest of the model (ADR-0050): `INSERT`/`SELECT` only on `audit_log`, `job_events`, `workflow_artifacts`, `context_packs`, `active_constraint_sets`; `DELETE` revoked from canon history; `EXECUTE` revoked from `PUBLIC` across `canon`; `job_events` sequence narrowed to `USAGE`; narrow default privileges for future sequences and `canon` functions |
+| `0015_shared_rate_limits_and_budgets` | shared rate limiting and budget enforcement: `rate_limit_policies` / `rate_limit_windows` / `rate_limit_admissions` / `rate_limit_slots` (fixed-window admission, concurrency as an expiring lease, idempotent by request id, time injected for deterministic tests) and `budget_policies` / `budget_reservations` (integer millicents, expiring reservations, idempotent settlement, `cost_known` so an unknown cost is never booked as zero, settled rows immutable by trigger) |
+
+**Readiness is a deployment gate, not a ping.** `/ready` refuses traffic when migrations are behind, when
+the schema is *ahead* of the build, when an applied migration's recorded hash no longer matches the file,
+or when `yeonjae_app` has been granted `SUPERUSER`/`BYPASSRLS` — the last of which voids every isolation
+guarantee in ADR-0050 while the application looks healthy. Deploy order is therefore: run the migration
+job, wait for `/ready`, then shift traffic. Liveness deliberately does **not** fail when an optional
+dependency is down; those report `degraded`, so an orchestrator cannot turn a provider outage into an
+outage of its own by restarting healthy processes.
 
 Clean-database verification (what CI does on every push):
 

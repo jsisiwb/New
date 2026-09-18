@@ -388,6 +388,66 @@ remain first-class and representable, and the false-zero cost rewrite that 0012'
 also unreachable by privilege. The full deterministic suite passes unchanged, which is the evidence that
 every revoked privilege genuinely had no caller.
 
+### Credential-free operational hardening (Phase 4 items 9a–9d; automated scope)
+
+**Status: implemented for the automated scope. This does NOT complete Phase 4.** Continuation of the same
+working branch, after the least-privilege tranche at `bfb3e6e`. Four controls that the system *presented*
+as protections, and which were per-process or absent, now exist where they have to.
+
+**9a — shared rate and concurrency limiting (migration 0015).** `apps/api/src/rate-limit.ts` is an
+in-memory sliding window and says so in its own header: "N instances permit roughly N× the configured
+rate". It also constrained nothing on the side that costs money — the gateway had no limiter in front of
+the provider at all. Admission is now a fixed-window counter in Postgres (per provider, model, workspace
+and operation class; request count and estimated tokens; explicit burst), and concurrency is an expiring
+**lease** rather than a counter, because a decrement is lost forever when the holder is killed while a
+deadline is not. Time is a parameter, so all 17 tests drive window rollover, boundaries and expiry
+deterministically with no `sleep()`; the two-connection race for the final slot asserts exactly one
+winner. **Not yet wired into the worker's production path** — that is listed as open in
+`12-remaining-external-work.md`.
+
+**9b — shared budget enforcement (migration 0015).** `MemoryBudget` was the only `BudgetLedger`: spend in
+a `Map`, reset on restart, invisible to other processes, so two workers each believed they owned the whole
+budget. `SharedBudget` enforces it in the database, with reservations that expire (a dead worker must not
+strand budget forever), idempotent settlement (at-least-once activity delivery must not double-charge),
+and **unknown cost that is never zero** — an unreported final cost keeps the reservation's estimate and
+is marked `cost_known = false`, the same rule migration 0012 enforces for `llm_calls`. A settled row is
+immutable by trigger and holds no `DELETE` grant. 16 tests; the decisive one is two workers each asking
+for 60% of the budget, where exactly one succeeds — a case that cannot be expressed against
+`MemoryBudget`, because there was nowhere for the second worker to look.
+
+**9c — deterministic provider simulator and HTTP adapter.** `MockProvider` and `ReplayProvider` are
+in-process: they return values, so every test using them proves things about gateway *logic* while
+skipping the part that breaks in production. `SyntheticProviderService` is a real `node:http` server with
+18 scenarios (reset before headers, truncated body, 429 with `Retry-After`, 5xx, malformed JSON, wrong
+shape, oversized body, delayed headers/body, late success, remote-cancel acknowledged/unsupported), and
+`HttpProvider` is the adapter shape a real provider would use. 27 tests over a loopback socket.
+**This is SIMULATED provider validation and is labelled as such everywhere** — it is not evidence about
+any live provider's behaviour, billing or remote cancellation, and no request leaves loopback.
+
+**9d — readiness that fails for the reasons that matter.** `/ready` ran `SELECT 1`, which passes against a
+database that is behind on migrations, ahead of the build, carrying a tampered ledger, or whose
+application role has been granted `BYPASSRLS` — the last of which voids every tenant-isolation guarantee
+in ADR-0050 while the app looks healthy. All four now refuse readiness. Liveness is deliberately
+untouched, and optional dependencies report **degraded** rather than failing, so an orchestrator does not
+kill healthy processes during a provider outage. 14 tests.
+
+**Defects found and fixed by the new tests, not by inspection:**
+
+| ID | Severity | Defect |
+| --- | --- | --- |
+| O-1 | HIGH | migration 0015's new `canon` functions were born `PUBLIC`-executable, reintroducing the exact defect 0014 repaired: 0014's `ALTER DEFAULT PRIVILEGES` does not cover functions the migration's own owner creates in the same schema. Caught by the existing `append-only-privileges` and restore-drill guards |
+| O-2 | MEDIUM | `window_start` as a `RETURNS TABLE` column shadowed the table column of the same name, making every reference inside `canon.rate_limit_admit` ambiguous. Renamed `window_started_at` |
+| O-3 | MEDIUM | a microtask spin (`while (…) await Promise.resolve()`) used to wait for a request to reach the simulator **wedged the event loop** and hung the suite: draining microtasks never yields to the I/O phase. Replaced with `waitForRequests`/`waitForClientAbort`, which yield via `setImmediate` |
+| O-4 | LOW | the migration-replay suite pinned the newest migration's filename and a hard-coded chain length, so it failed the moment 0015 landed. Both are now read from disk |
+
+**Scope limits recorded rather than glossed.** A container topology (Dockerfiles, Compose profiles, a
+one-command local stack) was **not** built: neither `docker` nor `podman` exists in this workspace, so any
+manifest written here would be unvalidated YAML presented as working infrastructure. The remaining
+credential-free work — wiring the new controls into the worker path, local deterministic embeddings and
+versioned vector retrieval, the name thesaurus, multi-process tests, metrics for the new signals, and
+deployment/alert templates — is listed openly in `docs/08-delivery/12-remaining-external-work.md`
+under "Not blocked, and honestly still open". **Phase 4 remains incomplete.**
+
 ### Active-request cancellation (Phase 4 item 7a; automated scope complete)
 
 **Status: implemented for the automated scope. This does NOT complete Phase 4.**
