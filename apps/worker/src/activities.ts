@@ -15,6 +15,7 @@
  * history replay and worker-restart recovery for the run as a whole.
  */
 import { ApplicationFailure, Context } from '@temporalio/activity';
+import { CancellationError, isCancellationError } from '@yeonjae/gateway';
 import {
   acquireTargetLease,
   checkpointControl,
@@ -143,6 +144,12 @@ export function createActivities(deps: ActivityDeps) {
        */
       let renewalError: unknown;
       let leaseLost: 'renewal_refused' | undefined;
+      /**
+       * Lease loss as an abort signal, so it reaches an in-flight provider call and not merely the next
+       * step boundary. The controller is aborted exactly once; `runStep`'s `lostLocally` predicate and
+       * the in-transaction fence assertion remain the authoritative guarantees.
+       */
+      const leaseLostController = new AbortController();
       const beat = (): void => {
         void (async () => {
           try {
@@ -152,7 +159,13 @@ export function createActivities(deps: ActivityDeps) {
               holderWorkflowId: input.lease.holderWorkflowId,
               fence: input.lease.fence,
             });
-            if (!renewed) leaseLost = 'renewal_refused';
+            if (!renewed) {
+              leaseLost = 'renewal_refused';
+              if (!leaseLostController.signal.aborted)
+                leaseLostController.abort(
+                  new CancellationError('lease_lost', { remoteCancellation: 'unsupported' }),
+                );
+            }
           } catch (err) {
             // Recorded, not thrown: throwing from a timer cannot be caught by the activity. A transport
             // fault is not evidence of lease loss, so the ownership read decides.
@@ -183,6 +196,43 @@ export function createActivities(deps: ActivityDeps) {
         const result = await produceChapter(
           deps.makeDeps({ workspaceId: input.workspaceId, projectId: input.projectId }),
           {
+            /**
+             * Active-request cancellation (Phase 4).
+             *
+             * Three sources reach an IN-FLIGHT provider call here, each labelled with what it means so
+             * the audit never relabels one as another:
+             *
+             *  * `activity_cancelled` — Temporal's own cancellation signal for this activity. This is the
+             *    seam that connects a cancelled workflow to the provider request; without it, cancelling
+             *    the workflow left the current model call running to completion.
+             *  * `lease_lost` — the heartbeat's refused renewal. The database has already declared this
+             *    holder dead, so the call it is funding is waste and every protected write is refused.
+             *  * the durable probe — `jobs.control = 'cancel'` written by an operator through the API.
+             *    Polled on a bounded interval only while a call is in flight.
+             *
+             * The probe is a single indexed read of one row; it stops at the first positive observation
+             * and is disposed by the gateway on every exit path.
+             */
+            cancellation: {
+              signals: [
+                { signal: ctx.cancellationSignal, reason: 'activity_cancelled' as const },
+                { signal: leaseLostController.signal, reason: 'lease_lost' as const },
+              ],
+              isDurablyCancelled: async () => {
+                // The job row is resolved by the deterministic workflow id rather than captured, because
+                // `produceChapter` creates (or rejoins) the job itself and the probe must work from the
+                // very first model call — including on a resumed run.
+                const row = await pool.query<{ control: string | null; status: string }>(
+                  'SELECT control, status FROM jobs WHERE workflow_id = $1',
+                  [input.workflowId],
+                );
+                const job = row.rows[0];
+                if (!job) return false;
+                // `cancelling` is the status the API sets on a RUNNING job, so it is observed as well as
+                // the control column: either is an authoritative operator cancellation.
+                return job.control === 'cancel' || job.status === 'cancelling';
+              },
+            },
             // The lease travels into the workflow context so `runStep` can re-verify it at every step
             // boundary; that is what stops a zombie mid-pipeline rather than only at the edges.
             lease: {
@@ -219,6 +269,26 @@ export function createActivities(deps: ActivityDeps) {
           spendCents: String(job?.spend_cents ?? '0'),
           steps: steps.map((s) => ({ step: s.step, status: s.status })),
         });
+      } catch (err) {
+        /**
+         * A cancellation is a DECISION, not a fault, so it leaves this activity as a non-retryable
+         * failure carrying its reason.
+         *
+         * The classification matters twice: Temporal must not retry the activity (which would start
+         * another provider call for work the operator withdrew), and the operator must be able to tell
+         * an operator cancel from a shutdown, a lost lease or a deadline. The reason is the error type,
+         * never a message match.
+         */
+        if (isCancellationError(err))
+          throw ApplicationFailure.nonRetryable(
+            `chapter production cancelled (${err.reason})`,
+            'CANCELLED',
+            {
+              reason: err.reason,
+              remote_cancellation: err.remoteCancellation,
+            },
+          );
+        throw err;
       } finally {
         clearInterval(heartbeat);
         // Surface a renewal fault that never became a lost lease, so an operator sees the degradation

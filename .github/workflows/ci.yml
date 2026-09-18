@@ -104,11 +104,22 @@ jobs:
             const ids = (r.scenarios ?? []).map((s) => s.id);
             const gw = ids.filter((i) => i.startsWith("GW-")).length;
             const wf = ids.filter((i) => i.startsWith("WF-")).length;
-            if (gw < 22) { console.error(`::error::gateway fault matrix reported ${gw} scenarios, expected >= 22`); process.exit(1); }
-            if (wf < 11) { console.error(`::error::workflow fault matrix reported ${wf} scenarios, expected >= 11`); process.exit(1); }
+            if (gw < 30) { console.error(`::error::gateway fault matrix reported ${gw} scenarios, expected >= 30`); process.exit(1); }
+            if (wf < 19) { console.error(`::error::workflow fault matrix reported ${wf} scenarios, expected >= 19`); process.exit(1); }
             if ((r.scenarios ?? []).some((s) => s.outcome !== "passed")) { console.error("::error::a chaos scenario did not pass"); process.exit(1); }
             console.log(`chaos matrices ran: ${gw} gateway + ${wf} workflow scenarios`);
           '
+      - name: Active provider-request cancellation tests actually ran (Phase 4)
+        # Same reasoning as the guards above. These suites are the only evidence that a durable cancel
+        # reaches an ALREADY-RUNNING provider request — that no retry, repair or fallback starts after an
+        # authoritative cancellation, that a late response is discarded, that a cancelled call's billing
+        # is recorded as unknown rather than zero, and that a cancel after the atomic commit does not
+        # retract accepted canon. A silent skip would turn every one of those into an unverified claim.
+        run: |
+          grep -q "aborts a blocking deterministic provider operation mid-call" coverage/junit.xml || {
+            echo "::error::gateway active-cancellation tests did not run"; exit 1; }
+          grep -q "cancels a provider call that is held open" coverage/junit.xml || {
+            echo "::error::durable active-cancellation integration tests did not run"; exit 1; }
       - name: Disposable backup/restore drill, explicit run with its no-skip guard (B-4-3)
         # `pnpm drill:restore` creates its own disposable PostgreSQL databases, applies every migration,
         # seeds representative multi-tenant data, dumps and restores it, and verifies 22 invariants

@@ -11,18 +11,95 @@
 import { describe, expect, it } from 'vitest';
 import {
   assessDestructiveTarget,
+  assessRestoredMigration,
   assessSourceTarget,
   assertDestructiveTargetSafe,
   assertSourceSafe,
   describeTarget,
   drillDatabaseName,
   isLocalHost,
+  MIN_RESTORED_MIGRATION,
   nameIsMarkedDisposable,
   nameLooksProtected,
   parseDatabaseTarget,
   redactConnectionUrl,
   urlForDatabase,
 } from './restore-safety.js';
+
+/**
+ * Review findings D-10 and R-4: the drill's schema-version gate.
+ *
+ * It was wrong twice while it lived inline in the runner, and untestable both times. First
+ * `startsWith('0011')` accepted ONLY 0011 and rejected every later migration — the opposite of the "or
+ * later" it claimed, so it failed the moment 0012 landed. The replacement compared the raw four-character
+ * prefix as a string, which fixed that but still accepted `'abc'`, `'999'` and `'9_weird'`, because those
+ * sort above `'0011'`. A restore certified against an unknown schema state is not certified at all.
+ *
+ * Hence this exhaustive table: every case the review brief names, including malformed, missing, unpadded
+ * and suffixed identifiers, plus the lexicographic-versus-numeric trap a future `0100` would spring.
+ */
+describe('restore drill: the schema-version gate accepts only interpretable, new-enough migrations', () => {
+  it('accepts the minimum, and every later zero-padded migration', () => {
+    for (const name of [
+      '0011',
+      '0012',
+      '0013',
+      '0011_attempt_provenance.sql',
+      '0012_cancellation_provenance.sql',
+      '0013_llm_calls_audit_grants.sql',
+      '0099_future.sql',
+      // The lexicographic trap: '0100' < '0999' as text, but 100 > 11 as a number.
+      '0100_much_later.sql',
+      '1000_far_future.sql',
+    ]) {
+      expect(assessRestoredMigration(name), name).toEqual({ safe: true, reasons: [] });
+    }
+  });
+
+  it('refuses a schema older than the minimum it was written against', () => {
+    for (const name of ['0010_operator_resources.sql', '0001_canon_core.sql', '0000']) {
+      expect(assessRestoredMigration(name), name).toEqual({
+        safe: false,
+        reasons: ['migration_version_too_old'],
+      });
+    }
+  });
+
+  it('FAILS CLOSED on a malformed, unpadded or missing migration name', () => {
+    // Each of these passed the previous string-prefix comparison, which is the defect.
+    // Labelled pairs so a failure still names the offending input without a stringify dance.
+    const malformed: readonly (readonly [string, unknown])[] = [
+      ['alphabetic', 'abc'],
+      ['three digits', '999'],
+      ['digit then underscore', '9_weird'],
+      ['empty', ''],
+      ['five digits', '00111'],
+      ['word', 'latest'],
+      ['unpadded', '12_unpadded'],
+      ['undefined', undefined],
+      ['null', null],
+      ['number', 12],
+      ['object', {}],
+    ];
+    for (const [label, name] of malformed) {
+      expect(label).toBeTruthy();
+      expect(assessRestoredMigration(name)).toEqual({
+        safe: false,
+        reasons: ['migration_version_unrecognized'],
+      });
+    }
+  });
+
+  it('states its minimum rather than hiding it in a comparison', () => {
+    expect(MIN_RESTORED_MIGRATION).toBe(11);
+    // The minimum is a parameter, so raising it later is a one-line, reviewable act.
+    expect(assessRestoredMigration('0012', 13)).toEqual({
+      safe: false,
+      reasons: ['migration_version_too_old'],
+    });
+    expect(assessRestoredMigration('0013', 13)).toEqual({ safe: true, reasons: [] });
+  });
+});
 
 const LOCAL_DISPOSABLE = 'postgres://op:secretpw@127.0.0.1:5432/yeonjae_drill_abc_restored';
 

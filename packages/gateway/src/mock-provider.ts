@@ -4,6 +4,11 @@
  * can be injected per call for chaos tests.
  */
 import { createHash } from 'node:crypto';
+import {
+  CancellationError,
+  isCancellationError,
+  type RemoteCancellationStatus,
+} from './cancellation.js';
 import { ProviderFailure, type FailureClass } from './failures.js';
 import {
   type ModelParams,
@@ -30,7 +35,7 @@ export type MockScript = (
 ) => { text?: string; json?: unknown; finishReason?: FinishReason } | undefined;
 
 export interface MockFault {
-  readonly kind: 'error' | 'timeout' | 'truncate' | 'invalid_json' | 'korean_prose';
+  readonly kind: 'error' | 'timeout' | 'truncate' | 'invalid_json' | 'korean_prose' | 'block';
   /** Fire on the nth call (1-based) matching `role`-agnostic order; default: next call. */
   readonly onCall?: number | undefined;
   /**
@@ -40,6 +45,19 @@ export interface MockFault {
   readonly failureClass?: FailureClass | undefined;
   /** True when the provider may have completed the work before the response was lost. */
   readonly possiblyCompleted?: boolean | undefined;
+  /**
+   * For `block`: a promise the call awaits before producing its canned output, so a test can hold a
+   * provider request OPEN and cancel it mid-flight deterministically — no sleeps, no wall-clock races.
+   */
+  readonly until?: Promise<unknown> | undefined;
+  /**
+   * What this mock adapter claims about REMOTE cancellation when aborted. Default `unsupported`, because
+   * a deterministic in-process mock has no remote side; a test asserting acknowledgement sets it.
+   */
+  readonly remoteCancellation?: RemoteCancellationStatus | undefined;
+  /** Usage the provider reports even though the request was aborted, when it reports any. */
+  readonly usageOnAbort?:
+    { readonly input: number; readonly output: number; readonly cached: number } | undefined;
 }
 
 export class MockProvider implements Provider {
@@ -51,6 +69,8 @@ export class MockProvider implements Provider {
   private readonly faults: MockFault[] = [];
   private calls = 0;
   readonly log: ProviderRequest[] = [];
+  /** Calls that observed an abort, for listener/cleanup assertions. */
+  readonly aborted: number[] = [];
 
   constructor(private readonly script?: MockScript) {}
 
@@ -71,12 +91,51 @@ export class MockProvider implements Provider {
     return this.calls;
   }
 
-  async complete(req: ProviderRequest): Promise<ProviderResponse> {
+  async complete(req: ProviderRequest, signal?: AbortSignal): Promise<ProviderResponse> {
     this.calls++;
     this.log.push(req);
     const started = Date.now();
+    const callIndex = this.calls;
+    // Fail closed on an ALREADY-aborted signal: a cooperative adapter must not issue a request the
+    // caller has already withdrawn.
+    if (signal?.aborted) {
+      this.aborted.push(callIndex);
+      throw abortErrorFor(signal, undefined);
+    }
     const faultIdx = this.faults.findIndex((f) => (f.onCall ?? this.calls) === this.calls);
     const fault = faultIdx >= 0 ? this.faults.splice(faultIdx, 1)[0] : undefined;
+    /**
+     * A deterministically BLOCKING provider request.
+     *
+     * This is the seam the mid-call cancellation tests need: the call parks on `fault.until` (a deferred
+     * a test resolves) or on the abort, whichever happens first. The abort listener is removed on every
+     * exit path, so a completed blocking call leaves nothing attached to the signal.
+     */
+    if (fault?.kind === 'block') {
+      const gate = fault.until ?? new Promise<void>(() => undefined);
+      let onAbort: (() => void) | undefined;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          if (signal) {
+            onAbort = () => {
+              this.aborted.push(callIndex);
+              reject(abortErrorFor(signal, fault));
+            };
+            signal.addEventListener('abort', onAbort, { once: true });
+          }
+          gate.then(
+            () => {
+              resolve();
+            },
+            (err: unknown) => {
+              reject(err instanceof Error ? err : new Error(String(err)));
+            },
+          );
+        });
+      } finally {
+        if (signal && onAbort) signal.removeEventListener('abort', onAbort);
+      }
+    }
     if (fault?.kind === 'error')
       throw new ProviderFailure(
         fault.failureClass ?? 'retryable_transport',
@@ -130,6 +189,22 @@ export class MockProvider implements Provider {
 
 export function estimateTokens(text: string): number {
   return Math.ceil(text.split(/\s+/).filter(Boolean).length * 1.3);
+}
+
+/**
+ * The error an aborted mock request raises.
+ *
+ * It preserves the caller's own `CancellationError` (and therefore the REASON that fired) when the signal
+ * carries one, so an adapter cannot relabel an operator cancellation as a timeout. Remote-cancellation
+ * status and post-abort usage come from the fault declaration, defaulting to honest non-claims.
+ */
+function abortErrorFor(signal: AbortSignal, fault: MockFault | undefined): Error {
+  const upstream: unknown = signal.reason;
+  const reason = isCancellationError(upstream) ? upstream.reason : 'operator_cancelled';
+  return new CancellationError(reason, {
+    remoteCancellation: fault?.remoteCancellation ?? 'unsupported',
+    ...(fault?.usageOnAbort ? { usage: fault.usageOnAbort } : {}),
+  });
 }
 
 export const DEFAULT_PARAMS: ModelParams = {

@@ -42,6 +42,12 @@ interface CallFixture {
   readonly usage: Record<string, number> | null;
   readonly fallbackFrom?: string | undefined;
   readonly attempts: readonly Record<string, unknown>[];
+  /**
+   * Cancellation provenance (migration 0012). REQUIRED for a `cancelled` row: the database refuses a
+   * call that claims the cancelled status without saying why it stopped and what is known about its
+   * usage and billing, because a bare `cancelled` row silently reads as a free call.
+   */
+  readonly cancellation?: Record<string, unknown> | undefined;
 }
 
 run('B-4-6 deterministic attempt-level cost accounting', () => {
@@ -62,9 +68,9 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
       `INSERT INTO llm_calls
          (id, workspace_id, project_id, job_id, idempotency_key, role, prompt_version_id, prompt_hash,
           production_policy_version, model_id, model_class, provider, params, input_hash, usage,
-          cost_cents, latency_ms, status, fallback_from_model_id, attempt_records)
+          cost_cents, latency_ms, status, fallback_from_model_id, attempt_records, cancellation)
        VALUES (canon.uuid_v7(), $1, $2, $3, $4, $5, 'prompt/x@1.0.0', $6, 'policy/standard@1', $7,
-               'P', 'replay', '{}'::jsonb, $8, $9::jsonb, $10, 100, $11, $12, $13::jsonb)`,
+               'P', 'replay', '{}'::jsonb, $8, $9::jsonb, $10, 100, $11, $12, $13::jsonb, $14::jsonb)`,
       [
         workspaceId,
         projectId,
@@ -81,6 +87,7 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
         fixture.status,
         fixture.fallbackFrom ?? null,
         JSON.stringify(fixture.attempts),
+        fixture.cancellation ? JSON.stringify(fixture.cancellation) : null,
       ],
     );
   }
@@ -246,6 +253,17 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
       costCents: 0,
       usage: null,
       attempts: [{ attempt: 1, model_id: 'model-a', provider: 'replay', outcome: 'failed' }],
+      // The provider reported no usage, so usage AND billing are unknown — not zero. `cost_cents` is 0
+      // because nothing priceable was observed, which is a different statement from "this was free".
+      cancellation: {
+        reason: 'operator_cancelled',
+        outcome: 'operator_cancelled',
+        remote_cancellation: 'unsupported',
+        usage_status: 'unknown',
+        billing_status: 'unknown',
+        response_discarded: false,
+        before_first_attempt: false,
+      },
     });
     await writeCall(projectA, wsA, jobA, {
       key: 'k-budget',
@@ -262,6 +280,28 @@ run('B-4-6 deterministic attempt-level cost accounting', () => {
     expect(blocked?.cost_cents).toBe(0);
     expect(byOutcome.total_cost_cents).toBe(0);
     expect(await verifyCostInvariants(pool, projectA)).toEqual([]);
+
+    // A cancelled row must be readable as "unknown", never as a confirmed zero bill (migration 0012).
+    const cancelled = await pool.query<{ usage_status: string; billing_status: string }>(
+      `SELECT cancellation->>'usage_status' AS usage_status,
+              cancellation->>'billing_status' AS billing_status
+         FROM llm_calls WHERE idempotency_key = 'k-cancel'`,
+    );
+    expect(cancelled.rows[0]).toEqual({ usage_status: 'unknown', billing_status: 'unknown' });
+
+    // And the database refuses a cancelled row that carries no provenance at all, so the zero-spend
+    // reading cannot be reintroduced by a future writer.
+    await expect(
+      writeCall(projectA, wsA, jobA, {
+        key: 'k-cancel-unexplained',
+        role: 'drafter',
+        status: 'cancelled',
+        modelId: 'model-a',
+        costCents: 0,
+        usage: null,
+        attempts: [],
+      }),
+    ).rejects.toThrow(/CANCELLATION_INVALID/);
   });
 
   it('scenario: replay of an already-charged call cannot double-charge', async () => {

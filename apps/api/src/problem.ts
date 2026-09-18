@@ -95,6 +95,7 @@ const TITLES: Record<ProblemCode, string> = {
   CHAPTER_NOT_ACCEPTED: 'Chapter is not accepted',
   WORKFLOW_NOT_FOUND: 'Workflow not found',
   LEASE_LOST: 'Target lease lost to another run',
+  CANCELLED: 'Run was cancelled',
   STEP_NONDETERMINISTIC: 'Workflow step is nondeterministic',
   INTERNAL: 'Internal error',
 };
@@ -122,6 +123,11 @@ const STATUS: Partial<Record<ProblemCode, number>> = {
   CANON_STALE: 409,
   // Another run owns the target now: a conflict the operator resolves, not a server fault.
   LEASE_LOST: 409,
+  /**
+   * The run was cancelled. 409, not 500: the work stopped because it was withdrawn (or the target
+   * changed hands), which is a state the client resolves rather than a server fault to alert on.
+   */
+  CANCELLED: 409,
   APPROVAL_BLOCKED: 409,
   PREVIOUS_CHAPTER_NOT_ACCEPTED: 409,
   CHAPTER_NOT_ACCEPTED: 409,

@@ -16,6 +16,10 @@
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
+import {
+  assessRestoredMigration,
+  MIN_RESTORED_MIGRATION,
+} from '../packages/db/dist/restore-safety.js';
 
 const REPORT_PATH = 'coverage/restore-drill-report.json';
 const SUITES = [
@@ -26,6 +30,7 @@ const SUITES = [
 const REQUIRED_INVARIANTS = [
   'migration_count_matches',
   'migration_0011_present',
+  'cancellation_provenance_restored',
   'tables_restored',
   'indexes_restored',
   'triggers_restored',
@@ -99,9 +104,22 @@ if (!String(report.postgres_version ?? '').startsWith('16.'))
   problems.push(
     `the drill ran against PostgreSQL ${String(report.postgres_version)}, expected 16.x`,
   );
-if (!String(report.migration_version ?? '').startsWith('0011'))
+/**
+ * The restored schema must be at least the migration this guard was written against, and the guard must
+ * FAIL CLOSED on anything it cannot interpret.
+ *
+ * The decision now lives in `@yeonjae/db`'s `assessRestoredMigration` rather than inline here, because it
+ * was wrong twice while it was inline and untestable both times: first `startsWith('0011')` (which
+ * accepted only 0011 and rejected every later migration), then a raw string-prefix compare (which
+ * accepted `'abc'`, `'999'` and `'9_weird'`). It is now a pure function with its own exhaustive test
+ * table, so a third mistake fails in the suite rather than in a drill report.
+ */
+const migrationVerdict = assessRestoredMigration(report.migration_version);
+if (!migrationVerdict.safe)
   problems.push(
-    `the restored schema is at ${String(report.migration_version)}, expected 0011 or later`,
+    `the restored schema version ${JSON.stringify(String(report.migration_version ?? ''))} is not ` +
+      `acceptable (${migrationVerdict.reasons.join(', ')}); expected a zero-padded migration name at ` +
+      `${String(MIN_RESTORED_MIGRATION).padStart(4, '0')} or later`,
   );
 
 const reported = new Map((report.invariants ?? []).map((i) => [String(i.id), String(i.outcome)]));

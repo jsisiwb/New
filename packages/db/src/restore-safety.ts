@@ -220,3 +220,33 @@ export function drillDatabaseName(drillId: string, suffix: 'source' | 'restored'
   const safeId = drillId.toLowerCase().replace(/[^a-z0-9]+/g, '');
   return `yeonjae_drill_${safeId}_${suffix}`;
 }
+
+/** The minimum schema version the restore drill is willing to certify a restore against. */
+export const MIN_RESTORED_MIGRATION = 11;
+
+/**
+ * Decide whether a reported schema version is one the drill may certify.
+ *
+ * EXTRACTED SO IT CAN BE PROVED. This lived inline in `tools/run-restore-drill.mjs`, where it was wrong
+ * twice in a row and untestable both times. First it was `startsWith('0011')`, which accepted only 0011
+ * and rejected every later migration — the opposite of the "or later" it claimed, so it failed the moment
+ * 0012 landed. The replacement compared the raw four-character prefix as a string, which fixed that but
+ * still waved garbage through: `'abc'`, `'999'` and `'9_weird'` all sort above `'0011'`, so a malformed
+ * or missing migration name passed the very gate that exists to notice it. A restore certified against an
+ * unknown schema state is not certified at all.
+ *
+ * So the rule is explicit and FAILS CLOSED: the name must begin with exactly four digits, followed by a
+ * separator or nothing, and that number is compared NUMERICALLY so a future `0100` cannot be defeated by
+ * lexicographic ordering. Anything uninterpretable is refused with a reason rather than accepted.
+ */
+export function assessRestoredMigration(
+  name: unknown,
+  minimum: number = MIN_RESTORED_MIGRATION,
+): SafetyVerdict {
+  const text = typeof name === 'string' ? name : '';
+  const match = /^(\d{4})(?:[_.]|$)/.exec(text);
+  if (!match) return { safe: false, reasons: ['migration_version_unrecognized'] };
+  const version = Number(match[1]);
+  if (version < minimum) return { safe: false, reasons: ['migration_version_too_old'] };
+  return { safe: true, reasons: [] };
+}

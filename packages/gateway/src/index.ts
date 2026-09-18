@@ -1,4 +1,5 @@
 export * from './types.js';
+export * from './cancellation.js';
 export * from './mock-provider.js';
 export * from './chaos-report.js';
 export * from './failures.js';

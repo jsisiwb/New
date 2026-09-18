@@ -65,6 +65,9 @@ const NON_RETRYABLE = [
   // Operator must act: an automatic retry would hide the decision.
   'BUDGET_EXHAUSTED',
   'SELECTION_REQUEST_CHANGED',
+  // A cancellation is an operator decision (or a shutdown / lost lease). Retrying the activity would
+  // start another provider call for work that has been withdrawn.
+  'CANCELLED',
   // A contract-version mismatch means the wrong worker picked the task up.
   'ContractVersionUnsupported',
 ];

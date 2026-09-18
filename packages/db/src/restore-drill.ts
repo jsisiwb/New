@@ -410,6 +410,48 @@ export async function seedDrillData(pool: Pool): Promise<{ workspaces: string[] 
         ]),
       ],
     );
+    // A CANCELLED call (migration 0012). Seeded because its provenance is the one audit field whose
+    // whole purpose is to say what is NOT known — if a restore silently dropped it, a cancelled call
+    // would read as an ordinary zero-cost call, which is the false-zero the column exists to prevent.
+    await pool.query(
+      `INSERT INTO llm_calls
+         (id, workspace_id, project_id, job_id, idempotency_key, role, prompt_version_id, prompt_hash,
+          production_policy_version, model_id, model_class, provider, params, input_hash, usage,
+          cost_cents, latency_ms, status, attempt_records, cancellation)
+       VALUES (canon.uuid_v7(), $1, $2, $3, $4, 'drafter', 'prompt/drafter@1.0.0', $5,
+               'policy/standard@1', 'model-a', 'P', 'replay', '{}'::jsonb, $6,
+               '{}'::jsonb, 0, 90, 'cancelled', $7::jsonb, $8::jsonb)`,
+      [
+        wsId,
+        projectId,
+        jobId,
+        `drill-${jobId}-cancelled`,
+        sha256('drill-prompt-cancelled'),
+        sha256('drill-input-cancelled'),
+        JSON.stringify([
+          {
+            attempt: 1,
+            model_id: 'model-a',
+            provider: 'replay',
+            outcome: 'failed',
+            failure_class: 'cancelled',
+            error_class: 'CANCELLED',
+            cost_cents: 0,
+            usage: { input_tokens: 0, output_tokens: 0 },
+            latency_ms: 90,
+          },
+        ]),
+        JSON.stringify({
+          reason: 'operator_cancelled',
+          outcome: 'operator_cancelled',
+          remote_cancellation: 'unsupported',
+          usage_status: 'unknown',
+          billing_status: 'unknown',
+          response_discarded: false,
+          before_first_attempt: false,
+        }),
+      ],
+    );
     await pool.query(
       `INSERT INTO llm_calls
          (id, workspace_id, project_id, job_id, idempotency_key, role, prompt_version_id, prompt_hash,
@@ -630,6 +672,32 @@ async function verifyRestored(ctx: VerifyContext): Promise<DrillInvariant[]> {
     'attempt_provenance_restored',
     attemptRows > 0 && fallbackAttempts > 0,
     `${String(attemptRows)}_calls_${String(fallbackAttempts)}_fallbacks`,
+  );
+
+  /**
+   * Cancellation provenance (migration 0012) must survive a restore INTACT, including its unknowns.
+   *
+   * Checked field by field rather than by mere presence: the failure mode worth catching is a restore
+   * that keeps the row but loses the object, because the row then reads as an ordinary completed call
+   * that cost nothing — a confirmed zero bill the system never observed.
+   */
+  const cancelledCalls = await scalarNumber(
+    ctx.target,
+    `SELECT count(*)::int FROM llm_calls WHERE status = 'cancelled'`,
+  );
+  const truthfulCancellations = await scalarNumber(
+    ctx.target,
+    `SELECT count(*)::int FROM llm_calls
+      WHERE status = 'cancelled'
+        AND cancellation->>'reason' = 'operator_cancelled'
+        AND cancellation->>'usage_status' = 'unknown'
+        AND cancellation->>'billing_status' = 'unknown'
+        AND cancellation->>'remote_cancellation' <> 'acknowledged'`,
+  );
+  check(
+    'cancellation_provenance_restored',
+    cancelledCalls > 0 && truthfulCancellations === cancelledCalls,
+    `${String(truthfulCancellations)}/${String(cancelledCalls)}`,
   );
 
   // Cost totals: the summed authoritative total must match, per workspace.

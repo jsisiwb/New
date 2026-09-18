@@ -22,9 +22,14 @@ const SUITES = [
   'packages/gateway/src/fallback.chaos.test.ts',
   'packages/workflows/src/recovery.integration.test.ts',
   'packages/workflows/src/chaos.integration.test.ts',
+  // Phase 4: active provider-request cancellation. Listed here because a cancellation that fails to
+  // reach a running request is a fault of exactly the kind this matrix exists to catch, and because the
+  // report is the only durable evidence that the races were exercised rather than merely described.
+  'packages/gateway/src/cancellation.test.ts',
+  'apps/worker/src/active-cancellation.integration.test.ts',
 ];
 /** Minimum scenario count. Lowering this is a deliberate, reviewable act, not an accident. */
-const MIN_SCENARIOS = 30;
+const MIN_SCENARIOS = 46;
 
 function fail(message) {
   console.error(`::error::${message}`);

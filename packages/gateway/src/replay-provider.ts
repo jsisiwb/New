@@ -10,6 +10,7 @@
  * real model would have copied from the prompt). An unbound placeholder is an error, never silently emitted.
  */
 import { readFileSync } from 'node:fs';
+import { CancellationError, isCancellationError } from './cancellation.js';
 import { ProviderFailure } from './failures.js';
 import { promptKey } from './mock-provider.js';
 import {
@@ -125,7 +126,20 @@ export class ReplayProvider implements Provider {
     return JSON.parse(bound) as Recording;
   }
 
-  async complete(req: ProviderRequest): Promise<ProviderResponse> {
+  async complete(req: ProviderRequest, signal?: AbortSignal): Promise<ProviderResponse> {
+    /**
+     * Replay honours cancellation too, even though it never touches a network.
+     *
+     * A replayed run that ignored the signal would make the deterministic suites disagree with
+     * production about when a cancellation takes effect, and the replay path is the only one the
+     * regression suites exercise — so the seam has to exist here or it is not tested anywhere.
+     */
+    if (signal?.aborted) {
+      const upstream: unknown = signal.reason;
+      throw isCancellationError(upstream)
+        ? upstream
+        : new CancellationError('operator_cancelled', { remoteCancellation: 'not_requested' });
+    }
     const key = promptKey(req);
     let rec = this.recordings.get(key);
     let by: 'prompt_hash' | 'activity' = 'prompt_hash';
