@@ -373,6 +373,24 @@ export interface CommitInput {
    * last ownership read cannot land a commit: the assertion raises and the commit rolls back with it.
    */
   lease?: LeaseClaim | undefined;
+  /**
+   * Optional workflow job whose control intent must remain `run` for this commit. The row is locked in the
+   * same transaction as canon.commit_delta, so a cancel that wins the lock cannot race a canon write.
+   */
+  jobControl?: { jobId: string } | undefined;
+}
+
+export class JobControlCommitBlockedError extends Error {
+  readonly code = 'JOB_CONTROL_BLOCKED';
+
+  constructor(
+    readonly jobId: string,
+    readonly control: string,
+    readonly status: string,
+  ) {
+    super(`job ${jobId} control=${control} status=${status} blocks canon commit`);
+    this.name = 'JobControlCommitBlockedError';
+  }
 }
 
 export interface CommitResult {
@@ -395,6 +413,22 @@ export async function commitDelta(
   metrics?: Metrics,
 ): Promise<CommitResult> {
   return withFencedTransaction(pool, input.lease, async (client) => {
+    if (input.jobControl) {
+      const job = await client.query<{ control: string; status: string }>(
+        'SELECT control, status FROM jobs WHERE id = $1 FOR UPDATE',
+        [input.jobControl.jobId],
+      );
+      const row = job.rows[0];
+      if (!row) throw new Error(`job ${input.jobControl.jobId} does not exist`);
+      if (
+        row.control !== 'run' ||
+        row.status === 'paused' ||
+        row.status === 'paused_budget' ||
+        row.status === 'cancelling' ||
+        row.status === 'cancelled'
+      )
+        throw new JobControlCommitBlockedError(input.jobControl.jobId, row.control, row.status);
+    }
     const r = await client
       .query<{ commit_delta: CommitResult }>(
         `SELECT canon.commit_delta($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9::jsonb, $10) AS commit_delta`,

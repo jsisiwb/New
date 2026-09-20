@@ -410,7 +410,15 @@ function renderApp(node: ReactNode, server = makeServer()) {
 /** Sign in through the real form so every later assertion runs against an authenticated app. */
 async function signedIn(node: ReactNode, overrides: Partial<ServerState> = {}) {
   const server = makeServer({ signedIn: true, ...overrides });
-  const result = renderApp(node, server);
+  // Restore deliberately does not mint CSRF. Authenticate through the real login endpoint before
+  // mounting protected screens so these tests exercise writable sessions rather than the re-auth gate.
+  const client = new ApiClient({
+    baseUrl: '',
+    fetchImpl: server.fetchImpl as unknown as typeof fetch,
+  });
+  await client.signIn('operator@example.com', 'correct-password');
+  const utils = render(<AppStateProvider client={client}>{node}</AppStateProvider>);
+  const result = { ...utils, server, client };
   await waitFor(() => {
     expect(server.state.requests.some((r) => r.url.endsWith('/v1/me'))).toBe(true);
   });
@@ -468,9 +476,11 @@ describe('authentication', () => {
     expect(document.activeElement).toBe(alert);
   });
 
-  it('restores a session from the cookie on load', async () => {
-    const { server } = await signedIn(<SignInScreen />);
-    expect(await screen.findByText(/Signed in as Operator/)).toBeTruthy();
+  it('requires sign-in again after restoring a cookie session without a CSRF token', async () => {
+    const server = makeServer({ signedIn: true });
+    renderApp(<SignInScreen />, server);
+    expect(await screen.findByRole('heading', { name: /sign in/i })).toBeTruthy();
+    expect(screen.getByText(/page was reloaded and its security token was cleared/i)).toBeTruthy();
     expect(server.state.requests.some((r) => r.url.endsWith('/v1/me'))).toBe(true);
   });
 
@@ -485,12 +495,10 @@ describe('authentication', () => {
   });
 
   it('revokes local state when the server reports an expired session mid-session', async () => {
-    const server = makeServer({ signedIn: true });
-    renderApp(
+    const { server } = await signedIn(
       <ProtectedRoute>
         <WorkspaceScreen onOpenProject={() => undefined} />
       </ProtectedRoute>,
-      server,
     );
     await screen.findByRole('heading', { name: /Workspaces and projects/i });
     // The session is revoked server-side. The next real API call answers 401, and the app must stop

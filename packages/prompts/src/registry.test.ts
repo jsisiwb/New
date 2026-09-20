@@ -28,14 +28,15 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
+const TOTAL_PROMPT_VERSIONS = 31;
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
 
-  it('loads all 25 production families at v1.0.0 with verified content hashes', () => {
+  it('loads all production families with verified immutable content hashes', () => {
     expect(reg.families()).toEqual([...REQUIRED_FAMILIES].sort());
+    expect(reg.list()).toHaveLength(TOTAL_PROMPT_VERSIONS);
     for (const v of reg.list()) {
-      expect(v.version).toBe('1.0.0');
       expect(v.status).toBe('active');
       expect(v.content_hash).toBe(contentHash(v, v.system_template, v.user_template));
       expect(v.changelog.length).toBeGreaterThan(10);
@@ -143,6 +144,35 @@ describe('prompt registry (ADR-0016)', () => {
     const set = reg.activeSet();
     expect(Object.keys(set.mapping)).toHaveLength(25);
     expect(set.mapping.scene_writer).toBe('scene_writer@1.0.0');
+    expect(set.mapping.character_designer).toBe('character_designer@1.1.0');
+    expect(set.mapping.world_builder).toBe('world_builder@1.1.0');
+    expect(set.mapping.power_system_designer).toBe('power_system_designer@1.1.0');
+    expect(set.mapping.story_architect).toBe('story_architect@1.1.0');
+    expect(set.mapping.arc_planner).toBe('arc_planner@1.1.0');
+    expect(set.mapping.chapter_planner).toBe('chapter_planner@1.1.0');
     expect(set.id).toMatch(/^set:[0-9a-f]{16}$/);
+  });
+
+  it('pins the full-bible contracts in the revised planning prompts', () => {
+    expect(reg.get('character_designer@1.1.0').system_template).toMatch(
+      /every supplied character name is authoritative/i,
+    );
+    expect(reg.get('world_builder@1.1.0').system_template).toMatch(
+      /at least one meaningful location/i,
+    );
+    expect(reg.get('power_system_designer@1.1.0').system_template).toMatch(/need not be magical/i);
+    expect(reg.get('story_architect@1.1.0').system_template).toMatch(
+      /contiguous, non-overlapping/i,
+    );
+    expect(reg.get('story_architect@1.1.0').system_template).toMatch(
+      /target chapter count through the committed ending/i,
+    );
+    expect(reg.get('arc_planner@1.1.0').system_template).toMatch(
+      /complete supplied planned bible/i,
+    );
+    expect(reg.get('chapter_planner@1.1.0').system_template).toMatch(/complete \[PLANNED\] bible/i);
+    for (const family of ['story_architect', 'arc_planner', 'chapter_planner']) {
+      expect(reg.get(`${family}@1.1.0`).system_template).toContain('[PLANNED]');
+    }
   });
 });

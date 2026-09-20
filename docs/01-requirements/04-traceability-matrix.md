@@ -17,6 +17,11 @@ updated in the same change as any requirement/design change (AGENTS.md rule 1). 
 
 ## Functional and nonfunctional requirements
 
+Complete-bible-before-prose (FR-3/FR-4): planning architecture §12, ADR-0052;
+`packages/workflows/src/story-plan.integration.test.ts` covers retained design context and refusal of
+incomplete plans before manuscript generation. Existing `series-blueprint` and canon contracts remain
+authoritative; the complete design is planned artifact data, not realized canon.
+
 | Requirement(s) | Design | Schemas | ADRs | Backlog | Tests (strategy §) |
 | --- | --- | --- | --- | --- | --- |
 | FR-1.1–1.8 intake, spec, Active Constraint Set | UW-1; `05-generation/01` §2.1; `05-generation/03` §7; `04-memory-canon/04` §2.5 | `story-intake`, `story-spec` (text + language + text_en; fixture `examples/fixture/story-spec.v3.json`), `common.localizedText`; `active_constraint_sets` table (migration 0003, content-addressed); `chapter-contract.active_constraints_ref`; `context-pack-manifest.active_constraint_set` | 0019, 0033, 0045 | B-1-17, B-2-1, B-3-2 | §2 constraint compiler (scope, dedupe, cap, `CONSTRAINTS_OVERFLOW`); §4 workflow; §10 injection |

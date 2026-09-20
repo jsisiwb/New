@@ -1,0 +1,39 @@
+{
+  "family": "chapter_planner",
+  "version": "1.1.0",
+  "role": "chapter_planner",
+  "purpose": "Write a chapter contract grounded in the complete [PLANNED] bible, arc, promises, progression, cast knowledge, and committed ending.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "arc_plan",
+    "chapter_number",
+    "previous_chapter_summary",
+    "canon_state",
+    "knowledge_state",
+    "open_promises",
+    "active_constraints",
+    "length_target_words"
+  ],
+  "output_schema": "chapter-contract.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.4,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.1.0 — chapter contracts preserve full planned-bible context and distinguish planned design from realized canon.",
+  "regression_cases": [
+    "chapter_planner.full_planned_bible",
+    "chapter_planner.ending_continuity"
+  ],
+  "content_hash": "sha256:169c1170d4ddefc1e2841983dc668fabc254bdab1f9c22393b0cfe542680f767"
+}

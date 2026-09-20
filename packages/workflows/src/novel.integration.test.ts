@@ -18,10 +18,10 @@ import {
   type Pool,
 } from '@yeonjae/db';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
-import { Gateway, MemoryBudget, MockProvider, type ProviderRequest } from '@yeonjae/gateway';
+import { Gateway, MemoryBudget, MockProvider } from '@yeonjae/gateway';
 import { segmentParagraphs, sliceCodePoints, toNfcText } from '@yeonjae/prose';
 import { simulatedModelScript as script } from './simulated-model.js';
-import { approveConcept, startNovel } from './novel.js';
+import { approveConcept, resumeNovelRun, startNovel } from './novel.js';
 import { NovelRunner } from './novel-runner.js';
 import { ArtifactLlmOutputStore } from './runtime.js';
 import { REPLAY_ROUTING } from './testkit.js';
@@ -124,16 +124,44 @@ run('novel run: intake → suggestions → approval → bible → chapters (simu
     expect(provider.callCount).toBe(callsBefore);
   }, 120_000);
 
+  it('does not resume a failed suggestion run into planning without approval', async () => {
+    const other = await createProject(pool, {
+      workspaceId,
+      title: 'Unapproved recovery',
+      operatingMode: 'autopilot',
+    });
+    await pool.query(
+      `INSERT INTO novel_runs (workspace_id, project_id, status, target_chapters)
+       VALUES ($1, $2, 'failed', 2)`,
+      [workspaceId, other.projectId],
+    );
+    await expect(resumeNovelRun(pool, { projectId: other.projectId })).rejects.toMatchObject({
+      code: 'SELECTION_REQUEST_CHANGED',
+    });
+    const run = await getNovelRun(pool, other.projectId);
+    expect(run?.status).toBe('failed');
+  });
+
   it('approval queues planning; the runner builds the full bible, then writes every chapter', async () => {
     const before = await getNovelRun(pool, projectId);
     const concept = (await startNovel(makeDeps(), { projectId, intake: INTAKE })).concepts[1];
     expect(concept).toBeDefined();
-    const approved = await approveConcept(pool, { projectId, conceptId: concept?.id ?? '' });
+    const approved = await approveConcept(pool, {
+      projectId,
+      conceptId: concept?.id ?? '',
+      autoContinue: false,
+    });
     expect(approved.status).toBe('planning');
     expect(approved.approved_concept_id).toBe(concept?.id);
     expect(before?.status).toBe('awaiting_approval');
 
     const runner = new NovelRunner({ pool, makeDeps, runnerId: 'test-runner', leaseSeconds: 30 });
+    expect(await runner.tick()).toBe(true);
+    const paused = await getNovelRun(pool, projectId);
+    expect(paused?.status).toBe('paused');
+    expect(paused?.next_chapter).toBe(2);
+    const resumed = await resumeNovelRun(pool, { projectId, autoContinue: true });
+    expect(resumed.status).toBe('producing');
     expect(await runner.tick()).toBe(true);
     const after = await getNovelRun(pool, projectId);
     expect(after?.status).toBe('completed');

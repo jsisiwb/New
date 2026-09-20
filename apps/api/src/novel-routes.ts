@@ -96,7 +96,7 @@ export function registerNovelRoutes(app: FastifyInstance, deps: NovelRouteDeps):
           workspaceId: scope.workspaceId,
           key: headerOf(req, 'idempotency-key'),
           method: 'POST',
-          route: '/v1/projects/:projectId/novel',
+          route: `/v1/projects/${projectId}/novel`,
           body: req.body,
         },
         async () => {
@@ -182,6 +182,31 @@ export function registerNovelRoutes(app: FastifyInstance, deps: NovelRouteDeps):
     });
   });
 
+  app.get('/v1/projects/:projectId/novel/bible', async (req) => {
+    const scope = await scoped(req);
+    requireRole(scope, 'viewer');
+    const projectId = projectIdOf(req);
+    return inScope(scope, async (c) => {
+      await projectOr404(c, projectId);
+      const project = await c.query<{ settings: { story_plan?: StoredStoryPlan } }>(
+        'SELECT settings FROM projects WHERE id = $1',
+        [projectId],
+      );
+      const plan = project.rows[0]?.settings.story_plan;
+      if (!plan) throw new ApiError('NOT_FOUND', 'The complete story bible is not ready yet.');
+      const bible = await getArtifactById(c, plan.bible_artifact_id);
+      const blueprint = await getArtifactById(c, plan.blueprint_artifact_id);
+      if (
+        !bible ||
+        !blueprint ||
+        bible.project_id !== projectId ||
+        blueprint.project_id !== projectId
+      )
+        throw new ApiError('NOT_FOUND', 'The story plan artifacts are unavailable.');
+      return { bible: bible.payload, blueprint: blueprint.payload };
+    });
+  });
+
   app.get('/v1/projects/:projectId/novel/events', async (req) => {
     const scope = await scoped(req);
     requireRole(scope, 'viewer');
@@ -204,7 +229,7 @@ export function registerNovelRoutes(app: FastifyInstance, deps: NovelRouteDeps):
     const body = asObject(req.body);
     const conceptId = requireUuid(body.concept_id as string | undefined, 'body.concept_id');
     const rationale = optionalString(body, 'rationale', { max: 2000 });
-    const autoContinue = body.auto_continue === undefined ? true : body.auto_continue === true;
+    const autoContinue = optionalBoolean(body, 'auto_continue') ?? true;
     const stopAfter =
       body.stop_after_chapter === undefined || body.stop_after_chapter === null
         ? undefined
@@ -220,7 +245,7 @@ export function registerNovelRoutes(app: FastifyInstance, deps: NovelRouteDeps):
           workspaceId: scope.workspaceId,
           key: headerOf(req, 'idempotency-key'),
           method: 'POST',
-          route: '/v1/projects/:projectId/novel/approve',
+          route: `/v1/projects/${projectId}/novel/approve`,
           body: req.body,
         },
         async () => {
@@ -265,9 +290,41 @@ export function registerNovelRoutes(app: FastifyInstance, deps: NovelRouteDeps):
               min: 1,
               max: 5000,
             });
-    const autoContinue = body.auto_continue === undefined ? undefined : body.auto_continue === true;
+    const autoContinue = optionalBoolean(body, 'auto_continue');
     const run = await inScope(scope, async (c) => {
       await projectOr404(c, projectId);
+      if (action === 'resume') {
+        const existing = await getNovelRun(c, projectId);
+        if (existing?.status === 'failed' && existing.approved_concept_id === null) {
+          const make = deps.novelDeps;
+          if (!make)
+            throw new ApiError(
+              'NO_PROVIDER',
+              'This API process has no model provider configured (YEONJAE_PROVIDER_MODE). Set one and retry.',
+            );
+          if (!existing.intake_artifact_id)
+            throw new ApiError('INTERNAL_ERROR', 'The failed novel run has no persisted intake.');
+          const intake = await getArtifactById(c, existing.intake_artifact_id);
+          if (!intake)
+            throw new ApiError(
+              'INTERNAL_ERROR',
+              'The failed novel run intake could not be loaded.',
+            );
+          const recovered = await startNovel(make({ workspaceId: scope.workspaceId, projectId }), {
+            projectId,
+            intake: intake.payload,
+            createdByUserId: scope.principal.user.id,
+          });
+          await audit(c, scope, {
+            action: 'novel.resume_suggestions',
+            targetKind: 'novel_run',
+            targetId: recovered.run.id,
+            projectId,
+            requestId: req.id,
+          });
+          return recovered.run;
+        }
+      }
       const r =
         action === 'pause'
           ? await pauseNovelRun(pool, projectId)
@@ -338,6 +395,16 @@ export function runView(run: NovelRunRow) {
       run.runner_id !== null && run.lease_expires_at !== null && run.lease_expires_at > new Date(),
     updated_at: run.updated_at,
   };
+}
+
+function optionalBoolean(body: Record<string, unknown>, key: string): boolean | undefined {
+  const value = body[key];
+  if (value === undefined) return undefined;
+  if (typeof value !== 'boolean')
+    throw new ApiError('VALIDATION_FAILED', `${key} must be a boolean.`, {
+      errors: [{ path: `body.${key}`, message: 'must be a boolean' }],
+    });
+  return value;
 }
 
 function conceptView(c: ConceptLike) {

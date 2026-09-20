@@ -18,6 +18,7 @@ import {
   NOVEL_RUN_LEASE_SECONDS,
   releaseNovelRun,
   renewNovelRun,
+  type NovelRunLease,
   type NovelRunRow,
   type Pool,
 } from '@yeonjae/db';
@@ -73,7 +74,11 @@ export class NovelRunner {
           .then((ok) => {
             if (!ok) lost.value = true;
           })
-          .catch(() => undefined);
+          .catch(() => {
+            // A failed renewal is indistinguishable from losing the lease. Stop before the next
+            // checkpoint rather than allowing a network/database transient to run as a zombie.
+            lost.value = true;
+          });
       },
       Math.max(1000, (ttl * 1000) / 3),
     );
@@ -85,13 +90,37 @@ export class NovelRunner {
       for (;;) {
         if (this.isStopping() || lost.value) break;
         const outcome = await advanceNovelRun(deps, run, {
+          lease: { runner: this.opts.runnerId, fence } satisfies NovelRunLease,
           isCancelled: async () => {
-            const r = await pool.query<{ status: string }>(
-              'SELECT status FROM novel_runs WHERE id = $1',
-              [run.id],
-            );
-            const s = r.rows[0]?.status;
-            return s === 'cancelled' || s === 'paused' || lost.value;
+            if (lost.value) return true;
+            try {
+              const r = await pool.query<{
+                status: string;
+                runner_id: string | null;
+                runner_fence: string;
+                lease_expires_at: Date | null;
+              }>(
+                `SELECT status, runner_id, runner_fence, lease_expires_at
+                   FROM novel_runs
+                  WHERE id = $1`,
+                [run.id],
+              );
+              const row = r.rows[0];
+              const ownsLease =
+                row?.runner_id === this.opts.runnerId &&
+                row.runner_fence === String(fence) &&
+                row.lease_expires_at !== null &&
+                row.lease_expires_at > new Date();
+              if (!ownsLease) {
+                lost.value = true;
+                return true;
+              }
+              return row.status === 'cancelled' || row.status === 'paused';
+            } catch {
+              // Ownership cannot be proven on a failed read; fail closed.
+              lost.value = true;
+              return true;
+            }
           },
         });
         run = outcome.run;
@@ -102,11 +131,14 @@ export class NovelRunner {
         if (run.status !== 'producing' && run.status !== 'planning') break;
       }
     } catch (err) {
-      await emitNovelRunEvent(pool, {
-        runId: run.id,
-        kind: 'runner.error',
-        payload: { message: err instanceof Error ? err.name : 'error' },
-      }).catch(() => undefined);
+      // A fenced-out worker must not append progress after another worker owns the run.
+      if (!lost.value)
+        await emitNovelRunEvent(pool, {
+          runId: run.id,
+          kind: 'runner.error',
+          payload: { message: err instanceof Error ? err.name : 'error' },
+          lease: { runner: this.opts.runnerId, fence },
+        }).catch(() => undefined);
     } finally {
       clearInterval(heartbeat);
       if (!lost.value)

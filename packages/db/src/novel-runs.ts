@@ -6,7 +6,7 @@
  * advances `next_chapter` as chapter jobs are accepted. Every transition appends a `novel_run_events` row,
  * so what the UI shows is history the database recorded rather than a status a process remembered.
  */
-import { type Client, type Pool, rethrowCanon } from './client.js';
+import { type Client, type Pool, rethrowCanon, withTransaction } from './client.js';
 
 type Queryable = Pool | Client;
 
@@ -56,6 +56,32 @@ export interface NovelRunEventRow {
 }
 
 export const NOVEL_RUN_LEASE_SECONDS = 120;
+
+export interface NovelRunLease {
+  runner: string;
+  fence: string | number;
+}
+
+export interface NovelRunTransitionInput {
+  runId: string;
+  to: NovelRunStatus;
+  expectFrom?: readonly NovelRunStatus[] | undefined;
+  patch?:
+    | {
+        approvedConceptId?: string | undefined;
+        approvedByUserId?: string | undefined;
+        nextChapter?: number | undefined;
+        autoContinue?: boolean | undefined;
+        stopAfterChapter?: number | null | undefined;
+        lastError?: Record<string, unknown> | null | undefined;
+        specVersion?: number | undefined;
+        targetChapters?: number | undefined;
+      }
+    | undefined;
+  event?: { kind: string; payload?: Record<string, unknown> | undefined } | undefined;
+  additionalEvents?: readonly { kind: string; payload?: Record<string, unknown> | undefined }[];
+  lease?: NovelRunLease | undefined;
+}
 
 export async function getNovelRun(
   db: Queryable,
@@ -115,17 +141,54 @@ export async function ensureNovelRun(
 
 export async function emitNovelRunEvent(
   db: Queryable,
-  input: { runId: string; kind: string; payload?: Record<string, unknown> | undefined },
+  input: {
+    runId: string;
+    kind: string;
+    payload?: Record<string, unknown> | undefined;
+    lease?: NovelRunLease | undefined;
+  },
 ): Promise<NovelRunEventRow> {
+  // Pool callers need a private transaction so the run-row lock serializes event sequence allocation.
+  // Client callers (notably transitionNovelRun) already own the surrounding transaction.
+  if ('release' in db) return emitNovelRunEventOnClient(db, input);
+  return withTransaction(db, (client) => emitNovelRunEventOnClient(client, input));
+}
+
+async function emitNovelRunEventOnClient(
+  db: Client,
+  input: {
+    runId: string;
+    kind: string;
+    payload?: Record<string, unknown> | undefined;
+    lease?: NovelRunLease | undefined;
+  },
+): Promise<NovelRunEventRow> {
+  const run = await db.query<{ workspace_id: string; project_id: string; id: string }>(
+    `SELECT workspace_id, project_id, id
+       FROM novel_runs
+      WHERE id = $1
+        AND ($2::text IS NULL OR (runner_id = $2 AND runner_fence = $3::bigint
+          AND lease_expires_at > now()))
+      FOR UPDATE`,
+    [input.runId, input.lease?.runner ?? null, input.lease ? String(input.lease.fence) : null],
+  );
+  const lockedRun = run.rows[0];
+  if (!lockedRun) throw new Error(`novel run ${input.runId} does not exist for event emission`);
+
   const r = await db
     .query<NovelRunEventRow>(
       `INSERT INTO novel_run_events (workspace_id, project_id, run_id, seq, kind, payload)
-       SELECT nr.workspace_id, nr.project_id, nr.id,
-              coalesce((SELECT max(seq) FROM novel_run_events e WHERE e.run_id = nr.id), 0) + 1,
-              $2, $3::jsonb
-         FROM novel_runs nr WHERE nr.id = $1
+       VALUES ($1, $2, $3,
+               (SELECT coalesce(max(seq), 0) + 1 FROM novel_run_events WHERE run_id = $3),
+               $4, $5::jsonb)
        RETURNING id, run_id, seq, kind, payload, created_at`,
-      [input.runId, input.kind, JSON.stringify(input.payload ?? {})],
+      [
+        lockedRun.workspace_id,
+        lockedRun.project_id,
+        lockedRun.id,
+        input.kind,
+        JSON.stringify(input.payload ?? {}),
+      ],
     )
     .catch(rethrowCanon);
   const row = r.rows[0];
@@ -153,24 +216,17 @@ export async function listNovelRunEvents(
  */
 export async function transitionNovelRun(
   db: Queryable,
-  input: {
-    runId: string;
-    to: NovelRunStatus;
-    expectFrom?: readonly NovelRunStatus[] | undefined;
-    patch?:
-      | {
-          approvedConceptId?: string | undefined;
-          approvedByUserId?: string | undefined;
-          nextChapter?: number | undefined;
-          autoContinue?: boolean | undefined;
-          stopAfterChapter?: number | null | undefined;
-          lastError?: Record<string, unknown> | null | undefined;
-          specVersion?: number | undefined;
-          targetChapters?: number | undefined;
-        }
-      | undefined;
-    event?: { kind: string; payload?: Record<string, unknown> | undefined } | undefined;
-  },
+  input: NovelRunTransitionInput,
+): Promise<{ run: NovelRunRow; applied: boolean }> {
+  // The transition and its audit event must commit together. Client callers are already scoped to a
+  // transaction (for example resumeNovelRun), while pool callers get a private transaction here.
+  if ('release' in db) return transitionNovelRunOnClient(db, input);
+  return withTransaction(db, (client) => transitionNovelRunOnClient(client, input));
+}
+
+async function transitionNovelRunOnClient(
+  db: Queryable,
+  input: NovelRunTransitionInput,
 ): Promise<{ run: NovelRunRow; applied: boolean }> {
   const p = input.patch ?? {};
   const r = await db
@@ -191,6 +247,8 @@ export async function transitionNovelRun(
          lease_expires_at = CASE WHEN $2 IN ('planning', 'producing') THEN lease_expires_at ELSE NULL END,
          updated_at = now()
        WHERE id = $1 AND ($13::text[] IS NULL OR status = ANY($13::text[]))
+         AND ($14::text IS NULL OR (runner_id = $14 AND runner_fence = $15::bigint
+           AND lease_expires_at > now()))
        RETURNING *`,
       [
         input.runId,
@@ -206,6 +264,8 @@ export async function transitionNovelRun(
         p.specVersion ?? null,
         p.targetChapters ?? null,
         input.expectFrom ? [...input.expectFrom] : null,
+        input.lease?.runner ?? null,
+        input.lease ? String(input.lease.fence) : null,
       ],
     )
     .catch(rethrowCanon);
@@ -220,6 +280,12 @@ export async function transitionNovelRun(
     kind: input.event?.kind ?? `run.${input.to}`,
     payload: { status: input.to, next_chapter: row.next_chapter, ...(input.event?.payload ?? {}) },
   });
+  for (const event of input.additionalEvents ?? [])
+    await emitNovelRunEvent(db, {
+      runId: row.id,
+      kind: event.kind,
+      payload: { status: row.status, next_chapter: row.next_chapter, ...(event.payload ?? {}) },
+    });
   return { run: row, applied: true };
 }
 

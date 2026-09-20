@@ -212,7 +212,9 @@ run('least privilege on append-only and canon-history tables (migration 0014)', 
     expect(canonFunctions?.acl).toContain(`${APP_ROLE}=X`);
     expect(canonFunctions?.acl).not.toMatch(/(^|\s)=X/);
     const sequences = r.rows.find((row) => row.sch === 'public' && row.objtype === 'S');
-    expect(sequences?.acl).toBe(`${APP_ROLE}=U/yeonjae`);
+    const owner = (await pool.query<{ name: string }>('SELECT current_user AS name')).rows[0]?.name;
+    expect(owner).toBeTruthy();
+    expect(sequences?.acl).toBe(`${APP_ROLE}=U/${owner}`);
   });
 
   // -------------------------------------------------------------------------------------------------

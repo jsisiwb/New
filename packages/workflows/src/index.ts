@@ -10,6 +10,7 @@ export * from './acceptance.js';
 export * from './chapter-production.js';
 export * from './export-package.js';
 export * from './story-plan.js';
+export * from './design-output.js';
 export * from './novel.js';
 export * from './novel-runner.js';
 export * from './anchoring.js';
