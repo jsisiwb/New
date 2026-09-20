@@ -110,6 +110,18 @@ model versions (prompts are model-sensitive; a model change also triggers the su
 pin at start; per-call override for experiments is recorded. Changing the set mid-project is an explicit
 user action with a note in the audit log.
 
+For chapter and story-planning jobs, the active set supplies defaults only at job creation. Resume uses
+the persisted mapping, verified against the immutable registry and available prompt content; a new
+active version does not rewrite an existing job's pins (ADR-0053). Missing historical versions or
+changed policy/identity inputs fail closed before model calls. Retain historical prompt files during
+rollout; new prompt defaults alone do not require draining otherwise compatible jobs.
+
+Resume failures use `STEP_NONDETERMINISTIC` with a structured `data.reason`. For
+`missing_historical_prompt`, restore the required version's files. For `prompt_version_mismatch`, restore
+the original immutable content rather than editing its stored hash. For `input_pin_mismatch`, restore
+the job's policy/identity configuration or explicitly start separate work. Mapping or malformed-pin
+errors require investigating data integrity; never repair them by silently substituting active defaults.
+
 ## 7. Security in prompts
 
 - System prompts are static templates; no user text is interpolated into system positions except the

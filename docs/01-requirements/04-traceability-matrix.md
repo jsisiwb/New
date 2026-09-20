@@ -17,6 +17,11 @@ updated in the same change as any requirement/design change (AGENTS.md rule 1). 
 
 ## Functional and nonfunctional requirements
 
+Durable prompt-pinned resume: ADR-0053 and `docs/05-generation/03-prompt-architecture.md`
+§6 govern shared chapter/story-planning pin resolution; regression coverage lives in
+`packages/workflows/src/workflow-pins.integration.test.ts`. Concurrent immutable registration is covered
+by `packages/db/src/audit.integration.test.ts`.
+
 Complete-bible-before-prose (FR-3/FR-4): planning architecture §12, ADR-0052;
 `packages/workflows/src/story-plan.integration.test.ts` covers retained design context and refusal of
 incomplete plans before manuscript generation. Existing `series-blueprint` and canon contracts remain

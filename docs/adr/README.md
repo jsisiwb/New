@@ -56,5 +56,7 @@
 
 | [0052](0052-complete-bible-before-prose.md) | Preserve full design documents as planned context and reject incomplete series plans before prose |
 
+| [0053](0053-deployment-safe-workflow-resume.md) | Chapter and story-planning jobs resume with validated persisted prompt sets instead of the latest active defaults |
+
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

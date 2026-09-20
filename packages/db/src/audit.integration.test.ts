@@ -110,4 +110,46 @@ run('gateway audit tables (migration 0002)', () => {
       pool.query(`UPDATE prompt_versions SET content_hash = 'sha256:z' WHERE id = 'x@1.0.0'`),
     ).rejects.toMatchObject({ hint: 'PROMPT_IMMUTABLE' });
   });
+
+  it('concurrent registration inserts once and verifies every identical contender', async () => {
+    const version = {
+      id: 'concurrent@1.0.0',
+      family: 'concurrent',
+      version: '1.0.0',
+      content_hash: 'sha256:original',
+      role: 'concurrent',
+      style_sensitive: false,
+      manuscript_producing: false,
+      identity_variant: null,
+      model_class: 'C',
+      output_schema: null,
+      status: 'active',
+      meta: {},
+    };
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () => upsertPromptVersions(pool, [version])),
+    );
+    expect(results.reduce((n, result) => n + result.inserted, 0)).toBe(1);
+    expect(results.reduce((n, result) => n + result.verified, 0)).toBe(7);
+    const competing = { ...version, id: 'concurrent@2.0.0', version: '2.0.0' };
+    const conflicting = await Promise.allSettled([
+      upsertPromptVersions(pool, [competing]),
+      upsertPromptVersions(pool, [{ ...competing, content_hash: 'sha256:changed' }]),
+    ]);
+    expect(conflicting.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const rejected = conflicting.filter((result) => result.status === 'rejected');
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]?.reason).toHaveProperty(
+      'message',
+      expect.stringContaining('PROMPT_IMMUTABLE'),
+    );
+    const stored = await pool.query<{ content_hash: string }>(
+      'SELECT content_hash FROM prompt_versions WHERE id = $1',
+      [competing.id],
+    );
+    expect(stored.rows).toHaveLength(1);
+    expect(stored.rows[0]?.content_hash).toBe(
+      conflicting[0].status === 'fulfilled' ? 'sha256:original' : 'sha256:changed',
+    );
+  });
 });
