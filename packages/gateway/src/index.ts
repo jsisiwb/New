@@ -9,3 +9,6 @@ export * from './replay-provider.js';
 export * from './http-provider.js';
 export * from './synthetic-provider-service.js';
 export * from './genspark-provider.js';
+export * from './live-providers.js';
+export * from './live-config.js';
+export * from './provider-mode.js';

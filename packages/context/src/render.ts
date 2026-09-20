@@ -77,16 +77,19 @@ export function renderContract(c: ChapterContract, nameOf: NameOf): string {
   lines.push(`Purpose: ${c.purpose}`);
   if (c.reader_experience) lines.push(`Reader experience: ${c.reader_experience}`);
   if (c.arc_objective_contribution) lines.push(`Arc contribution: ${c.arc_objective_contribution}`);
+  // Ids travel with the names: downstream planners must copy participant, POV and location ids
+  // verbatim, and a model can only copy what it was shown.
+  const withId = (id: string) => `${nameOf(id)} (id ${id})`;
   lines.push(
-    `POV: ${nameOf(c.pov.character_id)} (${c.pov.person.replace('_', ' ')}). Participants: ${c.participants
+    `POV: ${withId(c.pov.character_id)} (${c.pov.person.replace('_', ' ')}). Participants: ${c.participants
       .map(
-        (p) => `${nameOf(p.character_id)} [${p.role_in_chapter}${p.on_page ? '' : ', off-page'}]`,
+        (p) => `${withId(p.character_id)} [${p.role_in_chapter}${p.on_page ? '' : ', off-page'}]`,
       )
       .join('; ')}.`,
   );
   if (c.mentioned_only?.length)
     lines.push(`Mentioned only: ${c.mentioned_only.map(nameOf).join(', ')}.`);
-  lines.push(`Locations: ${c.locations.map(nameOf).join(', ') || '—'}.`);
+  lines.push(`Locations: ${c.locations.map(withId).join(', ') || '—'}.`);
   lines.push(
     `Story time: ${clockLabel(c.story_time.start)} → ${clockLabel(c.story_time.end)}${
       c.story_time.elapsed_since_previous

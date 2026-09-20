@@ -96,6 +96,7 @@ import { Gateway, MemoryBudget, ReplayProvider, type RoutingTable } from '@yeonj
 import { PgAuditStore } from '@yeonjae/db';
 import { ArtifactLlmOutputStore } from '@yeonjae/workflows';
 import { WorkflowError } from '@yeonjae/workflows';
+import { NOVEL_COMMANDS, NOVEL_USAGE, runNovelCommand } from './novel.js';
 
 /** Chapter-1 fixture paths and identity pins (mirrors packages/workflows/src/testkit.ts, the test-only harness). */
 const FIXTURE_ROOT = new URL('../../../', import.meta.url);
@@ -992,6 +993,8 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         }
       }
       default:
+        if (NOVEL_COMMANDS.has(cmd ?? ''))
+          return await runNovelCommand(pool, cmd ?? '', rest, USAGE);
         return { ok: false, output: USAGE };
     }
   } finally {
@@ -1398,6 +1401,7 @@ async function projectForJob(pool: Pool, jobId: string): Promise<string | undefi
 }
 
 export const DB_COMMANDS = new Set([
+  ...NOVEL_COMMANDS,
   'db:migrate',
   'project:create',
   'entity:create',
@@ -1624,7 +1628,7 @@ Database commands (DATABASE_URL required):
                                                bounded batch (max 50) of typography_check | platform_format_check
   constraints:compile <chapter#> <spec.json> [cap]
                                                compile the Active Constraint Set for a chapter (no database)
-`;
+${NOVEL_USAGE}`;
 
 export function run(argv: readonly string[]): CommandResult {
   const [cmd, ...rest] = argv;

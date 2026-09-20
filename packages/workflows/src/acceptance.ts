@@ -24,6 +24,7 @@ import {
 } from '@yeonjae/db';
 import { type Generated, validatorFor } from '@yeonjae/domain';
 import { checkOutputLanguage, segmentParagraphs, toNfcText } from '@yeonjae/prose';
+import { anchorEvidence } from './anchoring.js';
 import { checkpointPack, packCallInput, type StoredPack } from './drafting.js';
 import { type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
@@ -153,8 +154,41 @@ export async function extractCanon(
         },
         pack: packCallInput(pack.stored),
       });
+      // Live extractors quote text reliably and count code points unreliably; each span is re-anchored
+      // to where its quote actually is before verification (policy fuzzy_anchor_min_ratio governs the
+      // verifier; anchoring never changes a quote that is not in the text). The extractor is shown ONE
+      // version and never its id, so a missing or non-UUID id is filled with that version; a different
+      // real id is left alone and rejected below as an envelope mismatch.
+      const nfcVersion = toNfcText(version.text);
+      const rawItems = Array.isArray(call.output.items) ? call.output.items : [];
+      const knownVersionIds = new Set(
+        (
+          await ctx.pool.query<{ id: string }>(
+            'SELECT id FROM manuscript_versions WHERE project_id = $1',
+            [ctx.projectId],
+          )
+        ).rows.map((r) => r.id),
+      );
+      const anchoredItems = anchorEvidence(
+        nfcVersion,
+        version.id,
+        rawItems.map((item) => ({
+          ...item,
+          evidence: Array.isArray(item.evidence)
+            ? item.evidence.map((ev) => ({
+                ...ev,
+                manuscript_version_id:
+                  typeof ev.manuscript_version_id === 'string' &&
+                  knownVersionIds.has(ev.manuscript_version_id)
+                    ? ev.manuscript_version_id
+                    : version.id,
+              }))
+            : [],
+        })),
+      );
       const envelope: CanonDelta = {
         ...(call.output as CanonDelta),
+        items: anchoredItems as CanonDelta['items'],
         project_id: ctx.projectId,
         chapter_id: input.chapterId,
         manuscript_version_id: version.id,
@@ -163,7 +197,7 @@ export async function extractCanon(
         extractor_call_id: call.llmCallId,
       };
       // The extractor may only cite the version it was given: any other manuscript_version_id is rejected.
-      for (const item of call.output.items ?? []) {
+      for (const item of anchoredItems) {
         for (const ev of item.evidence) {
           if (ev.manuscript_version_id !== version.id)
             throw new WorkflowError(
@@ -364,7 +398,17 @@ export async function summarizeAndIndex(
         block: compileFor(ctx, 'summarizer_min', 3000),
       });
       const summary = toNfcText(call.output.summary_l1 ?? '').text.trim();
-      const hook = toNfcText(call.output.ending_hook ?? delta.ending_hook ?? '').text.trim();
+      const nfcText = toNfcText(version.text).text;
+      // The hook must be verbatim from the accepted text. A live model paraphrases; when neither the
+      // summarizer's nor the extractor's hook is a literal excerpt, the manuscript's own last paragraph
+      // is the hook — it IS the ending, and it is verbatim by construction.
+      const proposed = [call.output.ending_hook, delta.ending_hook]
+        .filter((h): h is string => typeof h === 'string')
+        .map((h) => toNfcText(h).text.trim())
+        .filter((h) => h.length > 0);
+      const literal = proposed.find((h) => nfcText.includes(h));
+      const lastParagraph = segmentParagraphs(toNfcText(version.text)).at(-1)?.text.trim() ?? '';
+      const hook = literal ?? (proposed.length > 0 ? lastParagraph : '');
       const maxWords = ctx.policy.context.l1_summary_max_words ?? 120;
       const words = summary.split(/\s+/).filter(Boolean).length;
       if (!summary || words > maxWords)
@@ -377,8 +421,7 @@ export async function summarizeAndIndex(
         throw new WorkflowError('OUTPUT_LANGUAGE_FAILED', 'L1 summary is not English', {
           step: 'summarize',
         });
-      // The hook must be verbatim from the accepted text.
-      if (hook && !toNfcText(version.text).text.includes(hook))
+      if (hook && !nfcText.includes(hook))
         throw new WorkflowError(
           'SUMMARY_INVALID',
           'ending hook is not a verbatim excerpt of the accepted text',

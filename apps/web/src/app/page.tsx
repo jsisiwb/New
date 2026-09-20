@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ProtectedRoute, SignOutButton } from '../screens/auth';
 import { ProjectOverviewScreen, WorkspaceScreen } from '../screens/workspace';
+import { NovelScreen } from '../screens/novel';
 import { SpecScreen } from '../screens/spec';
 import { DirectionsAndConceptsScreen } from '../screens/concepts';
 import { BibleScreen, NarrativeIdentityScreen } from '../screens/bible';
@@ -25,6 +26,7 @@ import { OperationsScreen } from '../screens/operations';
 export const WORK_AREAS = [
   { id: 'workspace', label: 'Workspace and projects' },
   { id: 'overview', label: 'Project overview' },
+  { id: 'novel', label: 'New novel' },
   { id: 'spec', label: 'Specification and assumptions' },
   { id: 'concepts', label: 'Directions and concepts' },
   { id: 'bible', label: 'Bible and register profiles' },
@@ -128,6 +130,8 @@ export function WorkArea({
       return <WorkspaceScreen onOpenProject={onOpenProject} />;
     case 'overview':
       return <ProjectOverviewScreen projectId={projectId} />;
+    case 'novel':
+      return <NovelScreen projectId={projectId} />;
     case 'spec':
       return <SpecScreen projectId={projectId} />;
     case 'concepts':

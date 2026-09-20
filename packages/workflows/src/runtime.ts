@@ -10,6 +10,7 @@ import {
   checkpointControl,
   completeJobStep,
   failJobStep,
+  getArtifact,
   getArtifactById,
   getJobStep,
   leaseOwnership,
@@ -339,6 +340,20 @@ export async function loadArtifact<T>(ctx: WorkflowContext, artifactId: string):
   return a.payload as T;
 }
 
+/**
+ * A project-scoped artifact another job already produced (the story plan's spec, an arc plan chapter k−1
+ * planned). Chapter jobs are keyed per chapter, so `runStep` alone would re-run the model call and then
+ * trip `putArtifact`'s determinism check when a live model answered differently; reading the stored
+ * artifact first keeps the plan pinned and spends nothing.
+ */
+export async function existingArtifact(
+  ctx: WorkflowContext,
+  q: { step: string; kind: string; key: string },
+): Promise<{ payload: unknown; artifact_id: string } | undefined> {
+  const a = await getArtifact(ctx.pool, { projectId: ctx.projectId, ...q });
+  return a ? { payload: a.payload, artifact_id: a.id } : undefined;
+}
+
 /** Artifact-backed output store for PgAuditStore: outputs live in workflow_artifacts, never in llm_calls. */
 export class ArtifactLlmOutputStore implements LlmOutputStore {
   constructor(
@@ -409,6 +424,26 @@ export interface ModelCallResult<T = unknown> {
 }
 
 /**
+ * Families whose declared output schema describes the COMPLETED document, not what the model returns:
+ * the workflow fills in project/chapter/version pins after the call and validates the result itself.
+ * Validating the raw model output against the full schema at the gateway would reject every live answer
+ * for a missing `project_id`. For these the gateway still requires parseable JSON (bounded repair); the
+ * schema gate runs once, in the workflow, on the finished envelope.
+ */
+const WORKFLOW_COMPLETES_ENVELOPE = new Set([
+  'requirement_interpreter',
+  'concept_generator',
+  'story_architect',
+  'arc_planner',
+  'chapter_planner',
+  'canon_extractor',
+  'targeted_reviser',
+  'chapter_comparator',
+  // Drafts are normalized from their own prose (paragraph table, spans) before the schema gate runs.
+  'scene_writer',
+]);
+
+/**
  * One model call: prompt family → pinned version → rendered with pack variables → Gateway. The Narrative
  * Identity Guard runs inside the gateway; the block is embedded either by the pack (system position) or by
  * the prompt's own `{{narrative_identity_block}}` slot for pack-less roles.
@@ -474,7 +509,12 @@ export async function modelCall<T = unknown>(
         input.pack?.tokenEstimate ?? Math.ceil((rendered.system.length + rendered.user.length) / 4),
     },
     narrativeIdentityRef: identityRef,
-    outputSchemaRef: input.outputSchemaRef ?? pv.output_schema ?? undefined,
+    outputSchemaRef:
+      input.outputSchemaRef ??
+      (WORKFLOW_COMPLETES_ENVELOPE.has(pv.family) ? undefined : (pv.output_schema ?? undefined)),
+    // Pack-less JSON roles (judges, designers) declare no schema; the prompt's output_mode still tells
+    // the gateway a prose answer is a repairable fault rather than a valid string.
+    outputMode: pv.output_mode,
     params: { temperature: pv.params.temperature, max_tokens: pv.params.max_tokens },
     modelClass: pv.model_class,
   };

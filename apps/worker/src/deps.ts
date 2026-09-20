@@ -1,11 +1,10 @@
 /**
  * How the worker builds its model gateway (Checkpoint 7; shared enforcement in Phase 4).
  *
- * There is no default that reaches a paid provider. `YEONJAE_PROVIDER_MODE` must be set explicitly, and
- * the only mode this checkpoint implements is `replay` — the same routing the CLI and every test use, which
- * serves recorded fixture responses and cannot issue a network call. A live mode is a separate, deliberate
- * decision with its own credential handling and budget review; leaving a `live` branch here that merely
- * lacked configuration would be an accident waiting to be triggered by an environment variable.
+ * There is no default that reaches a paid provider. `YEONJAE_PROVIDER_MODE` must be set explicitly to
+ * `replay` (recorded fixtures), `genspark` (the local bridge) or `live` (an OpenAI-compatible or Anthropic
+ * API named by `YEONJAE_LIVE_*`); the resolution lives in `@yeonjae/gateway` so the API and the worker
+ * read the same variables the same way.
  *
  * SHARED ENFORCEMENT. The worker's default path uses the database-backed `SharedBudget` and the
  * PostgreSQL shared limiter, never the in-process `MemoryBudget`. That distinction only matters because
@@ -15,30 +14,18 @@
  * (`YEONJAE_ENFORCEMENT_MODE=isolated_test`), and an unset or unrecognized value fails closed rather
  * than silently degrading — a silent fallback to in-memory protection is exactly the bug this guards.
  */
-import { readFileSync } from 'node:fs';
-import {
-  DEFAULT_GENSPARK_BRIDGE_URL,
-  Gateway,
-  GensparkProvider,
-  MemoryBudget,
-  ReplayProvider,
-  type RoutingTable,
-} from '@yeonjae/gateway';
+import { Gateway, MemoryBudget, resolveProvidersFromEnv } from '@yeonjae/gateway';
 import { Metrics } from '@yeonjae/domain';
 import { ArtifactLlmOutputStore, type ChapterProductionDeps } from '@yeonjae/workflows';
 import { PgAuditStore, PgProviderAdmission, SharedBudget, type Pool } from '@yeonjae/db';
 
-export type ProviderMode = 'replay' | 'genspark';
-
-export function providerModeFromEnv(env: NodeJS.ProcessEnv = process.env): ProviderMode {
-  const mode = env.YEONJAE_PROVIDER_MODE;
-  if (mode === 'replay') return 'replay';
-  if (mode === 'genspark') return 'genspark';
-  throw new Error(
-    "YEONJAE_PROVIDER_MODE must be set to 'replay' or 'genspark'; the worker refuses to start without an explicit " +
-      'provider mode so a misconfigured deployment cannot issue paid calls',
-  );
-}
+// Re-exported so existing callers and tests keep one import site.
+export {
+  gensparkRouting,
+  providerModeFromEnv,
+  replayRouting,
+  type ProviderMode,
+} from '@yeonjae/gateway';
 
 /**
  * Which protection the worker runs with.
@@ -85,57 +72,6 @@ export async function assertSharedEnforcementAvailable(pool: Pool): Promise<void
 }
 
 /**
- * Routing for the replay provider: every model class resolves to the recorded fixture responses.
- *
- * The class letters are the gateway's own (`R` requirements, `P` prose, `M` evaluation, `C` checking,
- * `E` embedding). `E` is empty because no embedder exists yet (ADR-0035), and an empty route list makes
- * the gateway refuse an embedding call rather than silently serving a replayed one.
- */
-export function replayRouting(): RoutingTable {
-  const route = (modelId: string, family: string) => [
-    {
-      modelId,
-      provider: 'replay',
-      priority: 1,
-      family,
-      priceInPerMTokCents: 100,
-      priceOutPerMTokCents: 400,
-      maxContextTokens: 200_000,
-      supportsJsonSchema: true,
-    },
-  ];
-  return {
-    R: route('replay-r', 'alpha'),
-    P: route('replay-p', 'alpha'),
-    M: route('replay-m', 'beta'),
-    C: route('replay-c', 'beta'),
-    E: [],
-  };
-}
-
-export function gensparkRouting(): RoutingTable {
-  const route = (modelId: string, family: string) => [
-    {
-      modelId,
-      provider: 'genspark',
-      priority: 1,
-      family,
-      priceInPerMTokCents: 0,
-      priceOutPerMTokCents: 0,
-      maxContextTokens: 128_000,
-      supportsJsonSchema: true,
-    },
-  ];
-  return {
-    R: route('claude-opus-4-7', 'anthropic'),
-    P: route('gemini-3.8-flash', 'google'),
-    M: route('gemini-3.8-flash', 'google'),
-    C: route('gemini-3.8-flash', 'google'),
-    E: [],
-  };
-}
-
-/**
  * Build the production dependency factory.
  *
  * The replay recording is read from `YEONJAE_REPLAY_FILE` when in replay mode. It is a required input in
@@ -158,29 +94,18 @@ export function productionDeps(
     readonly metrics?: Metrics | undefined;
   } = {},
 ): (input: { workspaceId: string; projectId: string }) => ChapterProductionDeps {
-  const mode = providerModeFromEnv();
+  // Provider configuration is validated ONCE at startup, so a missing key, model name or recording is a
+  // startup error that names the variable, not a failed first chapter.
+  const resolved = resolveProvidersFromEnv();
   const enforcement = opts.enforcement ?? enforcementModeFromEnv();
-  const replayFile = process.env.YEONJAE_REPLAY_FILE;
-  if (mode === 'replay' && !replayFile)
-    throw new Error('YEONJAE_REPLAY_FILE must name a recording when YEONJAE_PROVIDER_MODE=replay');
-  const recording =
-    mode === 'replay' && replayFile
-      ? (JSON.parse(readFileSync(replayFile, 'utf8')) as Record<string, unknown>)
-      : {};
   const budgetCents = Number(process.env.YEONJAE_BUDGET_CENTS ?? '100000');
   const holder = `worker:${process.env.YEONJAE_WORKER_ID ?? String(process.pid)}`;
   const maxWaitMs = Number(process.env.YEONJAE_RATE_MAX_WAIT_MS ?? '0');
   const metrics = opts.metrics ?? new Metrics();
 
   return ({ workspaceId, projectId }) => {
-    const provider =
-      mode === 'genspark'
-        ? new GensparkProvider({
-            baseUrl: process.env.YEONJAE_GENSPARK_URL ?? DEFAULT_GENSPARK_BRIDGE_URL,
-          })
-        : new ReplayProvider(recording as never);
-    const providerName = mode === 'genspark' ? 'genspark' : 'replay';
-    const routing = mode === 'genspark' ? gensparkRouting() : replayRouting();
+    const providers = resolved.providers();
+    const routing = resolved.routing;
     const audit = new PgAuditStore(
       pool,
       { workspaceId, projectId },
@@ -190,7 +115,7 @@ export function productionDeps(
       return {
         pool,
         gateway: new Gateway({
-          providers: new Map([[providerName, provider]]),
+          providers,
           routing,
           budget: new MemoryBudget(budgetCents),
           metrics,
@@ -201,7 +126,7 @@ export function productionDeps(
     return {
       pool,
       gateway: new Gateway({
-        providers: new Map([[providerName, provider]]),
+        providers,
         routing,
         // The shared ledger, so two workers spending against one project see one another's spend.
         budget: new SharedBudget(pool),

@@ -46,11 +46,20 @@ describe('configuration fails closed rather than defaulting a secret into existe
 
   it('the worker refuses to start without an explicit provider mode, and never defaults to a paid one', async () => {
     const { providerModeFromEnv } = await import('../../worker/src/deps.js');
+    const { resolveProvidersFromEnv } = await import('@yeonjae/gateway');
     // An absent mode, an empty mode and an unrecognized mode all fail: there is no permissive branch.
-    for (const env of [{}, { YEONJAE_PROVIDER_MODE: '' }, { YEONJAE_PROVIDER_MODE: 'live' }]) {
+    for (const env of [{}, { YEONJAE_PROVIDER_MODE: '' }, { YEONJAE_PROVIDER_MODE: 'paid' }]) {
       expect(() => providerModeFromEnv(env)).toThrow(/YEONJAE_PROVIDER_MODE/);
     }
     expect(providerModeFromEnv({ YEONJAE_PROVIDER_MODE: 'replay' })).toBe('replay');
+    // `live` is a recognized mode, but it never reaches a provider without an explicit key and model
+    // names: the resolver fails closed naming the missing variable rather than defaulting anything.
+    expect(() => resolveProvidersFromEnv({ YEONJAE_PROVIDER_MODE: 'live' })).toThrow(
+      /YEONJAE_LIVE_API_KEY/,
+    );
+    expect(() =>
+      resolveProvidersFromEnv({ YEONJAE_PROVIDER_MODE: 'live', YEONJAE_LIVE_API_KEY: 'k' }),
+    ).toThrow(/YEONJAE_MODEL_R/);
   });
 
   it('CORS is default-deny: unset, empty and whitespace-only all grant nothing', () => {

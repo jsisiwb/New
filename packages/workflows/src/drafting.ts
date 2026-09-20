@@ -14,6 +14,7 @@ import {
 import { asUuid, type Generated, validatorFor } from '@yeonjae/domain';
 import { codePointLength, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
+import { normalizeSceneDraft } from './anchoring.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
 import {
   bind,
@@ -299,7 +300,9 @@ export async function draftScenes(
           },
           pack: packCallInput(input.pack),
         });
-        const draft = validateSceneDraft(call.output, scene.scene_no);
+        // A recorded (or well-formed) draft is taken verbatim; a live draft whose offsets or paragraph
+        // table disagree with its own prose is normalized from the prose and validated again.
+        const draft = validateOrNormalizeSceneDraft(call.output, scene.scene_no);
         const ref = await saveArtifact(ctx, {
           step: 'scene_draft',
           kind: 'scene_draft',
@@ -329,6 +332,23 @@ export async function draftScenes(
 }
 
 export function validateSceneDraft(raw: unknown, expectedSceneNo: number): SceneDraft {
+  return validateSceneDraftStrict(raw, expectedSceneNo);
+}
+
+export function validateOrNormalizeSceneDraft(raw: unknown, expectedSceneNo: number): SceneDraft {
+  try {
+    return validateSceneDraftStrict(raw, expectedSceneNo);
+  } catch (err) {
+    if (!(err instanceof WorkflowError) || typeof raw !== 'object' || raw === null) throw err;
+    const normalized = normalizeSceneDraft({
+      ...(raw as { text: string }),
+      scene_no: expectedSceneNo,
+    });
+    return validateSceneDraftStrict(normalized, expectedSceneNo);
+  }
+}
+
+function validateSceneDraftStrict(raw: unknown, expectedSceneNo: number): SceneDraft {
   const v = validatorFor<SceneDraft>('scene-draft.schema.json')(raw);
   if (!v.ok)
     throw new WorkflowError(
