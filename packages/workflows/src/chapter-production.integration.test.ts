@@ -19,6 +19,7 @@ import {
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import { migrate, resetDatabase } from '@yeonjae/db';
 import { checkOutputLanguage, sliceCodePoints, toNfcText } from '@yeonjae/prose';
+import { PromptRegistry } from '@yeonjae/prompts';
 import {
   exportAccepted,
   produceChapter,
@@ -97,10 +98,12 @@ run('chapter production vertical slice (Postgres + ReplayProvider)', () => {
       [h.projectId],
     );
     expect(calls.rows.length).toBeGreaterThanOrEqual(20);
+    const registry = PromptRegistry.fromDirectory();
     for (const c of calls.rows) {
       expect(c.status).toBe('succeeded');
       expect(c.provider).toBe('replay');
-      expect(c.prompt_version_id).toMatch(/@1\.0\.0$/);
+      expect(registry.get(c.prompt_version_id).content_hash).toBe(c.prompt_hash);
+      expect(registry.get(c.prompt_version_id).role).toBe(c.role);
       expect(c.prompt_hash).toMatch(/^sha256:/);
       expect(c.production_policy_version).toBe('policy/standard@1');
       expect(c.pack_id).toBeTruthy();

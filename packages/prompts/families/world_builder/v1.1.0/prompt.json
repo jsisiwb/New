@@ -1,0 +1,33 @@
+{
+  "family": "world_builder",
+  "version": "1.1.0",
+  "role": "world_builder",
+  "purpose": "Author a target-specific planned world bible with precise rules, authored locations, organizations, and terminology while preserving raw design detail.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.1.0 — requires authored target-specific rules and locations; preserves raw world design for full planned context.",
+  "regression_cases": [
+    "world_builder.authored_rules_locations",
+    "world_builder.raw_design"
+  ],
+  "content_hash": "sha256:ea6357c6efc1188f87fb6a05f0538d3e1654d9cb0c1eca989bb9771d102ca85c"
+}

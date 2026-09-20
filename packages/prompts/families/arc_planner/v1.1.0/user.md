@@ -1,0 +1,14 @@
+[FULL SERIES BLUEPRINT + PLANNED BIBLE]
+{{blueprint}}
+
+[SEASON — PLANNED]
+{{season}}
+
+[ARC BRIEF — PLANNED]
+{{arc_brief}}
+
+[CANON STATE — FACTS THAT HAVE HAPPENED]
+{{canon_state}}
+
+[OPEN PROMISES — PLANNED OBLIGATIONS]
+{{open_promises}}

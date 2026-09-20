@@ -122,6 +122,21 @@ docs/               the plan; status lives only in docs/08-delivery/09-progress.
 
 ## Running the operator web app
 
+For a disposable Linux development sandbox with PostgreSQL 16, `psql`, `runuser`, Python/pip and pnpm
+installed, run `pnpm preview:setup` as the sandbox administrator, then `pnpm preview:local`. This uses
+an isolated `yeonjae_preview` database and dedicated local migration role, seeds a synthetic operator
+(`preview@example.test`, password `PreviewOnly-2026!`), and supervises the API and web app together.
+The provider is explicitly **simulated**: this verifies the workflow without paid API calls and does not
+generate publishable prose. Never use these development credentials or this migration role in production.
+The setup builds the production web bundle, is repeatable, and does not reset the integration-test database.
+Re-run setup after code changes before restarting this preview.
+
+For real generation, configure the provider variables in `.env.example` through your process environment
+and run the API normally instead of `preview:local`; the preview script deliberately forces simulation.
+Next.js forwards `/v1` to `YEONJAE_API_ORIGIN` (default `http://localhost:8080`) server-side. Keep
+`NEXT_PUBLIC_API_BASE_URL` unset for this same-origin setup. After approving a story suggestion, the novel
+screen shows planning/production progress and offers inspection and JSON download of the complete bible.
+
 ```
 export DATABASE_URL=postgres://yeonjae:yeonjae@127.0.0.1:5432/yeonjae_test
 pnpm cli db:migrate

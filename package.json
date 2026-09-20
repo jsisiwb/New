@@ -12,6 +12,8 @@
   },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
+    "preview:setup": "bash tools/preview-setup.sh",
+    "preview:local": "bash tools/preview-run.sh",
     "typecheck": "tsc -b tsconfig.build.json",
     "lint": "eslint .",
     "format": "prettier --write .",

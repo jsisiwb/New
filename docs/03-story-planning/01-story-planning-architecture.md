@@ -153,3 +153,22 @@ protagonist state & progression position, recent arc summaries (L2) for repetiti
 Imported reader feedback is sanitized (untrusted), classified (pacing, character popularity, confusion,
 requests), aggregated into **soft signals** attached to the next arc-outline generation with weights; the
 planner reports which signals it acted on. Signals never alter hard requirements or canon.
+
+## 12. Complete-bible gate for automatic production
+
+After concept approval, the studio prepares the complete character, world and progression design and
+the series blueprint before drafting chapter one (ADR-0052). The immutable full-bible artifact retains
+the original designer documents as well as normalized registry/seed data. Series, arc and chapter
+planners receive this design as **planned** context, never as evidence of realized events.
+
+An automatically generated plan must contain a named cast preserving supplied characters, with authored
+roles, backgrounds, goals, flaws, voice guidance and arcs; world rules and described locations;
+progression rules, capabilities and milestones; a concrete protagonist arc, ending and endgame requirements; and
+authored seasons covering the requested chapters without gaps or overlaps. Missing content stops the
+run before prose; generic fallback objectives are not a substitute for an authored plan. Scene and
+chapter contracts still use rolling-horizon planning against accepted canon.
+
+Scene-writer entity cards include selected voice, motivation and mechanics guidance rather than the
+complete author-only design. Secret and arc payloads do not enter these cards; knowledge guards remain
+authoritative. Explicit retry regenerates semantically rejected design output, while crash replay without
+a recorded rejection reuses the paid response.

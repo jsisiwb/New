@@ -9,6 +9,7 @@ import {
   createUser,
   createWorkspace,
   PgAuditStore,
+  putArtifact,
   type Pool,
 } from '@yeonjae/db';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
@@ -88,6 +89,7 @@ run('API: novel lifecycle routes', () => {
   let viewer: Actor;
   let owner: Actor;
   let makeDeps: (input: { workspaceId: string; projectId: string }) => NovelDeps;
+  let provider: MockProvider;
   const wakes: number[] = [];
 
   async function login(a: FastifyInstance, email: string, password: string): Promise<Actor> {
@@ -123,7 +125,7 @@ run('API: novel lifecycle routes', () => {
         },
       })
     ).projectId;
-    const provider = new MockProvider(script);
+    provider = new MockProvider(script);
     const routing = Object.fromEntries(
       Object.entries(REPLAY_ROUTING).map(([k, v]) => [
         k,
@@ -217,6 +219,97 @@ run('API: novel lifecycle routes', () => {
     expect(status.statusCode).toBe(404);
   });
 
+  it('requires authentication and a ready plan to inspect a full bible', async () => {
+    const url = `/v1/projects/${projectId}/novel/bible`;
+    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(401);
+    expect((await app.inject({ method: 'GET', url, headers: authed(viewer) })).statusCode).toBe(
+      404,
+    );
+  });
+
+  it('rejects non-boolean autopilot flags rather than changing production mode', async () => {
+    for (const action of ['approve', 'resume']) {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/v1/projects/${projectId}/novel/${action}`,
+        headers: authed(editor),
+        payload: { concept_id: projectId, auto_continue: 'false' },
+      });
+      expect(res.statusCode).toBe(422);
+      expect(res.json<{ code: string }>().code).toBe('VALIDATION_FAILED');
+    }
+  });
+
+  it('serves complete planned artifacts to viewers without leaking other projects', async () => {
+    const { projectId: plannedId } = await createProject(pool, {
+      workspaceId: ws,
+      title: 'Bible inspection',
+    });
+    const bible = { version: 1, design: { characters: { voice_notes: 'Dry accountant humour' } } };
+    const blueprint = { seasons: [{ title: 'The audit' }] };
+    const bibleArtifact = await putArtifact(pool, {
+      workspaceId: ws,
+      projectId: plannedId,
+      step: 'plan',
+      kind: 'full_bible',
+      key: 'inspection',
+      payload: bible,
+    });
+    const blueprintArtifact = await putArtifact(pool, {
+      workspaceId: ws,
+      projectId: plannedId,
+      step: 'plan',
+      kind: 'series_blueprint',
+      key: 'inspection',
+      payload: blueprint,
+    });
+    const plan = {
+      bible_artifact_id: bibleArtifact.artifact.id,
+      blueprint_artifact_id: blueprintArtifact.artifact.id,
+    };
+    await pool.query('UPDATE projects SET settings = settings || $2::jsonb WHERE id = $1', [
+      plannedId,
+      JSON.stringify({ story_plan: plan }),
+    ]);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/projects/${plannedId}/novel/bible`,
+      headers: authed(viewer),
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json()).toEqual({ bible, blueprint });
+
+    const foreignWorkspace = await createWorkspace(pool, 'private-bible');
+    const foreignProject = await createProject(pool, {
+      workspaceId: foreignWorkspace,
+      title: 'Private',
+      settings: { story_plan: plan },
+    });
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/v1/projects/${foreignProject.projectId}/novel/bible`,
+          headers: authed(viewer),
+        })
+      ).statusCode,
+    ).toBe(404);
+    const other = await createProject(pool, {
+      workspaceId: ws,
+      title: 'Bad artifact references',
+      settings: { story_plan: plan },
+    });
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/v1/projects/${other.projectId}/novel/bible`,
+          headers: authed(viewer),
+        })
+      ).statusCode,
+    ).toBe(404);
+  });
+
   it('rejects an invalid intake with the schema errors', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -227,6 +320,37 @@ run('API: novel lifecycle routes', () => {
     expect(res.statusCode).toBe(422);
     expect(res.json<{ code: string }>().code).toBe('INTAKE_INVALID');
   });
+
+  it('resumes a failed suggestion run by regenerating suggestions from its persisted intake', async () => {
+    // Requirement interpretation is the first call; fail the first concept-generation call so the run
+    // durably enters failed before approval. Resume must recover suggestions, not attempt planning.
+    provider.injectFault({ kind: 'error', onCall: provider.callCount + 2 });
+    const failed = await app.inject({
+      method: 'POST',
+      url: `/v1/projects/${projectId}/novel`,
+      headers: { ...authed(editor), 'idempotency-key': 'novel-start-recovery' },
+      payload: { intake: INTAKE, concept_count: 2 },
+    });
+    expect(failed.statusCode).toBeGreaterThanOrEqual(500);
+
+    const recovered = await app.inject({
+      method: 'POST',
+      url: `/v1/projects/${projectId}/novel/resume`,
+      headers: authed(editor),
+    });
+    expect(recovered.statusCode, recovered.body).toBe(202);
+    expect(
+      recovered.json<{ run: { status: string; approved_concept_id: string | null } }>().run,
+    ).toMatchObject({ status: 'awaiting_approval', approved_concept_id: null });
+    const status = await app.inject({
+      method: 'GET',
+      url: `/v1/projects/${projectId}/novel`,
+      headers: authed(viewer),
+    });
+    expect(status.statusCode).toBe(200);
+    expect(status.json<{ suggestions: unknown[]; plan: unknown }>().suggestions.length).toBe(2);
+    expect(status.json<{ plan: unknown }>().plan).toBeNull();
+  }, 120_000);
 
   it('runs intake → suggestions → approve → status, then the runner completes the run', async () => {
     const started = await app.inject({

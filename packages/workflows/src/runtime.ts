@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import {
   beginJobStep,
   checkpointControl,
+  JobControlStop,
   completeJobStep,
   failJobStep,
   getArtifact,
@@ -216,6 +217,10 @@ export async function runStep<T>(
     ctx.trace.push({ step, idempotencyKey: key, status: 'completed', attempt: row.attempt });
     return result;
   } catch (err) {
+    if (err instanceof JobControlStop) {
+      await failJobStep(ctx.pool, key, { code: 'CONTROL_STOP', message: err.message });
+      throw err;
+    }
     const wf = asWorkflowError(err, step);
     await failJobStep(ctx.pool, key, { code: wf.code, message: wf.detail, data: wf.options.data });
     await updateJob(ctx.pool, ctx.job.id, {

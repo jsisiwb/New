@@ -26,7 +26,9 @@ import {
   selectConcept,
   transitionNovelRun,
   updateJob,
+  withTransaction,
   type NovelRunRow,
+  type NovelRunLease,
   type Pool,
 } from '@yeonjae/db';
 import { type Gateway } from '@yeonjae/gateway';
@@ -98,12 +100,18 @@ export async function startNovel(
     intake,
     store: deps.profiles,
   });
-  if (!['intake', 'suggesting', 'awaiting_approval'].includes(run.status))
+  const retryingPreApproval = run.status === 'failed' && run.approved_concept_id === null;
+  if (!['intake', 'suggesting', 'awaiting_approval'].includes(run.status) && !retryingPreApproval)
     throw new WorkflowError('SELECTION_REQUEST_CHANGED', `this novel is already ${run.status}`, {
       step: 'start',
       data: { status: run.status },
     });
-  await transitionNovelRun(deps.pool, { runId: run.id, to: 'suggesting', expectFrom: ['intake'] });
+  await transitionNovelRun(deps.pool, {
+    runId: run.id,
+    to: 'suggesting',
+    expectFrom: retryingPreApproval ? ['failed'] : ['intake'],
+    patch: retryingPreApproval ? { lastError: null } : undefined,
+  });
   const { ctx } = await makePlanContext(deps, project.id);
   let round;
   try {
@@ -229,11 +237,19 @@ export type AdvanceOutcome =
 export async function advanceNovelRun(
   deps: NovelDeps,
   run: NovelRunRow,
-  opts: { isCancelled?: (() => Promise<boolean>) | undefined } = {},
+  opts: {
+    isCancelled?: (() => Promise<boolean>) | undefined;
+    lease?: NovelRunLease | undefined;
+  } = {},
 ): Promise<AdvanceOutcome> {
+  // Do not start another durable stage after an operator pause/cancel or a lost run lease.
+  if (opts.isCancelled && (await opts.isCancelled())) return { kind: 'idle', run };
   if (run.status === 'planning') {
     try {
-      const planned = await planNovel(deps, run);
+      const planned = await planNovel(deps, run, opts.isCancelled);
+      if (opts.isCancelled && (await opts.isCancelled())) {
+        return { kind: 'idle', run: (await getNovelRun(deps.pool, run.project_id)) ?? run };
+      }
       const r = await transitionNovelRun(deps.pool, {
         runId: run.id,
         to: 'producing',
@@ -250,10 +266,11 @@ export async function advanceNovelRun(
             seasons: planned.seasons,
           },
         },
+        lease: opts.lease,
       });
       return { kind: 'planned', run: r.run };
     } catch (err) {
-      const updated = await failRun(deps.pool, run.id, err, 'planning');
+      const updated = await failRun(deps.pool, run.id, err, 'planning', 'failed', {}, opts.lease);
       return { kind: 'stopped', run: updated, reason: 'planning_failed' };
     }
   }
@@ -264,6 +281,7 @@ export async function advanceNovelRun(
       to: 'completed',
       expectFrom: ['producing'],
       event: { kind: 'run.completed', payload: { chapters: run.target_chapters } },
+      lease: opts.lease,
     });
     return { kind: 'completed', run: r.run };
   }
@@ -274,6 +292,7 @@ export async function advanceNovelRun(
       expectFrom: ['producing'],
       patch: { stopAfterChapter: null },
       event: { kind: 'run.batch_done', payload: { through_chapter: run.stop_after_chapter } },
+      lease: opts.lease,
     });
     return { kind: 'stopped', run: r.run, reason: 'batch_done' };
   }
@@ -291,6 +310,9 @@ export async function advanceNovelRun(
         },
       ),
       'producing',
+      'failed',
+      {},
+      opts.lease,
     );
     return { kind: 'stopped', run: updated, reason: 'plan_missing' };
   }
@@ -298,6 +320,7 @@ export async function advanceNovelRun(
     runId: run.id,
     kind: 'chapter.started',
     payload: { chapter_no: chapterNo },
+    lease: opts.lease,
   });
   try {
     const result = await produceChapter(
@@ -333,6 +356,7 @@ export async function advanceNovelRun(
           kind: 'chapter.attention',
           payload: { chapter_no: chapterNo, status: result.status },
         },
+        lease: opts.lease,
       });
       return { kind: 'stopped', run: updated.run, reason: 'chapter_not_accepted' };
     }
@@ -352,13 +376,16 @@ export async function advanceNovelRun(
           revision_rounds: result.revision?.rounds ?? 0,
         },
       },
+      ...(done
+        ? {
+            additionalEvents: [
+              { kind: 'run.completed', payload: { chapters: run.target_chapters } },
+            ],
+          }
+        : {}),
+      lease: opts.lease,
     });
     if (done) {
-      await emitNovelRunEvent(deps.pool, {
-        runId: run.id,
-        kind: 'run.completed',
-        payload: { chapters: run.target_chapters },
-      });
       return { kind: 'completed', run: r.run };
     }
     return {
@@ -376,6 +403,7 @@ export async function advanceNovelRun(
         to: 'paused',
         expectFrom: ['producing'],
         event: { kind: 'chapter.cancelled', payload: { chapter_no: chapterNo } },
+        lease: opts.lease,
       });
       return { kind: 'stopped', run: r.run, reason: 'cancelled' };
     }
@@ -388,6 +416,7 @@ export async function advanceNovelRun(
       {
         chapter_no: chapterNo,
       },
+      opts.lease,
     );
     return { kind: 'stopped', run: updated, reason: attention ? 'quality_gate' : 'chapter_failed' };
   }
@@ -412,19 +441,41 @@ export async function resumeNovelRun(
       step: 'resume',
       data: { status: run.status },
     });
+  // A failed suggesting run has no approved concept and cannot safely be resumed into planning.
+  // Requiring a fresh approval prevents the planner from running with incomplete context.
+  if (!run.approved_concept_id)
+    throw new WorkflowError(
+      'SELECTION_REQUEST_CHANGED',
+      'this run has no approved concept; return to suggestions and approve one before resuming',
+      { step: 'resume', data: { status: run.status } },
+    );
   const plan = (await getProject(pool, run.project_id)).settings.story_plan as
     StoredStoryPlan | undefined;
-  const r = await transitionNovelRun(pool, {
-    runId: run.id,
-    to: plan ? 'producing' : 'planning',
-    patch: {
-      lastError: null,
-      ...(input.stopAfterChapter !== undefined ? { stopAfterChapter: input.stopAfterChapter } : {}),
-      ...(input.autoContinue !== undefined ? { autoContinue: input.autoContinue } : {}),
-    },
-    event: { kind: 'run.resumed' },
+  return withTransaction(pool, async (client) => {
+    // Clear the job-level pause intent in the same transaction that queues the novel run. A runner cannot
+    // observe a resumed run with a stale paused job between these two writes.
+    await client.query(
+      `UPDATE jobs SET control = 'run', control_requested_at = NULL, control_requested_by = NULL,
+              status = CASE WHEN status IN ('paused', 'paused_budget') THEN 'queued' ELSE status END,
+              paused_at = NULL, updated_at = now()
+         WHERE project_id = $1 AND kind IN ('chapter_production', 'story_plan')
+           AND status IN ('paused', 'paused_budget', 'queued', 'running')`,
+      [input.projectId],
+    );
+    const r = await transitionNovelRun(client, {
+      runId: run.id,
+      to: plan ? 'producing' : 'planning',
+      patch: {
+        lastError: null,
+        ...(input.stopAfterChapter !== undefined
+          ? { stopAfterChapter: input.stopAfterChapter }
+          : {}),
+        ...(input.autoContinue !== undefined ? { autoContinue: input.autoContinue } : {}),
+      },
+      event: { kind: 'run.resumed' },
+    });
+    return r.run;
   });
-  return r.run;
 }
 
 export async function pauseNovelRun(pool: Pool, projectId: string): Promise<NovelRunRow> {
@@ -472,7 +523,7 @@ export async function cancelNovelRun(pool: Pool, projectId: string): Promise<Nov
 
 // ---------------------------------------------------------------------------------------------------------
 
-async function planNovel(deps: NovelDeps, run: NovelRunRow) {
+async function planNovel(deps: NovelDeps, run: NovelRunRow, isCancelled?: () => Promise<boolean>) {
   const project = await getProject(deps.pool, run.project_id);
   const existing = project.settings.story_plan as StoredStoryPlan | undefined;
   if (existing?.concept_id === run.approved_concept_id) {
@@ -499,7 +550,11 @@ async function planNovel(deps: NovelDeps, run: NovelRunRow) {
   if (!intakeRow)
     throw new WorkflowError('INTERNAL', 'intake artifact is missing', { step: 'plan' });
   const intake = validateIntake(intakeRow.payload);
-  const { ctx, mainTimelineId } = await makePlanContext(deps, run.project_id);
+  const { ctx, mainTimelineId } = await makePlanContext(
+    deps,
+    run.project_id,
+    isCancelled ? { isDurablyCancelled: isCancelled } : undefined,
+  );
   await updateJob(deps.pool, ctx.job.id, { status: 'running', currentStep: 'plan' });
   const spec = await loadArtifactByKey(ctx, 'story_spec', 'story_spec', `v${run.spec_version}`);
   const concept = await loadConcept(ctx, run.spec_version, run.approved_concept_id);
@@ -585,6 +640,7 @@ async function failRun(
   stage: string,
   to: 'failed' | 'needs_attention' = 'failed',
   extra: Record<string, unknown> = {},
+  lease?: NovelRunLease,
 ): Promise<NovelRunRow> {
   const wf = err instanceof WorkflowError ? err : undefined;
   const r = await transitionNovelRun(pool, {
@@ -600,6 +656,7 @@ async function failRun(
       },
     },
     event: { kind: `run.${to}`, payload: { stage, code: wf?.code ?? 'INTERNAL', ...extra } },
+    lease,
   });
   return r.run;
 }

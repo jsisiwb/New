@@ -37,6 +37,7 @@ export function useResource<T>(
   const [problem, setProblem] = useState<ApiProblem | undefined>(undefined);
   const [nonce, setNonce] = useState(0);
   const generation = useRef(0);
+  const previousDeps = useRef<readonly unknown[] | undefined>(undefined);
   const loadRef = useRef(load);
   loadRef.current = load;
 
@@ -47,6 +48,12 @@ export function useResource<T>(
     }
     generation.current += 1;
     const mine = generation.current;
+    const dependenciesChanged =
+      previousDeps.current !== undefined &&
+      (previousDeps.current.length !== deps.length ||
+        previousDeps.current.some((value, index) => !Object.is(value, deps[index])));
+    previousDeps.current = deps;
+    if (dependenciesChanged) setData(undefined);
     setLoading(true);
     setError(undefined);
     setProblem(undefined);
@@ -64,13 +71,17 @@ export function useResource<T>(
         } else {
           setError('Something went wrong loading this view.');
         }
-        setData(undefined);
       } finally {
         if (mine === generation.current) setLoading(false);
       }
     })();
     // The dependency list is supplied by the caller (spread below) and `nonce` forces an explicit
     // reload; `loadRef` keeps the latest closure without making the loader itself a dependency.
+    return () => {
+      // Invalidate the request before unmount or a dependency change. Fetch cannot be assumed abortable
+      // (the injected transport in tests is not), so the generation guard is the portable cleanup.
+      generation.current += 1;
+    };
   }, [enabled, nonce, ...deps]);
 
   const reload = useCallback(() => {

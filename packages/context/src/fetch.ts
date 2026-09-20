@@ -830,6 +830,18 @@ async function fetchRegistry(ctx: Ctx, out: Item[]): Promise<void> {
     if (e.short_forms.length) parts.push(`short: ${e.short_forms.join(', ')}`);
     if (e.aliases.length) parts.push(`aliases: ${e.aliases.join(', ')}`);
     const desc = typeof e.fields.description === 'string' ? e.fields.description : undefined;
+    const design = e.fields.planned_design;
+    const guidance =
+      design && typeof design === 'object' && !Array.isArray(design)
+        ? Object.fromEntries(
+            Object.entries(design).filter(([key]) =>
+              ['goals', 'flaws', 'voice_notes', 'costs', 'limits', 'mechanics'].includes(key),
+            ),
+          )
+        : {};
+    const planned = Object.keys(guidance).length
+      ? `\n[PLANNED DESIGN — not realized events; knowledge guards still apply] ${JSON.stringify(guidance)}`
+      : '';
     out.push({
       kind: 'registry_slice',
       id: `registry_slice:${e.id}`,
@@ -842,7 +854,7 @@ async function fetchRegistry(ctx: Ctx, out: Item[]): Promise<void> {
         version: String(ctx.canonVersion),
         project_id: ctx.projectId,
       },
-      text: `${parts.join('; ')}${desc ? ` — ${desc}` : ''}`,
+      text: `${parts.join('; ')}${desc ? ` — ${desc}` : ''}${planned}`,
       materiality: 'contextual',
       entityIds: [e.id],
       dedupeKey: `entity:${e.id}`,

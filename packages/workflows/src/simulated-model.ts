@@ -134,6 +134,21 @@ export function simulatedModelScript(req: ProviderRequest) {
             role: 'protagonist',
             age_at_start: 29,
             background: 'Former guild accountant.',
+            goals: ['Expose the forged ledgers and earn a rank on her own terms.'],
+            flaws: ['Distrusts help and mistakes caution for control.'],
+            voice_notes: ['Dry, exact, and economical; anger sharpens her observations.'],
+            arc: {
+              start_state: 'Disgraced accountant who trusts only her records.',
+              end_state:
+                'Recognized hunter who can trust a team without surrendering her judgment.',
+              turning_points: [
+                {
+                  description: 'Chooses allies over a solitary audit.',
+                  chapter_from: 4,
+                  chapter_to: 5,
+                },
+              ],
+            },
             short_forms: ['Ji-an'],
             rank: 'F',
             secrets: [
@@ -161,6 +176,10 @@ export function simulatedModelScript(req: ProviderRequest) {
             role: 'mentor',
             age_at_start: 48,
             background: 'Retired B-rank scout.',
+            goals: ['Keep Ji-an alive long enough to choose her own path.'],
+            flaws: ['Hides concern behind teasing and old field habits.'],
+            voice_notes: ['Blunt, warm, and informal; uses practical comparisons.'],
+            arc: 'From retired observer to a mentor willing to stand beside Ji-an publicly.',
             short_forms: ['Tae-ho'],
             rank: 'B',
             registers: [
@@ -181,6 +200,12 @@ export function simulatedModelScript(req: ProviderRequest) {
             role: 'antagonist',
             age_at_start: 35,
             background: 'Guild treasurer.',
+            goals: ['Preserve control of the guild and the ledger network.'],
+            flaws: ['Underestimates people who lack institutional rank.'],
+            voice_notes: [
+              'Polished and procedural; turns threats into reasonable-sounding policy.',
+            ],
+            arc: 'From untouchable treasurer to exposed architect of the forged ledgers.',
             rank: 'A',
             secrets: [{ statement: 'Moon Hae-rin forged the gate-defence ledgers.', known_by: [] }],
           },
