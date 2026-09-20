@@ -1,0 +1,22 @@
+ .env.example                |  35 [32m+[m[31m-[m
+ README.dev.md               |   2 [32m+[m
+ README.md                   |  16 [32m+[m
+ apps/api/src/novel-deps.ts  |   6 [32m+[m[31m-[m
+ ...ecret-boundaries.test.ts |   4 [32m+[m[31m-[m
+ apps/cli/src/commands.ts    |  10 [32m+[m[31m-[m
+ apps/cli/src/novel.ts       |  66 [32m+[m[31m-[m
+ .../app-state.tsx           |   6 [32m+[m[31m-[m
+ apps/worker/src/deps.ts     |   8 [32m+[m[31m-[m
+ deploy/compose.yaml         |   8 [32m+[m
+ ...4-traceability-matrix.md |   1 [32m+[m
+ .../02-backlog.md           |   8 [32m+[m
+ .../09-progress.md          |  45 [32m+[m
+ ...and-incident-runbooks.md |   8 [32m+[m[31m-[m
+ docs/adr/README.md          |   1 [32m+[m
+ .../src/provider-mode.ts    |  34 [32m+[m[31m-[m
+ .../chapter-production.ts   |  10 [32m+[m[31m-[m
+ .../workflows/src/index.ts  |   2 [32m+[m
+ ...ovel.integration.test.ts | 539 [32m+[m[31m-----[m
+ .../workflows/src/novel.ts  |   9 [32m+[m
+ .../src/story-plan.ts       |  10 [32m+[m[31m-[m
+ 21 files changed, 259 insertions(+), 569 deletions(-)

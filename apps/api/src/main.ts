@@ -8,8 +8,14 @@
  */
 import { configFromEnv, createPool } from '@yeonjae/db';
 import { EXIT_CODE, LifecycleCoordinator, Metrics } from '@yeonjae/domain';
+import { NovelRunner } from '@yeonjae/workflows';
 import { buildApi } from './server.js';
 import { corsPolicyFromEnv } from './cors.js';
+import {
+  novelDepsFromEnv,
+  novelRunnerModeFromEnv,
+  sharedEnforcementAvailable,
+} from './novel-deps.js';
 
 const pool = createPool(configFromEnv());
 const metrics = new Metrics();
@@ -23,10 +29,33 @@ const lifecycle = new LifecycleCoordinator({
   metrics,
 });
 
+/**
+ * Model access for the novel surface. Resolved from the environment ONCE, before the server listens, so
+ * a misconfigured provider is a startup error naming the variable rather than a failed first request.
+ * An unset provider mode is allowed: the API then serves everything except starting a novel.
+ */
+const shared = await sharedEnforcementAvailable(pool);
+const novelDeps = novelDepsFromEnv(pool, { metrics, shared });
+const runnerMode = novelRunnerModeFromEnv();
+const runner =
+  novelDeps && runnerMode === 'inline'
+    ? new NovelRunner({
+        pool,
+        makeDeps: novelDeps,
+        runnerId: `api-runner:${process.env.YEONJAE_WORKER_ID ?? String(process.pid)}`,
+        pollMs: Number(process.env.YEONJAE_NOVEL_POLL_MS ?? '3000'),
+        onError: (err) => {
+          console.error(err instanceof Error ? err.message : String(err));
+        },
+      })
+    : undefined;
+
 const app = buildApi({
   pool,
   metrics,
   lifecycle,
+  novelDeps,
+  onNovelQueued: () => runner?.wake(),
   // Secure cookies unless explicitly disabled for local HTTP development.
   secureCookies: process.env.YEONJAE_INSECURE_COOKIES !== 'true',
   // Cross-origin browser access is DENIED unless origins are listed. An invalid entry throws here, at
@@ -64,6 +93,7 @@ process.on('SIGTERM', onSignal);
  * being torn down, then the pool, which in-flight requests may still need on their way out.
  */
 lifecycle.register({ name: 'http', close: () => app.close() });
+if (runner) lifecycle.register({ name: 'novel-runner', close: () => runner.stop() });
 lifecycle.register({
   name: 'pool',
   close: async () => {
@@ -75,6 +105,7 @@ const port = Number(process.env.PORT ?? 8080);
 const host = process.env.HOST ?? '127.0.0.1';
 try {
   await app.listen({ port, host });
+  runner?.start();
   // Announced as running only once the socket is actually accepting: marking it earlier would make
   // readiness true for a server that cannot yet answer.
   lifecycle.markRunning();

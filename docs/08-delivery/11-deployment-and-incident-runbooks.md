@@ -476,11 +476,11 @@ migration role. Rotate the password, not the role.
    and idempotent per step (`job_steps.idempotency_key`), and acceptance is a single atomic canon commit —
    a worker that restarts mid-run resumes from its checkpoint rather than re-accepting.
 
-### 8A.4 Provider credentials (`LLM_PROVIDER_*_API_KEY`)
+### 8A.4 Provider credentials (`YEONJAE_LIVE_API_KEY`, `YEONJAE_LIVE_FALLBACK_API_KEY`)
 
-No live provider is configured; the worker refuses to start without an explicit
-`YEONJAE_PROVIDER_MODE`, and the only implemented mode is `replay`, which cannot make a network call.
-There is therefore **no provider credential in use to rotate today**. When a live mode exists:
+Every process refuses to start without an explicit `YEONJAE_PROVIDER_MODE` (`replay`, `genspark` or
+`live`; ADR-0051). In `live` mode the key is read once at startup and held in the adapter's closure —
+it is never placed on a config object, a log line or an error message. To rotate:
 
 1. Add the new key alongside the old one in the secret manager.
 2. Deploy; confirm `yeonjae_provider_attempts_total` shows successful attempts on the new key.

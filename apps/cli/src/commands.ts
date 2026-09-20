@@ -96,6 +96,7 @@ import { Gateway, MemoryBudget, ReplayProvider, type RoutingTable } from '@yeonj
 import { PgAuditStore } from '@yeonjae/db';
 import { ArtifactLlmOutputStore } from '@yeonjae/workflows';
 import { WorkflowError } from '@yeonjae/workflows';
+import { NOVEL_COMMANDS, NOVEL_USAGE, runNovelCommand } from './novel.js';
 
 /** Chapter-1 fixture paths and identity pins (mirrors packages/workflows/src/testkit.ts, the test-only harness). */
 const FIXTURE_ROOT = new URL('../../../', import.meta.url);
@@ -257,9 +258,13 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         return { ok: true, output: await migrate(pool) };
       }
       case 'project:create': {
-        const [title] = rest;
+        const [title, ...flags] = rest;
         if (!title) return { ok: false, output: USAGE };
-        const ws = await createWorkspace(pool, 'local');
+        // `--workspace=<id>` places the project in an existing workspace (the one `user:create` made), so
+        // the web console's signed-in operator can see it; without it a fresh local workspace is created.
+        const ws =
+          flags.find((f) => f.startsWith('--workspace='))?.slice('--workspace='.length) ??
+          (await createWorkspace(pool, 'local'));
         const p = await createProject(pool, { workspaceId: ws, title });
         return { ok: true, output: { workspace_id: ws, ...p } };
       }
@@ -992,6 +997,8 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         }
       }
       default:
+        if (NOVEL_COMMANDS.has(cmd ?? ''))
+          return await runNovelCommand(pool, cmd ?? '', rest, USAGE);
         return { ok: false, output: USAGE };
     }
   } finally {
@@ -1398,6 +1405,7 @@ async function projectForJob(pool: Pool, jobId: string): Promise<string | undefi
 }
 
 export const DB_COMMANDS = new Set([
+  ...NOVEL_COMMANDS,
   'db:migrate',
   'project:create',
   'entity:create',
@@ -1564,7 +1572,7 @@ export const USAGE = `yeonjae <command> [args]
 
 Database commands (DATABASE_URL required):
   db:migrate                                   apply forward-only migrations
-  project:create <title>                       create a workspace + project + main timeline
+  project:create <title> [--workspace=<id>]    create a project (+ main timeline) in a workspace (new one unless given)
   entity:create <project> <type> <name>        add a bible entity
   manuscript:import <project> <chapter#> <file> store an immutable working version (NFC, measured)
   manuscript:approve <version>                 approval-lock a working version (gate outcome)
@@ -1624,7 +1632,7 @@ Database commands (DATABASE_URL required):
                                                bounded batch (max 50) of typography_check | platform_format_check
   constraints:compile <chapter#> <spec.json> [cap]
                                                compile the Active Constraint Set for a chapter (no database)
-`;
+${NOVEL_USAGE}`;
 
 export function run(argv: readonly string[]): CommandResult {
   const [cmd, ...rest] = argv;

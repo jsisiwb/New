@@ -8,6 +8,22 @@
 
 **No live-provider calls and no credentials** were used: every model call in tests and CI is replayed, and the gateway contains no HTTP client. **Phase 4 remains incomplete** — the live 20-chapter five-night run, the real-provider outage drill, staging/production restore, PITR, live credential rotation, real billing calibration and the bilingual reviewer round are all still unrun. Other limitations stay open and recorded rather than closed: metrics and rate limiting are per process; a cancelled call's *remote* billing may be genuinely unknown, and this system records that rather than guessing; vector retrieval is an interface only; no production deployment has occurred. Nothing here is evidence of live-model prose quality. See `docs/08-delivery/09-progress.md` for the authoritative, itemized state, test inventory and CI evidence per PR.
 Live status: `docs/08-delivery/09-progress.md`.
+**Quick start — write a novel (ADR-0051).** With Postgres 16 and a model API key:
+
+```bash
+pnpm install && pnpm cli db:migrate
+export YEONJAE_PROVIDER_MODE=live YEONJAE_LIVE_PROVIDER=openai YEONJAE_LIVE_API_KEY=… \
+       YEONJAE_MODEL_DEFAULT=<model> YEONJAE_MODEL_R=<strong-planning-model>
+pnpm --filter @yeonjae/api start          # API + inline novel runner on :8080
+pnpm --filter @yeonjae/web dev            # operator console → "New novel"
+```
+
+Or from the CLI: `pnpm cli project:create "Title"`, `pnpm cli novel:start <project> intake.json`,
+`pnpm cli novel:approve <project> <concept-id>`, `pnpm cli novel:run <project>`. The studio interprets the
+intake, proposes story directions, and after approval builds the complete Story Bible (cast, world,
+progression system, series blueprint, promises) before writing every chapter through the checkpointed,
+audited production loop. See `.env.example` for every variable (names only).
+
 **Purpose of this repository state:** a complete, internally consistent, production-level plan for an AI
 serialized-fiction production studio, written so that an engineering agent can implement it without
 redesigning the system.

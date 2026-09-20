@@ -50,6 +50,7 @@ import {
 } from './drafting.js';
 import { evaluateVersion, revisionTargets, type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
+import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   buildStoryBible,
   ensureChapter,
@@ -65,6 +66,12 @@ import {
 } from './planning.js';
 import { patchRegression, regressionArtifact, regressionReportId } from './comparison.js';
 import { pickRevisionDimension, reviseVersion } from './revision.js';
+import {
+  arcForChapter,
+  planArcFromBlueprint,
+  scheduleFromBlueprint,
+  type SeriesBlueprint,
+} from './story-plan.js';
 import {
   saveArtifact,
   type HeldLease,
@@ -99,6 +106,12 @@ export interface ChapterProductionInput {
    * already in flight rather than waiting for the next step boundary. Absent for the CLI path.
    */
   readonly cancellation?: RunCancellation | undefined;
+  /**
+   * The Series Blueprint the project's story plan produced. When present, the arc for this chapter is
+   * planned from the blueprint's season (checkpointed per arc id) instead of the fixture arc brief, and
+   * `ids.arcId` / `ids.seasonId` are taken from the schedule.
+   */
+  readonly blueprint?: SeriesBlueprint | undefined;
 }
 
 export interface ChapterProductionDeps {
@@ -227,11 +240,10 @@ export async function makeContext(
       `project ${projectId} pins no composed Narrative Identity (settings.narrative_identity_ref / narrative_identity_version_id)`,
       { step: 'init', recommendedActions: ['edit_manually'] },
     );
-  const identity = composeIdentity(
-    deps.profiles ?? ProfileStore.fromDirectory(),
-    identityRef,
-    identityVersionId,
-  );
+  const store = deps.profiles ?? ProfileStore.fromDirectory();
+  // A project-owned composed identity (derived from the intake) lives in identity_documents, not on disk.
+  if (identityRef === composedRefFor(projectId)) await loadIntoStore(deps.pool, projectId, store);
+  const identity = composeIdentity(store, identityRef, identityVersionId);
   const timelines = await timelinesOf(deps.pool, projectId);
   const main = timelines.find((t) => t.kind === 'main');
   if (!main) throw new WorkflowError('INTERNAL', 'project has no main timeline', { step: 'init' });
@@ -369,13 +381,15 @@ export async function produceChapter(
     guard('story_spec');
     const bible = await buildStoryBible(ctx, input.bible, mainTimelineId);
     guard('story_bible');
-    const arc = await planArc(ctx, {
-      spec: spec.spec,
-      bible: input.bible,
-      arcId: input.ids.arcId,
-      seasonId: input.ids.seasonId,
-      targetChapters: intake.target_chapters,
-    });
+    const arc = input.blueprint
+      ? await planFromBlueprint(ctx, input.blueprint, input.bible, chapterNo)
+      : await planArc(ctx, {
+          spec: spec.spec,
+          bible: input.bible,
+          arcId: input.ids.arcId,
+          seasonId: input.ids.seasonId,
+          targetChapters: intake.target_chapters,
+        });
     const knownProps = new Set(Object.values(bible.propositionIds));
     const knownEntities = new Set(input.bible.entities.map((e) => e.id));
     const contract = await generateContract(
@@ -388,6 +402,9 @@ export async function produceChapter(
         previousSummary,
         lengthTargetWords: intake.target_words_per_chapter,
         contractId: input.ids.contractId,
+        // Only the model-driven path renders the registry into the planner prompt; the fixture path keeps
+        // its recorded prompt text byte-identical.
+        ...(input.blueprint ? { bible: input.bible } : {}),
       },
       knownProps,
       knownEntities,
@@ -687,6 +704,41 @@ export async function produceChapter(
 }
 
 function specSummary(spec: StorySpec, artifactId: string): ChapterProductionResult['spec'] {
+  return specSummaryOf(spec, artifactId);
+}
+
+/**
+ * Rolling-horizon arc planning from the blueprint (ADR-0012): the chapter's season decides the arc, the
+ * arc plan is checkpointed once per arc id, and the previous arc's exit state (when planned) is carried
+ * into the brief so arcs chain instead of restarting.
+ */
+async function planFromBlueprint(
+  ctx: WorkflowContext,
+  blueprint: SeriesBlueprint,
+  bible: StoryBible,
+  chapterNo: number,
+): Promise<{ arcPlan: ArcPlan; artifactId: string }> {
+  const schedule = scheduleFromBlueprint(ctx.projectId, blueprint);
+  const arc = arcForChapter(schedule, chapterNo);
+  if (!arc)
+    throw new WorkflowError('ARC_PLAN_INVALID', 'the blueprint schedules no arc for this chapter', {
+      step: 'arc_plan',
+      data: { chapter_no: chapterNo },
+    });
+  const previous = schedule.arcs.find((a) => a.ordinal === arc.ordinal - 1);
+  let previousArcExit: string | undefined;
+  if (previous) {
+    const prior = await ctx.pool.query<{ payload: ArcPlan }>(
+      `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'arc_plan' AND key = $2`,
+      [ctx.projectId, previous.id],
+    );
+    const exits = prior.rows[0]?.payload.exit_state_assertions;
+    if (exits?.length) previousArcExit = exits.join('; ');
+  }
+  return planArcFromBlueprint(ctx, { blueprint, bible, arc, previousArcExit });
+}
+
+function specSummaryOf(spec: StorySpec, artifactId: string): ChapterProductionResult['spec'] {
   return {
     version: spec.version,
     artifact_id: artifactId,

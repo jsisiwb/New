@@ -20,6 +20,7 @@ import { compileBlock } from '@yeonjae/narrative';
 import { WorkflowError } from './errors.js';
 import {
   bind,
+  existingArtifact,
   modelCall,
   runStep,
   saveArtifact,
@@ -112,6 +113,14 @@ export async function interpretRequirements(
 ): Promise<{ spec: StorySpec; artifactId: string }> {
   return runStep(ctx, 'story_spec', async () => {
     await bind(ctx, { spec_version: String(specVersion) });
+    // The spec is a PROJECT artifact: the story plan (or chapter 1) interpreted it once and every later
+    // chapter job pins that same version rather than asking the model again.
+    const stored = await existingArtifact(ctx, {
+      step: 'story_spec',
+      kind: 'story_spec',
+      key: `v${specVersion}`,
+    });
+    if (stored) return { spec: stored.payload as StorySpec, artifactId: stored.artifact_id };
     const call = await modelCall<{ items?: unknown; conflicts?: unknown }>(ctx, {
       step: 'story_spec',
       family: 'requirement_interpreter',
@@ -373,6 +382,8 @@ export interface ContractInput {
   readonly previousSummary: string;
   readonly lengthTargetWords: number;
   readonly contractId: string;
+  /** Registry and promises rendered for the planner; absent falls back to the pinned-state notes. */
+  readonly bible?: StoryBible | undefined;
 }
 
 /**
@@ -417,9 +428,20 @@ export async function generateContract(
           arc_plan: JSON.stringify(input.arcPlan),
           chapter_number: String(input.chapterNo),
           previous_chapter_summary: input.previousSummary,
-          canon_state: '(structured canon is pinned by the workflow at contract validation)',
-          knowledge_state: '(knowledge is pinned by the workflow at contract validation)',
-          open_promises: '(promises are pinned by the workflow at contract validation)',
+          canon_state: input.bible
+            ? `${renderBibleState(input.bible, ctx.bindings)}\n\nUse ONLY the entity ids above for participants, locations and pov.character_id, and ONLY the proposition ids above in knowledge_guards and knowledge_deltas. ${await renderCanonFacts(ctx, input.chapterNo)}`
+            : '(structured canon is pinned by the workflow at contract validation)',
+          knowledge_state: input.bible
+            ? renderKnowledge(input.bible)
+            : '(knowledge is pinned by the workflow at contract validation)',
+          open_promises: input.bible
+            ? input.bible.promises
+                .map(
+                  (p) =>
+                    `- [${p.id}] ${p.statement} (${p.type}, ${p.importance}${p.due_min_chapter !== undefined ? `, due ch.${p.due_min_chapter}–${p.due_max_chapter ?? '?'}` : ''})`,
+                )
+                .join('\n') || '(none)'
+            : '(promises are pinned by the workflow at contract validation)',
           active_constraints: acsHard.hardText,
           length_target_words: String(input.lengthTargetWords),
         },
@@ -578,11 +600,46 @@ export function compileFor(
   };
 }
 
-function renderBibleState(b: StoryBible): string {
+function renderBibleState(b: StoryBible, bindings?: Readonly<Record<string, string>>): string {
   return [
     ...b.entities.map(
-      (e) => `- ${e.display_name} (${e.type})${e.description ? `: ${e.description}` : ''}`,
+      (e) =>
+        `- [${e.id}] ${e.display_name} (${e.type})${e.description ? `: ${e.description}` : ''}`,
     ),
-    ...b.propositions.map((p) => `- proposition ${p.local_id}: ${p.statement} [${p.truth}]`),
+    ...b.propositions.map((p) => {
+      const id = bindings?.[`proposition.${p.local_id}`];
+      return `- proposition ${id ? `[${id}] ` : ''}${p.local_id}: ${p.statement} [${p.truth}${p.secret ? ', secret' : ''}]`;
+    }),
   ].join('\n');
+}
+
+function renderKnowledge(b: StoryBible): string {
+  const byId = new Map(b.entities.map((e) => [e.id, e.display_name]));
+  const lines = b.propositions
+    .filter((p) => p.secret)
+    .map((p) => {
+      const s = p.secret as { owner_ids?: string[]; allowed_knower_ids?: string[] };
+      const knowers = (s.allowed_knower_ids ?? []).map((id) => byId.get(id) ?? id);
+      return `- ${p.local_id} (${p.statement}) is known only by: ${knowers.join(', ') || 'nobody yet'}. Everyone else must NOT know it.`;
+    });
+  return lines.join('\n') || '(no secrets recorded in the bible)';
+}
+
+/** Accepted facts so far, rendered compactly for the planner; empty before chapter 1. */
+async function renderCanonFacts(ctx: WorkflowContext, chapterNo: number): Promise<string> {
+  if (chapterNo === 1) return '';
+  const r = await ctx.pool.query<{
+    display_name: string;
+    attribute: string;
+    value_text: string | null;
+  }>(
+    `SELECT e.display_name, f.attribute, f.value_text FROM facts f JOIN entities e ON e.id = f.entity_id
+      WHERE f.project_id = $1 AND f.retracted_at_version IS NULL AND f.valid_to IS NULL
+      ORDER BY f.id DESC LIMIT 120`,
+    [ctx.projectId],
+  );
+  if (r.rows.length === 0) return '';
+  return `\n\nAccepted facts (what has happened):\n${r.rows
+    .map((f) => `- ${f.display_name}: ${f.attribute} = ${f.value_text ?? ''}`)
+    .join('\n')}`;
 }

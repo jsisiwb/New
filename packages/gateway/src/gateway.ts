@@ -644,6 +644,10 @@ export class Gateway {
                 system: req.pack.renderedSystem,
                 user: req.pack.renderedUser,
                 params,
+                // Adapters that support a native JSON mode switch it on when the call declares a schema.
+                ...(req.outputSchemaRef || req.outputMode === 'json'
+                  ? { outputSchema: { $ref: req.outputSchemaRef ?? 'json' } }
+                  : {}),
                 trace: {
                   role: req.role,
                   activityId: req.activityId,
@@ -762,12 +766,15 @@ export class Gateway {
         // 4. structured output
         let json: unknown = res.json;
         let schemaValid = true;
-        if (validator || req.outputSchemaRef) {
+        const wantsJson =
+          req.outputMode === 'json' ||
+          (req.outputMode === undefined && Boolean(req.outputSchemaRef));
+        if (validator || wantsJson) {
           if (json === undefined && res.text !== undefined) {
             try {
               json = JSON.parse(stripFences(res.text));
             } catch {
-              json = undefined;
+              json = extractJsonObject(res.text);
             }
           }
           if (json === undefined) {
@@ -1066,6 +1073,18 @@ export class Gateway {
 function stripFences(text: string): string {
   const m = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
   return (m?.[1] ?? text).trim();
+}
+
+/** Last-resort extraction of the outermost `{…}` from a chatty completion; `undefined` when none parses. */
+function extractJsonObject(text: string): unknown {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start < 0 || end <= start) return undefined;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return undefined;
+  }
 }
 
 /** Manuscript roles return prose inside JSON (`text`, `new_text`, seam patches); collect every prose field. */

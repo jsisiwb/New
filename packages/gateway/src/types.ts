@@ -37,6 +37,13 @@ export interface GatewayRequest {
   };
   readonly narrativeIdentityRef?: NarrativeIdentityRef | undefined;
   readonly outputSchemaRef?: string | undefined;
+  /**
+   * Expected output shape when no schema is validated at the gateway. `json` makes a text response be
+   * parsed (fences stripped) and an unparseable one count as `SCHEMA_INVALID` for bounded repair, so a
+   * live provider answering in prose where JSON was required is regenerated rather than handed to the
+   * workflow as a string. Defaults to `json` when `outputSchemaRef` is set, `text` otherwise.
+   */
+  readonly outputMode?: 'json' | 'text' | undefined;
   readonly params?: Partial<ModelParams> | undefined;
   readonly modelClass: ModelClass;
 }

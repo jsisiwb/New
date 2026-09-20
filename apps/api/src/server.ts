@@ -78,6 +78,7 @@ import {
 import { requireVerb } from './verbs.js';
 import { registerResourceRoutes } from './resource-routes.js';
 import { registerProductRoutes } from './product-routes.js';
+import { registerNovelRoutes, type NovelRouteDeps } from './novel-routes.js';
 import { contentHashOf } from '@yeonjae/prose';
 import type { LifecycleCoordinator } from '@yeonjae/domain';
 import {
@@ -147,6 +148,13 @@ export interface ApiOptions {
    * ready — so the many suites that build an app without a lifecycle are unaffected.
    */
   readonly lifecycle?: LifecycleCoordinator | undefined;
+  /**
+   * Model-facing dependencies for the novel surface, per project. Absent when this process has no
+   * provider configured; the start route then refuses with NO_PROVIDER rather than guessing.
+   */
+  readonly novelDeps?: NovelRouteDeps['novelDeps'];
+  /** Wakes an in-process novel runner when a run is queued. */
+  readonly onNovelQueued?: (() => void) | undefined;
 }
 
 /** Maximum JSON body. A bounded body is the cheapest defence against memory-exhaustion requests. */
@@ -1931,6 +1939,18 @@ export function buildApi(options: ApiOptions): FastifyInstance {
     headerOf,
     metrics,
     lifecycle,
+  });
+
+  // The "make my novel" lifecycle: intake → suggestions → approval → autopilot production.
+  registerNovelRoutes(app, {
+    pool,
+    scoped: (req) => scoped(pool, req),
+    inScope: (scope, fn) => inScope(pool, scope, fn),
+    projectOr404,
+    audit,
+    headerOf,
+    novelDeps: options.novelDeps,
+    onQueued: options.onNovelQueued,
   });
 
   return app;

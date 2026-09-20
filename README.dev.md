@@ -24,6 +24,8 @@
 | `pnpm --filter @yeonjae/web dev`                                                                                | run the operator web app against a local API (see the environment variables below) |
 | `pnpm cli <command>`                                                                                            | the CLI (`pnpm cli` prints usage)                                                  |
 | `pnpm cli pack:build <project> <ch> <role> <contract.json> <spec.json> [--identity=<ref>] [--full] [--persist]` | build a Context Pack and print its manifest (no manuscript text unless `--full`)   |
+| `pnpm cli novel:start <project> <intake.json>` / `novel:approve` / `novel:run` / `novel:status`                 | the autopilot novel lifecycle (needs `YEONJAE_PROVIDER_MODE`; see `.env.example`)  |
+| `pnpm --filter @yeonjae/worker start:novel`                                                                     | the Postgres-queued novel runner as its own process (no Temporal needed)           |
 | `pnpm cli chapter:produce <project> <ch>`                                                                       | run (or resume) chapter production through the Postgres-checkpointed workflow      |
 | `pnpm cli chapter:status <workflow-id>`                                                                         | job status, pins, steps and llm call count (`chapter:<project>:<ch>`)              |
 | `pnpm cli chapter:resume <workflow-id>`                                                                         | resume a started workflow (same entrypoint as re-running produce)                  |

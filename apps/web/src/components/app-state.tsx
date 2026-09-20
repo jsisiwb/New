@@ -105,7 +105,11 @@ export function AppStateProvider({
         // A restore failure is not an error state for a signed-out visitor: they simply see sign-in.
         if (!token.cancelled) setSession(undefined);
       } finally {
-        if (!token.cancelled) setRestoring(false);
+        // The gate is lowered even when THIS invocation was cancelled by a re-run: under React Strict
+        // Mode (dev) the first invocation is cleaned up before the second resolves, and the 401 handler
+        // installed by the earlier effect may have already cleared the client. Leaving `restoring` true
+        // stranded the app on "Checking your session…" forever in development.
+        setRestoring(false);
       }
     })();
     return () => {
