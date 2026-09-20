@@ -13,3 +13,5 @@ export * from './story-plan.js';
 export * from './novel.js';
 export * from './novel-runner.js';
 export * from './anchoring.js';
+export * from './identity-from-intake.js';
+export * from './simulated-model.js';

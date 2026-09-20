@@ -185,8 +185,8 @@ describe('rotation readiness: what is and is not verified here', () => {
     for (const name of [
       'DATABASE_URL',
       'SESSION_SECRET',
-      'LLM_PROVIDER_A_API_KEY',
-      'LLM_PROVIDER_B_API_KEY',
+      'YEONJAE_LIVE_API_KEY',
+      'YEONJAE_LIVE_FALLBACK_API_KEY',
       'OBJECT_STORAGE_SECRET_ACCESS_KEY',
       'KMS_KEY_REF',
     ]) {

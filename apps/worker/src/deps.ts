@@ -16,7 +16,11 @@
  */
 import { Gateway, MemoryBudget, resolveProvidersFromEnv } from '@yeonjae/gateway';
 import { Metrics } from '@yeonjae/domain';
-import { ArtifactLlmOutputStore, type ChapterProductionDeps } from '@yeonjae/workflows';
+import {
+  ArtifactLlmOutputStore,
+  simulatedProvider,
+  type ChapterProductionDeps,
+} from '@yeonjae/workflows';
 import { PgAuditStore, PgProviderAdmission, SharedBudget, type Pool } from '@yeonjae/db';
 
 // Re-exported so existing callers and tests keep one import site.
@@ -96,7 +100,7 @@ export function productionDeps(
 ): (input: { workspaceId: string; projectId: string }) => ChapterProductionDeps {
   // Provider configuration is validated ONCE at startup, so a missing key, model name or recording is a
   // startup error that names the variable, not a failed first chapter.
-  const resolved = resolveProvidersFromEnv();
+  const resolved = resolveProvidersFromEnv(process.env, { simulated: simulatedProvider });
   const enforcement = opts.enforcement ?? enforcementModeFromEnv();
   const budgetCents = Number(process.env.YEONJAE_BUDGET_CENTS ?? '100000');
   const holder = `worker:${process.env.YEONJAE_WORKER_ID ?? String(process.pid)}`;

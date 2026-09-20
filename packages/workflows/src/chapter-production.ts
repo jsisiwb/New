@@ -50,6 +50,7 @@ import {
 } from './drafting.js';
 import { evaluateVersion, revisionTargets, type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
+import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   buildStoryBible,
   ensureChapter,
@@ -239,11 +240,10 @@ export async function makeContext(
       `project ${projectId} pins no composed Narrative Identity (settings.narrative_identity_ref / narrative_identity_version_id)`,
       { step: 'init', recommendedActions: ['edit_manually'] },
     );
-  const identity = composeIdentity(
-    deps.profiles ?? ProfileStore.fromDirectory(),
-    identityRef,
-    identityVersionId,
-  );
+  const store = deps.profiles ?? ProfileStore.fromDirectory();
+  // A project-owned composed identity (derived from the intake) lives in identity_documents, not on disk.
+  if (identityRef === composedRefFor(projectId)) await loadIntoStore(deps.pool, projectId, store);
+  const identity = composeIdentity(store, identityRef, identityVersionId);
   const timelines = await timelinesOf(deps.pool, projectId);
   const main = timelines.find((t) => t.kind === 'main');
   if (!main) throw new WorkflowError('INTERNAL', 'project has no main timeline', { step: 'init' });

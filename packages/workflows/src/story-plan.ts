@@ -36,6 +36,7 @@ import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/n
 import { PromptRegistry } from '@yeonjae/prompts';
 import { type Gateway } from '@yeonjae/gateway';
 import { WorkflowError } from './errors.js';
+import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   compileFor,
   interpretRequirements,
@@ -110,11 +111,10 @@ export async function makePlanContext(
       `project ${projectId} pins no composed Narrative Identity`,
       { step: 'init', recommendedActions: ['edit_manually'] },
     );
-  const identity = composeIdentity(
-    deps.profiles ?? ProfileStore.fromDirectory(),
-    identityRef,
-    identityVersionId,
-  );
+  const store = deps.profiles ?? ProfileStore.fromDirectory();
+  // A project-owned composed identity (derived from the intake) lives in identity_documents, not on disk.
+  if (identityRef === composedRefFor(projectId)) await loadIntoStore(deps.pool, projectId, store);
+  const identity = composeIdentity(store, identityRef, identityVersionId);
   const main = await deps.pool.query<{ id: string }>(
     `SELECT id FROM timelines WHERE project_id = $1 AND kind = 'main' ORDER BY id LIMIT 1`,
     [projectId],

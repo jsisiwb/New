@@ -32,6 +32,7 @@ import {
 import { type Gateway } from '@yeonjae/gateway';
 import { produceChapter } from './chapter-production.js';
 import { WorkflowError } from './errors.js';
+import { ensureProjectIdentity } from './identity-from-intake.js';
 import { validateIntake, type StoryIntake, type StorySpec } from './planning.js';
 import {
   buildFullBible,
@@ -88,6 +89,14 @@ export async function startNovel(
     intakeArtifactId: artifact.id,
     targetChapters: intake.target_chapters,
     createdByUserId: input.createdByUserId,
+  });
+  // A project without a pinned Narrative Identity gets one composed from the intake (ADR-0027 layers:
+  // the two contracts are always the global profiles; genre/setting/naming/terminology come from intake).
+  await ensureProjectIdentity(deps.pool, {
+    workspaceId: project.workspace_id,
+    projectId: project.id,
+    intake,
+    store: deps.profiles,
   });
   if (!['intake', 'suggesting', 'awaiting_approval'].includes(run.status))
     throw new WorkflowError('SELECTION_REQUEST_CHANGED', `this novel is already ${run.status}`, {

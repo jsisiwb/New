@@ -17,7 +17,7 @@ import {
   type ResolvedProviders,
 } from '@yeonjae/gateway';
 import { type Metrics } from '@yeonjae/domain';
-import { ArtifactLlmOutputStore, type NovelDeps } from '@yeonjae/workflows';
+import { ArtifactLlmOutputStore, simulatedProvider, type NovelDeps } from '@yeonjae/workflows';
 
 export type NovelRunnerMode = 'inline' | 'external';
 
@@ -37,7 +37,9 @@ export function novelDepsFromEnv(
 ): ((input: { workspaceId: string; projectId: string }) => NovelDeps) | undefined {
   const env = opts.env ?? process.env;
   if (!env.YEONJAE_PROVIDER_MODE) return undefined;
-  const resolved: ResolvedProviders = resolveProvidersFromEnv(env);
+  const resolved: ResolvedProviders = resolveProvidersFromEnv(env, {
+    simulated: simulatedProvider,
+  });
   const budgetCents = Number(env.YEONJAE_BUDGET_CENTS ?? '100000');
   const holder = `api:${env.YEONJAE_WORKER_ID ?? String(process.pid)}`;
   const maxWaitMs = Number(env.YEONJAE_RATE_MAX_WAIT_MS ?? '0');

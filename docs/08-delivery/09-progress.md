@@ -289,6 +289,51 @@ green. Branch naming note: the platform's Git broker only publishes to this thre
 derived from it, so the recovery and base markers carry that prefix rather than the bare names in the
 continuation brief; their SHAs are exactly as specified.
 
+## Phase 4b — Product completion: the autopilot novel run (implemented in this change; ADR-0051)
+
+**What now exists.** The product loop the plan describes is connected end to end and proven with a simulated
+live model (no credentials, no spend): an operator submits an intake, the studio interprets the Story Spec and
+proposes story directions, the operator approves one, the studio generates and assembles the **complete Story
+Bible** (cast with secrets and registers, locations, organizations, abilities, world and progression rules as
+locked seed facts, propositions with knowledge stances, promises with due windows, and a validated Series
+Blueprint with seasons), pins it on the project, and then produces every chapter back to back through the
+unchanged, checkpointed `produceChapter` — arcs planned per season from the blueprint, the chapter planner shown
+the registry ids, secrets and promises — until the run completes, pauses at a batch boundary, or rests at a
+quality gate for a human.
+
+| Surface | Delivered |
+| --- | --- |
+| Data | Migration `0019_novel_runs.sql`: `novel_runs` (one per project; status machine, `next_chapter`, `auto_continue`, `stop_after_chapter`, fenced runner lease, `last_error`), append-only `novel_run_events`, `canon.claim_novel_run` / `canon.renew_novel_run`; FORCE RLS, least-privilege grants, `PUBLIC` execute revoked |
+| Workflows | `packages/workflows/src/story-plan.ts` (concept suggestions; `buildFullBible` over `character_designer`, `world_builder`, `power_system_designer`, `story_architect`; deterministic assembly; `planArcFromBlueprint`; `loadStoredPlan`), `novel.ts` (`startNovel`, `approveConcept`, `advanceNovelRun`, pause/resume/cancel), `novel-runner.ts` (claim → drive → release loop with heartbeat), `anchoring.ts` (evidence re-anchoring, scene-draft normalization); `chapter-production.ts` accepts a `blueprint`; `runtime.ts` reuses project artifacts across jobs and passes `output_mode` |
+| Gateway | `live-providers.ts` (OpenAI-compatible + Anthropic adapters), `live-config.ts` (`YEONJAE_LIVE_*`, `YEONJAE_MODEL_{R,P,M,C}`, optional fallback), `provider-mode.ts` (shared `replay` / `genspark` / `live` resolution); `GatewayRequest.outputMode`; outermost-object JSON extraction before bounded repair |
+| API | `POST/GET /v1/projects/:id/novel`, `GET …/novel/events`, `POST …/novel/approve`, `POST …/novel/{pause,resume,cancel}`; `buildApi({ novelDeps, onNovelQueued })`; `main.ts` hosts the runner inline (`YEONJAE_NOVEL_RUNNER=inline`, default) |
+| Worker | `pnpm --filter @yeonjae/worker start:novel` — the Postgres-queued runner as its own process; `deps.ts` resolves providers through the shared module and supports `live` |
+| CLI | `novel:start`, `novel:approve`, `novel:run [--once]`, `novel:status`, `novel:pause`, `novel:resume`, `novel:cancel` |
+| Web | "New novel" work area: intake wizard (every intake field the schema offers), suggestion cards, approve (autopilot or one-chapter-at-a-time), bible and blueprint summary, chapter progress, pause/resume/cancel with a confirmed cancel |
+| Context | `renderContract` carries entity ids with names so planners can copy them |
+
+**Tests added (all deterministic, all run locally against Postgres 16 in this session):**
+`packages/workflows/src/novel.integration.test.ts` — intake → 2 suggestions (idempotent replay adds no calls)
+→ approve → one runner tick builds the full bible (3 characters, 2 locations, 1 organization, 1 ability, ≥ 3
+propositions, 1 promise, seed commits) and writes and accepts **both** chapters (canon `bible, bible,
+chapter_acceptance, chapter_acceptance`), with the extractor's deliberately wrong evidence offsets re-anchored to
+the real quote and every scene draft's paragraph table recomputed from its prose; `apps/api/src/novel.integration.test.ts`
+— 401/403 matrix, `NO_PROVIDER` 503 on an unconfigured process, `INTAKE_INVALID` 422, idempotent start, approve
+409 on a second approval, owner-only cancel, pause/resume with the event log; `apps/web/src/screens/novel.test.tsx`
+— schema-shaped intake POST, suggestion rendering, approval POST, bible/progress rendering, `NO_PROVIDER` message,
+axe; `packages/gateway/src/live-providers.test.ts` — both adapters' wire shapes, JSON mode, usage truthfulness,
+failure classification without echoing provider bodies, cancellation vs. timeout, plaintext refusal, env resolution
+naming the missing variable.
+
+**Repaired defects.** The former live validation matrix script under `tools/` broke `pnpm lint` and `pnpm format:check` (55 lint
+errors, unformatted) and was removed; `providerModeFromEnv` now recognizes `live`; `secret-boundaries.test.ts`
+updated accordingly (the fail-closed property is now asserted on the resolver, which refuses `live` without a key
+and model names).
+
+**Not run, stated plainly.** No live provider call has been made in this repository. The live adapters are tested
+against an injected `fetch`; the end-to-end run is proven with a role-scripted `MockProvider`. The first real run
+needs `YEONJAE_PROVIDER_MODE=live` with a key, and its result belongs here when it has happened.
+
 ## Phase 4 — MVP hardening (active; incomplete)
 
 **Status: active and incomplete — deterministic portions MERGED UPSTREAM.** The credential-free deterministic

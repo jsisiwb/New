@@ -90,6 +90,14 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
       YEONJAE_PROVIDER_MODE: ${YEONJAE_PROVIDER_MODE:-replay}
+      YEONJAE_REPLAY_FILE: ${YEONJAE_REPLAY_FILE:-/app/examples/fixture/ch01/replay.ch01.json}
+      YEONJAE_LIVE_PROVIDER: ${YEONJAE_LIVE_PROVIDER:-openai}
+      # Inherited from the host environment / secret manager; never given a default here.
+      YEONJAE_LIVE_API_KEY:
+      YEONJAE_MODEL_DEFAULT: ${YEONJAE_MODEL_DEFAULT:-}
+      YEONJAE_MODEL_R: ${YEONJAE_MODEL_R:-}
+      # The API drives novel runs itself unless a dedicated runner is deployed.
+      YEONJAE_NOVEL_RUNNER: ${YEONJAE_NOVEL_RUNNER:-inline}
       YEONJAE_ENFORCEMENT_MODE: shared
       PORT: '8080'
     # The only host-published port in the stack.

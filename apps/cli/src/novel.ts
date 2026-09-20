@@ -8,11 +8,14 @@
  *   novel:status  <project>
  *   novel:pause | novel:resume | novel:cancel <project>
  *
- * `novel:start` pins the fixture composed identity on the project when none is pinned yet, so a project
- * created with `project:create` is usable without an extra step; a project with its own identity keeps it.
+ * `novel:start` composes the project's Narrative Identity from the intake when none is pinned, so a project
+ * created with `project:create` is usable without an extra step; `--identity` pins a repository profile.
  */
 import { readFileSync } from 'node:fs';
 import {
+  addMember,
+  createUser,
+  createWorkspace,
   getNovelRun,
   getProject,
   listNovelRunEvents,
@@ -21,6 +24,7 @@ import {
   SharedBudget,
   type Pool,
 } from '@yeonjae/db';
+import { uuidFromKey } from '@yeonjae/domain';
 import { Gateway, MemoryBudget, resolveProvidersFromEnv } from '@yeonjae/gateway';
 import {
   advanceNovelRun,
@@ -30,13 +34,11 @@ import {
   NovelRunner,
   pauseNovelRun,
   resumeNovelRun,
+  simulatedProvider,
   startNovel,
   WorkflowError,
   type NovelDeps,
 } from '@yeonjae/workflows';
-
-const DEFAULT_IDENTITY_REF = 'project/0191b2a0-0000-7000-8000-000000000001@1';
-const DEFAULT_IDENTITY_VERSION = '0191b2a0-0000-7000-8000-000000060001';
 
 export interface CliResult {
   ok: boolean;
@@ -44,7 +46,7 @@ export interface CliResult {
 }
 
 function depsFor(pool: Pool): (input: { workspaceId: string; projectId: string }) => NovelDeps {
-  const resolved = resolveProvidersFromEnv();
+  const resolved = resolveProvidersFromEnv(process.env, { simulated: simulatedProvider });
   const shared = process.env.YEONJAE_ENFORCEMENT_MODE === 'shared';
   const budgetCents = Number(process.env.YEONJAE_BUDGET_CENTS ?? '100000');
   return ({ workspaceId, projectId }) => ({
@@ -65,25 +67,29 @@ function depsFor(pool: Pool): (input: { workspaceId: string; projectId: string }
   });
 }
 
+/**
+ * `--identity=<composed-ref>` pins a repository profile (e.g. the fixture's) instead of the intake-derived
+ * one `startNovel` would compose. Without the flag, a project keeps whatever it pins or gets one composed.
+ */
 async function ensureIdentity(
   pool: Pool,
   projectId: string,
   ref: string | undefined,
 ): Promise<void> {
-  const project = await getProject(pool, projectId);
-  const settings = project.settings;
-  if (typeof settings.narrative_identity_ref === 'string' && ref === undefined) return;
+  if (ref === undefined) return;
+  const versionId = FIXTURE_IDENTITY_VERSIONS[ref] ?? uuidFromKey(`${projectId}:identity:${ref}`);
   await pool.query(
     'UPDATE projects SET settings = settings || $2::jsonb, updated_at = now() WHERE id = $1',
     [
       projectId,
-      JSON.stringify({
-        narrative_identity_ref: ref ?? DEFAULT_IDENTITY_REF,
-        narrative_identity_version_id: DEFAULT_IDENTITY_VERSION,
-      }),
+      JSON.stringify({ narrative_identity_ref: ref, narrative_identity_version_id: versionId }),
     ],
   );
 }
+
+const FIXTURE_IDENTITY_VERSIONS: Readonly<Record<string, string>> = {
+  'project/0191b2a0-0000-7000-8000-000000000001@1': '0191b2a0-0000-7000-8000-000000060001',
+};
 
 function flag(flags: readonly string[], name: string): string | undefined {
   return flags.find((f) => f.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -95,6 +101,32 @@ export async function runNovelCommand(
   rest: readonly string[],
   usage: string,
 ): Promise<CliResult> {
+  if (cmd === 'user:create') {
+    const [email, password, displayName, ...flags] = rest;
+    if (!email || !password) return { ok: false, output: usage };
+    if (password.length < 12)
+      return { ok: false, output: { error: 'PASSWORD_TOO_SHORT', min: 12 } };
+    const user = await createUser(pool, { email, displayName: displayName ?? email, password });
+    const wsFlag = flag(flags, 'workspace');
+    const role = (flag(flags, 'role') ?? 'owner') as 'owner' | 'editor' | 'viewer';
+    if (!['owner', 'editor', 'viewer'].includes(role)) return { ok: false, output: usage };
+    const workspaceId = wsFlag ?? (await createWorkspace(pool, `${displayName ?? email}'s studio`));
+    await addMember(pool, { workspaceId, userId: user.id, role });
+    return { ok: true, output: { user_id: user.id, workspace_id: workspaceId, role } };
+  }
+  if (cmd === 'member:add') {
+    const [workspaceId, email, roleRaw] = rest;
+    const role = (roleRaw ?? 'editor') as 'owner' | 'editor' | 'viewer';
+    if (!workspaceId || !email || !['owner', 'editor', 'viewer'].includes(role))
+      return { ok: false, output: usage };
+    const user = await pool.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [
+      email.trim().toLowerCase(),
+    ]);
+    const userId = user.rows[0]?.id;
+    if (!userId) return { ok: false, output: { error: 'USER_NOT_FOUND' } };
+    await addMember(pool, { workspaceId, userId, role });
+    return { ok: true, output: { workspace_id: workspaceId, user_id: userId, role } };
+  }
   const [projectId, ...args] = rest;
   if (!projectId) return { ok: false, output: usage };
   try {
@@ -217,6 +249,8 @@ async function statusView(pool: Pool, projectId: string) {
 }
 
 export const NOVEL_COMMANDS = new Set([
+  'user:create',
+  'member:add',
   'novel:start',
   'novel:approve',
   'novel:run',
@@ -227,6 +261,12 @@ export const NOVEL_COMMANDS = new Set([
 ]);
 
 export const NOVEL_USAGE = `
+Operators (DATABASE_URL required):
+  user:create <email> <password> [display-name] [--workspace=<id>] [--role=owner|editor|viewer]
+                                               create a sign-in for the web console; without --workspace a new
+                                               workspace is created and the user becomes its owner
+  member:add <workspace> <email> [role]        add an existing user to a workspace (default editor)
+
 Novel lifecycle (DATABASE_URL + YEONJAE_PROVIDER_MODE required; live mode needs YEONJAE_LIVE_*):
   novel:start <project> <intake.json> [--identity=<composed-ref>]
                                                interpret the intake and propose story directions (spends R-class calls)

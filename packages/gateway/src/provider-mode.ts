@@ -5,26 +5,29 @@
  *   * `replay`   — recorded fixture responses (tests, CLI demos); needs `YEONJAE_REPLAY_FILE`.
  *   * `genspark` — the local Genspark bridge (`tools/genspark_provider_bridge.py`).
  *   * `live`     — an OpenAI-compatible or Anthropic API keyed by `YEONJAE_LIVE_*` (see live-config.ts).
+ *   * `simulated` — a deterministic role-scripted stand-in supplied by the caller (`@yeonjae/workflows`
+ *     ships one); no network, no spend, no prose quality claim. For local dry runs of the whole loop.
  *
  * Shared by the worker and the API so both processes resolve the same providers and routing from the
  * same variables; the enforcement wrapper (budget, admission, audit) stays with the caller.
  */
 import { readFileSync } from 'node:fs';
-import { type RoutingTable } from './gateway.js';
+import { type RouteEntry, type RoutingTable } from './gateway.js';
 import { DEFAULT_GENSPARK_BRIDGE_URL, GensparkProvider } from './genspark-provider.js';
 import { liveGatewayFromEnv } from './live-config.js';
 import { ReplayProvider, type Recording } from './replay-provider.js';
 import { type Provider } from './types.js';
 
-export type ProviderMode = 'replay' | 'genspark' | 'live';
+export type ProviderMode = 'replay' | 'genspark' | 'live' | 'simulated';
 
 export function providerModeFromEnv(env: NodeJS.ProcessEnv = process.env): ProviderMode {
   const mode = env.YEONJAE_PROVIDER_MODE;
   if (mode === 'replay') return 'replay';
   if (mode === 'genspark') return 'genspark';
   if (mode === 'live') return 'live';
+  if (mode === 'simulated') return 'simulated';
   throw new Error(
-    "YEONJAE_PROVIDER_MODE must be set to 'replay', 'genspark' or 'live'; the process refuses to start without an explicit " +
+    "YEONJAE_PROVIDER_MODE must be set to 'replay', 'genspark', 'live' or 'simulated'; the process refuses to start without an explicit " +
       'provider mode so a misconfigured deployment cannot issue paid calls',
   );
 }
@@ -91,8 +94,31 @@ export interface ResolvedProviders {
 }
 
 /** Resolve providers and routing from the environment, validating the mode's configuration once. */
-export function resolveProvidersFromEnv(env: NodeJS.ProcessEnv = process.env): ResolvedProviders {
+export function resolveProvidersFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+  opts: { readonly simulated?: (() => Provider) | undefined } = {},
+): ResolvedProviders {
   const mode = providerModeFromEnv(env);
+  if (mode === 'simulated') {
+    const make = opts.simulated;
+    if (!make)
+      throw new Error(
+        'YEONJAE_PROVIDER_MODE=simulated needs a simulated provider, which this process does not supply',
+      );
+    const routing = replayRouting();
+    const rename = (rs: readonly RouteEntry[]) => rs.map((r) => ({ ...r, provider: 'simulated' }));
+    return {
+      mode,
+      providers: () => new Map<string, Provider>([['simulated', make()]]),
+      routing: {
+        R: rename(routing.R),
+        P: rename(routing.P),
+        M: rename(routing.M),
+        C: rename(routing.C),
+        E: [],
+      },
+    };
+  }
   if (mode === 'live') {
     const live = liveGatewayFromEnv(env);
     return { mode, providers: () => live.providers, routing: live.routing };
