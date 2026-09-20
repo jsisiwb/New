@@ -1,0 +1,36 @@
+{
+  "family": "arc_planner",
+  "version": "1.1.0",
+  "role": "arc_planner",
+  "purpose": "Plan a target-specific arc from the complete [PLANNED] bible and series blueprint while preserving cast, world, progression, promises, and ending continuity.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "blueprint",
+    "season",
+    "arc_brief",
+    "canon_state",
+    "open_promises"
+  ],
+  "output_schema": "arc-plan.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.1.0 — arc planning reads the full planned bible and preserves complete-series promise and ending continuity.",
+  "regression_cases": [
+    "arc_planner.full_planned_bible",
+    "arc_planner.promise_continuity"
+  ],
+  "content_hash": "sha256:12f4fdd376823378070fb881aa471929a5c7b706d3ddbcb48638dcd65ded25ba"
+}

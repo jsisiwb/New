@@ -20,7 +20,7 @@ import { useAppState } from '../components/app-state';
 import { ErrorSummary, Field, Form, LiveRegion } from '../components/primitives';
 
 export function SignInScreen(): ReactNode {
-  const { signIn, session, restoring } = useAppState();
+  const { signIn, session, restoring, reauthRequired } = useAppState();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [problem, setProblem] = useState<ApiProblem | undefined>(undefined);
@@ -37,6 +37,12 @@ export function SignInScreen(): ReactNode {
   return (
     <section aria-labelledby="signin-heading">
       <h1 id="signin-heading">Sign in to Yeonjae Studio</h1>
+      {reauthRequired ? (
+        <p role="status">
+          Your session is still valid, but this page was reloaded and its security token was
+          cleared. Sign in again to enable changes.
+        </p>
+      ) : null}
       {problem ? (
         <ErrorSummary
           title="Sign-in failed"

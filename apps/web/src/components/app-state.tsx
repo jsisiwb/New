@@ -34,6 +34,8 @@ export interface AppState {
   readonly workspaceId: string | undefined;
   readonly role: Membership['role'] | undefined;
   readonly restoring: boolean;
+  /** A cookie session was valid, but this page has no in-memory CSRF token after a reload. */
+  readonly reauthRequired: boolean;
   readonly signIn: (email: string, password: string) => Promise<void>;
   readonly signOut: () => Promise<void>;
   readonly selectWorkspace: (workspaceId: string) => void;
@@ -57,6 +59,7 @@ export function AppStateProvider({
   const [memberships, setMemberships] = useState<readonly Membership[]>([]);
   const [workspaceId, setWorkspaceId] = useState<string | undefined>(undefined);
   const [restoring, setRestoring] = useState(true);
+  const [reauthRequired, setReauthRequired] = useState(false);
 
   const api = useMemo(() => client ?? new ApiClient({ baseUrl: apiBaseUrl() }), [client]);
 
@@ -98,8 +101,18 @@ export function AppStateProvider({
         const restored = await api.restore();
         if (token.cancelled) return;
         if (restored) {
-          setSession(restored);
-          await loadMemberships();
+          // `/v1/me` deliberately does not mint CSRF. Never expose a restored session as writable;
+          // require a fresh sign-in, which repopulates the token only in this page's memory.
+          if (api.needsCsrf()) {
+            api.clear();
+            setSession(undefined);
+            setMemberships([]);
+            setWorkspaceId(undefined);
+            setReauthRequired(true);
+          } else {
+            setSession(restored);
+            await loadMemberships();
+          }
         }
       } catch {
         // A restore failure is not an error state for a signed-out visitor: they simply see sign-in.
@@ -121,16 +134,22 @@ export function AppStateProvider({
     async (email: string, password: string) => {
       const next = await api.signIn(email, password);
       setSession(next);
+      setReauthRequired(false);
       await loadMemberships();
     },
     [api, loadMemberships],
   );
 
   const signOut = useCallback(async () => {
-    await api.signOut();
-    setSession(undefined);
-    setMemberships([]);
-    setWorkspaceId(undefined);
+    try {
+      await api.signOut();
+    } finally {
+      // Sign-out is local even when the server rejects the logout (for example, an expired CSRF token).
+      // The API client clears its credentials too; this clears the provider's rendered session.
+      setSession(undefined);
+      setMemberships([]);
+      setWorkspaceId(undefined);
+    }
   }, [api]);
 
   const selectWorkspace = useCallback(
@@ -151,12 +170,24 @@ export function AppStateProvider({
       workspaceId,
       role,
       restoring,
+      reauthRequired,
       signIn,
       signOut,
       selectWorkspace,
       can: (minimum) => (role ? RANK[role] >= RANK[minimum] : false),
     }),
-    [api, session, memberships, workspaceId, role, restoring, signIn, signOut, selectWorkspace],
+    [
+      api,
+      session,
+      memberships,
+      workspaceId,
+      role,
+      restoring,
+      reauthRequired,
+      signIn,
+      signOut,
+      selectWorkspace,
+    ],
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

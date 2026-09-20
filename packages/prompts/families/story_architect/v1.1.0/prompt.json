@@ -1,0 +1,36 @@
+{
+  "family": "story_architect",
+  "version": "1.1.0",
+  "role": "story_architect",
+  "purpose": "Author the complete target-chapter series blueprint from the full planned bible through a concrete ending, with promises, endgame requirements, and contiguous season coverage.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "bible_summary",
+    "target_chapters"
+  ],
+  "output_schema": "series-blueprint.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 10000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "1.1.0 — complete planned-bible architecture through ending; contiguous 1..N seasons; concrete arcs and promises; no generic placeholders.",
+  "regression_cases": [
+    "story_architect.contiguous_seasons",
+    "story_architect.complete_ending",
+    "story_architect.planned_bible"
+  ],
+  "content_hash": "sha256:fecd4271cc4675c95fce7bd296a4c68f282cf210e822a35936d72bbadec2e674"
+}

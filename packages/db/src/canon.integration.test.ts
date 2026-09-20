@@ -7,6 +7,7 @@ import {
   acceptedCorpus,
   approveManuscriptVersion,
   commitDelta,
+  JobControlCommitBlockedError,
   createChapter,
   createEntity,
   createManuscriptVersion,
@@ -164,6 +165,33 @@ run('canon core (Postgres integration)', () => {
     await expect(pool.query('TRUNCATE facts CASCADE')).rejects.toMatchObject({
       hint: 'CANON_DELETE_FORBIDDEN',
     });
+  });
+
+  it('cancelled jobs cannot commit canon without a target lease', async () => {
+    const { projectId } = await createProject(pool, {
+      workspaceId: ws,
+      title: 'Cancelled commit guard',
+    });
+    const job = await pool.query<{ id: string }>(
+      `INSERT INTO jobs (workspace_id, project_id, kind, status, production_policy_version, control)
+       SELECT $1, $2, 'chapter_production', 'cancelling', production_policy_version, 'cancel'
+         FROM projects WHERE id = $2
+       RETURNING id`,
+      [ws, projectId],
+    );
+    const jobId = job.rows[0]?.id;
+    expect(jobId).toBeTruthy();
+    await expect(
+      commitDelta(pool, {
+        projectId,
+        parentVersion: 0,
+        source: 'bible',
+        delta: { items: [] },
+        actor: { kind: 'test' },
+        jobControl: { jobId: jobId ?? '' },
+      }),
+    ).rejects.toBeInstanceOf(JobControlCommitBlockedError);
+    expect((await getProject(pool, projectId)).canon_version).toBe(0);
   });
 
   it('bible commit v1: locked facts without evidence; optimistic version check', async () => {

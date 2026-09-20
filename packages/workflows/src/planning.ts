@@ -8,10 +8,12 @@
  */
 import {
   commitDelta,
+  checkpointControl,
   createChapter,
   createEntity,
   createPromise,
   getProject,
+  JobControlCommitBlockedError,
   chapterByNumber,
 } from '@yeonjae/db';
 import { type Generated, validatorFor } from '@yeonjae/domain';
@@ -37,6 +39,13 @@ export type ChapterContract = Generated.ChapterContractSchema.ChapterContract;
 /** The Story Bible as the slice needs it: registry entities, propositions, promises, seed facts/relations. */
 export interface StoryBible {
   readonly version: number;
+  readonly design?:
+    | {
+        readonly characters: Readonly<Record<string, unknown>>;
+        readonly world: Readonly<Record<string, unknown>>;
+        readonly progression: Readonly<Record<string, unknown>>;
+      }
+    | undefined;
   readonly entities: readonly {
     readonly id: string;
     readonly type: string;
@@ -44,6 +53,7 @@ export interface StoryBible {
     readonly short_forms?: readonly string[] | undefined;
     readonly aliases?: readonly string[] | undefined;
     readonly description?: string | undefined;
+    readonly design?: Readonly<Record<string, unknown>> | undefined;
   }[];
   readonly propositions: readonly {
     readonly local_id: string;
@@ -212,6 +222,10 @@ export async function buildStoryBible(
   return runStep(ctx, 'story_bible', async () => {
     if (bible.entities.length === 0)
       throw new WorkflowError('INTERNAL', 'story bible has no entities', { step: 'story_bible' });
+    // `runStep` checks control before entering this callback, but the seed writes are a multi-statement
+    // boundary. Re-check immediately before touching planned registry/canon state so a mid-step cancel
+    // cannot proceed merely because the step itself is already marked running.
+    await checkpointStoryBibleControl(ctx, 'story_bible_seed');
     const seen = new Set<string>();
     for (const e of bible.entities) {
       if (seen.has(e.display_name))
@@ -229,7 +243,10 @@ export async function buildStoryBible(
           displayName: e.display_name,
           shortForms: [...(e.short_forms ?? [])],
           aliases: [...(e.aliases ?? [])],
-          fields: e.description ? { description: e.description } : {},
+          fields: {
+            ...(e.description ? { description: e.description } : {}),
+            ...(e.design ? { planned_design: e.design } : {}),
+          },
         });
     }
     for (const p of bible.promises) {
@@ -271,13 +288,23 @@ export async function buildStoryBible(
     if (project.canon_version === 0) {
       let parent = 0;
       for (const items of commits) {
-        const commit = await commitDelta(ctx.pool, {
-          projectId: ctx.projectId,
-          parentVersion: parent,
-          source: 'bible',
-          delta: substitute({ items }, ctx.bindings),
-          actor: { kind: 'workflow', workflow_id: ctx.workflowId },
-        });
+        await checkpointStoryBibleControl(ctx, 'story_bible_commit');
+        let commit;
+        try {
+          commit = await commitDelta(ctx.pool, {
+            projectId: ctx.projectId,
+            parentVersion: parent,
+            source: 'bible',
+            delta: substitute({ items }, ctx.bindings),
+            actor: { kind: 'workflow', workflow_id: ctx.workflowId },
+            ...(ctx.lease ? { lease: ctx.lease } : {}),
+            jobControl: { jobId: ctx.job.id },
+          });
+        } catch (err) {
+          if (err instanceof JobControlCommitBlockedError)
+            await checkpointStoryBibleControl(ctx, 'story_bible_commit');
+          throw err;
+        }
         parent = commit.version;
         for (const [local, id] of Object.entries(commit.item_ids)) {
           bibleIds[local] = id;
@@ -321,6 +348,10 @@ export async function buildStoryBible(
     });
     return { canonVersion: after.canon_version, propositionIds, artifactId: ref.artifact_id };
   });
+}
+
+async function checkpointStoryBibleControl(ctx: WorkflowContext, step: string): Promise<void> {
+  await checkpointControl(ctx.pool, { jobId: ctx.job.id, step });
 }
 
 export async function planArc(
@@ -602,6 +633,7 @@ export function compileFor(
 
 function renderBibleState(b: StoryBible, bindings?: Readonly<Record<string, string>>): string {
   return [
+    renderBibleDesign(b),
     ...b.entities.map(
       (e) =>
         `- [${e.id}] ${e.display_name} (${e.type})${e.description ? `: ${e.description}` : ''}`,
@@ -611,6 +643,12 @@ function renderBibleState(b: StoryBible, bindings?: Readonly<Record<string, stri
       return `- proposition ${id ? `[${id}] ` : ''}${p.local_id}: ${p.statement} [${p.truth}${p.secret ? ', secret' : ''}]`;
     }),
   ].join('\n');
+}
+
+export function renderBibleDesign(b: StoryBible): string {
+  return b.design
+    ? `[PLANNED — COMPLETE STORY DESIGN, NOT REALIZED EVENTS]\n${JSON.stringify(b.design)}\nUse registry IDs below. Accepted canon takes precedence over intended developments; secrets are not public knowledge.`
+    : '';
 }
 
 function renderKnowledge(b: StoryBible): string {

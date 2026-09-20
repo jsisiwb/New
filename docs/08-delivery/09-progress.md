@@ -3,6 +3,36 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Complete-bible autopilot hardening — 2026-09-20
+
+This continuation targets `sigma37web/New` from base `8b3ccf7` on
+`hoplite/ioulis-1b1ef1f1`. Historical checkpoint records below remain unchanged.
+
+- Preserves full character/world/progression design before prose, rejects incomplete automatic plans,
+  and versions the affected designer/planner prompts (ADR-0052). Writer cards exclude author-only
+  secret/arc payloads; complete planned design remains available to planners and authorized operators.
+- Adds a scoped full-bible API and on-demand web inspection/download. Repairs reload/CSRF recovery,
+  payload-aware request retries, failed-suggestion recovery and paused-job resume.
+- Fences bible canon commits and runner-driven lifecycle mutations against lost leases. Semantic
+  rejection regenerates only the rejected design stage; crash replay reuses valid paid responses.
+- Provides disposable, isolated simulated-provider preview setup and API/web supervision.
+
+Verification: the final production-build browser exercised intake → suggestions → approval → bible
+planning → two accepted chapters, full-bible inspection and reload reauthentication. Production web
+build, TypeScript build, lint, formatting, generated-type freshness, planning-package validation and
+contrast evaluation passed. The full database-backed run passed 1,748 of 1,749 tests; its one pause-state
+failure was corrected by preserving `JobControlStop` inside running steps. The subsequent six-suite
+regression run passed all 61 tests, including both complete cancellation/control suites and the affected
+novel/design/canon suites. The entire monorepo was not rerun after that final correction; remote CI is
+the remaining full-head verification. ESLint required a 4 GiB Node heap locally.
+
+The development preview stopped hydrating after build/dev artifact reuse. The production web build
+passed the final browser flow; the disposable preview scripts now build and serve that verified mode.
+
+Limitations: no live-provider calls, literary-quality claim, deployment restore/PITR rehearsal or
+production credential/billing verification is implied. The pre-existing live/human/deployment readiness
+work listed below remains open. Structural completeness is necessary, not sufficient, for publishable prose.
+
 ## Current state
 
 | Item | Value |

@@ -11,8 +11,9 @@
  */
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useAppState } from '../components/app-state';
+import { ApiProblem, messageFor } from '../lib/api';
 import { newIdempotencyKey, useMutation, useResource } from '../lib/use-resource';
 import {
   AsyncRegion,
@@ -85,6 +86,11 @@ interface NovelStatus {
   readonly spend_cents: number;
 }
 
+interface FullBibleResponse {
+  readonly bible: Readonly<Record<string, unknown>>;
+  readonly blueprint: Readonly<Record<string, unknown>>;
+}
+
 export const GENRES = [
   'hunter-gate',
   'system-progression',
@@ -146,7 +152,8 @@ export function NovelScreen({ projectId }: { projectId: string }): ReactNode {
     () => api.get(`/v1/projects/${projectId}/novel`),
     [projectId],
   );
-  const notStarted = status.problem?.problem.code === 'NOT_FOUND';
+  // A transient poll failure must not turn an already loaded run back into the intake form.
+  const notStarted = !status.data && status.problem?.problem.code === 'NOT_FOUND';
   const active =
     status.data?.run.status === 'planning' ||
     status.data?.run.status === 'producing' ||
@@ -160,13 +167,14 @@ export function NovelScreen({ projectId }: { projectId: string }): ReactNode {
     return () => {
       clearInterval(t);
     };
-  }, [active, status]);
+  }, [active, status.reload]);
 
   return (
     <section aria-labelledby="novel-heading">
       <h1 id="novel-heading">New novel</h1>
       {notStarted || (!status.loading && !status.data && !status.error) ? (
         <IntakeForm
+          key={projectId}
           projectId={projectId}
           onStarted={() => {
             status.reload();
@@ -174,14 +182,17 @@ export function NovelScreen({ projectId }: { projectId: string }): ReactNode {
         />
       ) : (
         <AsyncRegion
-          loading={status.loading}
-          error={status.error}
+          // Polling should refresh the existing run in place, not replace it with a loading/error
+          // placeholder while a request is in flight or a transient request fails.
+          loading={status.loading && !status.data}
+          error={status.error && !status.data ? status.error : undefined}
           empty={false}
           emptyMessage=""
           label="novel run"
         >
           {status.data ? (
             <RunPanel
+              key={projectId}
               projectId={projectId}
               data={status.data}
               onChanged={() => {
@@ -204,6 +215,8 @@ export function IntakeForm({
 }): ReactNode {
   const { api, can } = useAppState();
   const start = useMutation();
+  const intakeKey = useRef<string | undefined>(undefined);
+  const intakeFingerprint = useRef<string | undefined>(undefined);
   const [title, setTitle] = useState('');
   const [premise, setPremise] = useState('');
   const [genre, setGenre] = useState<string>('hunter-gate');
@@ -275,7 +288,14 @@ export function IntakeForm({
         target_words_per_chapter: Number(words),
         operating_mode: 'autopilot',
       };
-      await api.post(`/v1/projects/${projectId}/novel`, { intake }, newIdempotencyKey());
+      const fingerprint = JSON.stringify(intake);
+      if (intakeFingerprint.current !== fingerprint) {
+        intakeKey.current = newIdempotencyKey();
+        intakeFingerprint.current = fingerprint;
+      }
+      await api.post(`/v1/projects/${projectId}/novel`, { intake }, intakeKey.current);
+      intakeKey.current = undefined;
+      intakeFingerprint.current = undefined;
       setAnnouncement('Story suggestions are ready for review.');
       onStarted();
     });
@@ -609,12 +629,43 @@ function RunPanel({
 }): ReactNode {
   const { api, can } = useAppState();
   const act = useMutation();
+  const approvalKeys = useRef(new Map<string, { key: string; fingerprint: string }>());
   const confirm = useConfirm();
   const [announcement, setAnnouncement] = useState('');
+  const [fullBible, setFullBible] = useState<FullBibleResponse | undefined>(undefined);
+  const [fullBibleLoading, setFullBibleLoading] = useState(false);
+  const [fullBibleError, setFullBibleError] = useState<string | undefined>(undefined);
   const [autoContinue, setAutoContinue] = useState(true);
   const run = data.run;
   const accepted = data.accepted_chapters;
   const percent = Math.round((accepted / Math.max(1, run.target_chapters)) * 100);
+
+  const loadFullBible = async () => {
+    setFullBibleLoading(true);
+    setFullBibleError(undefined);
+    try {
+      setFullBible(await api.get<FullBibleResponse>(`/v1/projects/${projectId}/novel/bible`));
+    } catch (error) {
+      setFullBibleError(
+        error instanceof ApiProblem
+          ? messageFor(error.problem)
+          : 'Unable to load the full story bible.',
+      );
+    } finally {
+      setFullBibleLoading(false);
+    }
+  };
+
+  const downloadFullBible = () => {
+    if (!fullBible) return;
+    const blob = new Blob([JSON.stringify(fullBible, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `story-bible-${projectId}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const control = (action: 'pause' | 'resume' | 'cancel') => {
     act.run(async () => {
@@ -677,6 +728,31 @@ function RunPanel({
         <dt>Spend so far</dt>
         <dd>${(data.spend_cents / 100).toFixed(2)}</dd>
       </dl>
+
+      {data.plan ? (
+        <section aria-labelledby="full-bible-heading">
+          <h3 id="full-bible-heading">Full story bible</h3>
+          <p className="note">
+            The complete cast, world, progression design, entities, propositions, promises, and
+            commits are loaded only when requested so normal run polling stays small.
+          </p>
+          <button type="button" onClick={() => void loadFullBible()} disabled={fullBibleLoading}>
+            {fullBibleLoading ? 'Loading full story bible…' : 'Load full story bible'}
+          </button>
+          {fullBibleError ? <ErrorSummary message={fullBibleError} /> : null}
+          {fullBible ? (
+            <>
+              <button type="button" onClick={downloadFullBible}>
+                Download full story bible (JSON)
+              </button>
+              <details open>
+                <summary>Inspect full story bible and series blueprint</summary>
+                <pre>{JSON.stringify(fullBible, null, 2)}</pre>
+              </details>
+            </>
+          ) : null}
+        </section>
+      ) : null}
 
       {run.status === 'awaiting_approval' ? (
         <section aria-labelledby="suggestions-heading">
@@ -759,11 +835,16 @@ function RunPanel({
                         const conceptId = s.id ?? s.candidate_id;
                         if (!conceptId) return;
                         act.run(async () => {
-                          await api.post(
-                            `/v1/projects/${projectId}/novel/approve`,
-                            { concept_id: conceptId, auto_continue: autoContinue },
-                            newIdempotencyKey(),
-                          );
+                          const body = { concept_id: conceptId, auto_continue: autoContinue };
+                          const fingerprint = JSON.stringify(body);
+                          const previous = approvalKeys.current.get(conceptId);
+                          const key =
+                            previous?.fingerprint === fingerprint
+                              ? previous.key
+                              : newIdempotencyKey();
+                          approvalKeys.current.set(conceptId, { key, fingerprint });
+                          await api.post(`/v1/projects/${projectId}/novel/approve`, body, key);
+                          approvalKeys.current.delete(conceptId);
                           setAnnouncement(
                             `Direction ${i + 1} approved. The studio is building the story bible.`,
                           );

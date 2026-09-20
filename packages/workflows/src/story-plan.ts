@@ -36,10 +36,12 @@ import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/n
 import { PromptRegistry } from '@yeonjae/prompts';
 import { type Gateway } from '@yeonjae/gateway';
 import { WorkflowError } from './errors.js';
+import { assertDesignOutput } from './design-output.js';
 import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   compileFor,
   interpretRequirements,
+  renderBibleDesign,
   validateIntake,
   type ArcPlan,
   type StoryBible,
@@ -91,6 +93,7 @@ export const planIds = {
 export async function makePlanContext(
   deps: StoryPlanDeps,
   projectId: string,
+  cancellation?: WorkflowContext['cancellation'],
 ): Promise<{ ctx: WorkflowContext; mainTimelineId: string; identity: ComposedIdentity }> {
   const project = await getProject(deps.pool, projectId);
   const registry = deps.registry ?? PromptRegistry.fromDirectory();
@@ -191,6 +194,7 @@ export async function makePlanContext(
     pins,
     trace: [],
     bindings,
+    ...(cancellation ? { cancellation } : {}),
   };
   return { ctx, mainTimelineId, identity };
 }
@@ -294,7 +298,7 @@ export async function suggestConcepts(
 // Stage 2: full bible from the approved concept
 // ---------------------------------------------------------------------------------------------------------
 
-interface CastOutput {
+interface CastOutput extends Record<string, unknown> {
   characters?: {
     display_name?: string;
     role?: string;
@@ -305,7 +309,13 @@ interface CastOutput {
     secrets?: (
       string | { statement?: string; known_by?: string[]; reveal_not_before_chapter?: number }
     )[];
-    arc?: string;
+    arc?:
+      | string
+      | {
+          start_state?: string;
+          end_state?: string;
+          turning_points?: { description?: string; chapter_from?: number; chapter_to?: number }[];
+        };
     voice_notes?: string[] | string;
     short_forms?: string[];
     aliases?: string[];
@@ -324,14 +334,14 @@ interface CastOutput {
   propositions?: { statement?: string; kind?: string; secret?: unknown; entity_names?: string[] }[];
 }
 
-interface WorldOutput {
+interface WorldOutput extends Record<string, unknown> {
   world_rules?: { attribute?: string; statement?: string; value?: unknown; locked?: boolean }[];
   locations?: { display_name?: string; description?: string; aliases?: string[] }[];
   organizations?: { display_name?: string; description?: string; short_forms?: string[] }[];
   terminology?: { term?: string; decision?: string; english?: string }[];
 }
 
-interface PowerOutput {
+interface PowerOutput extends Record<string, unknown> {
   system_rules?: { attribute?: string; statement?: string; locked?: boolean }[];
   ranks?: { name?: string; description?: string }[];
   abilities?: { display_name?: string; description?: string; owner?: string }[];
@@ -416,19 +426,31 @@ export async function buildFullBible(
     `Design 6–12 characters: protagonist, antagonist(s), 2–4 allies/mentors, love interest if romance is present, at least one foil. Every character needs registers toward each key counterpart.`,
   ].join('\n');
 
-  const cast = await runStep(ctx, 'cast', async () => {
+  const cast = await runDesignStep(ctx, 'cast', `cast:${concept.id}`, async (activityId) => {
     const call = await modelCall<CastOutput>(ctx, {
       step: 'cast',
       family: 'character_designer',
-      activityId: `cast:${concept.id}`,
+      activityId,
       variables: { story_spec: specText, concept: conceptText, cast_brief: castBrief },
       block,
     });
+    assertDesignOutput('cast', call.output);
     if (!Array.isArray(call.output.characters) || call.output.characters.length === 0)
       throw new WorkflowError('SPEC_INVALID', 'character_designer returned no characters', {
         step: 'cast',
         recommendedActions: ['regenerate'],
       });
+    const names = new Set(
+      call.output.characters.map((c) => fieldText(c, 'display_name')?.toLowerCase()),
+    );
+    const requiredNames = [intake.main_character, ...(intake.supporting_characters ?? [])]
+      .filter(isDefined)
+      .map((c) => c.name.trim().toLowerCase());
+    if (names.has(undefined) || requiredNames.some((name) => !names.has(name)))
+      incompletePlan(
+        'cast',
+        'Every character needs a name, and supplied characters must be retained.',
+      );
     const ref = await saveArtifact(ctx, {
       step: 'cast',
       kind: 'cast',
@@ -438,14 +460,30 @@ export async function buildFullBible(
     return { output: call.output, artifactId: ref.artifact_id };
   });
 
-  const world = await runStep(ctx, 'world', async () => {
+  const world = await runDesignStep(ctx, 'world', `world:${concept.id}`, async (activityId) => {
     const call = await modelCall<WorldOutput>(ctx, {
       step: 'world',
       family: 'world_builder',
-      activityId: `world:${concept.id}`,
+      activityId,
       variables: { story_spec: specText, concept: conceptText },
       block,
     });
+    assertDesignOutput('world', call.output);
+    if (
+      !Array.isArray(call.output.world_rules) ||
+      !call.output.world_rules.length ||
+      !Array.isArray(call.output.locations) ||
+      !call.output.locations.length
+    )
+      incompletePlan(
+        'world',
+        'World rules and named locations are required before chapter production.',
+      );
+    if (
+      call.output.world_rules.some((r) => !fieldText(r, 'statement')) ||
+      call.output.locations.some((l) => !fieldText(l, 'display_name'))
+    )
+      incompletePlan('world', 'World rules and locations must contain authored content.');
     const ref = await saveArtifact(ctx, {
       step: 'world',
       kind: 'world',
@@ -455,26 +493,41 @@ export async function buildFullBible(
     return { output: call.output, artifactId: ref.artifact_id };
   });
 
-  const power = await runStep(ctx, 'power_system', async () => {
-    const call = await modelCall<PowerOutput>(ctx, {
-      step: 'power_system',
-      family: 'power_system_designer',
-      activityId: `power:${concept.id}`,
-      variables: {
-        story_spec: specText,
-        concept: conceptText,
-        world_rules: JSON.stringify(world.output.world_rules ?? [], null, 1),
-      },
-      block,
-    });
-    const ref = await saveArtifact(ctx, {
-      step: 'power_system',
-      kind: 'power_system',
-      key: concept.id,
-      payload: call.output,
-    });
-    return { output: call.output, artifactId: ref.artifact_id };
-  });
+  const power = await runDesignStep(
+    ctx,
+    'power_system',
+    `power:${concept.id}`,
+    async (activityId) => {
+      const call = await modelCall<PowerOutput>(ctx, {
+        step: 'power_system',
+        family: 'power_system_designer',
+        activityId,
+        variables: {
+          story_spec: specText,
+          concept: conceptText,
+          world_rules: JSON.stringify(world.output.world_rules ?? [], null, 1),
+        },
+        block,
+      });
+      assertDesignOutput('power_system', call.output);
+      if (
+        !Array.isArray(call.output.system_rules) ||
+        !call.output.system_rules.length ||
+        call.output.system_rules.some((r) => !fieldText(r, 'statement'))
+      )
+        incompletePlan(
+          'power_system',
+          'Progression rules must be authored before chapter production.',
+        );
+      const ref = await saveArtifact(ctx, {
+        step: 'power_system',
+        kind: 'power_system',
+        key: concept.id,
+        payload: call.output,
+      });
+      return { output: call.output, artifactId: ref.artifact_id };
+    },
+  );
 
   // ---- deterministic assembly of the registry ------------------------------------------------------
   const entities: StoryBible['entities'][number][] = [];
@@ -482,7 +535,12 @@ export async function buildFullBible(
   const addEntity = (
     type: string,
     name: string | undefined,
-    extra: { description?: string; short_forms?: string[]; aliases?: string[] } = {},
+    extra: {
+      description?: string;
+      short_forms?: string[];
+      aliases?: string[];
+      design?: Record<string, unknown>;
+    } = {},
   ): string | undefined => {
     const display = (name ?? '').trim();
     if (!display) return undefined;
@@ -497,6 +555,7 @@ export async function buildFullBible(
       ...(extra.short_forms?.length ? { short_forms: dedupe(extra.short_forms) } : {}),
       ...(extra.aliases?.length ? { aliases: dedupe(extra.aliases) } : {}),
       ...(extra.description ? { description: extra.description } : {}),
+      ...(extra.design ? { design: extra.design } : {}),
     });
     byName.set(key, id);
     for (const alias of [...(extra.short_forms ?? []), ...(extra.aliases ?? [])])
@@ -510,6 +569,7 @@ export async function buildFullBible(
   const characters = cast.output.characters ?? [];
   for (const c of characters) {
     addEntity('character', c.display_name, {
+      design: c,
       description: [
         c.age_at_start !== undefined ? `${String(c.age_at_start)}.` : '',
         c.role ? `${c.role}.` : '',
@@ -524,16 +584,19 @@ export async function buildFullBible(
   }
   for (const l of world.output.locations ?? [])
     addEntity('location', l.display_name, {
+      design: l,
       ...(l.description ? { description: l.description.slice(0, 400) } : {}),
       aliases: l.aliases ?? [],
     });
   for (const o of world.output.organizations ?? [])
     addEntity('organization', o.display_name, {
+      design: o,
       ...(o.description ? { description: o.description.slice(0, 400) } : {}),
       short_forms: o.short_forms ?? [],
     });
   for (const a of power.output.abilities ?? [])
     addEntity('ability', a.display_name, {
+      design: a,
       ...(a.description ? { description: a.description.slice(0, 400) } : {}),
     });
   const worldTermId = addEntity('term', 'World rules', {
@@ -739,124 +802,154 @@ export async function buildFullBible(
   // ---- Series Blueprint (seasons, arcs, endgame, promises) -----------------------------------------
   const draftBible: StoryBible = {
     version: spec.version,
+    design: { characters: cast.output, world: world.output, progression: power.output },
     entities,
     propositions,
     promises: [],
     commits: [[...seedFacts, ...relations], knowledge].filter((c) => c.length > 0),
   };
-  const blueprintStep = await runStep(ctx, 'blueprint', async () => {
-    const call = await modelCall<Partial<SeriesBlueprint> & { promises?: RawPromise[] }>(ctx, {
-      step: 'blueprint',
-      family: 'story_architect',
-      activityId: `blueprint:${concept.id}`,
-      variables: {
-        story_spec: specText,
-        concept: conceptText,
-        bible_summary: renderBibleSummary(draftBible),
-        target_chapters: String(intake.target_chapters),
-      },
-      block,
-    });
-    const raw = call.output;
-    const protagonistId =
-      resolve(intake.main_character?.name) ??
-      resolve(characters[0]?.display_name) ??
-      entities[0]?.id;
-    const seasons = normalizeSeasons(raw.seasons, intake.target_chapters, ctx.projectId);
-    const promises = normalizePromises(
-      raw.promises ?? [],
-      ctx.projectId,
-      resolve,
-      intake.target_chapters,
-    );
-    const candidate: SeriesBlueprint = {
-      project_id: ctx.projectId,
-      version: spec.version,
-      pinned: { spec_version: spec.version, bible_version: spec.version },
-      story_promise: str(raw.story_promise) ?? concept.story_promise,
-      reader_fantasy: str(raw.reader_fantasy) ?? concept.reader_fantasy,
-      main_conflict: str(raw.main_conflict) ?? concept.main_conflict,
-      ...(Array.isArray(raw.themes) ? { themes: raw.themes.filter(isString) } : {}),
-      protagonist_arc: normalizeArc(
-        raw.protagonist_arc,
-        protagonistId ?? '',
-        intake.target_chapters,
-      ),
-      ...(Array.isArray(raw.character_arcs)
-        ? {
-            character_arcs: raw.character_arcs
-              .map((a) => {
-                const id =
-                  isUuidLike(a.entity_id) && entities.some((e) => e.id === a.entity_id)
-                    ? a.entity_id
-                    : resolve((a as { entity_name?: string }).entity_name ?? a.entity_id);
-                return id ? normalizeArc(a, id, intake.target_chapters) : undefined;
-              })
-              .filter(isDefined),
-          }
-        : {}),
-      ...(raw.progression_arc
-        ? {
-            progression_arc: {
-              ...(str(raw.progression_arc.system_summary)
-                ? { system_summary: str(raw.progression_arc.system_summary) }
-                : {}),
-              ...(Array.isArray(raw.progression_arc.milestones)
-                ? {
-                    milestones: raw.progression_arc.milestones
-                      .map((m) => normalizeMilestone(m, intake.target_chapters))
-                      .filter(isDefined),
-                  }
-                : {}),
-              ...(typeof raw.progression_arc.cadence_chapters === 'number' &&
-              raw.progression_arc.cadence_chapters >= 1
-                ? { cadence_chapters: Math.round(raw.progression_arc.cadence_chapters) }
-                : {}),
-            },
-          }
-        : {}),
-      ending: {
-        type: endingType(raw.ending?.type, intake.ending_preference),
-        ...(str(raw.ending?.summary) ? { summary: str(raw.ending?.summary) } : {}),
-        final_state_assertions:
-          Array.isArray(raw.ending?.final_state_assertions) &&
-          raw.ending.final_state_assertions.filter(isString).length > 0
-            ? raw.ending.final_state_assertions.filter(isString)
-            : [concept.ending_direction],
-      },
-      endgame_requirements: (Array.isArray(raw.endgame_requirements)
-        ? raw.endgame_requirements
-        : []
-      )
-        .map((r, i) => ({
-          id: str(r.id) ?? `EG-${i + 1}`,
-          statement: str(r.statement) ?? '',
-          kind: ['fact', 'knowledge', 'relationship', 'promise_paid', 'progression'].includes(
-            r.kind,
-          )
-            ? r.kind
-            : 'fact',
-        }))
-        .filter((r) => r.statement.length > 0),
-      seasons,
-      foreshadowing_register: promises.map((p) => p.id),
-    } as SeriesBlueprint;
-    const v = validatorFor<SeriesBlueprint>('series-blueprint.schema.json')(candidate);
-    if (!v.ok)
-      throw new WorkflowError(
-        'ARC_PLAN_INVALID',
-        `series blueprint does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
-        { step: 'blueprint', recommendedActions: ['regenerate'] },
+  const blueprintStep = await runDesignStep(
+    ctx,
+    'blueprint',
+    `blueprint:${concept.id}`,
+    async (activityId) => {
+      const call = await modelCall<(Partial<SeriesBlueprint> & { promises?: RawPromise[] }) | null>(
+        ctx,
+        {
+          step: 'blueprint',
+          family: 'story_architect',
+          activityId,
+          variables: {
+            story_spec: specText,
+            concept: conceptText,
+            bible_summary: renderBibleSummary(draftBible),
+            target_chapters: String(intake.target_chapters),
+          },
+          block,
+        },
       );
-    const ref = await saveArtifact(ctx, {
-      step: 'blueprint',
-      kind: 'series_blueprint',
-      key: `v${spec.version}`,
-      schema: 'series-blueprint.schema.json',
-      payload: v.value,
-    });
-    return { blueprint: v.value, promises, artifactId: ref.artifact_id };
-  });
+      const raw = call.output;
+      if (
+        !raw ||
+        !str(raw.ending?.summary) ||
+        !Array.isArray(raw.ending?.final_state_assertions) ||
+        !raw.ending.final_state_assertions.length ||
+        raw.ending.final_state_assertions.some((s) => !str(s))
+      )
+        incompletePlan(
+          'blueprint',
+          'The ending needs a summary and concrete final-state assertions.',
+        );
+      if (
+        !Array.isArray(raw.endgame_requirements) ||
+        !raw.endgame_requirements.length ||
+        raw.endgame_requirements.some((r) => !fieldText(r, 'statement'))
+      )
+        incompletePlan('blueprint', 'The complete series needs authored endgame requirements.');
+      const protagonistId =
+        resolve(intake.main_character?.name) ??
+        resolve(characters[0]?.display_name) ??
+        entities[0]?.id;
+      const seasons = normalizeSeasons(raw.seasons, intake.target_chapters, ctx.projectId);
+      const promises = normalizePromises(
+        raw.promises,
+        ctx.projectId,
+        resolve,
+        intake.target_chapters,
+      );
+      const candidate: SeriesBlueprint = {
+        project_id: ctx.projectId,
+        version: spec.version,
+        pinned: { spec_version: spec.version, bible_version: spec.version },
+        story_promise: str(raw.story_promise) ?? concept.story_promise,
+        reader_fantasy: str(raw.reader_fantasy) ?? concept.reader_fantasy,
+        main_conflict: str(raw.main_conflict) ?? concept.main_conflict,
+        ...(Array.isArray(raw.themes) ? { themes: raw.themes.filter(isString) } : {}),
+        protagonist_arc: normalizeArc(
+          raw.protagonist_arc,
+          protagonistId ?? '',
+          intake.target_chapters,
+        ),
+        ...(raw.character_arcs !== undefined
+          ? {
+              character_arcs: (assertRecordItems(raw.character_arcs, 'character_arcs') ?? [])
+                .map((a) => {
+                  const id =
+                    isUuidLike(a.entity_id) && entities.some((e) => e.id === a.entity_id)
+                      ? a.entity_id
+                      : resolve(str(a.entity_name) ?? str(a.entity_id));
+                  return id ? normalizeArc(a, id, intake.target_chapters) : undefined;
+                })
+                .filter(isDefined),
+            }
+          : {}),
+        ...(raw.progression_arc
+          ? {
+              progression_arc: {
+                ...(str(raw.progression_arc.system_summary)
+                  ? { system_summary: str(raw.progression_arc.system_summary) }
+                  : {}),
+                ...(raw.progression_arc.milestones !== undefined
+                  ? {
+                      milestones: (
+                        assertRecordItems(
+                          raw.progression_arc.milestones,
+                          'progression_arc.milestones',
+                        ) ?? []
+                      )
+                        .map((m) => normalizeMilestone(m, intake.target_chapters))
+                        .filter(isDefined),
+                    }
+                  : {}),
+                ...(typeof raw.progression_arc.cadence_chapters === 'number' &&
+                raw.progression_arc.cadence_chapters >= 1
+                  ? { cadence_chapters: Math.round(raw.progression_arc.cadence_chapters) }
+                  : {}),
+              },
+            }
+          : {}),
+        ending: {
+          type: endingType(raw.ending.type, intake.ending_preference),
+          ...(str(raw.ending.summary) ? { summary: str(raw.ending.summary) } : {}),
+          final_state_assertions:
+            Array.isArray(raw.ending.final_state_assertions) &&
+            raw.ending.final_state_assertions.filter(isString).length > 0
+              ? raw.ending.final_state_assertions.filter(isString)
+              : [concept.ending_direction],
+        },
+        endgame_requirements: (
+          assertRecordItems(raw.endgame_requirements, 'endgame_requirements') ?? []
+        )
+          .map((r, i) => ({
+            id: str(r.id) ?? `EG-${i + 1}`,
+            statement: str(r.statement) ?? '',
+            kind:
+              typeof r.kind === 'string' &&
+              ['fact', 'knowledge', 'relationship', 'promise_paid', 'progression'].includes(r.kind)
+                ? r.kind
+                : 'fact',
+          }))
+          .filter((r) => r.statement.length > 0),
+        seasons,
+        foreshadowing_register: promises.map((p) => p.id),
+      } as SeriesBlueprint;
+      const v = validatorFor<SeriesBlueprint>('series-blueprint.schema.json')(candidate);
+      if (!v.ok)
+        throw new WorkflowError(
+          'ARC_PLAN_INVALID',
+          `series blueprint does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+          { step: 'blueprint', recommendedActions: ['regenerate'] },
+        );
+      const ref = await saveArtifact(ctx, {
+        step: 'blueprint',
+        kind: 'series_blueprint',
+        key: `v${spec.version}`,
+        schema: 'series-blueprint.schema.json',
+        payload: v.value,
+      });
+      return { blueprint: v.value, promises, artifactId: ref.artifact_id };
+    },
+  );
 
   const bible: StoryBible = { ...draftBible, promises: blueprintStep.promises };
   const bibleRef = await runStep(ctx, 'bible_assembly', async () => {
@@ -1104,14 +1197,23 @@ const PROMISE_TYPES = new Set([
 ]);
 
 function normalizePromises(
-  raw: readonly RawPromise[],
+  raw: unknown,
   projectId: string,
   resolve: (name: string | undefined) => string | undefined,
   targetChapters: number,
 ): StoryBible['promises'][number][] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw))
+    incompletePlan('blueprint', 'The architect returned malformed promises; expected an array.');
   const out: StoryBible['promises'][number][] = [];
   const seen = new Set<string>();
-  for (const p of raw) {
+  for (const [index, value] of raw.entries()) {
+    if (!isRecord(value))
+      incompletePlan(
+        'blueprint',
+        `The architect returned malformed promise ${index + 1}; expected an object.`,
+      );
+    const p = value as RawPromise;
     const statement = str(p.statement);
     if (!statement || seen.has(statement.toLowerCase())) continue;
     seen.add(statement.toLowerCase());
@@ -1140,18 +1242,33 @@ function normalizeSeasons(
   targetChapters: number,
   projectId: string,
 ): SeriesBlueprint['seasons'] {
-  const list = Array.isArray(raw) ? (raw as Record<string, unknown>[]) : [];
+  const list = assertRecordItems(raw, 'seasons') ?? [];
+  if (!list.length) incompletePlan('blueprint', 'The architect returned no authored seasons.');
   type Season = SeriesBlueprint['seasons'][number];
   const seasons: Season[] = [];
   let cursor = 1;
   for (const [i, s] of list.entries()) {
     const ordinal = i + 1;
+    if (!fieldText(s, 'title') || !fieldText(s, 'objective'))
+      incompletePlan('blueprint', `Season ${ordinal} needs an authored title and objective.`);
     const range = (s.chapter_range_est ?? {}) as { from?: unknown; to?: unknown };
-    let from = clampChapter(range.from, targetChapters) ?? cursor;
-    if (from < cursor) from = cursor;
-    let to = clampChapter(range.to, targetChapters) ?? targetChapters;
-    if (to < from) to = from;
-    if (from > targetChapters) break;
+    const from = range.from;
+    const to = range.to;
+    if (
+      typeof from !== 'number' ||
+      typeof to !== 'number' ||
+      !Number.isInteger(from) ||
+      !Number.isInteger(to) ||
+      from !== cursor ||
+      to < from ||
+      to > targetChapters
+    )
+      incompletePlan(
+        'blueprint',
+        `Season ${ordinal} must cover a contiguous chapter window starting at ${cursor}.`,
+      );
+    if (!str(s.title) || !str(s.objective))
+      incompletePlan('blueprint', `Season ${ordinal} needs an authored title and objective.`);
     seasons.push({
       id: planIds.season(projectId, ordinal),
       ordinal,
@@ -1164,21 +1281,11 @@ function normalizeSeasons(
     } as SeriesBlueprint['seasons'][number]);
     cursor = to + 1;
   }
-  // Fill gaps so every chapter 1..N belongs to exactly one season, whatever the model returned.
-  if (seasons.length === 0)
-    seasons.push({
-      id: planIds.season(projectId, 1),
-      ordinal: 1,
-      title: 'Season 1',
-      objective: 'The complete story as one season.',
-      chapter_range_est: { from: 1, to: targetChapters },
-    });
-  const last = seasons[seasons.length - 1];
-  if (last && last.chapter_range_est.to < targetChapters)
-    seasons[seasons.length - 1] = {
-      ...last,
-      chapter_range_est: { from: last.chapter_range_est.from, to: targetChapters },
-    };
+  if (cursor !== targetChapters + 1)
+    incompletePlan(
+      'blueprint',
+      `The series plan must cover all ${targetChapters} requested chapters.`,
+    );
   const [first, ...rest] = seasons;
   if (!first) throw new Error('unreachable: seasons is non-empty');
   return [first, ...rest];
@@ -1190,19 +1297,16 @@ function normalizeArc(
   targetChapters: number,
 ): SeriesBlueprint['protagonist_arc'] {
   const a = (raw ?? {}) as Record<string, unknown>;
-  const points = (Array.isArray(a.turning_points) ? a.turning_points : [])
+  const points = (assertRecordItems(a.turning_points, 'turning_points') ?? [])
     .map((m) => normalizeMilestone(m, targetChapters))
     .filter(isDefined);
   const [first, ...rest] = points;
-  const turning: SeriesBlueprint['protagonist_arc']['turning_points'] = first
-    ? [first, ...rest]
-    : [
-        {
-          description: 'The midpoint reversal that redefines the protagonist’s goal.',
-          window: { from: Math.max(1, Math.floor(targetChapters / 2)), to: targetChapters },
-          status: 'planned',
-        },
-      ];
+  if (!str(a.start_state) || !str(a.end_state) || !first)
+    incompletePlan(
+      'blueprint',
+      'Character arcs need authored start/end states and turning points.',
+    );
+  const turning: SeriesBlueprint['protagonist_arc']['turning_points'] = [first, ...rest];
   return {
     entity_id: entityId,
     start_state: str(a.start_state) ?? 'as introduced in chapter 1',
@@ -1214,7 +1318,7 @@ function normalizeArc(
 type Milestone = Generated.SeriesBlueprintSchema.Milestone;
 
 function normalizeMilestone(raw: unknown, targetChapters: number): Milestone | undefined {
-  const m = (raw ?? {}) as Record<string, unknown>;
+  const m = assertRecord(raw, 'milestone');
   const description = str(m.description);
   if (!description) return undefined;
   const w = (m.window ?? {}) as { from?: unknown; to?: unknown };
@@ -1259,6 +1363,22 @@ function sketch(c: NonNullable<StoryIntake['main_character']>): string {
 function str(v: unknown): string | undefined {
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : undefined;
 }
+function assertRecordItems(
+  value: unknown,
+  label: string,
+): readonly Record<string, unknown>[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((item) => !isRecord(item)))
+    incompletePlan('blueprint', `${label} must be an array of objects.`);
+  return value as readonly Record<string, unknown>[];
+}
+function assertRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!isRecord(value)) incompletePlan('blueprint', `${label} must be an object.`);
+  return value;
+}
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
 function isString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
 }
@@ -1296,6 +1416,7 @@ export function renderSpec(spec: StorySpec): string {
 
 export function renderBibleSummary(b: StoryBible): string {
   return [
+    renderBibleDesign(b),
     ...b.entities.map(
       (e) =>
         `- [${e.id}] ${e.display_name} (${e.type})${e.short_forms?.length ? ` a.k.a. ${e.short_forms.join(', ')}` : ''}${e.description ? `: ${e.description}` : ''}`,
@@ -1305,6 +1426,48 @@ export function renderBibleSummary(b: StoryBible): string {
         `- proposition ${p.local_id}: ${p.statement} [${p.truth}${p.secret ? ', secret' : ''}]`,
     ),
   ].join('\n');
+}
+
+function incompletePlan(step: string, message: string): never {
+  throw new WorkflowError('ARC_PLAN_INVALID', message, {
+    step,
+    recommendedActions: ['regenerate'],
+  });
+}
+
+function fieldText(value: unknown, field: string): string | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? str((value as Record<string, unknown>)[field])
+    : undefined;
+}
+
+async function runDesignStep<T>(
+  ctx: WorkflowContext,
+  step: string,
+  baseActivityId: string,
+  generate: (activityId: string) => Promise<T>,
+): Promise<T> {
+  return runStep(ctx, step, async () => {
+    let generation = 0;
+    let activityId = baseActivityId;
+    while (await existingArtifact(ctx, { step, kind: 'planning_rejection', key: activityId })) {
+      activityId = `${baseActivityId}:regeneration:${++generation}`;
+    }
+    try {
+      return await generate(activityId);
+    } catch (err) {
+      if (err instanceof WorkflowError && ['ARC_PLAN_INVALID', 'SPEC_INVALID'].includes(err.code)) {
+        // Only rejected output gets a new model key. A crash still replays the paid response.
+        await saveArtifact(ctx, {
+          step,
+          kind: 'planning_rejection',
+          key: activityId,
+          payload: { code: err.code, message: err.detail },
+        });
+      }
+      throw err;
+    }
+  });
 }
 
 function renderBlueprint(b: SeriesBlueprint): string {
