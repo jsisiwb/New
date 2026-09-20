@@ -3,6 +3,34 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Deployment-safe workflow resume — 2026-09-20
+
+Follow-up to merged fork PR #1, based on `05ecc4c`, on
+`hoplite/ioulis-1b1ef1f1--durable-resume`.
+
+- Adds shared persisted-pin resolution for chapter production and story planning (ADR-0053). Resume
+  uses the original prompt mapping and verified immutable content, not current active defaults. New
+  jobs still select the active set; concurrent creators use the winning persisted job's pins.
+- Rejects missing historical prompts, changed policy/identity inputs and inconsistent canon-read pins
+  before model spend, with structured recovery reasons. Invalid identity configuration cannot create
+  a stranded new job. Resume avoids redundant active-prompt registration.
+- Makes prompt registration conflict-safe under simultaneous workers, while retaining hash-based
+  immutability and verifying the winning row instead of overwriting it.
+- Adds real-Postgres regressions for both context constructors, deployment between suggestions and
+  bible generation, interrupted chapter replay without duplicate calls, configuration repair and
+  concurrent matching/conflicting registrations.
+
+Verification: TypeScript build, full lint, formatting, generated-type freshness and planning-package
+validation passed. The full database-backed run passed 115 suites / 1,784 tests with no skips, including
+the 120-chapter deterministic replay. After the final canon-pin consistency review fix, seven focused
+suites passed all 133 tests (38 new resume regressions plus audit, chapter/planning, continuity and worker
+control/cancellation coverage). Independent code review reported no remaining blockers. Full-head remote
+CI is the remaining verification; the full local run preceded that last consistency guard.
+
+Limitations: historical prompt files must remain available; arbitrary workflow-code, policy or identity
+upgrades are not made replay-compatible. No schema migration, deployment variable, UI change or live
+provider call is introduced by this checkpoint.
+
 ## Complete-bible autopilot hardening — 2026-09-20
 
 This continuation targets `sigma37web/New` from base `8b3ccf7` on
