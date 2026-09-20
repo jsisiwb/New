@@ -26,12 +26,14 @@ import {
   updateJob,
   upsertPromptVersions,
   type ManuscriptVersionRow,
+  type JobRow,
   type Pool,
 } from '@yeonjae/db';
 import { canonicalPolicyHash, requirePolicy, type PolicyRef } from '@yeonjae/domain';
 import { type Gateway } from '@yeonjae/gateway';
 import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/narrative';
 import { PromptRegistry } from '@yeonjae/prompts';
+import { resolveWorkflowPins } from './workflow-pins.js';
 import {
   acceptDelta,
   approveVersion,
@@ -223,8 +225,8 @@ export async function makeContext(
 ): Promise<{ ctx: WorkflowContext; mainTimelineId: string; identity: ComposedIdentity }> {
   const project = await getProject(deps.pool, projectId);
   const registry = deps.registry ?? PromptRegistry.fromDirectory();
-  const promptSet = registry.activeSet();
   const policies = requirePolicy(project.production_policy_version as PolicyRef);
+  const policyHash = canonicalPolicyHash(policies);
   const settings = project.settings;
   const identityRef =
     typeof settings.narrative_identity_ref === 'string'
@@ -243,68 +245,93 @@ export async function makeContext(
   const store = deps.profiles ?? ProfileStore.fromDirectory();
   // A project-owned composed identity (derived from the intake) lives in identity_documents, not on disk.
   if (identityRef === composedRefFor(projectId)) await loadIntoStore(deps.pool, projectId, store);
-  const identity = composeIdentity(store, identityRef, identityVersionId);
   const timelines = await timelinesOf(deps.pool, projectId);
   const main = timelines.find((t) => t.kind === 'main');
   if (!main) throw new WorkflowError('INTERNAL', 'project has no main timeline', { step: 'init' });
   const workflowId = workflowIdFor(projectId, chapterNo);
-  const pins: WorkflowPins = {
-    promptSetId: promptSet.id,
-    promptSet: promptSet.mapping,
-    productionPolicyVersion: project.production_policy_version,
-    productionPolicyHash: canonicalPolicyHash(policies),
-    narrativeIdentityVersionId: identityVersionId,
-    narrativeIdentityRef: identityRef,
+  const pinRequest = {
+    workflowId,
+    step: 'init',
+    policyVersion: project.production_policy_version,
+    policyHash,
+    identityRef,
+    identityVersionId,
     canonVersionRead: project.canon_version,
   };
-  await upsertPromptVersions(
-    deps.pool,
-    registry.list().map((v) => ({
-      id: v.id,
-      family: v.family,
-      version: v.version,
-      content_hash: v.content_hash,
-      role: v.role,
-      style_sensitive: v.style_sensitive,
-      manuscript_producing: v.manuscript_producing,
-      identity_variant: v.identity_variant,
-      model_class: v.model_class,
-      output_schema: v.output_schema,
-      status: v.status,
-      meta: { purpose: v.purpose, params: v.params },
-    })),
-  );
-  await ensurePromptSet(deps.pool, promptSet);
-  const { job } = await ensureJob(deps.pool, {
-    workspaceId: project.workspace_id,
-    projectId,
-    kind: 'chapter_production',
-    workflowId,
-    idempotencyKey: `${workflowId}:${createHash('sha256')
-      .update(
-        JSON.stringify({
-          promptSet: promptSet.id,
-          policy: pins.productionPolicyHash,
-          identity: identityVersionId,
-        }),
-      )
-      .digest('hex')
-      .slice(0, 16)}`,
-    targetKind: 'chapter',
-    canonVersionRead: project.canon_version,
-    productionPolicyVersion: project.production_policy_version,
-    promptSetId: promptSet.id,
-    narrativeIdentityVersionId: identityVersionId,
-    pins: {
-      prompt_set_id: pins.promptSetId,
-      prompt_set: pins.promptSet,
-      production_policy_version: pins.productionPolicyVersion,
-      production_policy_hash: pins.productionPolicyHash,
-      narrative_identity_ref: pins.narrativeIdentityRef,
-      narrative_identity_version_id: pins.narrativeIdentityVersionId,
-      canon_version_read: pins.canonVersionRead,
-    },
-  });
+  const existingJob = await getJobByWorkflowId(deps.pool, workflowId);
+  let job: JobRow;
+  let resolved: Awaited<ReturnType<typeof resolveWorkflowPins>>;
+  let identity: ComposedIdentity | undefined;
+  if (existingJob) {
+    job = existingJob;
+    resolved = await resolveWorkflowPins(deps.pool, registry, job, pinRequest);
+  } else {
+    // Validate identity before any prompt or job row is persisted for a new workflow.
+    identity = composeIdentity(store, identityRef, identityVersionId);
+    const activePromptSet = registry.activeSet();
+    const pins: WorkflowPins = {
+      promptSetId: activePromptSet.id,
+      promptSet: activePromptSet.mapping,
+      productionPolicyVersion: project.production_policy_version,
+      productionPolicyHash: policyHash,
+      narrativeIdentityVersionId: identityVersionId,
+      narrativeIdentityRef: identityRef,
+      canonVersionRead: project.canon_version,
+    };
+    await upsertPromptVersions(
+      deps.pool,
+      registry
+        .list()
+        .filter((v) => Object.values(activePromptSet.mapping).includes(v.id))
+        .map((v) => ({
+          id: v.id,
+          family: v.family,
+          version: v.version,
+          content_hash: v.content_hash,
+          role: v.role,
+          style_sensitive: v.style_sensitive,
+          manuscript_producing: v.manuscript_producing,
+          identity_variant: v.identity_variant,
+          model_class: v.model_class,
+          output_schema: v.output_schema,
+          status: v.status,
+          meta: { purpose: v.purpose, params: v.params },
+        })),
+    );
+    await ensurePromptSet(deps.pool, activePromptSet);
+    const ensured = await ensureJob(deps.pool, {
+      workspaceId: project.workspace_id,
+      projectId,
+      kind: 'chapter_production',
+      workflowId,
+      idempotencyKey: `${workflowId}:${createHash('sha256')
+        .update(
+          JSON.stringify({
+            promptSet: activePromptSet.id,
+            policy: pins.productionPolicyHash,
+            identity: identityVersionId,
+          }),
+        )
+        .digest('hex')
+        .slice(0, 16)}`,
+      targetKind: 'chapter',
+      canonVersionRead: project.canon_version,
+      productionPolicyVersion: project.production_policy_version,
+      promptSetId: activePromptSet.id,
+      narrativeIdentityVersionId: identityVersionId,
+      pins: {
+        prompt_set_id: pins.promptSetId,
+        prompt_set: pins.promptSet,
+        production_policy_version: pins.productionPolicyVersion,
+        production_policy_hash: pins.productionPolicyHash,
+        narrative_identity_ref: pins.narrativeIdentityRef,
+        narrative_identity_version_id: pins.narrativeIdentityVersionId,
+        canon_version_read: pins.canonVersionRead,
+      },
+    });
+    job = ensured.job;
+    resolved = await resolveWorkflowPins(deps.pool, registry, job, pinRequest);
+  }
   // Bindings are project-scoped names for run-created ids (chapter.1, version.1.approved, canon.f-rank …);
   // merge every job of the project so chapter k can reference what chapter k−1 created, then the caller's.
   const bindings = deps.bindings ?? {};
@@ -315,36 +342,33 @@ export async function makeContext(
   const callerBindings = { ...bindings };
   for (const j of priorJobs.rows) Object.assign(bindings, j.progress.bindings ?? {});
   Object.assign(bindings, callerBindings, { project: projectId, main_timeline: main.id });
-  const stored = job.pins;
-  if (
-    stored.prompt_set_id !== undefined &&
-    (stored.prompt_set_id !== pins.promptSetId ||
-      stored.production_policy_hash !== pins.productionPolicyHash ||
-      stored.narrative_identity_version_id !== pins.narrativeIdentityVersionId)
-  )
-    throw new WorkflowError(
-      'STEP_NONDETERMINISTIC',
-      `workflow ${workflowId} was started with different pins (prompt set / policy / identity); resuming with changed inputs is refused`,
-      { step: 'init', data: { stored, current: pins } },
+  // Resolve persisted pins before loading the identity so an old job with changed project inputs fails
+  // with the actionable nondeterminism diagnostic rather than an incidental profile lookup error.
+  const resolvedIdentity =
+    identity ??
+    composeIdentity(
+      store,
+      resolved.pins.narrativeIdentityRef,
+      resolved.pins.narrativeIdentityVersionId,
     );
   const ctx: WorkflowContext = {
     pool: deps.pool,
     gateway: deps.gateway,
     registry,
-    promptSet,
+    promptSet: resolved.promptSet,
     policy: policies,
-    identity,
+    identity: resolvedIdentity,
     workspaceId: project.workspace_id,
     projectId,
     job,
     workflowId,
-    pins,
+    pins: resolved.pins,
     trace: [],
     bindings,
     ...(lease ? { lease } : {}),
     ...(cancellation ? { cancellation } : {}),
   };
-  return { ctx, mainTimelineId: main.id, identity };
+  return { ctx, mainTimelineId: main.id, identity: resolvedIdentity };
 }
 
 /** Run (or resume) chapter production. Throws WorkflowError with the failed step after persisting job state. */

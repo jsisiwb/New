@@ -201,22 +201,10 @@ export async function upsertPromptVersions(
   let inserted = 0;
   let verified = 0;
   for (const v of versions) {
-    const existing = await pool.query<{ content_hash: string }>(
-      'SELECT content_hash FROM prompt_versions WHERE id = $1',
-      [v.id],
-    );
-    const row = existing.rows[0];
-    if (row) {
-      if (row.content_hash !== v.content_hash)
-        throw new Error(
-          `PROMPT_IMMUTABLE: ${v.id} in the database has hash ${row.content_hash}, repository has ${v.content_hash}`,
-        );
-      verified++;
-      continue;
-    }
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO prompt_versions (id, family, version, content_hash, role, style_sensitive, manuscript_producing, identity_variant, model_class, output_schema, status, meta)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)
+       ON CONFLICT (id) DO NOTHING RETURNING id`,
       [
         v.id,
         v.family,
@@ -232,7 +220,21 @@ export async function upsertPromptVersions(
         JSON.stringify(v.meta),
       ],
     );
-    inserted++;
+    if (result.rows.length > 0) {
+      inserted++;
+      continue;
+    }
+    // A separate read sees the concurrent winner after ON CONFLICT waited for its commit.
+    const existing = await pool.query<{ content_hash: string }>(
+      'SELECT content_hash FROM prompt_versions WHERE id = $1',
+      [v.id],
+    );
+    const row = existing.rows[0];
+    if (row?.content_hash !== v.content_hash)
+      throw new Error(
+        `PROMPT_IMMUTABLE: ${v.id} in the database has hash ${row?.content_hash ?? 'missing'}, repository has ${v.content_hash}`,
+      );
+    verified++;
   }
   return { inserted, verified };
 }
