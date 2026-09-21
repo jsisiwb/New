@@ -179,7 +179,14 @@ export async function checkAppRole(db: Queryable): Promise<ReadinessCheck> {
 }
 
 /** Provider modes the runtime accepts. A missing or unknown mode must not default to a paid provider. */
-export const PROVIDER_MODES = ['mock', 'replay', 'synthetic', 'live', 'genspark', 'simulated'] as const;
+export const PROVIDER_MODES = [
+  'mock',
+  'replay',
+  'synthetic',
+  'live',
+  'genspark',
+  'simulated',
+] as const;
 export type ProviderMode = (typeof PROVIDER_MODES)[number];
 
 /**
