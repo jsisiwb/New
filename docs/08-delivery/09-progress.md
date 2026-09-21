@@ -1251,3 +1251,26 @@ agent's GitHub App, which lacks the `workflows` permission. A maintainer applied
 executed and passed in CI: the explicit `pnpm test:e2e-readiness` run, its forty-stage durable-report
 check, the explicit `pnpm test:perf-smoke` run, the junit guards that the six product suites ran, and the
 zero-skipped-tests gate. The guards are verified as *running*, not merely present.
+
+## Defect-fix pass — 2026-09-21 (live genspark mode)
+
+One real product defect, found while bringing up the local live `genspark` environment:
+
+- **Provider-mode allowlists were stale after the gateway added `genspark` and `simulated`.**
+  `packages/db/src/readiness.ts` accepted only `mock/replay/synthetic/live` and
+  `packages/db/src/dependency-status.ts` recognised only `mock|replay|synthetic` (plus `live` as
+  disabled). With `YEONJAE_PROVIDER_MODE=genspark` the `provider_simulator` dependency probe reported
+  `PROVIDER_MODE_INVALID` (unavailable), which made `/ready` answer `degraded` on a healthy instance and
+  would have marked live genspark deployments degraded permanently. Fix: treat `genspark` like `live`
+  (deterministic simulator is not in play → disabled) and `simulated` like the other deterministic modes
+  (in play → up) in `probeProviderSimulator`, and accept both in `checkProviderMode`.
+
+Verification (local, `YEONJAE_PROVIDER_MODE=genspark`, Postgres 16 at `yeonjae_test`): the complete
+`pnpm check` gate passed end to end — generated types fresh (33 schemas); typecheck, lint and
+format:check clean; **1788/1788 tests across 115 suites**, including the previously failing API
+`health and readiness` integration test and both affected db suites (`readiness` + `dependency-status`,
+42 tests); 120-chapter continuity replay with zero replay misses; 49 chaos scenarios; restore drill
+40 invariants; 16 security scenarios; 14 cost scenarios; production web build; planning-package
+validation `ALL OK` (33 schemas, $ref resolved, 0 contradiction/stale-term hits); contrast corpus
+2,000 evaluations, 700/700 agreement, 0 false positives, 0 false negatives. No live-provider call was
+made by the test gate; `genspark` mode was exercised only through the readiness probe path.
