@@ -411,6 +411,7 @@ export interface ModelCallInput {
         readonly text: string;
         readonly hash: string;
         readonly identityTail: string | undefined;
+        readonly outputLanguage: 'en' | 'ko';
         readonly outputLanguageContractHash: string;
         readonly traditionContractHash: string;
         readonly roleVariant: string;
@@ -475,7 +476,7 @@ export async function modelCall<T = unknown>(
         blockHash: input.block.hash,
         identityVersionId: ctx.pins.narrativeIdentityVersionId as Uuid,
         roleVariant: input.block.roleVariant,
-        outputLanguage: 'en',
+        outputLanguage: input.block.outputLanguage,
         outputLanguageContractHash: input.block.outputLanguageContractHash,
         traditionContractHash: input.block.traditionContractHash,
       };

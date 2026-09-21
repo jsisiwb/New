@@ -20,6 +20,7 @@ describe('profile store and composition', () => {
       'genre/regression@1',
       'genre/romance-fantasy@1',
       'lang/en@1',
+      'lang/ko@1',
       COMPOSED,
       'tradition/kr-webnovel@1',
     ]);

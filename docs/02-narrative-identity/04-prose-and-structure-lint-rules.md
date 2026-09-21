@@ -87,6 +87,8 @@ Patterns that betray a source-language template in English. Each has weight and 
 | TRN-14 | Overuse of "the" before proper nouns/titles ("the Chairman Lee said to the Do-yoon") | 0.8 | |
 | TRN-15 | Dialogue punctuation calques (`"…!"` clusters, ellipsis-only lines) | 0.5 | |
 | TRN-16 | Unnatural formality register in casual scenes ("Would you be so kind as to pass the salt" between siblings) — flagged only with register digest | 0.4 | uses register check |
+| TRN-KO-01 | Essayistic stock openers that break serialized flow ("참고로", "일단은", "한 마디로") | 0.6 | Korean-manuscript drift (ADR-0054) |
+| TRN-KO-02 | Untranslated English words left in Korean prose outside the terminology allowlist | 0.4 | Korean-manuscript drift (ADR-0054) |
 
 The list is data (`output_language.translation_markers`), not code; changes are profile versions and go
 through the contrast-set regression (translation-like variants must keep scoring higher).

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { toNfcText } from './nfc.js';
-import { checkOutputLanguage } from './language.js';
+import { checkOutputLanguage, checkOutputLanguageKo } from './language.js';
 
 const FIXTURE = fileURLToPath(
   new URL('../../../examples/fixture/manuscripts/ch09.accepted.txt', import.meta.url),
@@ -50,5 +50,31 @@ describe('deterministic output-language check (OUTPUT-EN-001)', () => {
   it('ignores status-window separators and very short lines', () => {
     const t = toNfcText('[F]\n\n———\n\n“Two.”\n\nHe looked at the letter for a long time.');
     expect(checkOutputLanguage(t).passed).toBe(true);
+  });
+});
+
+describe('deterministic output-language check, Korean (ADR-0054)', () => {
+  it('passes natural Korean prose', () => {
+    const t = toNfcText('문이 열리고 붉은 눈동자가 번뜩였다.\n\n그는 천천히 손을 들어 검을 뽑았다.');
+    const r = checkOutputLanguageKo(t);
+    expect(r.passed).toBe(true);
+    expect(r.english_confidence).toBe(1);
+  });
+
+  it('fails English prose under the Korean check', () => {
+    const en = toNfcText('The door opened and a pair of red eyes flashed.\n\nHe slowly raised his hand and drew the sword.');
+    expect(checkOutputLanguageKo(en).passed).toBe(false);
+  });
+
+  it('passes mixed Korean with short Latin tokens (status windows, ranks)', () => {
+    const t = toNfcText('[레벨이 올랐습니다]\n\n근력 +3 민첩 +2\n\n그는 인벤토리를 열었다.');
+    expect(checkOutputLanguageKo(t).passed).toBe(true);
+  });
+
+  it('still fails Korean prose under the default English check', () => {
+    const korean = toNfcText('문이 열리고 붉은 눈동자가 번뜩였다.');
+    const r = checkOutputLanguage(korean);
+    expect(r.passed).toBe(false);
+    expect(r.offending_segments[0]?.reason).toBe('non_latin_script');
   });
 });

@@ -5,12 +5,12 @@ changing anything.
 
 ## The governing principle
 
-**English is the manuscript language. Korean webnovel is the narrative tradition.**
-Reader-facing prose is composed **directly in natural English** and follows Korean serialized-webnovel
-structure, pacing, hooks, payoff and genre conventions. The system never generates Korean prose and
-translates it, never imitates Korean grammar in English, and never drifts into Western epic-fantasy,
-literary-fiction, or traditionally published novel pacing. See ADR-0026 and
-`docs/02-narrative-identity/01-narrative-identity-architecture.md`.
+**The manuscript language is per project (English or Korean); Korean webnovel is the narrative tradition.**
+Reader-facing prose is composed **directly in the project's manuscript language** and follows Korean
+serialized-webnovel structure, pacing, hooks, payoff and genre conventions. The system never translates
+within the generation loop and never drifts into Western epic-fantasy, literary-fiction, or traditionally
+published novel pacing. English is produced only by an explicit export/translation step (ADR-0054). See
+ADR-0026, ADR-0054 and `docs/02-narrative-identity/01-narrative-identity-architecture.md`.
 
 ## Ground rules
 

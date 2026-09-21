@@ -58,9 +58,9 @@ export function guardRequest(req: GatewayRequest, ctx: GuardContext = {}): Guard
       'TRADITION_CONTRACT_MISSING',
       `role ${req.role}: no Narrative-Tradition Contract hash`,
     );
-  // The type says 'en'; the runtime check guards data that arrived through JSON.
+  // The type says 'en' | 'ko'; the runtime check guards data that arrived through JSON.
   const declaredLanguage: string = ref.outputLanguage;
-  if (declaredLanguage !== 'en')
+  if (declaredLanguage !== 'en' && declaredLanguage !== 'ko')
     throw new GatewayError(
       'OUTPUT_LANGUAGE_UNSUPPORTED',
       `output language ${declaredLanguage} is not supported`,

@@ -23,19 +23,19 @@ export type Timestamp = string;
  */
 export type LanguageCode = string;
 /**
- * The required manuscript language. Extensible only by a future ADR; never weakened in MVP/Beta/Production.
+ * The manuscript language. Composition is direct in this language (ADR-0054); English is an explicit later translation surface. Enforced per project by the identity contract.
  *
  * This interface was referenced by `CommonDefinitions`'s JSON-Schema
  * via the `definition` "manuscriptLanguage".
  */
-export type ManuscriptLanguage = 'en';
+export type ManuscriptLanguage = 'en' | 'ko';
 /**
- * Spelling and punctuation locale for English manuscripts
+ * Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)
  *
  * This interface was referenced by `CommonDefinitions`'s JSON-Schema
  * via the `definition` "spellingLocale".
  */
-export type SpellingLocale = 'en-US' | 'en-GB';
+export type SpellingLocale = 'en-US' | 'en-GB' | 'ko-KR';
 /**
  * UTF-8, NFC-normalized text. Working text (plans, canon statements, issues) is English; the language of user-authored text is recorded alongside it where it may vary.
  *

@@ -44,13 +44,13 @@ export type NarrativeIdentityProfile = {
    */
   output_language?: {
     /**
-     * The required manuscript language. Extensible only by a future ADR; never weakened in MVP/Beta/Production.
+     * The manuscript language. Composition is direct in this language (ADR-0054); English is an explicit later translation surface. Enforced per project by the identity contract.
      */
-    language?: 'en';
+    language?: 'en' | 'ko';
     /**
-     * Spelling and punctuation locale for English manuscripts
+     * Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)
      */
-    locale?: 'en-US' | 'en-GB';
+    locale?: 'en-US' | 'en-GB' | 'ko-KR';
     /**
      * The Output-Language Contract rendered into every style-sensitive call
      */

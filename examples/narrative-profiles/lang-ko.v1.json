@@ -1,0 +1,173 @@
+{
+  "id": "lang/ko",
+  "kind": "output_language",
+  "version": 1,
+  "name": "Korean output-language profile",
+  "output_language": {
+    "language": "ko",
+    "locale": "ko-KR",
+    "contract_text": "Write the reader-facing manuscript in natural, idiomatic Korean (spelling: ko-KR). Compose directly in Korean — do not write in another language and translate, and do not imitate foreign grammar or idioms. Use standard Korean punctuation (double quotation marks for dialogue, the ellipsis character) and natural Korean sentences with proper spacing and particles. Render address terms, titles, and speech levels the way Korean speakers of this setting would actually speak them — the speech-level and honorific system is part of the prose, used correctly and naturally, never as a romanized suffix attached to a name. Use only the approved terms listed in the terminology notes. Do not produce translation-like Korean and do not drift into literary or Western-novel diction.",
+    "punctuation": {
+      "dialogue_quotes": "“ ”",
+      "nested_quotes": "‘ ’",
+      "thought_style": "plain",
+      "dash": "em_unspaced",
+      "ellipsis": "…"
+    },
+    "numbers_style": "arabic numerals with Korean counters written out (10년, 3층)",
+    "narration_tense": "past",
+    "translation_markers": [
+      {
+        "id": "TRN-KO-01",
+        "pattern": "\\b(참고로|일단은|한 마디로|솔직히 말해서)\\b",
+        "weight": 0.6,
+        "severity": "minor",
+        "note": "Essayistic stock openers that break serialized flow"
+      },
+      {
+        "id": "TRN-KO-02",
+        "pattern": "[A-Za-z]{5,}와/과",
+        "weight": 0.4,
+        "severity": "minor",
+        "note": "Raw English words left untranslated outside the terminology allowlist"
+      }
+    ],
+    "calque_phrases": [],
+    "forbidden_patterns": [
+      {
+        "id": "LN-01",
+        "category": "light_novel",
+        "pattern": "[「」『』]",
+        "severity": "major",
+        "weight": 1.0
+      },
+      {
+        "id": "SP-01",
+        "category": "screenplay",
+        "pattern": "(^|\\n)\\s*(INT\\.|EXT\\.|SCENE\\s?\\d|CUT TO|\\(V\\.O\\.\\)|\\[대사\\])",
+        "severity": "blocking",
+        "weight": 2.0
+      },
+      {
+        "id": "SP-02",
+        "category": "outline",
+        "pattern": "(^|\\n)\\s*(#{1,6}\\s|[-*]\\s|\\d+\\)\\s)",
+        "severity": "major",
+        "weight": 1.0
+      }
+    ],
+    "lint_thresholds": {
+      "EP-GRM-01": {
+        "warn": 3,
+        "fail": 6
+      },
+      "EP-OPEN-01": {
+        "warn": 3,
+        "fail": 4
+      },
+      "EP-OPEN-02": {
+        "warn": 0.6,
+        "fail": 0.75
+      },
+      "EP-LEN-01": {
+        "warn": 35,
+        "fail": 50
+      },
+      "EP-LEN-02": {
+        "warn": 60,
+        "fail": 90
+      },
+      "EP-LEN-03": {
+        "warn": 4,
+        "fail": 3
+      },
+      "EP-DLG-01": {
+        "warn": 0.2,
+        "fail": 0.35
+      },
+      "EP-DLG-02": {
+        "warn": 0.15,
+        "fail": 0.3
+      },
+      "EP-DLG-03": {
+        "warn": 0.5,
+        "fail": 0.7
+      },
+      "EP-FLT-01": {
+        "warn": 6,
+        "fail": 10
+      },
+      "EP-ADV-01": {
+        "warn": 12,
+        "fail": 20
+      },
+      "EP-TRN-RATE": {
+        "warn": 1.5,
+        "fail": 3.0
+      },
+      "EP-LOC-01": {
+        "warn": 1,
+        "fail": 3
+      },
+      "EP-REP-01": {
+        "warn": 2,
+        "fail": 4
+      },
+      "EP-LENGTH-01": {
+        "warn": 0.12,
+        "fail": 0.2
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "한국어 어감과 관용 표현",
+        "weight": 0.3,
+        "anchors": {
+          "5": "한국어 원어민 작가가 쓴 것처럼 자연스럽고 표준적인 어감.",
+          "3": "간혹 어색한 표현이나 비문이 섞임.",
+          "1": "외국어 번역투가 곳곳에서 드러남."
+        }
+      },
+      {
+        "dimension": "번역투 문장의 부재",
+        "weight": 0.25,
+        "anchors": {
+          "5": "주어·목적어·조사가 자연스럽고 한국어 어순을 따름.",
+          "3": "몇몇 번역투 문장이 보임.",
+          "1": "영어식 어순·관형절 남용·불필요한 피동이 전반에 퍼짐."
+        }
+      },
+      {
+        "dimension": "화법과 존대의 자연스러움",
+        "weight": 0.2,
+        "anchors": {
+          "5": "말투와 높임이 장면과 관계에 맞게 자연스럽게 구사됨.",
+          "3": "화법은 맞지만 어색하게 굳음.",
+          "1": "높임이 기계적이거나 등장인물 관계와 어긋남."
+        }
+      },
+      {
+        "dimension": "모바일 가독성",
+        "weight": 0.15,
+        "anchors": {
+          "5": "짧고 힘 있는 문장, 끊어 읽기 좋은 문단.",
+          "3": "일부 문장이 길거나 얽힘.",
+          "1": "빽빽한 문단과 긴 문장이 지속됨."
+        }
+      },
+      {
+        "dimension": "문학적·서구적 딕션 자제",
+        "weight": 0.1,
+        "anchors": {
+          "5": "연재 독서에 맞는 담백하고 박진감 있는 딕션.",
+          "3": "가끔 화려한 문장이 섞임.",
+          "1": "은유 연쇄와 고급 어휘가 지배적."
+        }
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "Starting values; calibrate on the contrast set and reviewer overrides (ADR-0029)."
+  }
+}

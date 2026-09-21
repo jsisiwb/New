@@ -63,14 +63,14 @@ export interface ContextPack {
   readonly ladderSteps: readonly LadderStep[];
   readonly validation: ValidationReport;
   readonly narrativeIdentityRef:
-    | {
-        readonly blockHash: string;
-        readonly identityVersionId: string;
-        readonly roleVariant: string;
-        readonly outputLanguage: 'en';
-        readonly outputLanguageContractHash: string;
-        readonly traditionContractHash: string;
-      }
+      | {
+          readonly blockHash: string;
+          readonly identityVersionId: string;
+          readonly roleVariant: string;
+          readonly outputLanguage: 'en' | 'ko';
+          readonly outputLanguageContractHash: string;
+          readonly traditionContractHash: string;
+        }
     | undefined;
 }
 
@@ -401,7 +401,7 @@ export function assemblePack(input: AssemblyInput, opts: AssembleOptions = {}): 
             hash: input.narrativeBlock.hash,
             identity_version_id: input.narrativeBlock.identityVersionId,
             role_variant: input.narrativeBlock.roleVariant,
-            output_language: 'en',
+            output_language: input.narrativeBlock.outputLanguage,
             output_language_contract_hash: input.narrativeBlock.outputLanguageContractHash,
             tradition_contract_hash: input.narrativeBlock.traditionContractHash,
             dropped_sections: [...input.narrativeBlock.droppedSections],
@@ -512,7 +512,7 @@ export function assemblePack(input: AssemblyInput, opts: AssembleOptions = {}): 
           blockHash: input.narrativeBlock.hash,
           identityVersionId: input.narrativeBlock.identityVersionId,
           roleVariant: input.narrativeBlock.roleVariant,
-          outputLanguage: 'en',
+          outputLanguage: input.narrativeBlock.outputLanguage,
           outputLanguageContractHash: input.narrativeBlock.outputLanguageContractHash,
           traditionContractHash: input.narrativeBlock.traditionContractHash,
         }

@@ -625,6 +625,7 @@ export function compileFor(
     text: b.text,
     hash: b.hash,
     identityTail: b.identityTail,
+    outputLanguage: b.outputLanguage,
     outputLanguageContractHash: b.outputLanguageContractHash,
     traditionContractHash: b.traditionContractHash,
     roleVariant: role,

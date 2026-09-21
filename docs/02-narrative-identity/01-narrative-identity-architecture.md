@@ -1,6 +1,7 @@
 # Narrative Identity Architecture
 
-**English is the manuscript language. Korean webnovel is the narrative tradition.** (ADR-0026)
+**The manuscript language is per project (English or Korean); Korean webnovel is the narrative
+tradition.** (ADR-0026 as amended by ADR-0054)
 
 ## 1. Problem statement
 

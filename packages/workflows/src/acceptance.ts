@@ -417,8 +417,9 @@ export async function summarizeAndIndex(
           `L1 summary has ${words} words (max ${maxWords})`,
           { step: 'summarize', recommendedActions: ['regenerate'] },
         );
-      if (!checkOutputLanguage(toNfcText(summary)).passed)
-        throw new WorkflowError('OUTPUT_LANGUAGE_FAILED', 'L1 summary is not English', {
+      const language: 'en' | 'ko' = ctx.identity.outputLanguage.language ?? 'en';
+      if (!checkOutputLanguage(toNfcText(summary), { language }).passed)
+        throw new WorkflowError('OUTPUT_LANGUAGE_FAILED', 'L1 summary failed the language check', {
           step: 'summarize',
         });
       if (hook && !nfcText.includes(hook))

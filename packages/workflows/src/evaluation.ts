@@ -126,9 +126,11 @@ export function runDeterministicChecks(
   const nfc = toNfcText(version.text);
   const issues: Issue[] = [];
   let n = 0;
+  const language: 'en' | 'ko' = ctx.identity.outputLanguage.language ?? 'en';
   const lang = checkOutputLanguage(nfc, {
     minConfidence: ctx.policy.output_language.min_english_confidence,
     allowlist,
+    language,
   });
   if (!lang.passed)
     issues.push(

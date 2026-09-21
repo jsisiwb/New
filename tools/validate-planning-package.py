@@ -54,6 +54,7 @@ EXAMPLES = [
     ("examples/fixture/chapter-contract.ch12.json", "chapter-contract.schema.json"),
     ("examples/fixture/canon-delta.ch09.json", "canon-delta.schema.json"),
     ("examples/narrative-profiles/lang-en.v1.json", "narrative-identity.schema.json"),
+    ("examples/narrative-profiles/lang-ko.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/tradition-kr-webnovel.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/genre-hunter-gate.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/genre-regression.v1.json", "narrative-identity.schema.json"),
@@ -143,6 +144,8 @@ CONTRADICTION_PATTERNS = [
     (r"scorecard\s*(≥|>=)\s*(tier threshold|\d)", "gates are per dimension, never an aggregate scorecard (ADR-0041)", True),
     (r"early_stop_threshold", "early stop is per-dimension margin in the Production Policy (ADR-0041)", True),
     (r"auto_acceptable", "renamed acceptance.auto_approvable (ADR-0037)", True),
+    (r"manuscript (is|must be|output is) always English", "manuscript language is per project (en|ko, ADR-0054)", True),
+    (r"never (compose[sd]?|writes?|produce[sd]?) .{0,20}Korean", "Korean is a first-class manuscript language (ADR-0054)", True),
 ]
 NEGATION_CONTEXT = re.compile(
     r"never|does not|do not|must not|cannot|no translation|NO-TRANSLATION|replace|supersed|removed|instead|"

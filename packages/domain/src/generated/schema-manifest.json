@@ -5,7 +5,7 @@
   "canon-delta-payloads.schema.json": "05e5c4cced9d048bcbb92a49a77a66452b736bcb6bebb8650c884ded31078a24",
   "canon-delta.schema.json": "f80f4c2a659cf29c0a04d5e1248468661066380d0f80e9953eaa7e99899895ad",
   "chapter-contract.schema.json": "c561a58304d071276d5bbf355d3cfcafa5f6d2add957caa22ad0ba484c721244",
-  "common.schema.json": "b57a1f0fdda6904dab39f10e065a487b8e209d1f6b4e5da0dc80e1ef47ea9d9d",
+  "common.schema.json": "cc389fcaaf61f5b8852fab8cc70c3c24dffec793702aeb2d363c5acbd84c7b10",
   "comparison-verdict.schema.json": "c99d8cfec6b3102aaec93ad6b0e0199e7896e5bc0d41a9189f8a927dc2896076",
   "concept.schema.json": "7cd122afe16fbe2341a08ada9d9a2cf5161df669996d74788c801a8e6466e31c",
   "context-pack-manifest.schema.json": "4cd788df7338e325913b4c1edf386010a88547f5790700cfe1e45b5865b109b5",
@@ -30,6 +30,6 @@
   "scene-plan.schema.json": "1a50a10fd3bb1e51889e3df73dc8b429dac4b76e2b8c63f9f015bdf9f68d9ae3",
   "scorecard.schema.json": "5ee591c21a4282becfe8bf84fd87dae8096c99938fa2d1cde342414ccc30c160",
   "series-blueprint.schema.json": "72cb3c4ac2d1434c4c178a092ab59d4ad54a432589a5532bb3cfffa208f1465f",
-  "story-intake.schema.json": "b459935188fb4e3bb838ec5a701298500aae1b7f9dbbd2c774a9faa2d0829f25",
+  "story-intake.schema.json": "3bc27cc02a30e09ce1643365cdfeee9ebee7eb1187e7b3e7d2285fb63512512f",
   "story-spec.schema.json": "31aa8ab1c3ec312eaf4e47dd2b80b04e84adcb43825649be6bc291bcdbdd67ab"
 }

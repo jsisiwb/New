@@ -7,9 +7,9 @@
 export interface SceneDraftWriterOutputEnvelope {
   scene_no: number;
   /**
-   * The required manuscript language. Extensible only by a future ADR; never weakened in MVP/Beta/Production.
+   * The manuscript language. Composition is direct in this language (ADR-0054); English is an explicit later translation surface. Enforced per project by the identity contract.
    */
-  language: 'en';
+  language: 'en' | 'ko';
   /**
    * English scene prose
    */

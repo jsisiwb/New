@@ -38,7 +38,7 @@ export interface CompiledBlock {
   readonly identityVersionId: string;
   readonly identityRef: string;
   readonly role: RoleVariant;
-  readonly outputLanguage: 'en';
+  readonly outputLanguage: 'en' | 'ko';
   readonly outputLanguageContractHash: string;
   readonly traditionContractHash: string;
   readonly sections: readonly string[];
@@ -404,7 +404,7 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     identityVersionId: id.identityVersionId,
     identityRef: id.ref,
     role: opts.role,
-    outputLanguage: 'en',
+    outputLanguage: id.outputLanguage.language ?? 'en',
     outputLanguageContractHash: langHash,
     traditionContractHash: tradHash,
     sections: [

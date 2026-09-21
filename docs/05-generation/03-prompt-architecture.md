@@ -49,10 +49,12 @@ Rules:
   untrusted.
 - **Untrusted text** only in the user message, wrapped in `<<UNTRUSTED source=…>>` and preceded by an
   instruction to treat it as data; never in system.
-- **Language**: all prompt instructions are English. Korean appears only as glossed terminology inside
-  the Narrative Identity Block (e.g., "satisfaction beat (사이다)") and inside the naming/terminology
-  registry (native-script names, preserved terms). Prompts never ask for Korean prose and never contain a
-  translation step (NO-TRANSLATION-001).
+- **Language**: prompt instructions are written in the project's manuscript language (English or Korean,
+  ADR-0054). For English projects the instructions are English; for Korean projects they are Korean.
+  Korean craft terminology appears glossed inside the Narrative Identity Block (e.g., "satisfaction beat
+  (사이다)") and inside the naming/terminology registry (native-script names, preserved terms).
+  Generation composes directly in the manuscript language and never contains an in-loop translation
+  step (NO-TRANSLATION-001); English is produced only by the explicit export/translation step.
 - **Few-shot**: analytic roles use 1–2 compact schema examples (synthetic, English); prose roles rely on the
   identity block's exemplars only (avoid double-anchoring).
 

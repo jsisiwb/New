@@ -26,7 +26,7 @@ export type GenreId =
   | 'slow-burn-romance';
 
 /**
- * User-provided premise and requirements at project creation (FR-1.1). Free text may be in any language; manuscript output is always English (OUTPUT-EN-001).
+ * User-provided premise and requirements at project creation (FR-1.1). Free text may be in any language; manuscript output is composed in the project's manuscript language (en or ko, ADR-0054).
  */
 export interface StoryIntake {
   title_working: string;
@@ -319,9 +319,13 @@ export interface StoryIntake {
    */
   target_words_per_chapter: number;
   /**
-   * Spelling and punctuation locale for English manuscripts
+   * Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)
    */
-  spelling_locale?: 'en-US' | 'en-GB';
+  spelling_locale?: 'en-US' | 'en-GB' | 'ko-KR';
+  /**
+   * Language the manuscript is composed in (en or ko, ADR-0054). Defaults to en when unset so existing English projects and the fixture lineage keep working; Korean projects set ko explicitly.
+   */
+  manuscript_language?: 'en' | 'ko';
   mandatory_scenes?: {
     description: string;
     /**
