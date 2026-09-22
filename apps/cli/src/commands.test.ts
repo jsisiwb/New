@@ -49,8 +49,8 @@ describe('cli commands', () => {
     expect(out.text).toContain('## Output-Language Contract');
     const p = run(['prompts:list']);
     expect(p.ok).toBe(true);
-    // 31 English lineage versions + the 25 Korean v2.0.0 versions (ADR-0054).
-    expect((p.output as { versions: unknown[] }).versions).toHaveLength(56);
+    // 31 English lineage versions + 25 Korean v2.0.0 + 25 Korean v2.1.0 (ADR-0054).
+    expect((p.output as { versions: unknown[] }).versions).toHaveLength(81);
   });
 
   it('compiles the Active Constraint Set for a chapter and fails on overflow', () => {

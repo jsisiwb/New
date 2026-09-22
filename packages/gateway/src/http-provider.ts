@@ -174,6 +174,9 @@ export class HttpProvider implements Provider {
           system: req.system,
           user: req.user,
           params: req.params,
+          // Structured-output contract, when the call declares one; bridges/upstreams that support it
+          // can enforce it, others ignore the extra key harmlessly.
+          ...(req.outputSchema !== undefined ? { outputSchema: req.outputSchema } : {}),
           idempotencyKey: req.trace?.idempotencyKey,
         }),
         signal: controller.signal,

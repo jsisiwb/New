@@ -20,7 +20,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, "packages", "prompts", "families")
 VERSION_SPEC = "2.0.0"
-NEW_VERSION = "2.0.0"
+NEW_VERSION = "2.1.0"
 
 NIB = "{{narrative_identity_block}}"
 TAIL = "{{identity_tail}}"
@@ -44,8 +44,10 @@ def fam(role, style, ms, variant, cls, inputs, schema, temp, max_tokens, system,
     return dict(role=role, purpose=purpose_en, style=style, ms=ms, variant=variant, cls=cls,
                 inputs=inputs, schema=schema, mode=mode, temp=temp, max_tokens=max_tokens,
                 system=system, user=user,
-                changelog=changelog or f"{NEW_VERSION} — Korean manuscript-language version (ADR-0054); "
-                                          "instructions in Korean; same contract surface.")
+                changelog=changelog or f"{NEW_VERSION} — Korean manuscript-language version (ADR-0054) plus "
+                                          "output-schema field reminders (live-path fix, docs/05-generation/03 §2.7): "
+                                          "the model is told which JSON fields to return; envelope fields stay "
+                                          "workflow-filled; judge output shape corrected to judge_score/issues.")
 
 
 # User templates for families whose English envelope must be mirrored exactly (labels are structural
@@ -203,6 +205,35 @@ USER_OVERRIDES = {
 길이 예산: 약 {{length_budget_words}}.
 
 {{identity_tail}}""",
+}
+
+
+# Output-schema field reminders (docs/05-generation/03 §2.7): the live model is told exactly which JSON
+# content fields to return. Envelope fields (id, project_id, pins, call ids...) are workflow-filled and
+# explicitly excluded. Shapes mirror the workflow's parsers field-for-field.
+REMINDERS = {
+    "requirement_interpreter": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. project_id/version은 워크플로가 채운다]
+{"items": [{"id": "REQ-001", "kind": "hard|soft|assumption", "category": "...", "text": "...", "language": "ko", "provenance": "user|system_default|model_inferred", "confirmed_by_user": true, "scope": {"level": "series"}}], "conflicts": [...]}""",
+    "concept_generator": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. id/project_id/spec_version/status는 워크플로가 채운다]
+{"angle": "...", "logline": "...", "story_promise": "...", "reader_fantasy": "...", "main_conflict": "...", "protagonist_sketch": "...", "chapter_one_hook": "...", "ending_direction": "...", "progression_curve": "...", "differentiators": ["..."], "genre_fit_notes": ["..."], "risk_notes": ["..."]}""",
+    "story_architect": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. project_id/version/pinned과 시즌·약속의 id는 워크플로가 채운다]
+{"story_promise": "...", "reader_fantasy": "...", "main_conflict": "...", "themes": ["..."], "protagonist_arc": {"start_state": "...", "end_state": "...", "turning_points": [{"description": "...", "chapter_from": 1, "chapter_to": 2}]}, "character_arcs": [...], "relationship_arcs": [...], "progression_arc": "...", "mysteries": [{"id": "...", "statement": "...", "reveal_window": {...}}], "foreshadowing_register": [{"id": "...", "statement": "...", "planted_chapter": 1, "payoff_chapter": 2, "importance": "core"}], "red_herrings": [...], "ending": {"summary": "...", "final_state_assertions": ["..."]}, "endgame_requirements": [{"id": "...", "statement": "..."}], "seasons": [{"id": "...", "ordinal": 1, "title": "...", "goal": "...", "entry_state": "...", "exit_state": "...", "chapter_start": 1, "chapter_end": 40, "arcs": [...]}], "promises": [{"id": "...", "statement": "...", "type": "...", "importance": "core|major|minor"}], "hard_requirement_bindings": [{"requirement_id": "...", "binding": "..."}]}""",
+    "arc_planner": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. id/project_id/season_id는 워크플로가 채운다]
+{"kind": "main", "ordinal": 1, "title": "...", "objective": "...", "conflict": "...", "antagonistic_force": "...", "stakes": "...", "entry_state": "...", "exit_state_assertions": ["..."], "participants": ["캐릭터 id"], "locations": ["장소 id"], "story_time_window": {"start": {...}, "end": {...}}, "chapter_range_est": {"start": 1, "end": 10}, "beats": [{"type": "setup|rising|reversal|payoff|revelation|emotion|progression|climax|aftermath", "description": "...", "emotion": "...", "reveal": "...", "chapter_offset": 0}], "promises_opened": ["id"], "promises_advanced": ["id"], "promises_paid": ["id"], "progression_milestone_ids": ["..."], "relationship_milestone_ids": ["..."], "cadence_check": {"saida_interval": 3, "progression_interval": 2, "max_goguma_streak": 2, "passes": true}, "risks": ["..."], "must_not": ["..."], "repetition_check": "...", "status": "draft"}""",
+    "chapter_planner": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. id/project_id/chapter_number/version/arc_id/season_id/timeline_id/status/pinned/narrative_identity_version_id/active_constraints_ref는 워크플로가 채운다]
+{"purpose": "...", "reader_experience": "...", "arc_objective_contribution": "...", "must_happen": [{"description": "...", "evidence": "..."}], "must_not_happen": ["..."], "pov": {"character_id": "엔티티 id", "mode": "close_third|first"}, "participants": [{"character_id": "엔티티 id", "role": "...", "on_page": true}], "mentioned_only": ["엔티티 id"], "locations": ["엔티티 id"], "story_time": {"start": {"chapter_no": 1, "offset": "아침"}, "end": {"chapter_no": 1, "offset": "저녁"}}, "knowledge_deltas": [{"proposition_id": "...", "character_id": "...", "delta": "learns|confirms|doubts", "channel": "witnessed|told|inferred"}], "state_deltas": [{"entity_id": "...", "attribute": "...", "from": "...", "to": "..."}], "relationship_deltas": [{"source_id": "...", "target_id": "...", "relationship_state_id": "...", "change": "..."}], "introduces": ["엔티티 id"], "setups": [{"id": "...", "statement": "...", "due_chapter_window": {"min": 2, "max": 5}}], "payoffs": [{"id": "...", "statement": "...", "settles_setup_id": "..."}], "progression": [{"milestone_id": "...", "description": "..."}], "emotional_movement": {"from": "...", "to": "..."}, "conflict": {"description": "...", "reversal": "..."}, "local_satisfaction": [{"type": "saida|revelation|emotion|growth|humor", "description": "..."}], "ending_state": "...", "hook": {"type": "cliffhanger|revelation|decision|threat|question", "description": "..."}, "opening": {"type": "tension|continuation|question", "description": "..."}, "scene_count": 3, "dialogue_density_target": 0.5, "monologue_density_target": 0.2, "length_target": {"unit": "characters", "value": 5500, "tolerance_ratio": 0.12}, "tone_notes": ["..."], "continuity_risks": [{"description": "..."}], "continuity_anchors": [{"fact": "..."}], "knowledge_guards": [{"character_id": "...", "must_not_know_proposition_ids": ["..."]}], "acceptance_criteria": [{"id": "...", "kind": "deterministic|judge|human", "description": "...", "check_ref": "...", "threshold": 1}]}""",
+    "scene_writer": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. length/paragraphs는 워크플로가 원문에서 다시 계산한다]
+{"scene_no": 1, "language": "ko", "text": "장면 원문 (문단은 빈 줄로 구분)", "speaker_annotations": [{"paragraph_id": "p3", "speaker": "발화자", "addressee": "청자", "register_shift": "없음|..."}], "claims": [{"paragraph_id": "p3", "text": "사실-bearing 문장 원문", "kind": "event|state|knowledge", "entity_ids": ["..."]}], "system_blocks": ["상태창 등 직렬 장치 원문 (있다면)"], "writer_notes": ["..."]}""",
+    "canon_extractor": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. project_id/chapter_id/manuscript_version_id/base_canon_version/stage/extractor_call_id/reconciliation은 워크플로가 채운다]
+{"items": [{"local_id": "...", "type": "event|fact|knowledge|relationship|promise|proposition|entity", "op": "assert", "frame": "canonical", "confidence": 1, "importance": "core|major|minor", "story_clock": {"chapter_no": 1, "ordinal": 1, "precision": "exact"}, "payload": {...}, "evidence": [{"manuscript_version_id": "워크플로 제공", "chapter_no": 1, "paragraph_id": "p3", "start": 1, "end": 5, "quote": "원문과 문자 단위로 일치하는 인용"}]}], "unresolved_questions": [...], "hypothesis_results": [...], "summary_l1": "회차 요약 한 문단", "ending_hook": "엔딩 훅"}""",
+    "targeted_reviser": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. id/from_version_id/issue_ids/reviser_call_id는 워크플로가 채운다]
+{"scope": "sentence|paragraph|dialogue|opening|ending|scene", "span": {"start": 문단 시작 code point, "end": 끝 code point, "original_quote": "수정 전 원문"}, "new_text": "수정된 텍스트", "changed_claims": [{"before": "...", "after": "..."}], "preserved_facts_ack": ["유지한 사실"], "speaker_annotations": [...], "dimension": "prose|structure|genre|voice", "regression": false, "attempt": 1}""",
+    "factual_summarizer": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다]
+{"summary_l1": "이번 회차 요약 (다음 회차 계획이 읽는 수준)", "ending_hook": "엔딩 훅", "state_changes": [{"entity_id": "...", "attribute": "...", "from": "...", "to": "..."}], "knowledge_changes": [{"character_id": "...", "proposition_id": "...", "stance": "learns|confirms|doubts"}]}""",
+    "chapter_comparator": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. judge_call_id는 워크플로가 채운다]
+{"candidate_a_id": "...", "candidate_b_id": "...", "presentation_order": "AB|BA", "dimensions": [{"dimension": "prose|structure|genre|voice", "preference": "A|B", "confidence": 0.8, "rationale": "..."}], "overall_preference": "A|B", "confidence": 0.8, "rationale": "..."}""",
+    "concept_comparator": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. judge_call_id는 워크플로가 채운다]
+{"candidate_a_id": "...", "candidate_b_id": "...", "presentation_order": "AB|BA", "dimensions": [{"dimension": "concept", "preference": "A|B", "confidence": 0.8, "rationale": "..."}], "overall_preference": "A|B", "confidence": 0.8, "rationale": "..."}""",
 }
 
 
@@ -548,7 +579,7 @@ FAMILIES = {
 {COMMON}
 - 줄거리, 상태 변화, 지식 변화, 엔딩 훅을 포함한다. 등록부 이름과 용어를 유지한다.
 - 평가·가설 없이 사실만 쓴다.
-출력 형태: {{"summary": "...", "ending_hook": "..."}}
+출력 형태: {{"summary_l1": "...", "ending_hook": "...", "state_changes": [...], "knowledge_changes": [...]}}
 
 {NIB}""",
         user="""[CHAPTER TEXT]
@@ -599,7 +630,7 @@ FAMILIES = {
 {COMMON}
 - 평가 축: 언어 유창성과 관용구, 번역투 문장 부재, 화법·존대 자연스러움, 모바일 가독성(짧은 문단·리듬), 문학적/서구적 딕션 자제.
 - 점수를 매기기 전에 문단 id로 증거를 제시한다. 화려한 문장을 칭찬하지 않고 짧은 문단을 벌하지 않는다.
-출력 형태: {{"issues": [{{"dimension": "...", "score": 1-5, "evidence_paragraph_ids": [...], "claim": "..."}}]}}
+출력 형태: {{"judge_score": 0-100, "dimension_scores": {{"prose": 0-100}}, "drift_flags": ["..."], "issues": [{{"kind": "prose_issue", "claim": "...", "severity": "minor|major|blocking"}}]}}
 
 {NIB}""",
         user="""[CHAPTER TEXT]
@@ -611,7 +642,7 @@ FAMILIES = {
 {COMMON}
 - 평가 축: 훅 강도(첫 몇 문장 안 긴장/연속), 에피소드 보상(이번 회차의 사이다·폭로·감정·성장·유머), 박자와 장면 리듬, 설명 통제, 대화 중심성, 엔딩 당김(클리프행어), 카덴스와 직렬 장치.
 - 점수 전에 문단 id/장면으로 증거를 제시한다. 반성적 엔딩·서구풍 회차 마무리를 벌한다.
-출력 형태: {{"issues": [{{"dimension": "...", "score": 1-5, "evidence_paragraph_ids": [...], "claim": "..."}}]}}
+출력 형태: {{"judge_score": 0-100, "dimension_scores": {{"structure": 0-100}}, "drift_flags": ["..."], "issues": [{{"kind": "structure_issue", "claim": "...", "severity": "minor|major|blocking"}}], "hook_sentence_index": 0, "local_payoff_present": true, "ending_type_detected": "cliffhanger|revelation|decision|threat|question"}}
 
 {NIB}""",
         user="""[CHAPTER TEXT]
@@ -626,7 +657,7 @@ FAMILIES = {
 {COMMON}
 - 독자 판타지 전달, 장르 장치와 어휘(상태창, 등급, 관계망 등), 금기 자제를 확인한다.
 - 점수 전에 증거를 제시한다.
-출력 형태: {{"issues": [{{"dimension": "genre", "score": 1-5, "evidence_paragraph_ids": [...], "claim": "..."}}]}}
+출력 형태: {{"judge_score": 0-100, "dimension_scores": {{"genre": 0-100}}, "drift_flags": ["..."], "issues": [{{"kind": "genre_issue", "claim": "...", "severity": "minor|major|blocking"}}]}}
 
 {NIB}""",
         user="""[CHAPTER TEXT]
@@ -641,7 +672,7 @@ FAMILIES = {
 {COMMON}
 - 인물 간 구분성, 언어 습관, 등록 자연스러움과 일관성을 확인한다. 모든 인물이 비슷하게 말하면 벌점.
 - 점수 전에 발화 인용을 제시한다.
-출력 형태: {{"issues": [{{"dimension": "voice", "score": 1-5, "evidence": "...", "claim": "..."}}]}}
+출력 형태: {{"judge_score": 0-100, "dimension_scores": {{"voice": 0-100}}, "drift_flags": ["..."], "issues": [{{"kind": "voice_issue", "claim": "...", "severity": "minor|major|blocking"}}]}}
 
 {NIB}""",
         user="""[UTTERANCES]
@@ -714,6 +745,8 @@ def write_family(family: str, spec: dict) -> None:
     # The English latest version is the contract source of truth: its variable surface and meta drive
     # the workflow's renderPrompt calls. The Korean version must not fork it.
     user = USER_OVERRIDES.get(family, spec["user"])
+    if family in REMINDERS:
+        user = f"{user}\n\n{REMINDERS[family]}"
     inputs = src["input_variables"]
     meta = {
         "family": family,

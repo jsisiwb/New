@@ -201,25 +201,33 @@ export async function upsertPromptVersions(
   let inserted = 0;
   let verified = 0;
   for (const v of versions) {
-    const result = await pool.query(
-      `INSERT INTO prompt_versions (id, family, version, content_hash, role, style_sensitive, manuscript_producing, identity_variant, model_class, output_schema, status, meta)
+    const result = await pool
+      .query(
+        `INSERT INTO prompt_versions (id, family, version, content_hash, role, style_sensitive, manuscript_producing, identity_variant, model_class, output_schema, status, meta)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)
        ON CONFLICT (id) DO NOTHING RETURNING id`,
-      [
-        v.id,
-        v.family,
-        v.version,
-        v.content_hash,
-        v.role,
-        v.style_sensitive,
-        v.manuscript_producing,
-        v.identity_variant,
-        v.model_class,
-        v.output_schema,
-        v.status,
-        JSON.stringify(v.meta),
-      ],
-    );
+        [
+          v.id,
+          v.family,
+          v.version,
+          v.content_hash,
+          v.role,
+          v.style_sensitive,
+          v.manuscript_producing,
+          v.identity_variant,
+          v.model_class,
+          v.output_schema,
+          v.status,
+          JSON.stringify(v.meta),
+        ],
+      )
+      .catch((err: unknown) => {
+        // A concurrent registration can commit between our snapshot and the arbiter check, surfacing
+        // the unique violation instead of ON CONFLICT DO NOTHING. That is still "not inserted": verify
+        // against the committed winner below instead of leaking a raw constraint error.
+        if ((err as { code?: string }).code === '23505') return { rows: [] as unknown[] };
+        throw err;
+      });
     if (result.rows.length > 0) {
       inserted++;
       continue;

@@ -135,6 +135,9 @@ export function resolveProvidersFromEnv(
               // An explicitly configured bridge URL (e.g. a tunnel to the operator's bridge host) is
               // deliberate operator config; the default stays loopback-only.
               ...(env.YEONJAE_GENSPARK_URL ? { allowNonLoopback: true } : {}),
+              ...(env.YEONJAE_GENSPARK_TOKEN
+                ? { headers: { authorization: `Bearer ${env.YEONJAE_GENSPARK_TOKEN}` } }
+                : {}),
             }),
           ],
         ]),

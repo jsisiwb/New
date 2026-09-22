@@ -444,7 +444,7 @@ export async function evaluateVersion(
         activityId: act('prose_judge'),
         variables: {
           chapter_text: chapterText,
-          prose_lint_report: `English output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.words} words.`,
+          prose_lint_report: `${input.contract.length_target.unit === 'characters' ? 'Korean' : 'English'} output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.count} ${det.length.unit}.`,
         },
         block: compileFor(ctx, 'judge_rubric_prose'),
       });

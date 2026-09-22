@@ -28,7 +28,7 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 56;
+const TOTAL_PROMPT_VERSIONS = 81;
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -67,7 +67,7 @@ describe('prompt registry (ADR-0016)', () => {
       const text = `${v.system_template}\n${v.user_template}`;
       expect(text, v.id).not.toMatch(/translate (it|this|the text) into English/i);
       const hasHangul = /[\uac00-\ud7a3]/.test(text);
-      if (v.version === '2.0.0') {
+      if (v.version === '2.0.0' || v.version === '2.1.0') {
         expect(hasHangul, `${v.id} Korean version must be authored in Korean`).toBe(true);
       } else {
         expect(hasHangul, `${v.id} legacy version contains Hangul`).toBe(false);
@@ -148,7 +148,7 @@ describe('prompt registry (ADR-0016)', () => {
     const set = reg.activeSet();
     expect(Object.keys(set.mapping)).toHaveLength(25);
     for (const fam of Object.keys(set.mapping)) {
-      expect(set.mapping[fam], fam).toBe(`${fam}@2.0.0`);
+      expect(set.mapping[fam], fam).toBe(`${fam}@2.1.0`);
     }
     expect(set.id).toMatch(/^set:[0-9a-f]{16}$/);
   });
