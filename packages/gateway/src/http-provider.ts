@@ -172,7 +172,9 @@ export class HttpProvider implements Provider {
     if (typeof timer.unref === 'function') timer.unref();
 
     try {
-      const url = new URL('/v1/complete', this.endpoint);
+      // this.endpoint is already normalized in the constructor to end with /v1/complete (path
+      // prefixes preserved); resolving an absolute '/v1/complete' here would strip them.
+      const url = this.endpoint;
       const payload = JSON.stringify({
         modelId: req.modelId,
         system: req.system,
