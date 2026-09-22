@@ -86,6 +86,7 @@ export interface AssemblyInput {
         readonly hash: string;
         readonly identityVersionId: string;
         readonly roleVariant: string;
+        readonly outputLanguage: 'en' | 'ko';
         readonly outputLanguageContractHash: string;
         readonly traditionContractHash: string;
         readonly droppedSections: readonly string[];

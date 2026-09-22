@@ -7,15 +7,17 @@ English in the Korean webnovel tradition**. A user supplies a premise and a set 
 characters, world concept, tropes, forbidden developments, audience, tone, romance preferences,
 progression system, ending preference, chapter count, target words per chapter, mandatory scenes, content
 restrictions) and, later, running directions and corrections. The studio turns those inputs into a story
-specification, a story bible, a hierarchical series plan, per-chapter contracts, **natural English prose
-composed directly in English**, edited and continuity-checked chapters, a canonical story memory that stays
+specification, a story bible, a hierarchical series plan, per-chapter contracts, **natural prose
+composed directly in the project's manuscript language (English or Korean, ADR-0054)**, edited and
+continuity-checked chapters, a canonical story memory that stays
 coherent across hundreds or thousands of chapters, and an exportable manuscript. It does this with many
 purposeful, individually audited LLM calls orchestrated by durable workflows over a canonical story
 database — never with one enormous prompt or one long chat.
 
-**Governing principle (ADR-0026): English is the manuscript language. Korean webnovel is the narrative
-tradition.** The product is not a translator: it never writes Korean prose and translates it, and it never
-produces English that imitates Korean grammar. What it inherits from Korean web fiction is *form* —
+**Governing principle (ADR-0026 as amended by ADR-0054): the manuscript language is per project (English
+or Korean); Korean webnovel is the narrative tradition.** The product is not a translator: it composes
+directly in the project's manuscript language and never translates inside the generation loop, and it
+never produces prose that imitates another language's grammar. What it inherits from Korean web fiction is *form* —
 episode-level hooks, local payoff every chapter, progression cadence, dialogue-forward scenes, controlled
 exposition, mobile-readable paragraphs, cliffhangers, and the genre conventions of hunter/gate, regression,
 academy, murim, romance-fantasy, villainess and related categories.

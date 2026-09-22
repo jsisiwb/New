@@ -21,3 +21,8 @@ per 1,000 accepted words.
 ## Consequences
 Supersedes the counting part of ADR-0024. Schemas use `lengthTarget`/`lengthModel`; UI shows words with
 secondary counts; the structure profile's rhythm rules are expressed in words for English rendering.
+
+> **Amended by ADR-0054 (2026-09-22):** for Korean (`ko`) manuscripts the author-facing unit is
+> **characters** — Unicode code points excluding line breaks, spaces included (공백 포함) — with default
+> 5,500 ± 12% per chapter. `lengthTarget.unit` is `words` for `en` and `characters` for `ko`; the
+> deterministic length gate measures the unit the contract names. The model itself stays language-neutral.

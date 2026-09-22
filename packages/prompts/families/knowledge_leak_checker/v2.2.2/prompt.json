@@ -1,0 +1,34 @@
+{
+  "family": "knowledge_leak_checker",
+  "version": "2.2.2",
+  "role": "knowledge_leak_checker",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "knowledge_table",
+    "knowledge_guards",
+    "secrets"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 3000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.2.2 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders with exact schema enums (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "knowledge_leak_checker.fixture.smoke"
+  ],
+  "content_hash": "sha256:77477c1727949224e0306b9f1bdbe6b281435d80da7f58db7659c3a0add0a2c4"
+}

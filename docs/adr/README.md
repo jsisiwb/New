@@ -58,5 +58,7 @@
 
 | [0053](0053-deployment-safe-workflow-resume.md) | Chapter and story-planning jobs resume with validated persisted prompt sets instead of the latest active defaults |
 
+| [0054](0054-korean-manuscript-language.md) | The manuscript language is per project (English or Korean, chosen at intake); generation composes directly in it, and English is produced only by an explicit export/translation step |
+
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

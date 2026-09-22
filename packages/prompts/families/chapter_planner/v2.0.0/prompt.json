@@ -1,0 +1,39 @@
+{
+  "family": "chapter_planner",
+  "version": "2.0.0",
+  "role": "chapter_planner",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "arc_plan",
+    "chapter_number",
+    "previous_chapter_summary",
+    "canon_state",
+    "knowledge_state",
+    "open_promises",
+    "active_constraints",
+    "length_target_words"
+  ],
+  "output_schema": "chapter-contract.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.4,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.0.0 — Korean manuscript-language version (ADR-0054); instructions in Korean; same contract surface.",
+  "regression_cases": [
+    "chapter_planner.full_planned_bible",
+    "chapter_planner.ending_continuity"
+  ],
+  "content_hash": "sha256:9c2320780e613fa14b7df9e35da42c87add31137d3b0cf46e7ed6844a9f9c8cc"
+}

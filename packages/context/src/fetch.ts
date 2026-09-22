@@ -1348,6 +1348,7 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
       hash: block.hash,
       identityVersionId: block.identityVersionId,
       roleVariant: block.role,
+      outputLanguage: block.outputLanguage,
       outputLanguageContractHash: block.outputLanguageContractHash,
       traditionContractHash: block.traditionContractHash,
       droppedSections: block.droppedSections,

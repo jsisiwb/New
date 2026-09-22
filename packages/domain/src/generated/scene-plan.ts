@@ -280,10 +280,10 @@ export interface DialogueRegister1 {
   note?: string;
 }
 /**
- * Author-facing length target. Unit is words for English; tolerance is a ratio.
+ * Author-facing length target. Unit is words for English, characters for Korean (ADR-0054; characters are Unicode code points excluding newlines, spaces included); tolerance is a ratio.
  */
 export interface LengthTarget {
-  unit: 'words';
+  unit: 'words' | 'characters';
   value: number;
   tolerance_ratio?: number;
 }

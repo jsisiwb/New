@@ -1,0 +1,34 @@
+{
+  "family": "concept_comparator",
+  "version": "2.0.0",
+  "role": "concept_comparator",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "candidate_a",
+    "candidate_b",
+    "presentation_order"
+  ],
+  "output_schema": "comparison-verdict.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.0.0 — Korean manuscript-language version (ADR-0054); instructions in Korean; same contract surface.",
+  "regression_cases": [
+    "concept_comparator.fixture.smoke"
+  ],
+  "content_hash": "sha256:1c5dcd77e499d8979fe454960b185d111262199e1a66b78f01aa258b5e8c07be"
+}

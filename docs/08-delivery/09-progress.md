@@ -1251,3 +1251,109 @@ agent's GitHub App, which lacks the `workflows` permission. A maintainer applied
 executed and passed in CI: the explicit `pnpm test:e2e-readiness` run, its forty-stage durable-report
 check, the explicit `pnpm test:perf-smoke` run, the junit guards that the six product suites ran, and the
 zero-skipped-tests gate. The guards are verified as *running*, not merely present.
+
+## Defect-fix pass — 2026-09-21 (live genspark mode)
+
+One real product defect, found while bringing up the local live `genspark` environment:
+
+- **Provider-mode allowlists were stale after the gateway added `genspark` and `simulated`.**
+  `packages/db/src/readiness.ts` accepted only `mock/replay/synthetic/live` and
+  `packages/db/src/dependency-status.ts` recognised only `mock|replay|synthetic` (plus `live` as
+  disabled). With `YEONJAE_PROVIDER_MODE=genspark` the `provider_simulator` dependency probe reported
+  `PROVIDER_MODE_INVALID` (unavailable), which made `/ready` answer `degraded` on a healthy instance and
+  would have marked live genspark deployments degraded permanently. Fix: treat `genspark` like `live`
+  (deterministic simulator is not in play → disabled) and `simulated` like the other deterministic modes
+  (in play → up) in `probeProviderSimulator`, and accept both in `checkProviderMode`.
+
+Verification (local, `YEONJAE_PROVIDER_MODE=genspark`, Postgres 16 at `yeonjae_test`): the complete
+`pnpm check` gate passed end to end — generated types fresh (33 schemas); typecheck, lint and
+format:check clean; **1788/1788 tests across 115 suites**, including the previously failing API
+`health and readiness` integration test and both affected db suites (`readiness` + `dependency-status`,
+42 tests); 120-chapter continuity replay with zero replay misses; 49 chaos scenarios; restore drill
+40 invariants; 16 security scenarios; 14 cost scenarios; production web build; planning-package
+validation `ALL OK` (33 schemas, $ref resolved, 0 contradiction/stale-term hits); contrast corpus
+2,000 evaluations, 700/700 agreement, 0 false positives, 0 false negatives. No live-provider call was
+made by the test gate; `genspark` mode was exercised only through the readiness probe path.
+
+## Korean prompt families + character-unit length model — 2026-09-22 (ADR-0054 execution)
+
+Two related tranches, both implementing decisions already recorded in ADR-0054:
+
+- **Korean prompt families `v2.0.0` are the active set (25/25 families).** Authored by
+  `tools/seed-prompt-families-ko.py` (deterministic generator; content hashes mirror
+  `packages/prompts/src/registry.ts` canonicalization, including JS `null`-keeps and integral-float
+  collapsing — both were real hash-mismatch defects in the generator, fixed). Every family's user
+  template now mirrors the English latest version's variable surface and structural labels exactly
+  (audited programmatically; 15 families initially diverged and were regenerated from the English
+  envelope with Korean descriptors — the Korean `canon_extractor` had dropped the registry/pre-pass/
+  hypotheses blocks, which broke the simulated model's FK chain in the novel e2e test). System
+  templates carry Korean-webnovel craft: serialized slow-burn pacing rules for `story_architect`
+  (1화 = one POV/one moment/one hook; 1–10화 low-and-slow; one core event per chapter; 40–60화
+  season arcs), 사이다 cadence 3–5화 and cliffhanger distribution in `arc_planner`, episode
+  three-beat structure and one-purpose-per-chapter in `chapter_planner`, beat rotation and mobile
+  paragraph discipline in `scene_writer`/`scene_planner`. English `v1.x` versions stay registered for
+  pinned jobs (ADR-0053). The contrast-corpus baseline was re-frozen against the new active set
+  (maintainer regeneration; entries byte-identical, pins updated), and the ADR-0053 pin-drill
+  simulation now releases to a synthetic `9.9.9` so it cannot collide with real registry versions.
+- **Length targets are language-aware (ADR-0054 §5, amends ADR-0034).** `lengthTarget.unit` is
+  `words` (en) or `characters` (ko: Unicode code points excluding line breaks, spaces included);
+  `story-intake` gains optional `target_characters_per_chapter` (default 5,500 when `ko`);
+  `chapter-production` derives the unit from the intake language; `validateContract` rejects a
+  contract whose unit disagrees with the project target (fail-closed before spend); the
+  deterministic length gate measures the contract's unit (`targetCount`), and the eval metric
+  carries `unit`/`count`/`characters`. Korean lint thresholds in `lang-ko@1` use 어절-based
+  EP-LEN-01/02/03 (18/25, 30/45), documented in the lint-rules table.
+
+Verification (local, Postgres 16 at `yeonjae_test`): full `pnpm check`-equivalent gate on the
+combined tranche — generated types fresh (33 schemas); typecheck, lint, format clean; **1798/1798
+tests across 117 suites** (both DB-gated integration families and unit suites), up from 1788 with
+the new Korean-length and contract-unit tests; prompts registry 56 versions, active set 25/25 at
+`@2.0.0`, hashes verified; variable-surface audit `ALL 25 MATCH ENGLISH EXACTLY`; contrast corpus
+re-frozen (2,000 entries byte-identical, pins → `@2.0.0`) and green; planning-package validation
+`ALL OK` including the two new regression guards (unqualified English-unit length claims, stale
+pre-ADR-0054 requirement ids). Two latent test defects found and fixed with the milestone: the
+migration-replay "newest migration must change privileges" assumption (0020 is constraint-only) and
+the CLI `prompts:list` count (31 → 56). The Genspark bridge was re-verified live against the
+`/v1/complete` provider protocol; `YEONJAE_GENSPARK_URL` now opts the provider into non-loopback
+endpoints only when explicitly configured.
+
+## Live genspark run — 2026-09-22 (blocked at bible stage by bridge transport)
+
+First live end-to-end run (`YEONJAE_PROVIDER_MODE=genspark`, R-class `claude-opus-4-6`, P/M/C
+`gemini-3.8-flash`) on "엑스트라로 세계를 구하는 방법" (200화, ko, romance-fantasy/academy/possession):
+intake → story spec → assumptions → 2 concepts (both schema-valid, authentic Korean-webnovel craft)
+→ concept 2 approved → planning started. Two live-path prompt defects were found and fixed as new
+immutable versions: v2.1.0 added the plan-required output-schema field reminders
+(docs/05-generation/03 §2.7) and the canonical judge shape; v2.2.0 filled the reminders with the
+schemas' exact enums after the requirement_interpreter category failure. Also fixed: Genspark
+provider tunnel wiring (explicit `YEONJAE_GENSPARK_URL` opts into non-loopback; Bearer token wired),
+HttpProvider outputSchema pass-through, and a real concurrent prompt-registration race in
+`upsertPromptVersions`.
+
+**Blocked (external, evidence in llm_calls):** the operator's bridge endpoint is a trycloudflare.com
+tunnel, and the remote bridge buffers full responses. Measured directly: a small-input
+`claude-opus-4-6` call (6,000 max tokens) returns 200 at 112s, but a 31KB-input call 524s at ~126s —
+Cloudflare terminates any origin response that has not completed within ~100s. All bible-stage
+prompts (character/world/power/story_architect, 15–40KB) reliably exceed it: five consecutive
+character_designer attempts all 524'd. The run is resumable (`novel:resume`) as soon as the bridge
+serves long calls — streaming the response, or an endpoint without Cloudflare's response cap.
+
+## Live run v2.2.x — 2026-09-22 (Bible complete; chapters gated by the account's 5-hour quota)
+
+The live Genspark run completed the full planning chain on a fresh v2.2.4 project: story spec →
+2 concepts → concept 2 approved → **200-chapter Bible complete and reviewed** (character 319 s,
+world 153 s, power 175 s, architect/blueprint 324 s — all schema-valid through the live bridge).
+Blueprint review (workflow_artifacts series_blueprint): 4 authored seasons covering exactly
+chapters 1–200 with slow-burn structure (survival + first flag break at ch1–3, first growth at
+ch8–12, C-rank at ch50–60), 31 promises with due windows spread across the series, a 5-stage
+heroine fate-line system as the harem engine, 12 endgame requirements — the Step-5 complaint
+(front-loaded events) is verifiably fixed in the output.
+
+The chapter stage is blocked at arc_plan: the operator's Genspark account hit its **AI Chat
+5-hour limit** (429 on both models; verified by direct probes). The run is checkpointed and
+resumable — `novel:resume` + `novel:run` continues with arc_plan and then chapters 1–2
+(stop-after=2) once the quota window resets. Prompt iterations driven by the live run landed as
+v2.2.1 (designer/scene-planner shapes), v2.2.2 (seasons/promises/arcs normalizer shapes),
+v2.2.3 (story-clock objects), v2.2.4 (assumption confirmation rule); transport fixes: raw
+node http/https in HttpProvider (undici's 300 s idle wall), path-prefix preservation,
+YEONJAE_GENSPARK_TIMEOUT_MS wiring.

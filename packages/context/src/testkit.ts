@@ -67,6 +67,7 @@ export function identityBlock(
     hash: b.hash,
     identityVersionId: b.identityVersionId,
     roleVariant: b.role,
+    outputLanguage: b.outputLanguage,
     outputLanguageContractHash: b.outputLanguageContractHash,
     traditionContractHash: b.traditionContractHash,
     droppedSections: b.droppedSections,

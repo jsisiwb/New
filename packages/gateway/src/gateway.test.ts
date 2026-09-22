@@ -166,7 +166,7 @@ describe('Narrative Identity Guard (STYLE-GUARD-001)', () => {
     expect(() =>
       guardRequest({
         ...req,
-        narrativeIdentityRef: { ...ref, outputLanguage: 'ko' as unknown as 'en' },
+        narrativeIdentityRef: { ...ref, outputLanguage: 'ja' as unknown as 'en' },
       }),
     ).toThrow(/OUTPUT_LANGUAGE_UNSUPPORTED/);
     expect(() =>

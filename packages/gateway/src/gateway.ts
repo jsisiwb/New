@@ -794,13 +794,16 @@ export class Gateway {
           }
         }
 
-        // 5. output-language check for manuscript roles (OUTPUT-EN-001)
+        // 5. output-language check for manuscript roles (OUTPUT-LANG, ADR-0054). The declared output
+        // language from the Narrative Identity ref selects the check: English or Korean.
         let languageCheck: GatewayResponse['outputLanguageCheck'] = { performed: false };
         if (req.manuscriptProducing) {
           const prose = extractProse(json, res.text);
+          const language = req.narrativeIdentityRef?.outputLanguage ?? 'en';
           const check = checkOutputLanguage(toNfcText(prose), {
             minConfidence: this.opts.minEnglishConfidence ?? 0.99,
             allowlist: this.opts.allowlistTerms ?? [],
+            language,
           });
           languageCheck = {
             performed: true,
@@ -811,7 +814,7 @@ export class Gateway {
             languageFailures++;
             lastError = {
               class: 'OUTPUT_LANGUAGE_FAILED',
-              message: `English confidence ${check.english_confidence}; offending: ${check.offending_segments.map((s) => s.paragraph_id).join(',')}`,
+              message: `${language} confidence ${check.english_confidence}; offending: ${check.offending_segments.map((s) => s.paragraph_id).join(',')}`,
             };
             noteAttempt('failed', 'OUTPUT_LANGUAGE_FAILED');
             // discard; regenerate once on the same route, then reroute to the alternate P-class model

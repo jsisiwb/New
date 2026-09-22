@@ -13,8 +13,8 @@ Three durable workflow families produce the novel:
 
 Every step that calls a model is an **Activity** with: role, prompt version, pack, schema, budget check,
 idempotency key, audit record. No activity relies on prior conversation. **All manuscript-producing
-activities compose directly in English** (OUTPUT-EN-001); there is no translation step anywhere in these
-workflows (NO-TRANSLATION-001).
+activities compose directly in the project manuscript language** — `en` or `ko` per the intake (OUTPUT-LANG-001,
+ADR-0054); there is no translation step anywhere in these workflows (NO-TRANSLATION-001).
 
 ## 2. Setup workflows
 

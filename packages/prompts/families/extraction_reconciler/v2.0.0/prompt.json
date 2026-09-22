@@ -1,0 +1,32 @@
+{
+  "family": "extraction_reconciler",
+  "version": "2.0.0",
+  "role": "extraction_reconciler",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "conflicts",
+    "context_spans"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.0,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.0.0 — Korean manuscript-language version (ADR-0054); instructions in Korean; same contract surface.",
+  "regression_cases": [
+    "extraction_reconciler.fixture.smoke"
+  ],
+  "content_hash": "sha256:22a8e88158a7e93533d3353f5a8038ffe87366d641da5a49018e2be249b4a6e4"
+}

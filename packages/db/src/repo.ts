@@ -57,7 +57,7 @@ export interface ManuscriptVersionRow {
   version_no: number;
   origin: string;
   status: 'working' | 'approved' | 'accepted' | 'superseded' | 'retconned' | 'rejected';
-  language: 'en';
+  language: 'en' | 'ko';
   text: string;
   length: Record<string, number | string>;
   content_hash: string;

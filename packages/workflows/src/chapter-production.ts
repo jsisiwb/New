@@ -424,7 +424,14 @@ export async function produceChapter(
         arcPlan: arc.arcPlan,
         mainTimelineId,
         previousSummary,
-        lengthTargetWords: intake.target_words_per_chapter,
+        lengthTarget:
+          intake.manuscript_language === 'ko'
+            ? {
+                unit: 'characters',
+                value: intake.target_characters_per_chapter ?? 5500,
+                tolerance_ratio: 0.12,
+              }
+            : { unit: 'words', value: intake.target_words_per_chapter },
         contractId: input.ids.contractId,
         // Only the model-driven path renders the registry into the planner prompt; the fixture path keeps
         // its recorded prompt text byte-identical.

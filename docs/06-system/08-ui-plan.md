@@ -53,7 +53,7 @@ chapters' ending/payoff types).
 
 ### Chapter Review (the most-used screen)
 Left: manuscript (mobile column) with paragraph IDs, inline issue highlights (color by severity, icon by
-dimension), patch diff toggle, version selector, word count vs target. Right tabs: **Scorecard** (separate
+dimension), patch diff toggle, version selector, word/character count vs target (per manuscript language). Right tabs: **Scorecard** (separate
 gauges for English prose, serialized structure, genre, voice, continuity; tier thresholds per dimension;
 drift flags), **Issues** (grouped by dimension and severity;
 each with claim, span jump, conflicting canon item, canon evidence quote + deep link to earlier chapter,

@@ -28,8 +28,9 @@ audited production loop. See `.env.example` for every variable (names only).
 serialized-fiction production studio, written so that an engineering agent can implement it without
 redesigning the system.
 
-> **Governing principle: English is the manuscript language. Korean webnovel is the narrative tradition.**
-> The studio composes reader-facing prose **directly in natural English** while preserving the narrative
+> **Governing principle: the manuscript language is per project (English or Korean); Korean webnovel is
+> the narrative tradition.**
+> The studio composes reader-facing prose **directly in the project's manuscript language** while preserving the narrative
 > DNA of Korean serialized web fiction — episode hooks, local chapter payoff, progression cadence,
 > controlled exposition, dialogue-forward scenes, mobile-readable paragraphs, strong forward pull, and the
 > genre conventions of Korean webnovel categories. It is **not** a translation product and never

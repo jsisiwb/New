@@ -1,0 +1,34 @@
+{
+  "family": "character_designer",
+  "version": "2.2.3",
+  "role": "character_designer",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "cast_brief"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.2.3 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders with exact schema enums (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "character_designer.full_bible_names",
+    "character_designer.full_bible_fields"
+  ],
+  "content_hash": "sha256:e600414f9a46dc9967efa2e8c4ecdd1fbf676115f17c37bb9b2cdf937e0cc69e"
+}

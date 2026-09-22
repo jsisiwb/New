@@ -22,7 +22,7 @@ script for the phase runs end to end on staging.
 
 ## 3. MVP done (vertical slice, ADR-0036)
 
-- All FR items tagged **M/P0** implemented and traced, including the governing requirements OUTPUT-EN-001,
+- All FR items tagged **M/P0** implemented and traced, including the governing requirements OUTPUT-LANG-001,
   STYLE-KWN-001, STYLE-GUARD-001, EVAL-SEPARATION-001, NO-TRANSLATION-001.
 - Fixture story: all traps T1–T29 detected as specified; R1/C1/RB1 behave as specified (material vs
   contextual dependents); T16 isolation proven.

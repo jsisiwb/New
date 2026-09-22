@@ -453,7 +453,7 @@ function probeProcess(name: DependencyName, ctx: ProbeContext): DependencyStatus
   }
 }
 
-/** The deterministic local simulator. In `live` mode it is deliberately not in play. */
+/** The deterministic local simulator. In `live`/`genspark` mode it is deliberately not in play. */
 function probeProviderSimulator(ctx: ProbeContext): DependencyStatus {
   const mode = (ctx.env ?? process.env).YEONJAE_PROVIDER_MODE;
   if (mode === undefined || mode === '')
@@ -470,7 +470,14 @@ function probeProviderSimulator(ctx: ProbeContext): DependencyStatus {
       'DISABLED_BY_CONFIG',
       'live provider mode; the simulator is not in play',
     );
-  if (!['mock', 'replay', 'synthetic'].includes(mode))
+  if (mode === 'genspark')
+    return dependencyStatus(
+      'provider_simulator',
+      'disabled',
+      'DISABLED_BY_CONFIG',
+      'genspark provider mode; the simulator is not in play',
+    );
+  if (!['mock', 'replay', 'synthetic', 'simulated'].includes(mode))
     return dependencyStatus(
       'provider_simulator',
       'unavailable',

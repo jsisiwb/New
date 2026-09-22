@@ -38,7 +38,7 @@ export interface CompiledBlock {
   readonly identityVersionId: string;
   readonly identityRef: string;
   readonly role: RoleVariant;
-  readonly outputLanguage: 'en';
+  readonly outputLanguage: 'en' | 'ko';
   readonly outputLanguageContractHash: string;
   readonly traditionContractHash: string;
   readonly sections: readonly string[];
@@ -396,7 +396,9 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
   ].join('\n\n');
   const tail =
     opts.role === 'writer_full' || opts.role === 'editor_full'
-      ? `IDENTITY_TAIL: Write natural English composed directly in English (no translation-like syntax, no honorific suffixes). Keep Korean-webnovel form: early hook, dialogue-forward scenes, short mobile paragraphs, a local payoff, and an ending with forward pull.`
+      ? id.outputLanguage.language === 'ko'
+        ? `IDENTITY_TAIL: 자연스러운 한국어로 직접 쓴다(번역투, 어색한 외래어 남용 금지). 한국 웹소설 형식을 유지한다: 초반 훅, 대화 중심 장면, 짧고 모바일 친화적인 문단, 이번 회차의 로컬 보상(사이다 등), 다음 회차로 이어지는 끝맺음.`
+        : `IDENTITY_TAIL: Write natural English composed directly in English (no translation-like syntax, no honorific suffixes). Keep Korean-webnovel form: early hook, dialogue-forward scenes, short mobile paragraphs, a local payoff, and an ending with forward pull.`
       : undefined;
   return {
     text: body,
@@ -404,7 +406,7 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     identityVersionId: id.identityVersionId,
     identityRef: id.ref,
     role: opts.role,
-    outputLanguage: 'en',
+    outputLanguage: id.outputLanguage.language ?? 'en',
     outputLanguageContractHash: langHash,
     traditionContractHash: tradHash,
     sections: [
