@@ -117,7 +117,12 @@ export class HttpProvider implements Provider {
         `HttpProvider: refusing non-loopback endpoint ${url.hostname} without allowNonLoopback`,
       );
     }
-    this.endpoint = url;
+    // A path-prefixed endpoint (e.g. https://host/genspark/v1/complete behind a reverse proxy) must
+    // keep its prefix: resolving '/v1/complete' absolutely would strip it.
+    const path = url.pathname.replace(/\/+$/, '');
+    this.endpoint = path.endsWith('/v1/complete')
+      ? url
+      : new URL(`${url.origin}${path}/v1/complete`);
   }
 
   /**
