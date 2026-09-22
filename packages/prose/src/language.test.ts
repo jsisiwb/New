@@ -8,7 +8,7 @@ const FIXTURE = fileURLToPath(
   new URL('../../../examples/fixture/manuscripts/ch09.accepted.txt', import.meta.url),
 );
 
-describe('deterministic output-language check (OUTPUT-EN-001)', () => {
+describe('deterministic output-language check (OUTPUT-LANG-001)', () => {
   it('passes the English fixture chapter', () => {
     const r = checkOutputLanguage(toNfcText(readFileSync(FIXTURE, 'utf8')));
     expect(r.passed).toBe(true);
@@ -55,14 +55,18 @@ describe('deterministic output-language check (OUTPUT-EN-001)', () => {
 
 describe('deterministic output-language check, Korean (ADR-0054)', () => {
   it('passes natural Korean prose', () => {
-    const t = toNfcText('문이 열리고 붉은 눈동자가 번뜩였다.\n\n그는 천천히 손을 들어 검을 뽑았다.');
+    const t = toNfcText(
+      '문이 열리고 붉은 눈동자가 번뜩였다.\n\n그는 천천히 손을 들어 검을 뽑았다.',
+    );
     const r = checkOutputLanguageKo(t);
     expect(r.passed).toBe(true);
     expect(r.english_confidence).toBe(1);
   });
 
   it('fails English prose under the Korean check', () => {
-    const en = toNfcText('The door opened and a pair of red eyes flashed.\n\nHe slowly raised his hand and drew the sword.');
+    const en = toNfcText(
+      'The door opened and a pair of red eyes flashed.\n\nHe slowly raised his hand and drew the sword.',
+    );
     expect(checkOutputLanguageKo(en).passed).toBe(false);
   });
 

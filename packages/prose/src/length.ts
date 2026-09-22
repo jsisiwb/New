@@ -1,5 +1,6 @@
 /**
- * Language-neutral length model (ADR-0034). Words are the author-facing unit for English; code points are
+ * Language-neutral length model (ADR-0034). Words are the author-facing unit for English and characters
+ * (code points excluding line breaks) are the author-facing unit for Korean (ADR-0054); code points are
  * kept for evidence addressing and technical metrics; tokens are an estimate unless a tokenizer is supplied.
  */
 import { type NfcText } from './nfc.js';
@@ -7,6 +8,8 @@ import { segmentParagraphs } from './paragraphs.js';
 
 export interface LengthModel {
   readonly words: number;
+  /** Author-facing Korean character count: code points excluding line breaks, spaces included. */
+  readonly characters: number;
   readonly code_points: number;
   readonly paragraphs: number;
   readonly sentences: number;
@@ -52,6 +55,7 @@ export function measure(source: NfcText, opts: LengthOptions = {}): LengthModel 
   const sentences = paragraphs.reduce((acc, p) => acc + countSentences(p.text), 0);
   return {
     words,
+    characters: source.codePoints.filter((cp) => cp !== '\n' && cp !== '\r').length,
     code_points: source.codePoints.length,
     paragraphs: paragraphs.length,
     sentences,
@@ -62,9 +66,14 @@ export function measure(source: NfcText, opts: LengthOptions = {}): LengthModel 
 }
 
 export interface LengthTarget {
-  readonly unit: 'words';
+  readonly unit: 'words' | 'characters';
   readonly value: number;
   readonly tolerance_ratio?: number | undefined;
+}
+
+/** The measured count a target judges against, per its unit. */
+export function targetCount(m: LengthModel, unit: LengthTarget['unit']): number {
+  return unit === 'characters' ? m.characters : m.words;
 }
 
 export type LengthVerdict = 'within' | 'under' | 'over';

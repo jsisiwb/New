@@ -7,7 +7,7 @@ document, the schema and the test.
 
 ## Part 1 — Governing requirements
 
-### OUTPUT-EN-001 — Reader-facing manuscripts are composed directly in natural English.
+### OUTPUT-LANG-001 — Reader-facing manuscripts are composed directly in the project manuscript language (en or ko, ADR-0054).
 - **Mechanism:** the Output-Language Profile (`lang/en`) renders the Output-Language Contract first in
   every Narrative Identity Block; manuscript-producing roles are flagged and their outputs pass a
   deterministic output-language check (English ≥ 0.99 on prose segments, registry romanizations excluded)

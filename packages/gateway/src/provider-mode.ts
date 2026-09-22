@@ -132,6 +132,9 @@ export function resolveProvidersFromEnv(
             'genspark',
             new GensparkProvider({
               baseUrl: env.YEONJAE_GENSPARK_URL ?? DEFAULT_GENSPARK_BRIDGE_URL,
+              // An explicitly configured bridge URL (e.g. a tunnel to the operator's bridge host) is
+              // deliberate operator config; the default stays loopback-only.
+              ...(env.YEONJAE_GENSPARK_URL ? { allowNonLoopback: true } : {}),
             }),
           ],
         ]),

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yeonjae.studio/schemas/narrative-identity.schema.json",
   "title": "Narrative Identity Profile",
-  "description": "Versioned profile layer or composed identity (docs/02-narrative-identity/02). kind selects which sections are meaningful: output_language (1), tradition (2), genre (3), setting (4), naming (5), register_policy (6), terminology (7), preferences (8), composed (all). English is the manuscript language (OUTPUT-EN-001); Korean serialized webnovel is the narrative tradition (STYLE-KWN-001). All numeric thresholds are calibration-dependent starting values (ADR-0029).",
+  "description": "Versioned profile layer or composed identity (docs/02-narrative-identity/02). kind selects which sections are meaningful: output_language (1), tradition (2), genre (3), setting (4), naming (5), register_policy (6), terminology (7), preferences (8), composed (all). The manuscript language is per project, en or ko (OUTPUT-LANG-001, ADR-0054); Korean serialized webnovel is the narrative tradition (STYLE-KWN-001). All numeric thresholds are calibration-dependent starting values (ADR-0029).",
   "type": "object",
   "required": ["id", "kind", "version", "name"],
   "additionalProperties": false,

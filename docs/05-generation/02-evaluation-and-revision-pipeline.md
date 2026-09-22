@@ -5,7 +5,8 @@
 Two kinds of checks, one issue format:
 
 - **Deterministic checks** (`packages/prose`, `packages/narrative`, `packages/canon`): schema validity,
-  truncation, **output-language check** (English), length in words, English Prose Lint (EP-*), Structure
+  truncation, **output-language check** (per manuscript language, ADR-0054), language-aware length
+  gate (words for en, characters for ko), Prose Lint (EP-*), Structure
   Lint (ST-*), register check (RG-*), naming/terminology registry, forbidden lexicon, format drift,
   repetition (intra/cross-chapter simhash), status-window grammar, required-scene markers (contract
   `verifiable_by` patterns), numeric consistency for status-window numbers vs facts.

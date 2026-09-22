@@ -5,7 +5,8 @@ import { type StoryIntake } from './planning.js';
 
 const BASE: StoryIntake = {
   title_working: 'Test Novel',
-  premise: 'A disgraced cadet discovers the academy’s ledger of the world is being rewritten, one page at a time.',
+  premise:
+    'A disgraced cadet discovers the academy’s ledger of the world is being rewritten, one page at a time.',
   premise_language: 'en',
   genre: { primary: 'academy' },
   main_character: { name: 'Kael', role: 'protagonist', description: 'new arrival' },

@@ -6,7 +6,7 @@ cross-references use relative names (`common.schema.json#/$defs/...`). Validate 
 
 Text fields are **language-neutral** (`text`, `summary`, `statement`, `description`). Where the language of
 user-authored text may vary, a `language` code (and optional `text_en` working paraphrase) accompanies it.
-**Manuscript text is English** (`common.manuscriptLanguage`, OUTPUT-EN-001). Korean appears only as
+**Manuscript text follows the project manuscript language** — `en` or `ko` (`common.manuscriptLanguage`, OUTPUT-LANG-001, ADR-0054). Korean appears only as
 terminology source terms and optional native-script names.
 
 | Schema | Object | Primary docs |
@@ -26,7 +26,7 @@ terminology source terms and optional native-script names.
 | `promise.schema.json` | promise ledger entry | FR-3.4 |
 | `series-blueprint.schema.json` | top-level plan | FR-3.2 |
 | `arc-plan.schema.json` | arc plan (plan frame) | 03-story-planning/01 §4 |
-| `chapter-contract.schema.json` | chapter acceptance unit (length in words; active constraints ref; status `draft/validated/locked/…`) | ADR-0013, ADR-0033, ADR-0037 |
+| `chapter-contract.schema.json` | chapter acceptance unit (length target (words for en, characters for ko, ADR-0054); active constraints ref; status `draft/validated/locked/…`) | ADR-0013, ADR-0033, ADR-0037 |
 | `scene-plan.schema.json` | drafting unit with pre-resolved English register per speaker pair | 03-story-planning/01 §8 |
 | `scene-draft.schema.json` | writer output envelope (English; length model; register annotations) | 05-generation/01 §8 |
 | `issue.schema.json` | evaluation finding with dimension, evidence and `override_class` | 05-generation/02 §1, ADR-0042 |

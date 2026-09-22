@@ -170,7 +170,7 @@ plan, tradition contract, the scene or the opening/ending paragraphs); register/
 
 The `planner_compact` block feeds arc planning (payoff cadence, progression cadence), chapter contract
 writing (hook type from the tradition's allowed set, local payoff type, ending type, dialogue density
-target, scene count band, length target in words), and scene planning (beat tags, opening/ending beat
+target, scene count band, language-aware length target), and scene planning (beat tags, opening/ending beat
 types, speaker pairs with pre-resolved English register). Contract shape fields are validated
 deterministically against the tradition profile before drafting.
 

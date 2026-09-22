@@ -175,7 +175,13 @@
       "type": "integer",
       "minimum": 500,
       "maximum": 8000,
-      "description": "English words per chapter (ADR-0034); default 2,500"
+      "description": "English words per chapter (ADR-0034); default 2,500. Used when manuscript_language is en (default)."
+    },
+    "target_characters_per_chapter": {
+      "type": "integer",
+      "minimum": 500,
+      "maximum": 20000,
+      "description": "Korean characters per chapter (code points excluding newlines, ADR-0054); default 5,500. Used when manuscript_language is ko; target_words_per_chapter is ignored then."
     },
     "spelling_locale": {
       "$ref": "common.schema.json#/$defs/spellingLocale",

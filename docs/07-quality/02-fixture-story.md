@@ -5,8 +5,9 @@ identity, lies and false beliefs, injuries with lasting effects, inventory hand-
 **dialogue-register changes tied to relationship milestones**, a flashback, a dream, a retcon, delayed
 payoffs, divergence from the "known future", and deliberate continuity traps — plus **narrative-identity
 traps**: translation-like English, Western-novel pacing, over-literary prose and weak serialized
-construction. The manuscript is **English, composed directly in English**, in Korean serialized-webnovel
-form (OUTPUT-EN-001, STYLE-KWN-001). Machine-readable parts live in `examples/fixture/`; the accepted text of ch.9 and its rejected draft live in
+construction. The fixture manuscript is **English, composed directly in English** (the fixture lineage stays `en`;
+new projects may compose in `ko` per ADR-0054), in Korean serialized-webnovel form (OUTPUT-LANG-001,
+STYLE-KWN-001). Machine-readable parts live in `examples/fixture/`; the accepted text of ch.9 and its rejected draft live in
 `examples/fixture/manuscripts/` so evidence offsets are real and validator-checked. All names, events and
 prose are original to this repository.
 

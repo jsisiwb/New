@@ -1274,3 +1274,45 @@ format:check clean; **1788/1788 tests across 115 suites**, including the previou
 validation `ALL OK` (33 schemas, $ref resolved, 0 contradiction/stale-term hits); contrast corpus
 2,000 evaluations, 700/700 agreement, 0 false positives, 0 false negatives. No live-provider call was
 made by the test gate; `genspark` mode was exercised only through the readiness probe path.
+
+## Korean prompt families + character-unit length model — 2026-09-22 (ADR-0054 execution)
+
+Two related tranches, both implementing decisions already recorded in ADR-0054:
+
+- **Korean prompt families `v2.0.0` are the active set (25/25 families).** Authored by
+  `tools/seed-prompt-families-ko.py` (deterministic generator; content hashes mirror
+  `packages/prompts/src/registry.ts` canonicalization, including JS `null`-keeps and integral-float
+  collapsing — both were real hash-mismatch defects in the generator, fixed). Every family's user
+  template now mirrors the English latest version's variable surface and structural labels exactly
+  (audited programmatically; 15 families initially diverged and were regenerated from the English
+  envelope with Korean descriptors — the Korean `canon_extractor` had dropped the registry/pre-pass/
+  hypotheses blocks, which broke the simulated model's FK chain in the novel e2e test). System
+  templates carry Korean-webnovel craft: serialized slow-burn pacing rules for `story_architect`
+  (1화 = one POV/one moment/one hook; 1–10화 low-and-slow; one core event per chapter; 40–60화
+  season arcs), 사이다 cadence 3–5화 and cliffhanger distribution in `arc_planner`, episode
+  three-beat structure and one-purpose-per-chapter in `chapter_planner`, beat rotation and mobile
+  paragraph discipline in `scene_writer`/`scene_planner`. English `v1.x` versions stay registered for
+  pinned jobs (ADR-0053). The contrast-corpus baseline was re-frozen against the new active set
+  (maintainer regeneration; entries byte-identical, pins updated), and the ADR-0053 pin-drill
+  simulation now releases to a synthetic `9.9.9` so it cannot collide with real registry versions.
+- **Length targets are language-aware (ADR-0054 §5, amends ADR-0034).** `lengthTarget.unit` is
+  `words` (en) or `characters` (ko: Unicode code points excluding line breaks, spaces included);
+  `story-intake` gains optional `target_characters_per_chapter` (default 5,500 when `ko`);
+  `chapter-production` derives the unit from the intake language; `validateContract` rejects a
+  contract whose unit disagrees with the project target (fail-closed before spend); the
+  deterministic length gate measures the contract's unit (`targetCount`), and the eval metric
+  carries `unit`/`count`/`characters`. Korean lint thresholds in `lang-ko@1` use 어절-based
+  EP-LEN-01/02/03 (18/25, 30/45), documented in the lint-rules table.
+
+Verification (local, Postgres 16 at `yeonjae_test`): full `pnpm check`-equivalent gate on the
+combined tranche — generated types fresh (33 schemas); typecheck, lint, format clean; **1798/1798
+tests across 117 suites** (both DB-gated integration families and unit suites), up from 1788 with
+the new Korean-length and contract-unit tests; prompts registry 56 versions, active set 25/25 at
+`@2.0.0`, hashes verified; variable-surface audit `ALL 25 MATCH ENGLISH EXACTLY`; contrast corpus
+re-frozen (2,000 entries byte-identical, pins → `@2.0.0`) and green; planning-package validation
+`ALL OK` including the two new regression guards (unqualified "length in words" claims, stale
+`OUTPUT-EN-001` references). Two latent test defects found and fixed with the milestone: the
+migration-replay "newest migration must change privileges" assumption (0020 is constraint-only) and
+the CLI `prompts:list` count (31 → 56). The Genspark bridge was re-verified live against the
+`/v1/complete` provider protocol; `YEONJAE_GENSPARK_URL` now opts the provider into non-loopback
+endpoints only when explicitly configured.

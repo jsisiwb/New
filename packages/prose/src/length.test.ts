@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { toNfcText } from './nfc.js';
-import { countSentences, countWords, judgeLength, measure } from './length.js';
+import { countSentences, countWords, judgeLength, measure, targetCount } from './length.js';
 
 const FIXTURE = fileURLToPath(
   new URL('../../../examples/fixture/manuscripts/ch09.accepted.txt', import.meta.url),
@@ -55,6 +55,36 @@ describe('length model (ADR-0034)', () => {
       verdict: 'over',
       warn: true,
       fail: false,
+    });
+  });
+
+  it('measures Korean author-facing characters: code points excluding line breaks, spaces included (ADR-0054)', () => {
+    const nfc = toNfcText('김도윤은 잠에서 깨었다.\n\n“몇 시지?”\n대답은 없었다. 상태창이 떴다.');
+    const m = measure(nfc);
+    // 글자 수 = 공백 포함, 줄바꿈 제외: every visible character plus inner spaces.
+    expect(m.characters).toBe(nfc.codePoints.filter((cp) => cp !== '\n').length);
+    expect(m.characters).toBe(37);
+    expect(m.words).toBe(9); // 어절 count: space-separated Korean words
+    expect(targetCount(m, 'characters')).toBe(m.characters);
+    expect(targetCount(m, 'words')).toBe(m.words);
+  });
+
+  it('judges a Korean character target within tolerance', () => {
+    const target = { unit: 'characters' as const, value: 5500, tolerance_ratio: 0.12 };
+    expect(judgeLength(5500, target, 0.2)).toMatchObject({
+      verdict: 'within',
+      warn: false,
+      fail: false,
+    });
+    expect(judgeLength(4800, target, 0.2)).toMatchObject({
+      verdict: 'under',
+      warn: true,
+      fail: false,
+    });
+    expect(judgeLength(4300, target, 0.2)).toMatchObject({
+      verdict: 'under',
+      warn: true,
+      fail: true,
     });
   });
 });

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yeonjae.studio/schemas/common.schema.json",
   "title": "Common definitions",
-  "description": "Shared primitive types referenced by all Yeonjae Studio schemas. Text fields are language-neutral; where the language may vary, an explicit language code accompanies the text. Manuscript text is English (OUTPUT-EN-001).",
+  "description": "Shared primitive types referenced by all Yeonjae Studio schemas. Text fields are language-neutral; where the language may vary, an explicit language code accompanies the text. Manuscript text follows the project manuscript language, en or ko (OUTPUT-LANG-001, ADR-0054).",
   "$defs": {
     "uuid": {
       "type": "string",
@@ -19,20 +19,23 @@
       "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
       "description": "BCP 47 language tag, e.g. en, en-US, en-GB, ko"
     },
-  "manuscriptLanguage": {
-   "type": "string",
-   "enum": ["en", "ko"],
-   "description": "The manuscript language. Composition is direct in this language (ADR-0054); English is an explicit later translation surface. Enforced per project by the identity contract."
-  },
-  "spellingLocale": {
-   "type": "string",
-   "enum": [
-    "en-US",
-    "en-GB",
-    "ko-KR"
-   ],
-   "description": "Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)"
-  },
+    "manuscriptLanguage": {
+      "type": "string",
+      "enum": [
+        "en",
+        "ko"
+      ],
+      "description": "The manuscript language. Composition is direct in this language (ADR-0054); English is an explicit later translation surface. Enforced per project by the identity contract."
+    },
+    "spellingLocale": {
+      "type": "string",
+      "enum": [
+        "en-US",
+        "en-GB",
+        "ko-KR"
+      ],
+      "description": "Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)"
+    },
     "text": {
       "type": "string",
       "minLength": 1,
@@ -100,7 +103,7 @@
     },
     "lengthTarget": {
       "type": "object",
-      "description": "Author-facing length target. Unit is words for English; tolerance is a ratio.",
+      "description": "Author-facing length target. Unit is words for English, characters for Korean (ADR-0054; characters are Unicode code points excluding newlines, spaces included); tolerance is a ratio.",
       "required": [
         "unit",
         "value"
@@ -110,7 +113,8 @@
         "unit": {
           "type": "string",
           "enum": [
-            "words"
+            "words",
+            "characters"
           ]
         },
         "value": {

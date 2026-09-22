@@ -315,9 +315,13 @@ export interface StoryIntake {
   ending_preference?: 'happy' | 'bittersweet' | 'open' | 'tragic' | 'unspecified';
   target_chapters: number;
   /**
-   * English words per chapter (ADR-0034); default 2,500
+   * English words per chapter (ADR-0034); default 2,500. Used when manuscript_language is en (default).
    */
   target_words_per_chapter: number;
+  /**
+   * Korean characters per chapter (code points excluding newlines, ADR-0054); default 5,500. Used when manuscript_language is ko; target_words_per_chapter is ignored then.
+   */
+  target_characters_per_chapter?: number;
   /**
    * Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)
    */

@@ -93,7 +93,7 @@ Rules:
 | `extractor_b` | Event-first sweep: chronological events, participants, frames, then derived facts/knowledge | paraphrased quotes |
 | `extraction_adjudicator` | Decide between conflicting items using only the provided spans; may reject both | picking without quoting |
 | `summarizer_l1` | ≤ 120 words English; plot + state changes + hook; registry names; no evaluation | including plans |
-| `chapter_planner` | Produce a contract satisfying arc beats, cadence, and promise schedule; every knowledge delta needs a channel; length target in words | scheduling reveals that guards forbid |
+| `chapter_planner` | Produce a contract satisfying arc beats, cadence, and promise schedule; every knowledge delta needs a channel; language-aware length target (words for en, characters for ko, ADR-0054) | scheduling reveals that guards forbid |
 | `change_request_interpreter` | Convert free-text change request (any language) into patch tasks with spans or contract edits | rewriting whole chapter |
 
 ## 5. Prompt regression suite

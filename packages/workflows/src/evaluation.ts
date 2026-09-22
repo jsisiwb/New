@@ -17,6 +17,7 @@ import {
   judgeLength,
   measure,
   segmentParagraphs,
+  targetCount,
   toNfcText,
 } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
@@ -109,7 +110,16 @@ export interface DeterministicChecks {
     english_confidence: number;
     non_english_segments: number;
   };
-  readonly length: { passed: boolean; words: number; target: number; ratio: number; warn: boolean };
+  readonly length: {
+    passed: boolean;
+    unit: 'words' | 'characters';
+    count: number;
+    characters: number;
+    words: number;
+    target: number;
+    ratio: number;
+    warn: boolean;
+  };
   readonly truncation: { passed: boolean; reason?: string | undefined };
   readonly contract_shape: { passed: boolean; notes: string[] };
   readonly issues: Issue[];
@@ -150,7 +160,8 @@ export function runDeterministicChecks(
       ),
     );
   const m = measure(nfc);
-  const len = judgeLength(m.words, contract.length_target, ctx.policy.length.fail_tolerance_ratio);
+  const count = targetCount(m, contract.length_target.unit);
+  const len = judgeLength(count, contract.length_target, ctx.policy.length.fail_tolerance_ratio);
   if (len.fail)
     issues.push(
       toIssue(
@@ -162,8 +173,8 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'major',
           confidence: 1,
-          claim: `${m.words} words vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
-          metric: { rule_id: 'LEN-01', value: m.words, threshold: contract.length_target.value },
+          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
+          metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
       ),
@@ -179,8 +190,8 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'minor',
           confidence: 1,
-          claim: `${m.words} words vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
-          metric: { rule_id: 'LEN-01', value: m.words, threshold: contract.length_target.value },
+          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
+          metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
       ),
@@ -266,6 +277,9 @@ export function runDeterministicChecks(
     },
     length: {
       passed: !len.fail,
+      unit: contract.length_target.unit,
+      count,
+      characters: m.characters,
       words: m.words,
       target: contract.length_target.value,
       ratio: len.ratio,

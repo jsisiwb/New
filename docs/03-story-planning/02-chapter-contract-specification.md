@@ -88,8 +88,8 @@ acceptance criteria are satisfied.** All free-text fields in a contract are Engl
 
 `acceptance_criteria[]`: each `{ id, kind: deterministic|judge|human, description, check_ref, threshold? }`.
 Auto-populated: all `must_happen` (judge: contract compliance with evidence), all `must_not_happen`
-(judge + lexical), **output language = English** (deterministic `EP-LANG-01`), length in words
-(deterministic), prose lint fail count = 0, structure lint fail count = 0, register violations (RG-01..03) =
+(judge + lexical), **output language matches the manuscript language** (deterministic `EP-LANG-01`, ADR-0054),
+language-aware length gate (words for en, characters for ko, deterministic), prose lint fail count = 0, structure lint fail count = 0, register violations (RG-01..03) =
 0, `prose_score` ≥ `policy.gates.dimensions.prose.min_score` (Prose Judge), `structure_score` ≥
 `policy.gates.dimensions.structure.min_score` (Structure Judge), `genre_score` and `voice_score` ≥ their
 own thresholds, continuity blocking = 0 (with evidence), knowledge

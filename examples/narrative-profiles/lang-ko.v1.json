@@ -70,12 +70,12 @@
         "fail": 0.75
       },
       "EP-LEN-01": {
-        "warn": 35,
-        "fail": 50
+        "warn": 18,
+        "fail": 25
       },
       "EP-LEN-02": {
-        "warn": 60,
-        "fail": 90
+        "warn": 30,
+        "fail": 45
       },
       "EP-LEN-03": {
         "warn": 4,

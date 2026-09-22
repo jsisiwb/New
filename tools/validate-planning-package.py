@@ -120,7 +120,9 @@ CONTRADICTION_PATTERNS = [
     (r"natively Korean prose", "manuscript prose is English", True),
     (r"\bnative Korean prose\b", "manuscript prose is English", True),
     (r"\bKorean prose (quality|benchmark|output|for one scene)\b", "prose roles write English", True),
-    (r"Korean characters? (per|incl|including)", "length is measured in words for English", True),
+    (r"OUTPUT-EN-001\b", "renamed OUTPUT-LANG-001 by ADR-0054 (per-project manuscript language)", True),
+    (r"length target in words\b|length in words\b|target word count\b",
+     "Korean length targets are characters, English ones words (ADR-0054 amends ADR-0034)", True),
     (r"target_chars_per_chapter|length_target_chars|accepted_chars|cost_per_1k_chars|chars_per_chapter|per_1k_chars",
      "character-based length/cost fields were replaced by words (ADR-0034)", True),
     (r"english_leakage|English leakage", "English is the output language, never leakage", True),
@@ -155,6 +157,15 @@ NEGATION_CONTEXT = re.compile(
 )
 # Files where historical references to the old design are legitimately allowed (they describe the change).
 CONTRADICTION_ALLOWLIST = {
+    # Historical records that legitimately name the old ID when describing its rename/replacement:
+    "docs/08-delivery/08-correction-changelog.md",
+    "docs/08-delivery/07-plan-audit.md",
+    "docs/adr/0054-korean-manuscript-language.md",
+    # Frozen English-lineage artifacts (ADR-0054): legacy prompt metadata and its generator are
+    # immutable history; "length target in words" is correct for the English versions they describe.
+    "packages/prompts/families/chapter_planner/v1.0.0/prompt.json",
+    "tools/seed-prompt-families.py",
+
     "docs/adr/0026-english-manuscript-korean-webnovel-tradition.md",
     "docs/adr/0027-narrative-identity-guard.md",
     "docs/adr/0028-english-prose-tooling-replaces-korean-nlp.md",

@@ -63,14 +63,14 @@ export interface ContextPack {
   readonly ladderSteps: readonly LadderStep[];
   readonly validation: ValidationReport;
   readonly narrativeIdentityRef:
-      | {
-          readonly blockHash: string;
-          readonly identityVersionId: string;
-          readonly roleVariant: string;
-          readonly outputLanguage: 'en' | 'ko';
-          readonly outputLanguageContractHash: string;
-          readonly traditionContractHash: string;
-        }
+    | {
+        readonly blockHash: string;
+        readonly identityVersionId: string;
+        readonly roleVariant: string;
+        readonly outputLanguage: 'en' | 'ko';
+        readonly outputLanguageContractHash: string;
+        readonly traditionContractHash: string;
+      }
     | undefined;
 }
 
