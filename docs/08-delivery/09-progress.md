@@ -1337,3 +1337,23 @@ Cloudflare terminates any origin response that has not completed within ~100s. A
 prompts (character/world/power/story_architect, 15–40KB) reliably exceed it: five consecutive
 character_designer attempts all 524'd. The run is resumable (`novel:resume`) as soon as the bridge
 serves long calls — streaming the response, or an endpoint without Cloudflare's response cap.
+
+## Live run v2.2.x — 2026-09-22 (Bible complete; chapters gated by the account's 5-hour quota)
+
+The live Genspark run completed the full planning chain on a fresh v2.2.4 project: story spec →
+2 concepts → concept 2 approved → **200-chapter Bible complete and reviewed** (character 319 s,
+world 153 s, power 175 s, architect/blueprint 324 s — all schema-valid through the live bridge).
+Blueprint review (workflow_artifacts series_blueprint): 4 authored seasons covering exactly
+chapters 1–200 with slow-burn structure (survival + first flag break at ch1–3, first growth at
+ch8–12, C-rank at ch50–60), 31 promises with due windows spread across the series, a 5-stage
+heroine fate-line system as the harem engine, 12 endgame requirements — the Step-5 complaint
+(front-loaded events) is verifiably fixed in the output.
+
+The chapter stage is blocked at arc_plan: the operator's Genspark account hit its **AI Chat
+5-hour limit** (429 on both models; verified by direct probes). The run is checkpointed and
+resumable — `novel:resume` + `novel:run` continues with arc_plan and then chapters 1–2
+(stop-after=2) once the quota window resets. Prompt iterations driven by the live run landed as
+v2.2.1 (designer/scene-planner shapes), v2.2.2 (seasons/promises/arcs normalizer shapes),
+v2.2.3 (story-clock objects), v2.2.4 (assumption confirmation rule); transport fixes: raw
+node http/https in HttpProvider (undici's 300 s idle wall), path-prefix preservation,
+YEONJAE_GENSPARK_TIMEOUT_MS wiring.
