@@ -1310,9 +1310,30 @@ tests across 117 suites** (both DB-gated integration families and unit suites), 
 the new Korean-length and contract-unit tests; prompts registry 56 versions, active set 25/25 at
 `@2.0.0`, hashes verified; variable-surface audit `ALL 25 MATCH ENGLISH EXACTLY`; contrast corpus
 re-frozen (2,000 entries byte-identical, pins → `@2.0.0`) and green; planning-package validation
-`ALL OK` including the two new regression guards (unqualified "length in words" claims, stale
-`OUTPUT-EN-001` references). Two latent test defects found and fixed with the milestone: the
+`ALL OK` including the two new regression guards (unqualified English-unit length claims, stale
+pre-ADR-0054 requirement ids). Two latent test defects found and fixed with the milestone: the
 migration-replay "newest migration must change privileges" assumption (0020 is constraint-only) and
 the CLI `prompts:list` count (31 → 56). The Genspark bridge was re-verified live against the
 `/v1/complete` provider protocol; `YEONJAE_GENSPARK_URL` now opts the provider into non-loopback
 endpoints only when explicitly configured.
+
+## Live genspark run — 2026-09-22 (blocked at bible stage by bridge transport)
+
+First live end-to-end run (`YEONJAE_PROVIDER_MODE=genspark`, R-class `claude-opus-4-6`, P/M/C
+`gemini-3.8-flash`) on "엑스트라로 세계를 구하는 방법" (200화, ko, romance-fantasy/academy/possession):
+intake → story spec → assumptions → 2 concepts (both schema-valid, authentic Korean-webnovel craft)
+→ concept 2 approved → planning started. Two live-path prompt defects were found and fixed as new
+immutable versions: v2.1.0 added the plan-required output-schema field reminders
+(docs/05-generation/03 §2.7) and the canonical judge shape; v2.2.0 filled the reminders with the
+schemas' exact enums after the requirement_interpreter category failure. Also fixed: Genspark
+provider tunnel wiring (explicit `YEONJAE_GENSPARK_URL` opts into non-loopback; Bearer token wired),
+HttpProvider outputSchema pass-through, and a real concurrent prompt-registration race in
+`upsertPromptVersions`.
+
+**Blocked (external, evidence in llm_calls):** the operator's bridge endpoint is a trycloudflare.com
+tunnel, and the remote bridge buffers full responses. Measured directly: a small-input
+`claude-opus-4-6` call (6,000 max tokens) returns 200 at 112s, but a 31KB-input call 524s at ~126s —
+Cloudflare terminates any origin response that has not completed within ~100s. All bible-stage
+prompts (character/world/power/story_architect, 15–40KB) reliably exceed it: five consecutive
+character_designer attempts all 524'd. The run is resumable (`novel:resume`) as soon as the bridge
+serves long calls — streaming the response, or an endpoint without Cloudflare's response cap.
