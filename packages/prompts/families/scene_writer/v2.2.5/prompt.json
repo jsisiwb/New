@@ -1,0 +1,39 @@
+{
+  "family": "scene_writer",
+  "version": "2.2.5",
+  "role": "scene_writer",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "writer_full",
+  "model_class": "P",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plan",
+    "scene_no",
+    "previous_text",
+    "canon_state",
+    "knowledge_lists",
+    "register_digests",
+    "open_promises",
+    "length_target_words"
+  ],
+  "output_schema": "scene-draft.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.85,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.2.5 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders with exact schema enums (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "scene_writer.fixture.smoke"
+  ],
+  "content_hash": "sha256:31bc9426f22cc1bccf78a8fd37bd6035997d0cebae0cc91e365ca8879b99c2c2"
+}

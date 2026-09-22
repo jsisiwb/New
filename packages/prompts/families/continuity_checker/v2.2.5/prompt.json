@@ -1,0 +1,36 @@
+{
+  "family": "continuity_checker",
+  "version": "2.2.5",
+  "role": "continuity_checker",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "chapter_text",
+    "canon_state",
+    "locked_facts",
+    "recent_events",
+    "world_rules",
+    "timeline_position"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.2.5 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders with exact schema enums (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "continuity_checker.fixture.smoke"
+  ],
+  "content_hash": "sha256:871d43545b187e41ef657506bc333daa081eba32f9fbabe64258165a01b2fac2"
+}
