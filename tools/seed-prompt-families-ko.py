@@ -20,7 +20,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, "packages", "prompts", "families")
 VERSION_SPEC = "2.0.0"
-NEW_VERSION = "2.2.0"
+NEW_VERSION = "2.2.1"
 
 NIB = "{{narrative_identity_block}}"
 TAIL = "{{identity_tail}}"
@@ -287,7 +287,8 @@ FAMILIES = {
 {COMMON}
 - 인물마다: display_name(작명 프로필에 따른 한국어 원고 이름), 역할, 시작 나이, 배경, 목표, 결점, 비밀(각각 하나의 명제), 아크, 목소리 노트, 주요 상대에 대한 기본 대화 등록(격식, 존중, 친밀도, 직설성, 호칭, 타이틀)을 추상 데이터로 작성한다.
 - 비밀은 시작 시점에 아는 사람을 반드시 적는다. 숨은 정체는 공개 시점(리빌 윈도)이 있어야 한다.
-출력 형태: {{"characters": [...], "propositions": [{{"statement": "...", "kind": "...", "secret": {{...}}}}]}}
+출력 형태: {{"characters": [{{"display_name": "...", "role": "protagonist|antagonist|ally|mentor|love_interest|foil", "age_at_start": 18, "background": "...", "goals": ["..."], "flaws": ["..."], "secrets": [{{"statement": "...", "known_by": ["이름"], "reveal_not_before_chapter": 3}}], "arc": {{"start_state": "...", "end_state": "...", "turning_points": [{{"description": "...", "chapter_from": 4, "chapter_to": 5}}]}}, "voice_notes": ["..."], "short_forms": ["..."], "aliases": ["..."], "rank": "F", "registers": [{{"toward": "상대 캐릭터 이름", "type": "mentor|rival|superior|subordinate|equal", "formality": 3, "deference": 3, "familiarity": 1, "directness": 2, "contractions": "neutral", "address_terms": ["호칭"]}}]}}], "propositions": [{{"statement": "...", "kind": "fact|belief|secret", "secret": {{...}}, "entity_names": ["..."]}}]}}
+- registers는 배열이다: 주요 상대마다 하나씩. 배열이 아니면 워크플로가 거부한다.
 
 {NIB}""",
         user="""[STORY SPEC]
@@ -305,7 +306,7 @@ FAMILIES = {
 {COMMON}
 - 세계 규칙, 제도, 지리, 세력, 장소를 엔티티 제안과 잠금 사실(locked-fact) 후보로 작성하고 용어 목록을 만든다. 규칙은 숫자로 명확히(비용·한계·주기).
 - 게임/시스템물 장르의 경우 상태창·등급·성장치 같은 직렬 장치가 세계 규칙과 일관되어야 한다.
-출력 형태: {{"rules": [...], "locations": [...], "factions": [...], "terminology": [...], "locked_facts": [...]}}
+출력 형태: {{"world_rules": [{{"attribute": "...", "statement": "...", "value": ..., "locked": true}}], "locations": [{{"display_name": "...", "description": "...", "aliases": ["..."]}}], "organizations": [{{"display_name": "...", "description": "...", "short_forms": ["..."]}}], "terminology": [{{"term": "...", "decision": "translate|romanize|gloss|preserve", "english": "..."}}]}}
 
 {NIB}""",
         user="""[STORY SPEC]
@@ -320,7 +321,7 @@ FAMILIES = {
 {COMMON}
 - 등급/단계, 비용, 한계, 성장 주기, 후반 밸런스를 숫자 사실로 설계한다. 비마법적 성장(사회·자산·권력)도 장르에 맞으면 포함한다.
 - 성장 곡선은 '고구마→사이다' 감정 리듬과 진행 보상 주기를 지원해야 한다. 초반 능력치 폭주는 금지한다.
-출력 형태: {{"ranks": [...], "progression_rules": [...], "milestones": [...], "locked_facts": [...]}}
+출력 형태: {{"system_rules": [{{"attribute": "...", "statement": "...", "locked": true}}], "ranks": [{{"name": "...", "description": "..."}}], "abilities": [{{"display_name": "...", "description": "...", "owner": "캐릭터 이름"}}], "milestones": [{{"description": "...", "chapter_from": 1, "chapter_to": 10}}]}}
 
 {NIB}""",
         user="""[STORY SPEC]
@@ -430,7 +431,8 @@ FAMILIES = {
 - 장면마다: 목적, POV, 참여자, 장소, 이야기 시간, 비트(유형·감정 목표·공개 정보), 진입/이탈 상태, 대화 밀도, 길이, 오프닝/엔딩 비트 유형, 연속 앵커, must-not, 발화 쌍(등록 선해결)을 적는다.
 - 장면은 행동·대화·반응·내면의 회전 리듬으로 움직여야 한다. 한 장면이 늘어지면 안 된다. 각 장면의 length_target은 글자 수(공백 포함)이고, 합계가 회차 계약의 목표 ±12% 안에 들어와야 한다.
 - 상태창/시스템 메시지 같은 직렬 장치는 장르 프로필이 허용할 때만, 회차당 과도하지 않게 배치한다.
-출력 형태: {{"scenes": [...]}}
+출력 형태: {{"scenes": [{{"scene_no": 1, "objective": "이 장면의 목적", "pov": {{"character_id": "엔티티 id"}}, "participants": ["엔티티 id"], "location_id": "엔티티 id", "beats": [{{"type": "action|dialogue|reaction|interior", "description": "...", "emotion": "...", "reveal": "..."}}], "length_target": {{"unit": "characters", "value": 1800, "tolerance_ratio": 0.12}}, "speaker_pairs": [{{"a": "캐릭터 이름", "b": "캐릭터 이름"}}], "story_time": {{"offset": "..."}}, "entry_state": "...", "exit_state": "...", "opening_beat_type": "...", "ending_beat_type": "...", "dialogue_density_target": 0.5, "continuity_anchors": ["..."], "must_not": ["..."]}}]}}
+- pov는 회차 계약의 참여자여야 하고, location_id는 계약의 장소여야 한다. length_target의 합계는 회차 목표 ±12%.
 
 {NIB}""",
         user="""[CHAPTER CONTRACT]
