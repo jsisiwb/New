@@ -20,7 +20,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, "packages", "prompts", "families")
 VERSION_SPEC = "2.0.0"
-NEW_VERSION = "2.2.3"
+NEW_VERSION = "2.2.4"
 
 NIB = "{{narrative_identity_block}}"
 TAIL = "{{identity_tail}}"
@@ -213,7 +213,7 @@ USER_OVERRIDES = {
 # explicitly excluded. Shapes mirror the workflow's parsers field-for-field.
 REMINDERS = {
     "requirement_interpreter": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. project_id/version은 워크플로가 채운다]
-{"items": [{"id": "REQ-001", "kind": "hard|soft|assumption", "category": "genre|premise|character|world|progression|romance|tone|ending|structure|length|mandatory_scene|forbidden_development|content_restriction|style|audience|direction|other", "text": "...", "language": "ko", "provenance": "user|system_default|model_inferred", "confirmed_by_user": true, "scope": {"level": "series|season|arc|chapter_range|character|relationship"}}], "conflicts": [...]}""",
+{"items": [{"id": "REQ-001", "kind": "hard|soft|assumption", "category": "genre|premise|character|world|progression|romance|tone|ending|structure|length|mandatory_scene|forbidden_development|content_restriction|style|audience|direction|other", "text": "...", "language": "ko", "provenance": "user|system_default|model_inferred", "confirmed_by_user": true는 hard/soft에만; assumption이면 false, "scope": {"level": "series|season|arc|chapter_range|character|relationship"}}], "conflicts": [...]}""",
     "concept_generator": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. id/project_id/spec_version/status는 워크플로가 채운다]
 {"angle": "...", "logline": "...", "story_promise": "...", "reader_fantasy": "...", "main_conflict": "...", "protagonist_sketch": "...", "chapter_one_hook": "...", "ending_direction": "...", "progression_curve": "...", "differentiators": ["..."], "genre_fit_notes": ["..."], "risk_notes": ["..."]}""",
     "story_architect": """[OUTPUT SCHEMA — 이 JSON 필드를 반환한다. project_id/version/pinned/foreshadowing_register/시즌과 약속의 id는 워크플로가 채운다]

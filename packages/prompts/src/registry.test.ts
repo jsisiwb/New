@@ -28,7 +28,7 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 181;
+const TOTAL_PROMPT_VERSIONS = 206;
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -148,7 +148,7 @@ describe('prompt registry (ADR-0016)', () => {
     const set = reg.activeSet();
     expect(Object.keys(set.mapping)).toHaveLength(25);
     for (const fam of Object.keys(set.mapping)) {
-      expect(set.mapping[fam], fam).toBe(`${fam}@2.2.3`);
+      expect(set.mapping[fam], fam).toBe(`${fam}@2.2.4`);
     }
     expect(set.id).toMatch(/^set:[0-9a-f]{16}$/);
   });
