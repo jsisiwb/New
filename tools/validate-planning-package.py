@@ -54,6 +54,7 @@ EXAMPLES = [
     ("examples/fixture/chapter-contract.ch12.json", "chapter-contract.schema.json"),
     ("examples/fixture/canon-delta.ch09.json", "canon-delta.schema.json"),
     ("examples/narrative-profiles/lang-en.v1.json", "narrative-identity.schema.json"),
+    ("examples/narrative-profiles/lang-ko.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/tradition-kr-webnovel.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/genre-hunter-gate.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/genre-regression.v1.json", "narrative-identity.schema.json"),
@@ -119,7 +120,9 @@ CONTRADICTION_PATTERNS = [
     (r"natively Korean prose", "manuscript prose is English", True),
     (r"\bnative Korean prose\b", "manuscript prose is English", True),
     (r"\bKorean prose (quality|benchmark|output|for one scene)\b", "prose roles write English", True),
-    (r"Korean characters? (per|incl|including)", "length is measured in words for English", True),
+    (r"OUTPUT-EN-001\b", "renamed OUTPUT-LANG-001 by ADR-0054 (per-project manuscript language)", True),
+    (r"length target in words\b|length in words\b|target word count\b",
+     "Korean length targets are characters, English ones words (ADR-0054 amends ADR-0034)", True),
     (r"target_chars_per_chapter|length_target_chars|accepted_chars|cost_per_1k_chars|chars_per_chapter|per_1k_chars",
      "character-based length/cost fields were replaced by words (ADR-0034)", True),
     (r"english_leakage|English leakage", "English is the output language, never leakage", True),
@@ -143,6 +146,8 @@ CONTRADICTION_PATTERNS = [
     (r"scorecard\s*(≥|>=)\s*(tier threshold|\d)", "gates are per dimension, never an aggregate scorecard (ADR-0041)", True),
     (r"early_stop_threshold", "early stop is per-dimension margin in the Production Policy (ADR-0041)", True),
     (r"auto_acceptable", "renamed acceptance.auto_approvable (ADR-0037)", True),
+    (r"manuscript (is|must be|output is) always English", "manuscript language is per project (en|ko, ADR-0054)", True),
+    (r"never (compose[sd]?|writes?|produce[sd]?) .{0,20}Korean", "Korean is a first-class manuscript language (ADR-0054)", True),
 ]
 NEGATION_CONTEXT = re.compile(
     r"never|does not|do not|must not|cannot|no translation|NO-TRANSLATION|replace|supersed|removed|instead|"
@@ -152,6 +157,15 @@ NEGATION_CONTEXT = re.compile(
 )
 # Files where historical references to the old design are legitimately allowed (they describe the change).
 CONTRADICTION_ALLOWLIST = {
+    # Historical records that legitimately name the old ID when describing its rename/replacement:
+    "docs/08-delivery/08-correction-changelog.md",
+    "docs/08-delivery/07-plan-audit.md",
+    "docs/adr/0054-korean-manuscript-language.md",
+    # Frozen English-lineage artifacts (ADR-0054): legacy prompt metadata and its generator are
+    # immutable history; "length target in words" is correct for the English versions they describe.
+    "packages/prompts/families/chapter_planner/v1.0.0/prompt.json",
+    "tools/seed-prompt-families.py",
+
     "docs/adr/0026-english-manuscript-korean-webnovel-tradition.md",
     "docs/adr/0027-narrative-identity-guard.md",
     "docs/adr/0028-english-prose-tooling-replaces-korean-nlp.md",

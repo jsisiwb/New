@@ -50,9 +50,9 @@ export interface ContextPackManifest {
     identity_version_id: string;
     role_variant?: string;
     /**
-     * The required manuscript language. Extensible only by a future ADR; never weakened in MVP/Beta/Production.
+     * The manuscript language. Composition is direct in this language (ADR-0054); English is an explicit later translation surface. Enforced per project by the identity contract.
      */
-    output_language?: 'en';
+    output_language?: 'en' | 'ko';
     output_language_contract_hash: string;
     tradition_contract_hash: string;
     /**

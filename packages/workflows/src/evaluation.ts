@@ -17,6 +17,7 @@ import {
   judgeLength,
   measure,
   segmentParagraphs,
+  targetCount,
   toNfcText,
 } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
@@ -109,7 +110,16 @@ export interface DeterministicChecks {
     english_confidence: number;
     non_english_segments: number;
   };
-  readonly length: { passed: boolean; words: number; target: number; ratio: number; warn: boolean };
+  readonly length: {
+    passed: boolean;
+    unit: 'words' | 'characters';
+    count: number;
+    characters: number;
+    words: number;
+    target: number;
+    ratio: number;
+    warn: boolean;
+  };
   readonly truncation: { passed: boolean; reason?: string | undefined };
   readonly contract_shape: { passed: boolean; notes: string[] };
   readonly issues: Issue[];
@@ -126,9 +136,11 @@ export function runDeterministicChecks(
   const nfc = toNfcText(version.text);
   const issues: Issue[] = [];
   let n = 0;
+  const language: 'en' | 'ko' = ctx.identity.outputLanguage.language ?? 'en';
   const lang = checkOutputLanguage(nfc, {
     minConfidence: ctx.policy.output_language.min_english_confidence,
     allowlist,
+    language,
   });
   if (!lang.passed)
     issues.push(
@@ -148,7 +160,8 @@ export function runDeterministicChecks(
       ),
     );
   const m = measure(nfc);
-  const len = judgeLength(m.words, contract.length_target, ctx.policy.length.fail_tolerance_ratio);
+  const count = targetCount(m, contract.length_target.unit);
+  const len = judgeLength(count, contract.length_target, ctx.policy.length.fail_tolerance_ratio);
   if (len.fail)
     issues.push(
       toIssue(
@@ -160,8 +173,8 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'major',
           confidence: 1,
-          claim: `${m.words} words vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
-          metric: { rule_id: 'LEN-01', value: m.words, threshold: contract.length_target.value },
+          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
+          metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
       ),
@@ -177,8 +190,8 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'minor',
           confidence: 1,
-          claim: `${m.words} words vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
-          metric: { rule_id: 'LEN-01', value: m.words, threshold: contract.length_target.value },
+          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
+          metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
       ),
@@ -264,6 +277,9 @@ export function runDeterministicChecks(
     },
     length: {
       passed: !len.fail,
+      unit: contract.length_target.unit,
+      count,
+      characters: m.characters,
       words: m.words,
       target: contract.length_target.value,
       ratio: len.ratio,
@@ -428,7 +444,7 @@ export async function evaluateVersion(
         activityId: act('prose_judge'),
         variables: {
           chapter_text: chapterText,
-          prose_lint_report: `English output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.words} words.`,
+          prose_lint_report: `${input.contract.length_target.unit === 'characters' ? 'Korean' : 'English'} output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.count} ${det.length.unit}.`,
         },
         block: compileFor(ctx, 'judge_rubric_prose'),
       });

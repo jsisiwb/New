@@ -114,7 +114,10 @@ export function composeIdentity(
   const trad = store.get(tradRef).tradition;
   if (!lang?.contract_text) throw new ContractMissingError('output_language');
   if (!trad?.contract_text) throw new ContractMissingError('tradition');
-  if (lang.language !== 'en') throw new Error(`OUTPUT_LANGUAGE_UNSUPPORTED: ${lang.language}`);
+  // ADR-0054: English and Korean are both supported manuscript languages. The profile's language is
+  // authoritative; anything else is unsupported.
+  if (lang.language !== 'en' && lang.language !== 'ko')
+    throw new Error(`OUTPUT_LANGUAGE_UNSUPPORTED: ${lang.language}`);
 
   const genres = (lineage.genres ?? []).map((ref) => {
     const g = store.get(ref).genre;

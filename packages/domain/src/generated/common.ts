@@ -23,19 +23,19 @@ export type Timestamp = string;
  */
 export type LanguageCode = string;
 /**
- * The required manuscript language. Extensible only by a future ADR; never weakened in MVP/Beta/Production.
+ * The manuscript language. Composition is direct in this language (ADR-0054); English is an explicit later translation surface. Enforced per project by the identity contract.
  *
  * This interface was referenced by `CommonDefinitions`'s JSON-Schema
  * via the `definition` "manuscriptLanguage".
  */
-export type ManuscriptLanguage = 'en';
+export type ManuscriptLanguage = 'en' | 'ko';
 /**
- * Spelling and punctuation locale for English manuscripts
+ * Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)
  *
  * This interface was referenced by `CommonDefinitions`'s JSON-Schema
  * via the `definition` "spellingLocale".
  */
-export type SpellingLocale = 'en-US' | 'en-GB';
+export type SpellingLocale = 'en-US' | 'en-GB' | 'ko-KR';
 /**
  * UTF-8, NFC-normalized text. Working text (plans, canon statements, issues) is English; the language of user-authored text is recorded alongside it where it may vary.
  *
@@ -164,7 +164,7 @@ export type ManuscriptStatus =
 export type ManuscriptOrigin = 'assembled' | 'revision' | 'candidate' | 'retcon' | 'imported';
 
 /**
- * Shared primitive types referenced by all Yeonjae Studio schemas. Text fields are language-neutral; where the language may vary, an explicit language code accompanies the text. Manuscript text is English (OUTPUT-EN-001).
+ * Shared primitive types referenced by all Yeonjae Studio schemas. Text fields are language-neutral; where the language may vary, an explicit language code accompanies the text. Manuscript text follows the project manuscript language, en or ko (OUTPUT-LANG-001, ADR-0054).
  */
 export interface CommonDefinitions {
   [k: string]: unknown | undefined;
@@ -202,13 +202,13 @@ export interface LengthModel {
   est_reading_seconds?: number;
 }
 /**
- * Author-facing length target. Unit is words for English; tolerance is a ratio.
+ * Author-facing length target. Unit is words for English, characters for Korean (ADR-0054; characters are Unicode code points excluding newlines, spaces included); tolerance is a ratio.
  *
  * This interface was referenced by `CommonDefinitions`'s JSON-Schema
  * via the `definition` "lengthTarget".
  */
 export interface LengthTarget {
-  unit: 'words';
+  unit: 'words' | 'characters';
   value: number;
   tolerance_ratio?: number;
 }

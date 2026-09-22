@@ -25,7 +25,7 @@ Likelihood (L) / Impact (I): 1 low – 3 high. Owner = subsystem.
 | R19 | Regression/possession timeline semantics confuse extraction | 2 | 2 | explicit frames + timeline IDs + per-timeline truth (ADR-0031); genre-specific extractor guidance; fixture traps T7/T8/T15 | — |
 | R20 | Human review becomes the bottleneck | 2 | 2 | Semi-auto per-dimension gates (ADR-0041); keyboard-first queue; policy approval for clean chapters | — |
 | R21 | Model updates change behavior silently | 2 | 2 | pinned model versions in routing; regression suite (incl. contrast sets) on model change | — |
-| R22 | Length control drift (chapters too long/short in words) | 2 | 1 | scene-level word targets; tolerance; continuation protocol; length model calibration | — |
+| R22 | Length control drift (chapters too long/short (words for en, characters for ko)) | 2 | 1 | scene-level word targets; tolerance; continuation protocol; length model calibration | — |
 | R23 | Thresholds treated as truths and never calibrated | 2 | 2 | calibration status on every threshold (ADR-0029); Phase 4 calibration round; UI shows status | any `uncalibrated` threshold in Production → flag |
 | R24 | Offset mismatch across runtimes corrupts evidence/highlights | 1 | 3 | single code-point addressing standard + conformance vector in every runtime (ADR-0030) | — |
 | R25 | Embedding provider change breaks retrieval | 1 | 2 | per-model embedding sets with atomic active flip (ADR-0035) | — |

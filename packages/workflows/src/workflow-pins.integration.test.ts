@@ -13,6 +13,9 @@ import { createHarness, REPLAY_ROUTING, type Harness } from './testkit.js';
 const dbAvailable = !!databaseUrl();
 
 function upgradedRegistry(options: { omitHistorical?: boolean; changeHistorical?: boolean } = {}) {
+  // Simulated "next deployment" version number — must not collide with real registry versions
+  // (real v2.0.0 Korean prompt families exist since ADR-0054).
+  const NEXT_VERSION = '9.9.9';
   const source = PromptRegistry.fromDirectory();
   const registry = new PromptRegistry();
   for (const version of source.list()) {
@@ -21,7 +24,11 @@ function upgradedRegistry(options: { omitHistorical?: boolean; changeHistorical?
       version.id === source.activeSet().mapping.world_builder
     ) {
       const meta = { ...version, content_hash: undefined };
-      registry.add({ ...meta, version: '2.0.0' }, version.system_template, version.user_template);
+      registry.add(
+        { ...meta, version: NEXT_VERSION },
+        version.system_template,
+        version.user_template,
+      );
       if (options.omitHistorical) continue;
       if (options.changeHistorical) {
         registry.add(
@@ -149,7 +156,7 @@ describe.skipIf(!dbAvailable)('deployment-safe persisted workflow pins (ADR-0053
       });
       const fresh = (await open(kind, registry, next.projectId)).ctx;
       expect(fresh.promptSet.id).toBe(registry.activeSet().id);
-      expect(fresh.promptSet.mapping.scene_writer).toBe('scene_writer@2.0.0');
+      expect(fresh.promptSet.mapping.scene_writer).toBe('scene_writer@9.9.9');
       expect((await pool.query('SELECT id FROM llm_calls')).rows).toHaveLength(0);
     });
 
@@ -305,6 +312,7 @@ describe.skipIf(!dbAvailable)('deployment-safe persisted workflow pins (ADR-0053
     );
     expect(after.rows).toEqual(expect.arrayContaining(before.rows));
     expect(after.rows.length - before.rows.length).toBe(10);
-    expect(after.rows.some((call) => call.prompt_version_id === 'scene_writer@2.0.0')).toBe(false);
+    // The upgraded deployment's new scene_writer version (9.9.9) must not be used: the job is pinned.
+    expect(after.rows.some((call) => call.prompt_version_id === 'scene_writer@9.9.9')).toBe(false);
   }, 60_000);
 });

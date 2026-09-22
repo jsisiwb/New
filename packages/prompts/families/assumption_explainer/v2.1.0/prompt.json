@@ -1,0 +1,31 @@
+{
+  "family": "assumption_explainer",
+  "version": "2.1.0",
+  "role": "assumption_explainer",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "C",
+  "input_variables": [
+    "assumptions_json"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 1000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.1.0 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "assumption_explainer.fixture.smoke"
+  ],
+  "content_hash": "sha256:5c1ef5b2e13af72d24c369785bbd153bf2c6029c3f11db11848aabc357d4f42d"
+}

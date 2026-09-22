@@ -10,7 +10,7 @@
   every commit, and are marked stale when dependencies change.
 - Plans are Korean-webnovel-shaped: hook/cadence/payoff structure comes from the Narrative-Tradition
   Profile's structure rules (`planner_compact` block) and the genre overlays; manuscripts realizing them are
-  English (OUTPUT-EN-001, STYLE-KWN-001).
+  composed in the project manuscript language, `en` or `ko` (OUTPUT-LANG-001, STYLE-KWN-001).
 - **Planned ≠ happened**: plan objects live in `plan_*` tables and are stored as `frame=plan` when they
   appear in context; they never appear in canonical event tables until an accepted chapter realizes them.
 

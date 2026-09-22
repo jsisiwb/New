@@ -241,7 +241,7 @@ export async function planScenes(
         const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
         if (Math.abs(total / target - 1) > tol)
           issues.push(
-            `scene word targets sum to ${total}, chapter target is ${target} (±${tol * 100}%)`,
+            `scene length targets sum to ${total}, chapter target is ${target} ${input.contract.length_target.unit} (±${tol * 100}%)`,
           );
       }
       if (issues.length > 0)

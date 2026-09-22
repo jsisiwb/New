@@ -1,0 +1,37 @@
+{
+  "family": "chapter_comparator",
+  "version": "2.2.1",
+  "role": "chapter_comparator",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "contract_shape",
+    "candidate_a",
+    "candidate_b",
+    "scorecard_a",
+    "scorecard_b",
+    "presentation_order",
+    "rubric_order"
+  ],
+  "output_schema": "comparison-verdict.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.2.1 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders with exact schema enums (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "chapter_comparator.fixture.smoke"
+  ],
+  "content_hash": "sha256:faef3548a7f14e8071b76ee1295b9cec8ca4dcdb00ea53e59d08bf65625319cc"
+}

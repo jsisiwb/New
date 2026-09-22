@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yeonjae.studio/schemas/story-intake.schema.json",
   "title": "Story Intake",
-  "description": "User-provided premise and requirements at project creation (FR-1.1). Free text may be in any language; manuscript output is always English (OUTPUT-EN-001).",
+  "description": "User-provided premise and requirements at project creation (FR-1.1). Free text may be in any language; manuscript output is composed in the project's manuscript language (en or ko, ADR-0054).",
   "type": "object",
   "required": [
     "title_working",
@@ -175,11 +175,21 @@
       "type": "integer",
       "minimum": 500,
       "maximum": 8000,
-      "description": "English words per chapter (ADR-0034); default 2,500"
+      "description": "English words per chapter (ADR-0034); default 2,500. Used when manuscript_language is en (default)."
+    },
+    "target_characters_per_chapter": {
+      "type": "integer",
+      "minimum": 500,
+      "maximum": 20000,
+      "description": "Korean characters per chapter (code points excluding newlines, ADR-0054); default 5,500. Used when manuscript_language is ko; target_words_per_chapter is ignored then."
     },
     "spelling_locale": {
       "$ref": "common.schema.json#/$defs/spellingLocale",
       "default": "en-US"
+    },
+    "manuscript_language": {
+      "$ref": "common.schema.json#/$defs/manuscriptLanguage",
+      "description": "Language the manuscript is composed in (en or ko, ADR-0054). Defaults to en when unset so existing English projects and the fixture lineage keep working; Korean projects set ko explicitly."
     },
     "mandatory_scenes": {
       "type": "array",

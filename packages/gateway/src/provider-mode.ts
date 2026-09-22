@@ -132,6 +132,16 @@ export function resolveProvidersFromEnv(
             'genspark',
             new GensparkProvider({
               baseUrl: env.YEONJAE_GENSPARK_URL ?? DEFAULT_GENSPARK_BRIDGE_URL,
+              // An explicitly configured bridge URL (e.g. a tunnel to the operator's bridge host) is
+              // deliberate operator config; the default stays loopback-only.
+              ...(env.YEONJAE_GENSPARK_URL ? { allowNonLoopback: true } : {}),
+              // Big bible-stage calls can run many minutes on a long-timeout bridge.
+              ...(env.YEONJAE_GENSPARK_TIMEOUT_MS
+                ? { timeoutMs: Number(env.YEONJAE_GENSPARK_TIMEOUT_MS) }
+                : {}),
+              ...(env.YEONJAE_GENSPARK_TOKEN
+                ? { headers: { authorization: `Bearer ${env.YEONJAE_GENSPARK_TOKEN}` } }
+                : {}),
             }),
           ],
         ]),

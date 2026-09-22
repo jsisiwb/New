@@ -1,0 +1,32 @@
+{
+  "family": "prose_judge",
+  "version": "2.2.5",
+  "role": "prose_judge",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_prose",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "prose_lint_report"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.2.5 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders with exact schema enums (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "prose_judge.fixture.smoke"
+  ],
+  "content_hash": "sha256:e5a782aa72d328dd50e2e55cb7b9679486f48cc608af9bf8240044e08a44a49a"
+}

@@ -46,11 +46,14 @@ export function identityProfileFromIntake(
   store: ProfileStore,
 ): NarrativeProfile {
   const known = new Set(store.list().map((p) => `${p.id}@${p.version}`));
-  const lang = store.get('lang/en@1').output_language;
+  // ADR-0054: manuscript language is per-project. `manuscript_language` in the intake chooses the
+  // Output-Language profile; unset keeps the legacy English default so the fixture lineage is stable.
+  const langRef = intake.manuscript_language === 'ko' ? 'lang/ko@1' : 'lang/en@1';
+  const lang = store.get(langRef).output_language;
   const trad = store.get('tradition/kr-webnovel@1').tradition;
   if (!lang?.contract_text || !trad?.contract_text)
     throw new Error(
-      'the global lang/en@1 and tradition/kr-webnovel@1 profiles must carry contract text',
+      `the global ${langRef} and tradition/kr-webnovel@1 profiles must carry contract text`,
     );
   const overlays = [intake.genre.primary, ...(intake.genre.secondary ?? [])]
     .map((g) => GENRE_PROFILES[g])
@@ -78,7 +81,7 @@ export function identityProfileFromIntake(
     version: 1,
     name: `${intake.title_working} — composed narrative identity`,
     lineage: {
-      output_language: 'lang/en@1',
+      output_language: langRef,
       tradition: 'tradition/kr-webnovel@1',
       ...(genres.length > 0 ? { genres } : {}),
       ...(primary ? { primary_genre: primary } : {}),
@@ -86,8 +89,8 @@ export function identityProfileFromIntake(
     // The two contracts are copied VERBATIM from the global layers with their hashes: a composed profile
     // must carry them (schema), and `composeIdentity` refuses any text that differs from the global one.
     output_language: {
-      language: 'en',
-      locale: intake.spelling_locale ?? 'en-US',
+      language: lang.language ?? (intake.manuscript_language === 'ko' ? 'ko' : 'en'),
+      locale: intake.manuscript_language === 'ko' ? 'ko-KR' : (intake.spelling_locale ?? 'en-US'),
       contract_text: lang.contract_text,
       contract_hash: lang.contract_hash ?? sha256(lang.contract_text),
     },

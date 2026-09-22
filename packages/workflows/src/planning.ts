@@ -19,6 +19,7 @@ import {
 import { type Generated, validatorFor } from '@yeonjae/domain';
 import { compileActiveConstraintSet } from '@yeonjae/context';
 import { compileBlock } from '@yeonjae/narrative';
+import { type LengthTarget } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
 import {
   bind,
@@ -411,7 +412,8 @@ export interface ContractInput {
   readonly arcPlan: ArcPlan;
   readonly mainTimelineId: string;
   readonly previousSummary: string;
-  readonly lengthTargetWords: number;
+  /** Unit-aware per-chapter target: words for en, characters for ko (ADR-0054). */
+  readonly lengthTarget: LengthTarget;
   readonly contractId: string;
   /** Registry and promises rendered for the planner; absent falls back to the pinned-state notes. */
   readonly bible?: StoryBible | undefined;
@@ -474,7 +476,7 @@ export async function generateContract(
                 .join('\n') || '(none)'
             : '(promises are pinned by the workflow at contract validation)',
           active_constraints: acsHard.hardText,
-          length_target_words: String(input.lengthTargetWords),
+          length_target_words: String(input.lengthTarget.value),
         },
         block,
       });
@@ -552,7 +554,7 @@ export async function generateContract(
 
 export function validateContract(
   c: ChapterContract,
-  input: Pick<ContractInput, 'chapterNo' | 'spec' | 'mainTimelineId'>,
+  input: Pick<ContractInput, 'chapterNo' | 'spec' | 'mainTimelineId' | 'lengthTarget'>,
   knownPropositionIds: ReadonlySet<string>,
   knownEntityIds: ReadonlySet<string>,
 ): string[] {
@@ -563,6 +565,10 @@ export function validateContract(
     return issues;
   }
   if (c.chapter_number !== input.chapterNo) issues.push('chapter_number mismatch');
+  if (c.length_target.unit !== input.lengthTarget.unit)
+    issues.push(
+      `length_target unit ${c.length_target.unit} does not match the project target unit ${input.lengthTarget.unit}`,
+    );
   if (c.timeline_id !== input.mainTimelineId)
     issues.push('contract timeline is not the main timeline');
   if (c.pinned.spec_version !== input.spec.version) issues.push('pinned spec_version mismatch');
@@ -625,6 +631,7 @@ export function compileFor(
     text: b.text,
     hash: b.hash,
     identityTail: b.identityTail,
+    outputLanguage: b.outputLanguage,
     outputLanguageContractHash: b.outputLanguageContractHash,
     traditionContractHash: b.traditionContractHash,
     roleVariant: role,

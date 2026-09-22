@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yeonjae.studio/schemas/scene-draft.schema.json",
   "title": "Scene Draft (writer output envelope)",
-  "description": "Prose plus annotations that travel with it so deterministic checks can run without re-parsing dialogue attribution. text is English manuscript prose (OUTPUT-EN-001); offsets are Unicode code points (ADR-0030).",
+  "description": "Prose plus annotations that travel with it so deterministic checks can run without re-parsing dialogue attribution. text is manuscript prose in the project manuscript language (OUTPUT-LANG-001, ADR-0054); offsets are Unicode code points (ADR-0030).",
   "type": "object",
   "required": [
     "scene_no",

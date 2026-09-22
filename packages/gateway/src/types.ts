@@ -11,7 +11,7 @@ export interface NarrativeIdentityRef {
   readonly blockHash: string;
   readonly identityVersionId: Uuid;
   readonly roleVariant: string;
-  readonly outputLanguage: 'en';
+  readonly outputLanguage: 'en' | 'ko';
   readonly outputLanguageContractHash: string;
   readonly traditionContractHash: string;
 }

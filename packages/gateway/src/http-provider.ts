@@ -25,6 +25,8 @@
  * misconfigured or attacker-supplied endpoint cannot be used to reach internal services (SSRF).
  */
 import { CancellationError } from './cancellation.js';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { ProviderFailure, type FailureClass } from './failures.js';
 import {
   type FinishReason,
@@ -117,7 +119,12 @@ export class HttpProvider implements Provider {
         `HttpProvider: refusing non-loopback endpoint ${url.hostname} without allowNonLoopback`,
       );
     }
-    this.endpoint = url;
+    // A path-prefixed endpoint (e.g. https://host/genspark/v1/complete behind a reverse proxy) must
+    // keep its prefix: resolving '/v1/complete' absolutely would strip it.
+    const path = url.pathname.replace(/\/+$/, '');
+    this.endpoint = path.endsWith('/v1/complete')
+      ? url
+      : new URL(`${url.origin}${path}/v1/complete`);
   }
 
   /**
@@ -165,19 +172,24 @@ export class HttpProvider implements Provider {
     if (typeof timer.unref === 'function') timer.unref();
 
     try {
-      const url = new URL('/v1/complete', this.endpoint);
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', ...(this.opts.headers ?? {}) },
-        body: JSON.stringify({
-          modelId: req.modelId,
-          system: req.system,
-          user: req.user,
-          params: req.params,
-          idempotencyKey: req.trace?.idempotencyKey,
-        }),
-        signal: controller.signal,
+      // this.endpoint is already normalized in the constructor to end with /v1/complete (path
+      // prefixes preserved); resolving an absolute '/v1/complete' here would strip them.
+      const url = this.endpoint;
+      const payload = JSON.stringify({
+        modelId: req.modelId,
+        system: req.system,
+        user: req.user,
+        params: req.params,
+        // Structured-output contract, when the call declares one; bridges/upstreams that support it
+        // can enforce it, others ignore the extra key harmlessly.
+        ...(req.outputSchema !== undefined ? { outputSchema: req.outputSchema } : {}),
+        idempotencyKey: req.trace?.idempotencyKey,
       });
+      // Raw node transport, not global fetch: undici imposes its own ~300 s headers/body idle
+      // timeouts, which silently abort any call whose buffered response takes longer (a
+      // non-streaming bridge on long bible-stage prompts). The provider's own deadline above is
+      // the only timeout this adapter honors.
+      const response = await this.rawPost(url, payload, controller.signal, maxBytes);
 
       if (!response.ok) {
         throw new ProviderFailure(
@@ -192,7 +204,7 @@ export class HttpProvider implements Provider {
         );
       }
 
-      const body = await this.readBounded(response, maxBytes);
+      const body = response.text;
       let parsed: WireResponse;
       try {
         parsed = JSON.parse(body) as WireResponse;
@@ -268,30 +280,80 @@ export class HttpProvider implements Provider {
    * `response.text()` would buffer whatever arrives, so a hostile or broken endpoint could exhaust
    * memory. This reads incrementally and gives up at the limit.
    */
-  private async readBounded(response: Response, maxBytes: number): Promise<string> {
-    const body = response.body;
-    if (body === null) return '';
-    const reader: ReadableStreamDefaultReader<Uint8Array> = body.getReader();
-    const chunks: Uint8Array[] = [];
-    let total = 0;
-    try {
-      for (;;) {
-        const chunk = await reader.read();
-        if (chunk.done) break;
-        const value: Uint8Array = chunk.value;
-        total += value.byteLength;
-        if (total > maxBytes) {
-          await reader.cancel().catch(() => undefined);
-          throw new ProviderFailure(
-            'non_retryable_request',
-            `provider ${this.name} response exceeded ${String(maxBytes)} bytes`,
+  /**
+   * POST via node:http/https with the caller's abort signal and an incrementally bounded read.
+   * Node's undici-based global fetch imposes ~300 s headers/body idle timeouts that silently abort
+   * any longer buffered response (a non-streaming bridge on long bible-stage prompts); raw node has
+   * no such ceiling, so this provider's own deadline is the only timeout honored. Caller aborts are
+   * re-raised with `AbortError` names so complete()'s cancellation classification keeps working;
+   * everything else keeps its message for the transport classifier.
+   */
+  private rawPost(
+    url: URL,
+    payload: string,
+    signal: AbortSignal,
+    maxBytes: number,
+  ): Promise<{ ok: boolean; status: number; text: string }> {
+    const lib = url.protocol === 'https:' ? httpsRequest : httpRequest;
+    return new Promise((resolve, reject) => {
+      let abortedBySignal = false;
+      const toAbortError = (err: Error) => {
+        if (!abortedBySignal) return err;
+        const e = new Error('aborted');
+        e.name = 'AbortError';
+        return e;
+      };
+      const r = lib(
+        {
+          hostname: url.hostname,
+          port: url.port || (url.protocol === 'https:' ? 443 : 80),
+          path: `${url.pathname}${url.search}`,
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...(this.opts.headers ?? {}) },
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          let total = 0;
+          let done = false;
+          res.on('data', (c: Buffer) => {
+            if (done) return;
+            total += c.byteLength;
+            if (total > maxBytes) {
+              // Destroy the socket immediately: a hostile or broken endpoint cannot exhaust memory.
+              done = true;
+              res.destroy();
+              reject(
+                new ProviderFailure(
+                  'non_retryable_request',
+                  `provider ${this.name} response exceeded ${String(maxBytes)} bytes`,
+                ),
+              );
+              return;
+            }
+            chunks.push(c);
+          });
+          res.on(
+            'end',
+            () =>
+              done ||
+              resolve({
+                ok: (res.statusCode ?? 0) >= 200 && (res.statusCode ?? 0) < 300,
+                status: res.statusCode ?? 0,
+                text: Buffer.concat(chunks).toString('utf8'),
+              }),
           );
-        }
-        chunks.push(value);
-      }
-    } finally {
-      reader.releaseLock();
-    }
-    return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8');
+          res.on('error', (err: Error) => {
+            if (!done) reject(toAbortError(err));
+          });
+        },
+      );
+      r.on('error', (err: Error) => reject(toAbortError(err)));
+      const onAbort = () => {
+        abortedBySignal = true;
+        r.destroy();
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+      r.end(payload);
+    });
   }
 }

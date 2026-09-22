@@ -106,7 +106,9 @@ run('migration chain replay, content-hash protection and clean-install convergen
     const upToPrior = all.slice(0, -1);
     expect(upToPrior.length).toBe(all.length - 1);
 
-    // Upgrade path: apply the chain as it stood before 0014, then apply the full chain on top.
+    // Upgrade path: apply the chain as it stood before the newest migration, then apply the full chain
+    // on top. The "must change" sanity check applies only when the newest migration is privilege-
+    // relevant; a constraint/data migration (e.g. 0020) may legitimately leave the fingerprint equal.
     const staged = mkdtempSync(join(tmpdir(), 'yeonjae-migrations-'));
     try {
       for (const f of upToPrior) writeFileSync(join(staged, f), readFileSync(join(dir, f)));
@@ -116,8 +118,10 @@ run('migration chain replay, content-hash protection and clean-install convergen
       const upgrade = await migrate(pool);
       expect(upgrade.applied).toEqual([newest]);
       const upgraded = await securityFingerprint(pool);
-      // The upgrade must actually change the security state, or the migration is a no-op.
-      expect(upgraded).not.toBe(priorFingerprint);
+      const newestSql = readFileSync(join(dir, newest), 'utf8');
+      const privilegeRelevant = /\b(GRANT|REVOKE|ALTER DEFAULT PRIVILEGES)\b/i.test(newestSql);
+      // A privilege migration must actually change the security state, or it is a no-op.
+      if (privilegeRelevant) expect(upgraded).not.toBe(priorFingerprint);
 
       await resetDatabase(pool);
       await migrate(pool);

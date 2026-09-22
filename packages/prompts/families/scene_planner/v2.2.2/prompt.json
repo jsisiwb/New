@@ -1,0 +1,33 @@
+{
+  "family": "scene_planner",
+  "version": "2.2.2",
+  "role": "scene_planner",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_contract",
+    "register_digests",
+    "previous_chapter_tail"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.2.2 — Korean manuscript-language version (ADR-0054) plus output-schema field reminders with exact schema enums (live-path fix, docs/05-generation/03 §2.7): the model is told which JSON fields to return; envelope fields stay workflow-filled; judge output shape corrected to judge_score/issues.",
+  "regression_cases": [
+    "scene_planner.fixture.smoke"
+  ],
+  "content_hash": "sha256:0cd127aff2f7a4b57240cf6cb4f2e6bf5d7a6360c28c1a55e3ede81afd176362"
+}

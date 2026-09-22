@@ -32,8 +32,8 @@ export interface ExportRequest {
     include_provenance_record?: boolean;
     only_accepted?: boolean;
     /**
-     * Spelling and punctuation locale for English manuscripts
+     * Spelling and punctuation locale for the manuscript language (en-US, en-GB, ko-KR)
      */
-    spelling_locale?: 'en-US' | 'en-GB';
+    spelling_locale?: 'en-US' | 'en-GB' | 'ko-KR';
   };
 }

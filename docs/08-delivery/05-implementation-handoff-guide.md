@@ -23,11 +23,12 @@ translation.
 
 ## 2. Invariants you must never break
 
-1. **English output, composed directly.** Every manuscript-producing role writes English; a deterministic
-   output-language check gates its output; there is no translation step anywhere (OUTPUT-EN-001,
-   NO-TRANSLATION-001).
+1. **Manuscript output, composed directly in the project manuscript language.** Every
+   manuscript-producing role writes in the project language — `en` or `ko` per the intake (ADR-0054); a
+   deterministic output-language check gates its output; there is no translation step anywhere
+   (OUTPUT-LANG-001, NO-TRANSLATION-001).
 2. **Narrative Identity Guard with both contracts.** Style-sensitive roles cannot call the gateway without
-   a compiled Narrative Identity Block whose manifest carries the English Output-Language Contract hash and
+   a compiled Narrative Identity Block whose manifest carries the project Output-Language Contract hash and
    the Korean-webnovel Narrative-Tradition Contract hash; versions recorded (STYLE-GUARD-001).
 3. **Separate dimensions.** English prose quality and Korean-webnovel structural adherence are separate
    evaluators, separate scorecard sections, separate gates; never averaged (EVAL-SEPARATION-001).

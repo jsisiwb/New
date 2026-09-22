@@ -245,7 +245,7 @@ run(`120-chapter deterministic continuity replay (B-4-1 deterministic portion)`,
       const check = checkOutputLanguage(toNfcText(v?.text ?? ''), { minConfidence: 0.99 });
       expect(
         check.passed,
-        where(r.chapter_no, 'evaluate', canon, 'accepted manuscript is English (OUTPUT-EN-001)'),
+        where(r.chapter_no, 'evaluate', canon, 'accepted manuscript is English (OUTPUT-LANG-001)'),
       ).toBe(true);
       expect(
         check.english_confidence,

@@ -183,8 +183,10 @@ export async function reviseVersion(
             },
           );
       const newText = toNfcText(patch.new_text).text;
+      const language: 'en' | 'ko' = ctx.identity.outputLanguage.language ?? 'en';
       const lang = checkOutputLanguage(toNfcText(newText), {
         minConfidence: ctx.policy.output_language.min_english_confidence,
+        language,
       });
       if (!lang.passed)
         throw new WorkflowError(
