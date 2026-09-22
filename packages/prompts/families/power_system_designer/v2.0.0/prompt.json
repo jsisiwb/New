@@ -1,0 +1,34 @@
+{
+  "family": "power_system_designer",
+  "version": "2.0.0",
+  "role": "power_system_designer",
+  "purpose": "Korean manuscript-language prompt (ADR-0054).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "world_rules"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 6500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "2.0.0 — Korean manuscript-language version (ADR-0054); instructions in Korean; same contract surface.",
+  "regression_cases": [
+    "power_system_designer.social_progression",
+    "power_system_designer.raw_design"
+  ],
+  "content_hash": "sha256:2b9d4d4bbfbe5013d408371538a0334fe6c1bc87747e6cfd53ff11a65fe6be56"
+}

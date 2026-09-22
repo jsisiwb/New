@@ -108,7 +108,11 @@ export function simulatedModelScript(req: ProviderRequest) {
         ],
       });
     case 'concept_generator': {
-      const angle = /Angle seed for this candidate: (.+)/.exec(req.user)?.[1] ?? 'angle';
+      // Korean prompt family (ADR-0054) phrases the same field in Korean; accept both renderings.
+      const angle =
+        /Angle seed for this candidate: (.+)/.exec(req.user)?.[1] ??
+        /이 후보의 앵글 시드: (.+)/.exec(req.user)?.[1] ??
+        'angle';
       return json({
         angle,
         logline: `Seo Ji-an, the accountant who found the ghosts on the payroll, becomes the hunter the guild cannot fire. (${angle.slice(0, 12)})`,

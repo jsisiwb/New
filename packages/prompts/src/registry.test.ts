@@ -28,7 +28,7 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 31;
+const TOTAL_PROMPT_VERSIONS = 56;
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -62,12 +62,16 @@ describe('prompt registry (ADR-0016)', () => {
     expect(reg.get('canon_extractor@1.0.0').style_sensitive).toBe(false);
   });
 
-  it('no prompt asks for Korean prose or a translation step (NO-TRANSLATION-001)', () => {
+  it('Korean v2 prompts are authored in Korean; no prompt asks for a translation step (ADR-0054, NO-TRANSLATION-001)', () => {
     for (const v of reg.list()) {
       const text = `${v.system_template}\n${v.user_template}`;
-      expect(text, v.id).not.toMatch(/write (it |the scene )?in Korean/i);
       expect(text, v.id).not.toMatch(/translate (it|this|the text) into English/i);
-      expect(/[\uac00-\ud7a3]/.test(text), `${v.id} contains Hangul`).toBe(false);
+      const hasHangul = /[\uac00-\ud7a3]/.test(text);
+      if (v.version === '2.0.0') {
+        expect(hasHangul, `${v.id} Korean version must be authored in Korean`).toBe(true);
+      } else {
+        expect(hasHangul, `${v.id} legacy version contains Hangul`).toBe(false);
+      }
     }
   });
 
@@ -143,13 +147,9 @@ describe('prompt registry (ADR-0016)', () => {
   it('builds a pinned prompt set from the active versions', () => {
     const set = reg.activeSet();
     expect(Object.keys(set.mapping)).toHaveLength(25);
-    expect(set.mapping.scene_writer).toBe('scene_writer@1.0.0');
-    expect(set.mapping.character_designer).toBe('character_designer@1.1.0');
-    expect(set.mapping.world_builder).toBe('world_builder@1.1.0');
-    expect(set.mapping.power_system_designer).toBe('power_system_designer@1.1.0');
-    expect(set.mapping.story_architect).toBe('story_architect@1.1.0');
-    expect(set.mapping.arc_planner).toBe('arc_planner@1.1.0');
-    expect(set.mapping.chapter_planner).toBe('chapter_planner@1.1.0');
+    for (const fam of Object.keys(set.mapping)) {
+      expect(set.mapping[fam], fam).toBe(`${fam}@2.0.0`);
+    }
     expect(set.id).toMatch(/^set:[0-9a-f]{16}$/);
   });
 

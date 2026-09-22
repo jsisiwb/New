@@ -146,7 +146,7 @@ run('candidate comparison on replay (B-6-4, ADR-0015)', () => {
     for (const c of calls.rows) {
       expect(c.status).toBe('succeeded');
       expect(c.provider).toBe('replay');
-      expect(c.prompt_version_id).toBe('chapter_comparator@1.0.0');
+      expect(c.prompt_version_id).toBe('chapter_comparator@2.0.0');
       expect(c.production_policy_version).toBe('policy/standard@1');
       // The comparator is not style-sensitive: it carries no identity pin (role catalog, ADR-0027).
       expect(c.narrative_identity_version_id).toBeNull();
