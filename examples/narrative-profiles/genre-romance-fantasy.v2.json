@@ -1,0 +1,198 @@
+{
+  "id": "genre/romance-fantasy",
+  "kind": "genre",
+  "version": 2,
+  "name": "로맨스 판타지·관계선 오버레이 (한국어)",
+  "genre": {
+    "genre_id": "romance-fantasy",
+    "reader_fantasy": "선택받고 제대로 이해받는 감각. 경직된 신분 사회 안에서의 주체성. 천천히 쌓이다가 단계마다 터지는 관계의 긴장.",
+    "vocabulary": {
+      "preferred_terms": [
+        "공작",
+        "공녀",
+        "영애",
+        "영식",
+        "황태자",
+        "황녀",
+        "무도회",
+        "다과회",
+        "사교계",
+        "가문",
+        "작위",
+        "시녀",
+        "기사"
+      ],
+      "discouraged_terms": [
+        "더 톤",
+        "사교 시즌"
+      ],
+      "terminology_defaults": []
+    },
+    "devices": [
+      {
+        "id": "letter",
+        "description": "편지·쪽지를 들여쓴 블록으로. 인사말과 서명이 있고 날짜·초대 같은 사실을 담을 수 있다.",
+        "format_grammar": "    <인사말>\\n    <본문>\\n    — <서명>",
+        "max_per_chapter": 2
+      },
+      {
+        "id": "tea_or_ball_scene",
+        "description": "공적인 말높이의 사교 장면. 사적인 비트는 그 가장자리에서 일어난다.",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "dual_pov_misunderstanding",
+        "description": "독자는 알고 한쪽 인물은 모르는 엇갈림. 해소에는 지식이 전달되는 사건이 필요하다.",
+        "max_per_chapter": 1
+      }
+    ],
+    "cadence": {
+      "progression_event_every_chapters": 4,
+      "satisfaction_every_chapters": 4,
+      "max_frustration_streak": 3,
+      "relationship_milestone_every_chapters": 4
+    },
+    "structure_overrides": {
+      "monologue_ratio_band": [
+        0.15,
+        0.35
+      ],
+      "opening_types_preferred": [
+        "sharp_dialogue",
+        "emotional_peak_continuation"
+      ]
+    },
+    "register_notes": [
+      "공적인 자리에서는 엄격한 호칭(공작님, 영애, 전하)을 쓰고, 관계 이정표를 넘으면 사적인 자리에서 이름이나 애칭으로 바뀐다 — 호칭 변화는 유효 기간이 있는 관계 사실이다.",
+      "분노는 퉁명스러움보다 더 차가운 격식(말높이가 올라감)으로 드러난다.",
+      "하인과 하급자는 귀족을 직함으로 부르고, 귀족은 하인을 직책이나 이름으로 부른다."
+    ],
+    "default_relationship_registers": [
+      {
+        "relationship_class": "royalty",
+        "register": {
+          "formality": 4,
+          "deference": 4,
+          "familiarity": 0,
+          "directness": 1,
+          "contractions": "avoid",
+          "address_terms": [
+            "전하"
+          ],
+          "titles": [
+            "황태자",
+            "황녀",
+            "폐하"
+          ]
+        }
+      },
+      {
+        "relationship_class": "superior",
+        "register": {
+          "formality": 4,
+          "deference": 3,
+          "familiarity": 1,
+          "directness": 2,
+          "contractions": "avoid",
+          "address_terms": [
+            "님"
+          ],
+          "titles": [
+            "공작",
+            "백작"
+          ]
+        }
+      },
+      {
+        "relationship_class": "peer",
+        "register": {
+          "formality": 3,
+          "deference": 1,
+          "familiarity": 2,
+          "directness": 2,
+          "contractions": "neutral",
+          "address_terms": [],
+          "titles": []
+        }
+      },
+      {
+        "relationship_class": "lover",
+        "register": {
+          "formality": 1,
+          "deference": 0,
+          "familiarity": 4,
+          "intimacy": 4,
+          "directness": 3,
+          "contractions": "free",
+          "address_terms": [],
+          "titles": [],
+          "public_variant": {
+            "formality": 4,
+            "address_terms": [
+              "Your Grace",
+              "Lady"
+            ],
+            "titles": [
+              "Duke",
+              "Lady"
+            ]
+          }
+        }
+      }
+    ],
+    "taboos": [
+      "서양 역사 로맨스 흉내('사교 시즌', 영국식 작위 문화 번역투)",
+      "계획된 이정표 이전의 우발적 고백",
+      "비트 없이 문단 전체를 채우는 수필식 내면",
+      "배경이 서양풍이어도 서구 소설식 호흡"
+    ],
+    "judge_notes": [
+      "한국 로판·관계선의 호흡으로 쓴 한국어 원고다. 서양 역사 로맨스가 아니다.",
+      "내면은 비트에 붙어 자연스러워야 한다. 속마음 문단은 반드시 한 번의 전환으로 끝난다.",
+      "슬로우번: 긴장 비트가 곧 보상이다. 이정표 전 고백은 하드 요구사항 위반이다."
+    ],
+    "lint_thresholds": {
+      "ST-MON-01": {
+        "warn": 0.35,
+        "fail": 0.45
+      },
+      "EP-LEN-01": {
+        "warn": 34,
+        "fail": 45
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "감정선의 단계적 진전",
+        "weight": 0.4,
+        "anchors": {
+          "1": "관계가 제자리이거나 이유 없이 급진전한다.",
+          "3": "진전은 있지만 설득이 약하다.",
+          "5": "사건과 대사로 쌓인 한 걸음이 분명하게 보인다."
+        }
+      },
+      {
+        "dimension": "신분 사회 안의 주체성",
+        "weight": 0.3,
+        "anchors": {
+          "1": "인물이 끌려다닌다.",
+          "3": "선택은 있지만 대가가 없다.",
+          "5": "제약 속에서 인물이 스스로 선택하고 대가를 치른다."
+        }
+      },
+      {
+        "dimension": "호칭과 말높이의 자연스러움",
+        "weight": 0.3,
+        "anchors": {
+          "1": "호칭이 어색하거나 관계와 어긋난다.",
+          "3": "대체로 맞지만 굳어 있다.",
+          "5": "호칭 변화가 관계 변화를 자연스럽게 드러낸다."
+        }
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "Starter profile (ADR-0043). Naming Profile default for this genre is `western`."
+  }
+}

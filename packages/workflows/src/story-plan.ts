@@ -44,7 +44,9 @@ import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   compileFor,
   interpretRequirements,
+  langOf,
   renderBibleDesign,
+  renderPromiseLines,
   validateIntake,
   type ArcPlan,
   type StoryBible,
@@ -281,7 +283,7 @@ export async function suggestConcepts(
           family: 'concept_generator',
           activityId: `concept:v${specVersion}:${i + 1}`,
           variables: {
-            story_spec: renderSpec(spec.spec),
+            story_spec: renderSpec(spec.spec, langOf(ctx)),
             angle_seed: angle,
             spec_version: String(specVersion),
           },
@@ -451,17 +453,27 @@ export async function buildFullBible(
 ): Promise<StoryPlanResult> {
   const { spec, concept, intake } = input;
   const block = compileFor(ctx, 'planner_compact');
-  const specText = renderSpec(spec);
+  const lang = langOf(ctx);
+  const specText = renderSpec(spec, lang);
   const conceptText = JSON.stringify(concept, null, 1);
   const notes: string[] = [];
 
-  const castBrief = [
-    intake.main_character
-      ? `Main character: ${sketch(intake.main_character)}`
-      : 'Main character: derive from the premise and concept.',
-    ...(intake.supporting_characters ?? []).map((c) => `Supporting: ${sketch(c)}`),
-    `Design 6–12 characters: protagonist, antagonist(s), 2–4 allies/mentors, love interest if romance is present, at least one foil. Every character needs registers toward each key counterpart.`,
-  ].join('\n');
+  const castBrief =
+    lang === 'ko'
+      ? [
+          intake.main_character
+            ? `주인공: ${sketch(intake.main_character, lang)}`
+            : '주인공: 전제와 콘셉트에서 도출한다.',
+          ...(intake.supporting_characters ?? []).map((c) => `조연: ${sketch(c, lang)}`),
+          '인물 6~12명을 설계한다: 주인공, 적대자, 동료·스승 2~4명, 로맨스가 있으면 연애 상대(하렘이면 히로인마다 등장 시기와 관계 단계가 다르게), 대비 인물 하나 이상. 모든 인물은 주요 상대마다 말높이(registers)를 가진다. 위에 이름이 주어진 인물은 그 이름 그대로 포함한다.',
+        ].join('\n')
+      : [
+          intake.main_character
+            ? `Main character: ${sketch(intake.main_character)}`
+            : 'Main character: derive from the premise and concept.',
+          ...(intake.supporting_characters ?? []).map((c) => `Supporting: ${sketch(c)}`),
+          `Design 6–12 characters: protagonist, antagonist(s), 2–4 allies/mentors, love interest if romance is present, at least one foil. Every character needs registers toward each key counterpart.`,
+        ].join('\n');
 
   const cast = await runDesignStep(ctx, 'cast', `cast:${concept.id}`, async (activityId) => {
     const call = await modelCall<CastOutput>(ctx, {
@@ -859,7 +871,7 @@ export async function buildFullBible(
           variables: {
             story_spec: specText,
             concept: conceptText,
-            bible_summary: renderBibleSummary(draftBible),
+            bible_summary: renderBibleSummary(draftBible, lang),
             target_chapters: String(intake.target_chapters),
           },
           block,
@@ -1077,24 +1089,26 @@ export async function planArcFromBlueprint(
       });
       if (stored) return { arcPlan: stored.payload as ArcPlan, artifactId: stored.artifact_id };
       const block = compileFor(ctx, 'planner_compact');
+      const lang = langOf(ctx);
+      const ko = lang === 'ko';
       const call = await modelCall<Partial<ArcPlan>>(ctx, {
         step: 'arc_plan',
         family: 'arc_planner',
         activityId: `arc_plan:${input.arc.id}`,
         variables: {
-          blueprint: renderBlueprint(input.blueprint),
-          season: season
-            ? `Season ${season.ordinal} "${season.title}" (id ${input.arc.seasonId}), chapters ${season.chapter_range_est.from}–${season.chapter_range_est.to}: ${season.objective}${season.thesis ? ` Thesis: ${season.thesis}` : ''}`
-            : `Season ${input.arc.ordinal} (id ${input.arc.seasonId})`,
-          arc_brief: `Arc ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
-          canon_state: renderBibleSummary(input.bible),
-          open_promises:
-            input.bible.promises
-              .map(
-                (p) =>
-                  `- [${p.id}] ${p.statement} (${p.type}, ${p.importance}${p.due_min_chapter !== undefined ? `, due ch.${p.due_min_chapter}–${p.due_max_chapter ?? '?'}` : ''})`,
-              )
-              .join('\n') || '(none yet)',
+          blueprint: renderBlueprint(input.blueprint, lang),
+          season: ko
+            ? season
+              ? `시즌 ${season.ordinal} 「${season.title}」 (id ${input.arc.seasonId}), ${season.chapter_range_est.from}~${season.chapter_range_est.to}화: ${season.objective}${season.thesis ? ` 핵심 갈등: ${season.thesis}` : ''}`
+              : `시즌 ${input.arc.ordinal} (id ${input.arc.seasonId})`
+            : season
+              ? `Season ${season.ordinal} "${season.title}" (id ${input.arc.seasonId}), chapters ${season.chapter_range_est.from}–${season.chapter_range_est.to}: ${season.objective}${season.thesis ? ` Thesis: ${season.thesis}` : ''}`
+              : `Season ${input.arc.ordinal} (id ${input.arc.seasonId})`,
+          arc_brief: ko
+            ? `아크 ${input.arc.ordinal} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화를 덮는다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.`
+            : `Arc ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
+          canon_state: renderBibleSummary(input.bible, lang),
+          open_promises: renderPromiseLines(input.bible, lang),
         },
         block,
       });
@@ -1387,12 +1401,12 @@ function clampChapter(v: unknown, max: number): number | undefined {
   return Math.max(1, Math.min(max, Math.round(n)));
 }
 
-function sketch(c: NonNullable<StoryIntake['main_character']>): string {
+function sketch(c: NonNullable<StoryIntake['main_character']>, lang: 'en' | 'ko' = 'en'): string {
   return [
     c.name,
     c.role ? `(${c.role})` : '',
     c.description ?? '',
-    c.speech_notes ? `Speech: ${c.speech_notes}` : '',
+    c.speech_notes ? `${lang === 'ko' ? '말투' : 'Speech'}: ${c.speech_notes}` : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -1442,25 +1456,26 @@ function slug(s: string): string {
   return out || 'rule';
 }
 
-export function renderSpec(spec: StorySpec): string {
+export function renderSpec(spec: StorySpec, lang: 'en' | 'ko' = 'en'): string {
   return spec.items
     .map(
       (i) =>
-        `- [${i.id}] (${i.kind}, ${i.category}${i.scope.level !== 'series' ? `, ${i.scope.level}` : ''}) ${i.text_en ?? i.text}`,
+        `- [${i.id}] (${i.kind}, ${i.category}${i.scope.level !== 'series' ? `, ${i.scope.level}` : ''}) ${lang === 'ko' ? i.text : (i.text_en ?? i.text)}`,
     )
     .join('\n');
 }
 
-export function renderBibleSummary(b: StoryBible): string {
+export function renderBibleSummary(b: StoryBible, lang: 'en' | 'ko' = 'en'): string {
+  const ko = lang === 'ko';
   return [
-    renderBibleDesign(b),
+    renderBibleDesign(b, lang),
     ...b.entities.map(
       (e) =>
-        `- [${e.id}] ${e.display_name} (${e.type})${e.short_forms?.length ? ` a.k.a. ${e.short_forms.join(', ')}` : ''}${e.description ? `: ${e.description}` : ''}`,
+        `- [${e.id}] ${e.display_name} (${e.type})${e.short_forms?.length ? ` ${ko ? '약칭' : 'a.k.a.'} ${e.short_forms.join(', ')}` : ''}${e.description ? `: ${e.description}` : ''}`,
     ),
     ...b.propositions.map(
       (p) =>
-        `- proposition ${p.local_id}: ${p.statement} [${p.truth}${p.secret ? ', secret' : ''}]`,
+        `- ${ko ? '명제' : 'proposition'} ${p.local_id}: ${p.statement} [${p.truth}${p.secret ? (ko ? ', 비밀' : ', secret') : ''}]`,
     ),
   ].join('\n');
 }
@@ -1507,7 +1522,21 @@ async function runDesignStep<T>(
   });
 }
 
-function renderBlueprint(b: SeriesBlueprint): string {
+function renderBlueprint(b: SeriesBlueprint, lang: 'en' | 'ko' = 'en'): string {
+  if (lang === 'ko')
+    return [
+      `스토리 프라미스: ${b.story_promise}`,
+      `독자 판타지: ${b.reader_fantasy}`,
+      `주 갈등: ${b.main_conflict}`,
+      `결말 (${b.ending.type}): ${b.ending.summary ?? ''} 최종 상태: ${b.ending.final_state_assertions.join('; ')}`,
+      `엔드게임 요구사항: ${b.endgame_requirements.map((r) => `[${r.id}] ${r.statement}`).join('; ') || '(없음)'}`,
+      `시즌:`,
+      ...b.seasons.map(
+        (s) =>
+          `  ${s.ordinal}. ${s.title} (${s.chapter_range_est.from}~${s.chapter_range_est.to}화): ${s.objective}${s.exit_state ? ` → ${s.exit_state}` : ''}`,
+      ),
+      `주인공 아크: ${b.protagonist_arc.start_state} → ${b.protagonist_arc.end_state}; 전환점: ${b.protagonist_arc.turning_points.map((t) => `${t.description} (${t.window.from}~${t.window.to}화)`).join('; ')}`,
+    ].join('\n');
   return [
     `Story promise: ${b.story_promise}`,
     `Reader fantasy: ${b.reader_fantasy}`,

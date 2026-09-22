@@ -1,0 +1,33 @@
+{
+  "family": "scene_planner",
+  "version": "3.0.0",
+  "role": "scene_planner",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_contract",
+    "register_digests",
+    "previous_chapter_tail"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "scene_planner.fixture.smoke"
+  ],
+  "content_hash": "sha256:12cffceace9bc876830f23e7a3713cf784444c1f810afefacad4ee3636c3a4a0"
+}

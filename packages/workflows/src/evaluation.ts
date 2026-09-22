@@ -444,7 +444,10 @@ export async function evaluateVersion(
         activityId: act('prose_judge'),
         variables: {
           chapter_text: chapterText,
-          prose_lint_report: `${input.contract.length_target.unit === 'characters' ? 'Korean' : 'English'} output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.count} ${det.length.unit}.`,
+          prose_lint_report:
+            ctx.identity.outputLanguage.language === 'ko'
+              ? `한국어 출력 언어 검사: 신뢰도 ${det.output_language.english_confidence}; 분량 ${det.length.count}${det.length.unit === 'characters' ? '자' : ` ${det.length.unit}`}.`
+              : `English output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.count} ${det.length.unit}.`,
         },
         block: compileFor(ctx, 'judge_rubric_prose'),
       });
@@ -458,8 +461,14 @@ export async function evaluateVersion(
         activityId: act('structure_judge'),
         variables: {
           chapter_text: chapterText,
-          structure_lint_report: `paragraphs ${paragraphs.length}; truncation check ${det.truncation.passed ? 'passed' : 'FAILED'}.`,
-          contract_shape: `opening ${input.contract.opening.type}; hook ${input.contract.hook.type}; local satisfaction ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; scenes ${input.contract.scene_count}.`,
+          structure_lint_report:
+            ctx.identity.outputLanguage.language === 'ko'
+              ? `문단 ${paragraphs.length}개; 잘림 검사 ${det.truncation.passed ? '통과' : '실패'}.`
+              : `paragraphs ${paragraphs.length}; truncation check ${det.truncation.passed ? 'passed' : 'FAILED'}.`,
+          contract_shape:
+            ctx.identity.outputLanguage.language === 'ko'
+              ? `도입 ${input.contract.opening.type}; 절단 ${input.contract.hook.type}; 로컬 보상 ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; 장면 ${input.contract.scene_count}개.`
+              : `opening ${input.contract.opening.type}; hook ${input.contract.hook.type}; local satisfaction ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; scenes ${input.contract.scene_count}.`,
         },
         block: compileFor(ctx, 'judge_rubric_structure'),
       });
@@ -479,7 +488,10 @@ export async function evaluateVersion(
         activityId: act('genre_judge'),
         variables: {
           chapter_text: chapterText,
-          terminology_report: `allowlisted names ${input.allowlist.length}; primary genre ${input.spec.items.find((i) => i.category === 'genre')?.text ?? '(unspecified)'}.`,
+          terminology_report:
+            ctx.identity.outputLanguage.language === 'ko'
+              ? `허용 이름 ${input.allowlist.length}개; 주 장르 ${input.spec.items.find((i) => i.category === 'genre')?.text ?? '(미지정)'}.`
+              : `allowlisted names ${input.allowlist.length}; primary genre ${input.spec.items.find((i) => i.category === 'genre')?.text ?? '(unspecified)'}.`,
         },
         block: compileFor(ctx, 'judge_rubric_genre'),
       });
@@ -494,7 +506,10 @@ export async function evaluateVersion(
         variables: {
           utterances: chapterText,
           register_digests: checker.stored.variables.register_digests ?? '(none)',
-          register_check_report: `dialogue register digests supplied: ${checker.stored.variables.register_digests ? 'yes' : 'no'}.`,
+          register_check_report:
+            ctx.identity.outputLanguage.language === 'ko'
+              ? `말높이 요약 제공: ${checker.stored.variables.register_digests ? '예' : '아니오'}.`
+              : `dialogue register digests supplied: ${checker.stored.variables.register_digests ? 'yes' : 'no'}.`,
         },
         block: compileFor(ctx, 'judge_rubric_prose'),
       });

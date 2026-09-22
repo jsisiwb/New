@@ -94,8 +94,42 @@ const CATEGORY_TITLE: Readonly<Record<Requirement['category'], string>> = {
   other: 'Other',
 };
 
-export function requirementText(r: Requirement): string {
-  const t = r.language === 'en' || r.language.startsWith('en-') ? r.text : r.text_en;
+const CATEGORY_TITLE_KO: Readonly<Record<Requirement['category'], string>> = {
+  content_restriction: '콘텐츠 제한',
+  forbidden_development: '금지 전개',
+  premise: '전제',
+  genre: '장르',
+  character: '인물',
+  world: '세계관',
+  progression: '성장',
+  romance: '관계·로맨스',
+  mandatory_scene: '필수 장면',
+  structure: '구조',
+  length: '분량',
+  tone: '톤',
+  ending: '결말',
+  style: '문체',
+  audience: '독자층',
+  direction: '연출 지시',
+  other: '기타',
+};
+
+export type WorkingLanguage = 'en' | 'ko';
+
+const sameLanguage = (tag: string, lang: WorkingLanguage) =>
+  tag === lang || tag.startsWith(`${lang}-`);
+
+/**
+ * The text a requirement is rendered with. The working language is the project's manuscript language
+ * (ADR-0054/0055): a Korean project reads Korean requirements verbatim instead of demanding an English
+ * paraphrase, which the Korean requirement_interpreter never produces.
+ */
+export function requirementText(r: Requirement, workingLanguage: WorkingLanguage = 'en'): string {
+  const t = sameLanguage(r.language, workingLanguage)
+    ? r.text
+    : workingLanguage === 'ko'
+      ? r.text
+      : r.text_en;
   if (!t) {
     throw new ContextError(
       'CONSTRAINT_UNRENDERABLE',
@@ -180,7 +214,11 @@ function normalizedKey(kind: Requirement['kind'], text: string): string {
     .trim()}`;
 }
 
-function renderGroup(title: string, items: readonly CompiledConstraint[]): string {
+function renderGroup(
+  title: string,
+  items: readonly CompiledConstraint[],
+  lang: WorkingLanguage = 'en',
+): string {
   const byCat = new Map<Requirement['category'], CompiledConstraint[]>();
   for (const c of items) {
     const arr = byCat.get(c.category) ?? [];
@@ -191,11 +229,22 @@ function renderGroup(title: string, items: readonly CompiledConstraint[]): strin
   for (const cat of CATEGORY_ORDER) {
     const arr = byCat.get(cat);
     if (!arr?.length) continue;
-    lines.push(`${CATEGORY_TITLE[cat]}:`);
+    lines.push(`${(lang === 'ko' ? CATEGORY_TITLE_KO : CATEGORY_TITLE)[cat]}:`);
     for (const c of arr) {
-      const merged = c.mergedIds.length ? ` (also ${c.mergedIds.join(', ')})` : '';
-      const conf = c.kind === 'assumption' && !c.confirmed ? ' [unconfirmed]' : '';
-      lines.push(`- [${c.id}] ${c.text}${merged}${conf} {scope: ${c.scopeLabel}}`);
+      const merged = c.mergedIds.length
+        ? lang === 'ko'
+          ? ` (병합: ${c.mergedIds.join(', ')})`
+          : ` (also ${c.mergedIds.join(', ')})`
+        : '';
+      const conf =
+        c.kind === 'assumption' && !c.confirmed
+          ? lang === 'ko'
+            ? ' [미확인]'
+            : ' [unconfirmed]'
+          : '';
+      lines.push(
+        `- [${c.id}] ${c.text}${merged}${conf} {${lang === 'ko' ? '범위' : 'scope'}: ${c.scopeLabel}}`,
+      );
     }
   }
   return lines.join('\n');
@@ -205,6 +254,8 @@ export interface CompileConstraintsOptions {
   readonly capTokens: number;
   /** Additional hard lines (e.g. locked facts touching participants) rendered under "Locked facts". */
   readonly lockedFacts?: readonly { readonly id: string; readonly text: string }[] | undefined;
+  /** Project manuscript language; Korean projects render the set in Korean. Default English. */
+  readonly workingLanguage?: WorkingLanguage | undefined;
 }
 
 export function compileActiveConstraintSet(
@@ -212,6 +263,8 @@ export function compileActiveConstraintSet(
   scope: ConstraintScope,
   opts: CompileConstraintsOptions,
 ): ActiveConstraintSet {
+  const lang = opts.workingLanguage ?? 'en';
+  const ko = lang === 'ko';
   const excluded: { id: string; reason: string }[] = [];
   const merged = new Map<string, CompiledConstraint>();
   const sorted = [...spec.items].sort((a, b) => cmp(a.id, b.id));
@@ -221,7 +274,7 @@ export function compileActiveConstraintSet(
       excluded.push({ id: r.id, reason: scoped.reason });
       continue;
     }
-    const text = requirementText(r);
+    const text = requirementText(r, lang);
     const key = normalizedKey(r.kind, text);
     const existing = merged.get(key);
     if (existing) {
@@ -256,11 +309,19 @@ export function compileActiveConstraintSet(
     }))
     .sort((a, b) => cmp(a.itemIds.join(','), b.itemIds.join(',')));
 
-  const hardLines = [renderGroup('Hard requirements (mandatory — never violate)', hard)];
+  const hardLines = [
+    renderGroup(
+      ko
+        ? '하드 요구사항 (필수 — 절대 어기지 않는다)'
+        : 'Hard requirements (mandatory — never violate)',
+      hard,
+      lang,
+    ),
+  ];
   if (opts.lockedFacts?.length) {
     hardLines.push(
       [
-        'Locked facts:',
+        ko ? '잠긴 사실:' : 'Locked facts:',
         ...[...opts.lockedFacts]
           .sort((a, b) => cmp(a.id, b.id))
           .map((f) => `- [${f.id}] ${f.text}`),
@@ -271,20 +332,40 @@ export function compileActiveConstraintSet(
   if (openConflicts.length) {
     hardLines.push(
       [
-        'Open conflicts (resolve before relying on either side):',
+        ko
+          ? '해소되지 않은 충돌 (어느 한쪽에 기대기 전에 해소할 것):'
+          : 'Open conflicts (resolve before relying on either side):',
         ...openConflicts.map((c) => `- ${c.itemIds.join(' vs ')}: ${c.description}`),
       ].join('\n'),
     );
   }
   const hardText = hardLines.join('\n');
   const parts = [
-    `## Active Constraint Set (spec v${spec.version}, chapter ${scope.chapterNo})`,
+    ko
+      ? `## 활성 제약 세트 (스펙 v${spec.version}, ${scope.chapterNo}화)`
+      : `## Active Constraint Set (spec v${spec.version}, chapter ${scope.chapterNo})`,
     hardText,
     ...(soft.length
-      ? [renderGroup('Soft preferences (follow unless a hard requirement or canon forbids)', soft)]
+      ? [
+          renderGroup(
+            ko
+              ? '소프트 선호 (하드 요구사항이나 정사가 막지 않는 한 따른다)'
+              : 'Soft preferences (follow unless a hard requirement or canon forbids)',
+            soft,
+            lang,
+          ),
+        ]
       : []),
     ...(assumptions.length
-      ? [renderGroup('Assumptions (model-inferred; treat as defaults, not facts)', assumptions)]
+      ? [
+          renderGroup(
+            ko
+              ? '가정 (모델 추론 — 사실이 아니라 기본값으로 다룬다)'
+              : 'Assumptions (model-inferred; treat as defaults, not facts)',
+            assumptions,
+            lang,
+          ),
+        ]
       : []),
   ];
   const renderedText = parts.join('\n\n');

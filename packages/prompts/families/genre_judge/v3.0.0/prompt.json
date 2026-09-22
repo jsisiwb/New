@@ -1,0 +1,32 @@
+{
+  "family": "genre_judge",
+  "version": "3.0.0",
+  "role": "genre_judge",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_genre",
+  "model_class": "C",
+  "input_variables": [
+    "chapter_text",
+    "terminology_report"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 1500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "genre_judge.fixture.smoke"
+  ],
+  "content_hash": "sha256:9eaf96f3806e7157136cd1b309f9ef9756eca1a02db97a7fc8f959ec0c2b984d"
+}

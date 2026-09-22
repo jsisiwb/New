@@ -19,6 +19,7 @@ import {
 } from './hash.js';
 import {
   budgetFor,
+  sectionTitle,
   templateFor,
   templateHash,
   templateRef,
@@ -142,6 +143,7 @@ function tokensOf(t: PackTemplate, item: Item, compressed: boolean): number {
 function renderSections(
   t: PackTemplate,
   chosen: ReadonlyMap<string, { item: Item; compressed: boolean }>,
+  lang: 'en' | 'ko' = 'en',
 ): RenderedSection[] {
   const out: RenderedSection[] = [];
   for (const spec of t.sections) {
@@ -165,7 +167,8 @@ function renderSections(
         ),
       )
       .join('\n');
-    const text = spec.name === 'narrative_identity' ? body : `[${spec.title}]\n${body}`;
+    const text =
+      spec.name === 'narrative_identity' ? body : `[${sectionTitle(spec.title, lang)}]\n${body}`;
     out.push({
       name: spec.name,
       title: spec.title,
@@ -196,6 +199,7 @@ export function assemblePack(input: AssemblyInput, opts: AssembleOptions = {}): 
       role: input.role,
     });
   const budget = opts.budgetTokens ?? budgetFor(template, input.policyContext);
+  const lang = input.narrativeBlock?.outputLanguage ?? 'en';
   if (budget === undefined)
     throw new ContextError(
       'PACK_VALIDATION_FAILED',
@@ -256,7 +260,7 @@ export function assemblePack(input: AssemblyInput, opts: AssembleOptions = {}): 
   for (const c of candidates) byTier.get(c.tier)?.push(c);
   const chosen = new Map<string, { item: Item; compressed: boolean }>();
   for (const it of byTier.get('T0') ?? []) chosen.set(it.id, { item: it, compressed: false });
-  let sections = renderSections(template, chosen);
+  let sections = renderSections(template, chosen, lang);
   const t0Tokens = totalTokens(sections);
   if (t0Tokens > budget) {
     throw new ContextError(
@@ -268,13 +272,13 @@ export function assemblePack(input: AssemblyInput, opts: AssembleOptions = {}): 
 
   // 3. T1: all critical items; if over budget apply the ladder step by step; still over → PACK_T1_OVERFLOW.
   for (const it of byTier.get('T1') ?? []) chosen.set(it.id, { item: it, compressed: false });
-  sections = renderSections(template, chosen);
+  sections = renderSections(template, chosen, lang);
   const ladderSteps: LadderStep[] = [];
   for (const step of template.ladder) {
     if (totalTokens(sections) <= budget) break;
     if (applyLadderStep(step, chosen, input)) {
       ladderSteps.push(step);
-      sections = renderSections(template, chosen);
+      sections = renderSections(template, chosen, lang);
     }
   }
   const t1Tokens = totalTokens(sections);
@@ -324,7 +328,7 @@ export function assemblePack(input: AssemblyInput, opts: AssembleOptions = {}): 
     perKindTokens.set(item.kind, kindTokens);
     t2Budget += tokens;
   }
-  sections = renderSections(template, chosen);
+  sections = renderSections(template, chosen, lang);
   for (const { item } of orderItems(template, byTier.get('T3') ?? [])) {
     const tokens = tokensOf(template, item, false);
     if (totalTokens(sections) + tokens > budget) {
@@ -332,7 +336,7 @@ export function assemblePack(input: AssemblyInput, opts: AssembleOptions = {}): 
       continue;
     }
     chosen.set(item.id, { item, compressed: false });
-    sections = renderSections(template, chosen);
+    sections = renderSections(template, chosen, lang);
   }
 
   // 5. Render prompt halves and compute hashes.

@@ -1,0 +1,208 @@
+{
+  "id": "lang/ko",
+  "kind": "output_language",
+  "version": 2,
+  "name": "한국어 출력 언어 프로필 (한국어 원문 계약)",
+  "output_language": {
+    "language": "ko",
+    "locale": "ko-KR",
+    "contract_text": "독자가 읽는 원고는 자연스럽고 입에 붙는 한국어(표준어, ko-KR)로 쓴다. 처음부터 한국어로 구상하고 한국어로 쓴다 — 다른 언어로 생각한 문장을 옮기지 않고, 외국어 어순·관용구·문법을 흉내 내지 않는다. 대사는 큰따옴표(“ ”), 속마음과 인용은 작은따옴표(‘ ’), 말줄임은 ‘……’ 또는 ‘…’를 쓰고, 띄어쓰기와 조사를 정확히 지킨다. 호칭·직함·말의 높낮이(해라체·해체·해요체·하십시오체)는 이 세계의 인물들이 실제로 말할 법한 방식으로, 관계와 장면에 맞게 자연스럽게 구사한다. 용어는 용어 목록에 승인된 표기만 쓴다. 번역투(대명사 남발, ‘~에 대해’, ‘~를 통해’, ‘~에 있어서’, ‘~하는 중이다’, ‘~를 가지고 있다’, 이중 피동, ‘~것이었다’ 반복)와 문학적·서구 소설식 딕션(은유 연쇄, 장황한 풍경 묘사, 수필 같은 내면 독백)으로 흐르지 않는다.",
+    "punctuation": {
+      "dialogue_quotes": "“ ”",
+      "nested_quotes": "‘ ’",
+      "thought_style": "plain",
+      "dash": "em_unspaced",
+      "ellipsis": "…"
+    },
+    "numbers_style": "아라비아 숫자 + 한국어 단위 (10년, 3층, 5미터); 대사 속 작은 수는 한글로 (한 명, 두 번)",
+    "narration_tense": "past",
+    "translation_markers": [
+      {
+        "id": "TRN-KO-01",
+        "pattern": "(에 대해서?|에 대한)",
+        "weight": 0.4,
+        "severity": "minor",
+        "note": "‘about’ 직역 — 목적격으로 바로 잇는다"
+      },
+      {
+        "id": "TRN-KO-02",
+        "pattern": "[A-Za-z]{5,}",
+        "weight": 0.4,
+        "severity": "minor",
+        "note": "용어 목록 밖의 로마자 단어"
+      },
+      {
+        "id": "TRN-KO-03",
+        "pattern": "(을|를) 통해(서)?",
+        "weight": 0.4,
+        "severity": "minor",
+        "note": "‘through’ 직역"
+      },
+      {
+        "id": "TRN-KO-04",
+        "pattern": "에 있어(서)?",
+        "weight": 0.6,
+        "severity": "minor",
+        "note": "‘において/in’ 직역"
+      },
+      {
+        "id": "TRN-KO-05",
+        "pattern": "(되어지|되어져|지어지|잊혀지)",
+        "weight": 0.6,
+        "severity": "minor",
+        "note": "이중 피동"
+      },
+      {
+        "id": "TRN-KO-06",
+        "pattern": "(을|를) 가지고 있(다|었다|는)",
+        "weight": 0.4,
+        "severity": "minor",
+        "note": "‘have’ 직역"
+      },
+      {
+        "id": "TRN-KO-07",
+        "pattern": "하는 중이(다|었다)",
+        "weight": 0.3,
+        "severity": "minor",
+        "note": "‘be -ing’ 직역"
+      }
+    ],
+    "calque_phrases": [],
+    "forbidden_patterns": [
+      {
+        "id": "LN-01",
+        "category": "light_novel",
+        "pattern": "[「」『』]",
+        "severity": "major",
+        "weight": 1.0
+      },
+      {
+        "id": "SP-01",
+        "category": "screenplay",
+        "pattern": "(^|\\n)\\s*(INT\\.|EXT\\.|SCENE\\s?\\d|CUT TO|\\(V\\.O\\.\\)|\\[대사\\])",
+        "severity": "blocking",
+        "weight": 2.0
+      },
+      {
+        "id": "SP-02",
+        "category": "outline",
+        "pattern": "(^|\\n)\\s*(#{1,6}\\s|[-*]\\s|\\d+\\)\\s)",
+        "severity": "major",
+        "weight": 1.0
+      }
+    ],
+    "lint_thresholds": {
+      "EP-GRM-01": {
+        "warn": 3,
+        "fail": 6
+      },
+      "EP-OPEN-01": {
+        "warn": 3,
+        "fail": 4
+      },
+      "EP-OPEN-02": {
+        "warn": 0.6,
+        "fail": 0.75
+      },
+      "EP-LEN-01": {
+        "warn": 18,
+        "fail": 25
+      },
+      "EP-LEN-02": {
+        "warn": 30,
+        "fail": 45
+      },
+      "EP-LEN-03": {
+        "warn": 4,
+        "fail": 3
+      },
+      "EP-DLG-01": {
+        "warn": 0.2,
+        "fail": 0.35
+      },
+      "EP-DLG-02": {
+        "warn": 0.15,
+        "fail": 0.3
+      },
+      "EP-DLG-03": {
+        "warn": 0.5,
+        "fail": 0.7
+      },
+      "EP-FLT-01": {
+        "warn": 6,
+        "fail": 10
+      },
+      "EP-ADV-01": {
+        "warn": 12,
+        "fail": 20
+      },
+      "EP-TRN-RATE": {
+        "warn": 1.5,
+        "fail": 3.0
+      },
+      "EP-LOC-01": {
+        "warn": 1,
+        "fail": 3
+      },
+      "EP-REP-01": {
+        "warn": 2,
+        "fail": 4
+      },
+      "EP-LENGTH-01": {
+        "warn": 0.12,
+        "fail": 0.2
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "한국어 어감과 관용 표현",
+        "weight": 0.3,
+        "anchors": {
+          "5": "한국어 원어민 작가가 쓴 것처럼 자연스럽고 표준적인 어감.",
+          "3": "간혹 어색한 표현이나 비문이 섞임.",
+          "1": "외국어 번역투가 곳곳에서 드러남."
+        }
+      },
+      {
+        "dimension": "번역투 문장의 부재",
+        "weight": 0.25,
+        "anchors": {
+          "5": "주어·목적어·조사가 자연스럽고 한국어 어순을 따름.",
+          "3": "몇몇 번역투 문장이 보임.",
+          "1": "영어식 어순·관형절 남용·불필요한 피동이 전반에 퍼짐."
+        }
+      },
+      {
+        "dimension": "화법과 존대의 자연스러움",
+        "weight": 0.2,
+        "anchors": {
+          "5": "말투와 높임이 장면과 관계에 맞게 자연스럽게 구사됨.",
+          "3": "화법은 맞지만 어색하게 굳음.",
+          "1": "높임이 기계적이거나 등장인물 관계와 어긋남."
+        }
+      },
+      {
+        "dimension": "모바일 가독성",
+        "weight": 0.15,
+        "anchors": {
+          "5": "짧고 힘 있는 문장, 끊어 읽기 좋은 문단.",
+          "3": "일부 문장이 길거나 얽힘.",
+          "1": "빽빽한 문단과 긴 문장이 지속됨."
+        }
+      },
+      {
+        "dimension": "문학적·서구적 딕션 자제",
+        "weight": 0.1,
+        "anchors": {
+          "5": "연재 독서에 맞는 담백하고 박진감 있는 딕션.",
+          "3": "가끔 화려한 문장이 섞임.",
+          "1": "은유 연쇄와 고급 어휘가 지배적."
+        }
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "시작값. 대조 세트와 검토자 판정으로 보정한다 (ADR-0029)."
+  }
+}

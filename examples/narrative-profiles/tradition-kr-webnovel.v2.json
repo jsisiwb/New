@@ -1,0 +1,220 @@
+{
+  "id": "tradition/kr-webnovel",
+  "kind": "tradition",
+  "version": 2,
+  "name": "한국 연재 웹소설 서사 전통 (한국어 원문 계약)",
+  "tradition": {
+    "tradition_id": "kr-webnovel",
+    "contract_text": "네이버 시리즈·카카오페이지·노벨피아·문피아 연재 웹소설의 구조와 호흡을 따른다. 첫 몇 문장 안에 긴장이나 전 회차의 연결로 들어간다. 문단은 한두 문장으로 짧게 끊어 모바일에서 한눈에 읽히게 하고, 강조할 문장은 한 줄 문단으로 떼어 놓는다. 장면은 행동→반응→속마음(‘ ’)→대사의 비트를 빠르게 교차시키며, 설명은 행동·대사·상태창·주인공의 속마음 안에 녹인다. 한 회차 안에 로컬 보상(사이다, 폭로, 감정의 한 걸음, 성장 확인, 웃음) 하나 이상을 반드시 준다. 회차는 다음 화를 누르게 만드는 절단(클리프행어, 폭로, 결단, 위협의 등장, 감정의 정점, 불길한 여운)으로 끝낸다. 요약이나 회상으로 마무리하지 않는다. 서구 서사시 판타지, 순문학, 종이책 장편소설의 호흡으로 흐르지 않는다. 설정된 장르 관습을 지키고, 특정 작가나 작품을 모방하지 않는다.",
+    "structure": {
+      "hook_within_sentences": 5,
+      "opening_types_allowed": [
+        "continue_cliffhanger",
+        "in_medias_res",
+        "sharp_dialogue",
+        "status_update",
+        "time_skip_with_tension"
+      ],
+      "opening_types_forbidden": [
+        "weather_landscape",
+        "lore_dump",
+        "waking_up_routine"
+      ],
+      "scene_count_band": {
+        "min": 2,
+        "max": 4
+      },
+      "local_payoff_required_any_of": [
+        "satisfaction",
+        "revelation",
+        "emotional_step",
+        "growth_confirmed",
+        "humor_beat"
+      ],
+      "ending_types_allowed": [
+        "cliffhanger",
+        "reveal",
+        "decision",
+        "arrival_of_threat",
+        "emotional_peak",
+        "quiet_ominous"
+      ],
+      "ending_types_forbidden": [
+        "mid_scene_fade",
+        "summary_reflection"
+      ],
+      "cadence": {
+        "progression_event_every_chapters": 4,
+        "satisfaction_every_chapters": 3,
+        "max_frustration_streak": 3
+      },
+      "exposition": {
+        "max_consecutive_sentences": 4,
+        "lore_via": [
+          "action",
+          "dialogue",
+          "status_text",
+          "narration_slot"
+        ],
+        "new_terms_per_chapter_max": 6
+      }
+    },
+    "rhythm": {
+      "paragraph_max_sentences": 3,
+      "paragraph_max_words_narration": 30,
+      "paragraph_max_words_dialogue": 30,
+      "single_line_ok": true,
+      "sentence_variance": "high",
+      "dialogue_ratio_band": {
+        "min": 0.2,
+        "max": 0.5,
+        "target": 0.32
+      },
+      "reaction_beats": "interleave",
+      "monologue_ratio_band": {
+        "min": 0.05,
+        "max": 0.25
+      },
+      "hindsight_monologue_max_ratio": 0.2
+    },
+    "devices": [
+      {
+        "id": "status_window",
+        "description": "대괄호 상태창. 항목명은 한국어, 숫자는 사실로 기록된다. 한 회차에 두 번 이하.",
+        "format_grammar": "[상태창]\n이름: <이름>   레벨: <n>   클래스: <클래스>\n근력 <n>   민첩 <n>   체력 <n>\n스킬: <스킬> Lv.<n>, ...",
+        "max_per_chapter": 2
+      },
+      {
+        "id": "system_message",
+        "description": "한 줄짜리 대괄호 시스템 알림. 존댓말 평서문(~했습니다/~합니다). 여러 줄이면 한 줄에 하나씩.",
+        "format_grammar": "[<시스템 메시지.>]"
+      },
+      {
+        "id": "community_interlude",
+        "description": "커뮤니티 게시판·댓글 인터루드. 반말·인터넷 말투, 실제 플랫폼 이름 금지, 8줄 이하.",
+        "format_grammar": "(└ <한 줄 댓글>\\n){2,8}",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "hindsight_monologue",
+        "description": "작은따옴표(‘ ’) 속마음으로 원작 지식·지난 생을 떠올리는 한두 문장. 회차의 20% 이하, 문단 단위 회상 금지."
+      },
+      {
+        "id": "rank_reveal",
+        "description": "측정 결과 → 주변 인물의 반응(인물마다 다르게) → 주인공의 반응. 한 회차에 한 번.",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "letter",
+        "description": "편지·쪽지·메시지 블록. 들여쓴 본문과 서명."
+      }
+    ],
+    "lint_thresholds": {
+      "ST-HOOK-01": {
+        "warn": 5,
+        "fail": 8
+      },
+      "ST-SCENE-01": {
+        "warn": 1,
+        "fail": 2
+      },
+      "ST-EXP-01": {
+        "warn": 4,
+        "fail": 7
+      },
+      "ST-EXP-02": {
+        "warn": 6,
+        "fail": 10
+      },
+      "ST-DLG-01": {
+        "warn": 0.05,
+        "fail": 0.12
+      },
+      "ST-MON-01": {
+        "warn": 0.05,
+        "fail": 0.12
+      },
+      "ST-MON-02": {
+        "warn": 0.2,
+        "fail": 0.3
+      },
+      "ST-CAD-01": {
+        "warn": 1,
+        "fail": 3
+      },
+      "ST-PARA-01": {
+        "warn": 0.15,
+        "fail": 0.3
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "도입 훅",
+        "weight": 0.15,
+        "anchors": {
+          "5": "첫 몇 문장 안에 긴장이나 전 회차의 연결이 걸린다.",
+          "3": "몇 문단의 준비 뒤에 훅이 온다.",
+          "1": "풍경·일상·설명으로 시작해 끌어당김이 없다."
+        }
+      },
+      {
+        "dimension": "회차 보상",
+        "weight": 0.2,
+        "anchors": {
+          "5": "이번 화에서 사이다·폭로·감정의 한 걸음·성장·웃음 중 하나가 분명히 터진다.",
+          "3": "보상은 있지만 약하다.",
+          "1": "아무것도 주지 않고 깔기만 한다."
+        }
+      },
+      {
+        "dimension": "호흡과 비트",
+        "weight": 0.15,
+        "anchors": {
+          "5": "행동·대사·반응·속마음 비트가 빠르게 교차하며 장면이 움직인다.",
+          "3": "한 장면이 처진다.",
+          "1": "움직임 없는 서술이 길게 이어진다."
+        }
+      },
+      {
+        "dimension": "설명 통제",
+        "weight": 0.1,
+        "anchors": {
+          "5": "세계 정보가 행동·대사·상태창·속마음으로 들어온다.",
+          "3": "설명 문단이 한두 개 있다.",
+          "1": "백과사전식 설명이 이야기를 멈춘다."
+        }
+      },
+      {
+        "dimension": "대사 중심성",
+        "weight": 0.1,
+        "anchors": {
+          "5": "대사가 장면을 끌고 짧은 반응 비트가 사이를 채운다.",
+          "3": "대사는 있지만 서술이 무겁다.",
+          "1": "장면이 요약 서술로 처리된다."
+        }
+      },
+      {
+        "dimension": "절단(엔딩)의 당김",
+        "weight": 0.2,
+        "anchors": {
+          "5": "마지막 줄이 다음 화를 바로 열 이유를 만든다.",
+          "3": "자연스러운 멈춤, 약한 궁금증.",
+          "1": "요약·회상으로 끝나 당김이 없다."
+        }
+      },
+      {
+        "dimension": "카덴스와 장치",
+        "weight": 0.1,
+        "anchors": {
+          "5": "성장·사이다 주기를 지키고 장르 장치를 올바르게 쓴다.",
+          "3": "주기가 조금 어긋나거나 장치 하나를 잘못 쓴다.",
+          "1": "여러 화 동안 진전이 없고 장치가 없거나 틀렸다."
+        }
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "시작값. 프로젝트별로 승인 회차 10개 이상에서 보정한다 (ADR-0029)."
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "id": "genre/academy",
+  "kind": "genre",
+  "version": 2,
+  "name": "아카데미물 오버레이 (한국어)",
+  "genre": {
+    "genre_id": "academy",
+    "reader_fantasy": "엘리트들 사이에 숨은 재능(또는 원작 지식)을 가진 주인공이 조용히 판을 뒤집는다. 라이벌 관계가 존중으로 바뀌고, 시험·대련·대회 같은 무대에서 규칙과 판돈이 분명한 사이다가 터진다. 히로인들과의 관계는 사건을 함께 겪으며 한 단계씩 가까워진다.",
+    "vocabulary": {
+      "preferred_terms": [
+        "입학식",
+        "신입생",
+        "1학년",
+        "2학년",
+        "실기 시험",
+        "필기 시험",
+        "교수",
+        "조교",
+        "기숙사",
+        "학생회",
+        "대련",
+        "결투",
+        "순위표",
+        "선배",
+        "후배",
+        "반",
+        "학기"
+      ],
+      "discouraged_terms": [
+        "센파이",
+        "코하이",
+        "프레시맨",
+        "소포모어",
+        "홈룸"
+      ],
+      "terminology_defaults": []
+    },
+    "devices": [
+      {
+        "id": "leaderboard",
+        "description": "상태창 형식으로 보여 주는 순위표. 모든 숫자는 유효 기간이 있는 사실이다.",
+        "format_grammar": "[순위표 — <시험 이름>]\n1위 <이름>  <점수>\n2위 <이름>  <점수>\n...",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "exam_arc",
+        "description": "3~6화 분량의 시험·대회 아크. 첫 라운드 전에 규칙이 공개되고, 규칙은 잠긴 세계 사실이다."
+      },
+      {
+        "id": "rival_exchange",
+        "description": "라이벌 사이의 짧고 날 선 말다툼. 상대가 받아칠 수 없는 한마디로 끝난다.",
+        "max_per_chapter": 2
+      },
+      {
+        "id": "extra_observer",
+        "description": "엑스트라·조연 시점의 반응 컷. 주인공의 비범함을 제3자의 오해·경악으로 보여 준다. 반응은 인물마다 다르게.",
+        "max_per_chapter": 1
+      }
+    ],
+    "cadence": {
+      "progression_event_every_chapters": 3,
+      "satisfaction_every_chapters": 3,
+      "max_frustration_streak": 3
+    },
+    "structure_overrides": {
+      "opening_types_preferred": [
+        "status_update",
+        "sharp_dialogue"
+      ],
+      "participants_soft_cap": 8
+    },
+    "register_notes": [
+      "학년 서열이 분명하다: 후배는 선배에게 존댓말(해요체)과 ‘선배’ 호칭, 같은 학년끼리는 반말과 이름을 쓴다.",
+      "교수에게는 ‘교수님’, 조교에게는 ‘조교님’. 교수는 학생에게 반말 또는 하게체에 가까운 말투를 쓴다.",
+      "귀족 가문 출신 학생은 평민 학생을 낮춰 부르거나 성·가문명으로 부르기도 한다. 관계가 변하면 호칭과 말높이가 바뀌고, 그 변화 자체가 관계 이정표다.",
+      "존대는 말높이·호칭·누가 먼저 말하는지로 드러난다. 기계적으로 높임을 남발하지 않는다."
+    ],
+    "default_relationship_registers": [
+      {
+        "relationship_class": "elder",
+        "register": {
+          "formality": 3,
+          "deference": 3,
+          "familiarity": 1,
+          "directness": 2,
+          "contractions": "neutral",
+          "address_terms": [
+            "선배"
+          ],
+          "titles": [
+            "학생회장",
+            "대장"
+          ]
+        }
+      },
+      {
+        "relationship_class": "peer",
+        "register": {
+          "formality": 1,
+          "deference": 0,
+          "familiarity": 3,
+          "directness": 4,
+          "contractions": "free",
+          "address_terms": [],
+          "titles": []
+        }
+      },
+      {
+        "relationship_class": "master",
+        "register": {
+          "formality": 4,
+          "deference": 4,
+          "familiarity": 0,
+          "directness": 1,
+          "contractions": "avoid",
+          "address_terms": [
+            "교수님"
+          ],
+          "titles": [
+            "교수",
+            "조교",
+            "학장"
+          ]
+        }
+      }
+    ],
+    "taboos": [
+      "아크 도중 이야기 속 이유 없이 시험 규칙이 바뀐다",
+      "반 전체의 똑같은 반응 컷을 반복한다",
+      "한 번도 깔아 두지 않은 힘으로 이긴다",
+      "히로인이 이유 없이 첫눈에 반한다"
+    ],
+    "judge_notes": [
+      "군중 장면에서는 계약의 참여자만 말한다. 나머지는 배경이다.",
+      "순위·점수 변화는 읽기 쉽고 앞선 순위표와 일치해야 한다.",
+      "라이벌 비트는 서술로 승패를 설명하지 않고 한 번의 반전으로 끝낸다."
+    ],
+    "lint_thresholds": {
+      "ST-EXP-02": {
+        "warn": 8,
+        "fail": 12
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "숨은 재능과 분명한 판돈",
+        "weight": 0.35,
+        "anchors": {
+          "1": "무엇을 시험하고 무엇을 거는지 알 수 없다.",
+          "3": "판돈은 말하지만 느껴지지 않는다.",
+          "5": "독자가 규칙·위험·반전을 알고, 보상이 시험이나 대련 안에서 터진다."
+        }
+      },
+      {
+        "dimension": "움직이는 라이벌 관계",
+        "weight": 0.35,
+        "anchors": {
+          "1": "라이벌이 변화 없이 말싸움만 한다.",
+          "3": "한쪽만 움직인다.",
+          "5": "주고받을 때마다 존중이나 적의가 눈에 보이게 한 단계 움직인다."
+        }
+      },
+      {
+        "dimension": "자연스러운 서열 표현",
+        "weight": 0.3,
+        "anchors": {
+          "1": "모두 같은 말투거나 높임이 어색하다.",
+          "3": "호칭은 있지만 들쭉날쭉하다.",
+          "5": "호칭과 말높이, 말하는 순서로 서열이 자연스럽게 드러난다."
+        }
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "Starter profile (ADR-0043)."
+  }
+}

@@ -8,8 +8,7 @@
     "title_working",
     "premise",
     "genre",
-    "target_chapters",
-    "target_words_per_chapter"
+    "target_chapters"
   ],
   "additionalProperties": false,
   "properties": {
@@ -175,7 +174,7 @@
       "type": "integer",
       "minimum": 500,
       "maximum": 8000,
-      "description": "English words per chapter (ADR-0034); default 2,500. Used when manuscript_language is en (default)."
+      "description": "English words per chapter (ADR-0034); default 2,500. Used when manuscript_language is en (default). Required unless manuscript_language is ko (ADR-0055)."
     },
     "target_characters_per_chapter": {
       "type": "integer",
@@ -351,5 +350,26 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "not": {
+          "properties": {
+            "manuscript_language": {
+              "const": "ko"
+            }
+          },
+          "required": [
+            "manuscript_language"
+          ]
+        }
+      },
+      "then": {
+        "required": [
+          "target_words_per_chapter"
+        ]
+      }
+    }
+  ]
 }

@@ -1,0 +1,31 @@
+{
+  "family": "assumption_explainer",
+  "version": "3.0.0",
+  "role": "assumption_explainer",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "C",
+  "input_variables": [
+    "assumptions_json"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 1000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "assumption_explainer.fixture.smoke"
+  ],
+  "content_hash": "sha256:ad50c3278c46295def016f935b3cc3fdebd22e604338891505d8676bd1410022"
+}

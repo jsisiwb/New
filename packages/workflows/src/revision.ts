@@ -191,7 +191,7 @@ export async function reviseVersion(
       if (!lang.passed)
         throw new WorkflowError(
           'OUTPUT_LANGUAGE_FAILED',
-          `patch text is not English (confidence ${lang.english_confidence})`,
+          `patch text is not ${language === 'ko' ? 'Korean' : 'English'} (confidence ${lang.english_confidence})`,
           {
             step: 'revise',
             recommendedActions: ['regenerate'],

@@ -332,22 +332,22 @@ export class HttpProvider implements Provider {
             }
             chunks.push(c);
           });
-          res.on(
-            'end',
-            () =>
-              done ||
-              resolve({
-                ok: (res.statusCode ?? 0) >= 200 && (res.statusCode ?? 0) < 300,
-                status: res.statusCode ?? 0,
-                text: Buffer.concat(chunks).toString('utf8'),
-              }),
-          );
+          res.on('end', () => {
+            if (done) return;
+            resolve({
+              ok: (res.statusCode ?? 0) >= 200 && (res.statusCode ?? 0) < 300,
+              status: res.statusCode ?? 0,
+              text: Buffer.concat(chunks).toString('utf8'),
+            });
+          });
           res.on('error', (err: Error) => {
             if (!done) reject(toAbortError(err));
           });
         },
       );
-      r.on('error', (err: Error) => reject(toAbortError(err)));
+      r.on('error', (err: Error) => {
+        reject(toAbortError(err));
+      });
       const onAbort = () => {
         abortedBySignal = true;
         r.destroy();

@@ -5,6 +5,20 @@
  * role budget is exceeded, and overflow of the unsheddable core is a compile error, never a truncation.
  */
 import { type ComposedIdentity, sha256 } from './profiles.js';
+import {
+  IDENTITY_TAIL_KO,
+  renderCadenceKo,
+  renderGenresKo,
+  renderNamingKo,
+  renderParticipantsKo,
+  renderPreferencesKo,
+  renderRegisterKo,
+  renderRubricKo,
+  renderSettingKo,
+  renderStructureKo,
+  renderTerminologyKo,
+  SECTION_TITLES_KO,
+} from './compiler-ko.js';
 
 export type RoleVariant =
   | 'writer_full'
@@ -300,20 +314,58 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
   const tradHash = sha256(tradContract);
   const header = `${HEADER_PREFIX} identity=${id.ref} role=${opts.role} lang=${id.outputLanguage.language}/${id.outputLanguage.locale ?? 'en-US'} tradition=${id.tradition.tradition_id ?? 'kr-webnovel'}>>`;
 
+  // ADR-0055: a Korean manuscript identity renders its whole block in Korean; English stays byte-stable.
+  const isKo = id.outputLanguage.language === 'ko';
+  const R = isKo
+    ? {
+        structure: renderStructureKo,
+        cadence: renderCadenceKo,
+        genres: renderGenresKo,
+        setting: renderSettingKo,
+        naming: renderNamingKo,
+        register: renderRegisterKo,
+        participants: renderParticipantsKo,
+        terminology: renderTerminologyKo,
+        preferences: renderPreferencesKo,
+        rubric: renderRubricKo,
+      }
+    : {
+        structure: renderStructure,
+        cadence: renderCadence,
+        genres: renderGenres,
+        setting: renderSetting,
+        naming: renderNaming,
+        register: renderRegister,
+        participants: renderParticipants,
+        terminology: renderTerminology,
+        preferences: renderPreferences,
+        rubric: renderRubric,
+      };
+  const rubricTitles = isKo
+    ? [
+        '한국어 문장 채점 기준 (차원 A)',
+        '한국 웹소설 구조 채점 기준 (차원 B)',
+        '장르 채점 기준 (차원 C)',
+      ]
+    : [
+        'English prose rubric (dimension A)',
+        'Korean-webnovel structure rubric (dimension B)',
+        'Genre rubric (dimension C)',
+      ];
   const candidates: Record<string, Section> = {
-    structure: { name: 'structure', text: renderStructure(id), priority: 90 },
-    cadence: { name: 'cadence', text: renderCadence(id), priority: 60 },
-    genres: { name: 'genres', text: renderGenres(id), priority: 70 },
-    setting: { name: 'setting', text: renderSetting(id), priority: 30 },
-    naming: { name: 'naming', text: renderNaming(id), priority: 80 },
-    register: { name: 'register', text: renderRegister(id), priority: 85 },
+    structure: { name: 'structure', text: R.structure(id), priority: 90 },
+    cadence: { name: 'cadence', text: R.cadence(id), priority: 60 },
+    genres: { name: 'genres', text: R.genres(id), priority: 70 },
+    setting: { name: 'setting', text: R.setting(id), priority: 30 },
+    naming: { name: 'naming', text: R.naming(id), priority: 80 },
+    register: { name: 'register', text: R.register(id), priority: 85 },
     participants: {
       name: 'participants',
-      text: renderParticipants(opts.participants ?? []),
+      text: R.participants(opts.participants ?? []),
       priority: 88,
     },
-    terminology: { name: 'terminology', text: renderTerminology(id), priority: 75 },
-    preferences: { name: 'preferences', text: renderPreferences(id), priority: 40 },
+    terminology: { name: 'terminology', text: R.terminology(id), priority: 75 },
+    preferences: { name: 'preferences', text: R.preferences(id), priority: 40 },
     restrictions: {
       name: 'restrictions',
       text: opts.contentRestrictions?.length ? bullet(opts.contentRestrictions) : '',
@@ -321,17 +373,17 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     },
     prose_rubric: {
       name: 'prose_rubric',
-      text: renderRubric(id.outputLanguage.rubric, 'English prose rubric (dimension A)'),
+      text: R.rubric(id.outputLanguage.rubric, rubricTitles[0] ?? ''),
       priority: Infinity,
     },
     structure_rubric: {
       name: 'structure_rubric',
-      text: renderRubric(id.tradition.rubric, 'Korean-webnovel structure rubric (dimension B)'),
+      text: R.rubric(id.tradition.rubric, rubricTitles[1] ?? ''),
       priority: Infinity,
     },
     genre_rubric: {
       name: 'genre_rubric',
-      text: renderRubric(id.primaryGenre?.rubric, 'Genre rubric (dimension C)'),
+      text: R.rubric(id.primaryGenre?.rubric, rubricTitles[2] ?? ''),
       priority: Infinity,
     },
   };
@@ -339,11 +391,17 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     .map((n) => candidates[n])
     .filter((s): s is Section => s !== undefined && s.text.length > 0);
 
-  const core = [
-    header,
-    `## Output-Language Contract (English)\n${langContract}`,
-    `## Narrative-Tradition Contract (Korean serialized webnovel)\n${tradContract}`,
-  ];
+  const core = isKo
+    ? [
+        header,
+        `## 출력 언어 계약 (한국어)\n${langContract}`,
+        `## 서사 전통 계약 (한국 연재 웹소설)\n${tradContract}`,
+      ]
+    : [
+        header,
+        `## Output-Language Contract (English)\n${langContract}`,
+        `## Narrative-Tradition Contract (Korean serialized webnovel)\n${tradContract}`,
+      ];
   const coreTokens =
     estimateTokens(core.join('\n\n')) +
     estimateTokens(
@@ -391,13 +449,15 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
   };
   const body = [
     ...core,
-    ...ordered.map((s) => `## ${titles[s.name] ?? s.name}\n${s.text}`),
+    ...ordered.map(
+      (s) => `## ${(isKo ? SECTION_TITLES_KO[s.name] : titles[s.name]) ?? s.name}\n${s.text}`,
+    ),
     '<<END_NARRATIVE_IDENTITY>>',
   ].join('\n\n');
   const tail =
     opts.role === 'writer_full' || opts.role === 'editor_full'
       ? id.outputLanguage.language === 'ko'
-        ? `IDENTITY_TAIL: 자연스러운 한국어로 직접 쓴다(번역투, 어색한 외래어 남용 금지). 한국 웹소설 형식을 유지한다: 초반 훅, 대화 중심 장면, 짧고 모바일 친화적인 문단, 이번 회차의 로컬 보상(사이다 등), 다음 회차로 이어지는 끝맺음.`
+        ? IDENTITY_TAIL_KO
         : `IDENTITY_TAIL: Write natural English composed directly in English (no translation-like syntax, no honorific suffixes). Keep Korean-webnovel form: early hook, dialogue-forward scenes, short mobile paragraphs, a local payoff, and an ending with forward pull.`
       : undefined;
   return {

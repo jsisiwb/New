@@ -21,6 +21,7 @@ import { compileActiveConstraintSet } from '@yeonjae/context';
 import { compileBlock } from '@yeonjae/narrative';
 import { type LengthTarget } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
+import { normalizeContractOutput } from './plan-normalize.js';
 import {
   bind,
   existingArtifact,
@@ -436,6 +437,7 @@ export async function generateContract(
     async () => {
       const project = await getProject(ctx.pool, ctx.projectId);
       const block = compilePlannerBlock(ctx);
+      const lang = langOf(ctx);
       const acsHard = compileActiveConstraintSet(
         input.spec,
         {
@@ -445,7 +447,10 @@ export async function generateContract(
           participantIds: [],
           specVersion: input.spec.version,
         },
-        { capTokens: ctx.policy.context.active_constraints_cap_tokens },
+        {
+          capTokens: ctx.policy.context.active_constraints_cap_tokens,
+          workingLanguage: ctx.identity.outputLanguage.language ?? 'en',
+        },
       );
       await bind(ctx, {
         canon_version: String(project.canon_version),
@@ -462,19 +467,24 @@ export async function generateContract(
           chapter_number: String(input.chapterNo),
           previous_chapter_summary: input.previousSummary,
           canon_state: input.bible
-            ? `${renderBibleState(input.bible, ctx.bindings)}\n\nUse ONLY the entity ids above for participants, locations and pov.character_id, and ONLY the proposition ids above in knowledge_guards and knowledge_deltas. ${await renderCanonFacts(ctx, input.chapterNo)}`
-            : '(structured canon is pinned by the workflow at contract validation)',
+            ? `${renderBibleState(input.bible, ctx.bindings, lang)}\n\n${
+                lang === 'ko'
+                  ? 'participants, locations, pov.character_id에는 위의 엔티티 id만, knowledge_guards와 knowledge_deltas에는 위의 명제 id만 쓴다.'
+                  : 'Use ONLY the entity ids above for participants, locations and pov.character_id, and ONLY the proposition ids above in knowledge_guards and knowledge_deltas.'
+              } ${await renderCanonFacts(ctx, input.chapterNo)}`
+            : lang === 'ko'
+              ? '(구조화된 정사는 계약 검증 때 워크플로가 고정한다)'
+              : '(structured canon is pinned by the workflow at contract validation)',
           knowledge_state: input.bible
-            ? renderKnowledge(input.bible)
-            : '(knowledge is pinned by the workflow at contract validation)',
+            ? renderKnowledge(input.bible, lang)
+            : lang === 'ko'
+              ? '(지식 상태는 계약 검증 때 워크플로가 고정한다)'
+              : '(knowledge is pinned by the workflow at contract validation)',
           open_promises: input.bible
-            ? input.bible.promises
-                .map(
-                  (p) =>
-                    `- [${p.id}] ${p.statement} (${p.type}, ${p.importance}${p.due_min_chapter !== undefined ? `, due ch.${p.due_min_chapter}–${p.due_max_chapter ?? '?'}` : ''})`,
-                )
-                .join('\n') || '(none)'
-            : '(promises are pinned by the workflow at contract validation)',
+            ? renderPromiseLines(input.bible, lang)
+            : lang === 'ko'
+              ? '(약속은 계약 검증 때 워크플로가 고정한다)'
+              : '(promises are pinned by the workflow at contract validation)',
           active_constraints: acsHard.hardText,
           length_target_words: String(input.lengthTarget.value),
         },
@@ -486,15 +496,25 @@ export async function generateContract(
           chapterNo: input.chapterNo,
           arcId: input.arcPlan.id,
           seasonId: input.arcPlan.season_id,
-          participantIds: (
-            (call.output.participants as ChapterContract['participants'] | undefined) ?? []
-          ).map((p) => p.character_id),
+          participantIds: (Array.isArray(call.output.participants)
+            ? (call.output.participants as unknown[])
+            : []
+          )
+            .map((p) =>
+              typeof p === 'object' && p !== null
+                ? (p as { character_id?: unknown }).character_id
+                : p,
+            )
+            .filter((id): id is string => typeof id === 'string' && knownEntityIds.has(id)),
           specVersion: input.spec.version,
         },
-        { capTokens: ctx.policy.context.active_constraints_cap_tokens },
+        {
+          capTokens: ctx.policy.context.active_constraints_cap_tokens,
+          workingLanguage: ctx.identity.outputLanguage.language ?? 'en',
+        },
       );
-      const candidate: ChapterContract = {
-        ...call.output,
+      const envelope = (content: Partial<ChapterContract>): ChapterContract => ({
+        ...(content as ChapterContract),
         id: input.contractId,
         project_id: ctx.projectId,
         chapter_number: input.chapterNo,
@@ -515,8 +535,27 @@ export async function generateContract(
           content_hash: acs.contentHash,
           token_count: acs.tokenCount,
         },
-      };
-      const issues = validateContract(candidate, input, knownPropositionIds, knownEntityIds);
+      });
+      let candidate = envelope(call.output);
+      let issues = validateContract(candidate, input, knownPropositionIds, knownEntityIds);
+      // A live model's near-miss shape is coerced only when the raw output does not validate, so a
+      // schema-valid (recorded) contract keeps its exact bytes.
+      if (issues.some((i) => i.startsWith('schema '))) {
+        const normalized = envelope(
+          normalizeContractOutput(call.output, {
+            chapterNo: input.chapterNo,
+            lengthTarget: input.lengthTarget,
+            knownEntityIds,
+            knownPropositionIds,
+            knownPromiseIds: new Set((input.bible?.promises ?? []).map((p) => p.id)),
+          }),
+        );
+        const retry = validateContract(normalized, input, knownPropositionIds, knownEntityIds);
+        if (retry.length < issues.length) {
+          candidate = normalized;
+          issues = retry;
+        }
+      }
       if (issues.length > 0)
         throw new WorkflowError('CONTRACT_INVALID', issues.join('; '), {
           step: 'chapter_contract',
@@ -638,36 +677,52 @@ export function compileFor(
   };
 }
 
-function renderBibleState(b: StoryBible, bindings?: Readonly<Record<string, string>>): string {
+/** Prompt-facing language of the workflow (ADR-0055): the project's manuscript language. */
+export function langOf(ctx: Pick<WorkflowContext, 'identity'>): 'en' | 'ko' {
+  return ctx.identity.outputLanguage.language === 'ko' ? 'ko' : 'en';
+}
+
+export function renderBibleState(
+  b: StoryBible,
+  bindings?: Readonly<Record<string, string>>,
+  lang: 'en' | 'ko' = 'en',
+): string {
+  const ko = lang === 'ko';
   return [
-    renderBibleDesign(b),
+    renderBibleDesign(b, lang),
     ...b.entities.map(
       (e) =>
         `- [${e.id}] ${e.display_name} (${e.type})${e.description ? `: ${e.description}` : ''}`,
     ),
     ...b.propositions.map((p) => {
       const id = bindings?.[`proposition.${p.local_id}`];
-      return `- proposition ${id ? `[${id}] ` : ''}${p.local_id}: ${p.statement} [${p.truth}${p.secret ? ', secret' : ''}]`;
+      return `- ${ko ? '명제' : 'proposition'} ${id ? `[${id}] ` : ''}${p.local_id}: ${p.statement} [${p.truth}${p.secret ? (ko ? ', 비밀' : ', secret') : ''}]`;
     }),
   ].join('\n');
 }
 
-export function renderBibleDesign(b: StoryBible): string {
-  return b.design
-    ? `[PLANNED — COMPLETE STORY DESIGN, NOT REALIZED EVENTS]\n${JSON.stringify(b.design)}\nUse registry IDs below. Accepted canon takes precedence over intended developments; secrets are not public knowledge.`
-    : '';
+export function renderBibleDesign(b: StoryBible, lang: 'en' | 'ko' = 'en'): string {
+  if (!b.design) return '';
+  return lang === 'ko'
+    ? `[PLANNED — 완성된 스토리 설계, 아직 일어난 사건이 아님]\n${JSON.stringify(b.design)}\n아래 등록부 id를 쓴다. 정사로 확정된 내용이 계획된 전개보다 우선하고, 비밀은 공개된 지식이 아니다.`
+    : `[PLANNED — COMPLETE STORY DESIGN, NOT REALIZED EVENTS]\n${JSON.stringify(b.design)}\nUse registry IDs below. Accepted canon takes precedence over intended developments; secrets are not public knowledge.`;
 }
 
-function renderKnowledge(b: StoryBible): string {
+function renderKnowledge(b: StoryBible, lang: 'en' | 'ko' = 'en'): string {
+  const ko = lang === 'ko';
   const byId = new Map(b.entities.map((e) => [e.id, e.display_name]));
   const lines = b.propositions
     .filter((p) => p.secret)
     .map((p) => {
       const s = p.secret as { owner_ids?: string[]; allowed_knower_ids?: string[] };
       const knowers = (s.allowed_knower_ids ?? []).map((id) => byId.get(id) ?? id);
-      return `- ${p.local_id} (${p.statement}) is known only by: ${knowers.join(', ') || 'nobody yet'}. Everyone else must NOT know it.`;
+      return ko
+        ? `- ${p.local_id} (${p.statement})를 아는 인물: ${knowers.join(', ') || '아직 없음'}. 그 외의 인물은 절대 몰라야 한다.`
+        : `- ${p.local_id} (${p.statement}) is known only by: ${knowers.join(', ') || 'nobody yet'}. Everyone else must NOT know it.`;
     });
-  return lines.join('\n') || '(no secrets recorded in the bible)';
+  return (
+    lines.join('\n') || (ko ? '(설정에 기록된 비밀 없음)' : '(no secrets recorded in the bible)')
+  );
 }
 
 /** Accepted facts so far, rendered compactly for the planner; empty before chapter 1. */
@@ -684,7 +739,25 @@ async function renderCanonFacts(ctx: WorkflowContext, chapterNo: number): Promis
     [ctx.projectId],
   );
   if (r.rows.length === 0) return '';
-  return `\n\nAccepted facts (what has happened):\n${r.rows
+  return `\n\n${langOf(ctx) === 'ko' ? '확정된 사실 (이미 일어난 일)' : 'Accepted facts (what has happened)'}:\n${r.rows
     .map((f) => `- ${f.display_name}: ${f.attribute} = ${f.value_text ?? ''}`)
     .join('\n')}`;
+}
+
+export function renderPromiseLines(b: StoryBible, lang: 'en' | 'ko' = 'en'): string {
+  const ko = lang === 'ko';
+  return (
+    b.promises
+      .map(
+        (p) =>
+          `- [${p.id}] ${p.statement} (${p.type}, ${p.importance}${
+            p.due_min_chapter !== undefined
+              ? ko
+                ? `, 회수 창 ${p.due_min_chapter}~${p.due_max_chapter ?? '?'}화`
+                : `, due ch.${p.due_min_chapter}–${p.due_max_chapter ?? '?'}`
+              : ''
+          })`,
+      )
+      .join('\n') || (ko ? '(없음)' : '(none)')
+  );
 }
