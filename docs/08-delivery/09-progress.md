@@ -29,6 +29,9 @@ Branch `hoplite/epidamnos-dyrrhachion-8a8e00dd` (base `2e1f764`). ADR-0056 recor
 1,836 tests green. After the reviser fix: the revision, registry and CLI unit suites and the
 chapter-production, Korean e2e, longform-replay, recovery and comparison integration suites (81 tests) green;
 `pnpm lint` and `format:check` clean; `check:types-fresh` fresh (33 schemas); planning validator `ALL OK`.
+After the judge-output fix (ADR-0056 §12): the judge-normalization unit suite (14) and the
+chapter-production, Korean e2e, longform-replay and revision suites (62 tests) green, English replays
+byte-identical.
 
 **Live run (`YEONJAE_PROVIDER_MODE=notion`, pooled `notion-ai`) — 「엑스트라로 세계를 구하는 방법」, 200화, ko,
 academy + possession + harem.** Intake written in Korean (premise, 12 tropes, six forbidden developments
@@ -64,6 +67,17 @@ including NTR and indecision, four mandatory scenes, 15세, 5,500자 per 화).
   acknowledgements, and the workflow expected chapter code-point offsets the reviser (shown only its window)
   cannot count. Patches are now anchored by their exact quote (ADR-0056 §11) and `targeted_reviser@4.0.1`
   asks for the quote instead of offsets.
+- Found by wire-level diagnosis and fixed: every chapter-1 scene call came back HTTP 200 with an empty chat
+  reply, whatever the output format or wording — the bridge's agent answered "write this scene" by writing
+  a Notion page. Every request now travels inside a fixed stateless-completion frame (ADR-0056 §8); both
+  pooled workspaces then returned the scenes.
+- Chapter 1: three scenes drafted through the bridge (1,639 / 1,809 / 1,818자; assembled 5,270자 against
+  5,500 ± 12%), seven evaluators answered (1–6 minutes each), then the scorecard failed schema validation
+  because the judges' shapes were copied into it (ADR-0056 §12). With the fix, the checkpointed judge
+  outputs replayed into a valid scorecard — 0 blocking, 9 major; structure 53 (a "눈을 떴다" opening, the
+  death flag first at paragraph 54, a 절단 on a roommate's everyday question), prose 88, genre 64, voice 70,
+  and a continuity major (a 2인실 against the rank-based dormitory rule) — and the first live revision round
+  started.
 
 ## Checkpoint K1 — defect pass, Korean architecture, fully Korean prompts — 2026-09-22
 

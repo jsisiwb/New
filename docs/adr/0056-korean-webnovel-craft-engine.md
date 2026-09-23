@@ -99,6 +99,15 @@ can answer HTTP 200 with an empty completion.
    lines, a boolean `regression` is dropped and prose in `preserved_facts_ack` is dropped so the
    acknowledgement check still decides. `arc_planner@4.0.1` and `targeted_reviser@4.0.1` correct the
    output-shape notes that taught those shapes (the reviser now asks for the exact quote, never offsets).
+12. **Judge output meets the scorecard schema in the workflow.** The first live evaluation stopped with
+   `EVALUATION_FAILED`: the v3/v4 judge shape notes taught `dimension_scores` as one 0–100 section score,
+   issue kinds as `drift_flags`, a string `repair` and a `quote` in place of offsets, and the evaluate step
+   copied all of it into the scorecard. It now keeps only 1–5 sub-scores (gates read `judge_score`), maps
+   prose/structure drift flags onto the schema enum only through aliases the prompts teach (serial drift =
+   no hook, payoff or pull), reads a string `repair` as its suggestion, and anchors each judge `quote` into
+   `chapter_span` (offsets and paragraph ids) where it occurs in the manuscript, tolerating copied
+   `[pN]` markers and retyped quotation marks; a revision window is then the flagged text, not the whole
+   chapter. Schema-valid output passes through unchanged, so recorded replays stay byte-identical.
 
 ## Alternatives considered
 

@@ -22,10 +22,18 @@ import {
   segmentParagraphs,
   targetCount,
   toNfcText,
+  type NfcText,
+  type Paragraph,
   type KoStyleReport,
 } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
 import { checkpointPack, packCallInput } from './drafting.js';
+import {
+  anchorIssueQuote,
+  normalizeDimensionScores,
+  normalizeDriftFlags,
+  normalizeRepair,
+} from './judge-normalize.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
 import { modelCall, runStep, saveArtifact, type WorkflowContext } from './runtime.js';
 
@@ -39,7 +47,9 @@ interface RawIssue {
   confidence?: number;
   claim?: string;
   chapter_span?: Issue['chapter_span'];
-  repair?: Issue['repair'];
+  /** Live judges quote the manuscript instead of counting offsets; anchored into `chapter_span`. */
+  quote?: unknown;
+  repair?: unknown;
   conflicting_canon?: Issue['conflicting_canon'];
   canon_evidence?: Issue['canon_evidence'];
   metric?: Issue['metric'];
@@ -77,6 +87,7 @@ function toIssue(
   dimension: Issue['dimension'],
   raw: RawIssue,
   index: number,
+  anchor?: { readonly text: NfcText; readonly paragraphs: readonly Paragraph[] },
 ): Issue {
   const kind = raw.kind && isIssueKind(raw.kind) ? raw.kind : 'other';
   const severity = (['blocking', 'major', 'minor', 'note'] as const).includes(
@@ -84,6 +95,11 @@ function toIssue(
   )
     ? (raw.severity as Severity)
     : 'minor';
+  const repair = normalizeRepair(raw.repair);
+  const quoted =
+    !raw.chapter_span && anchor
+      ? anchorIssueQuote(anchor.text, anchor.paragraphs, raw.quote)
+      : undefined;
   return {
     id: issueIdFor(ctx, versionId, source, index),
     source,
@@ -96,8 +112,10 @@ function toIssue(
     status: 'open',
     ...(raw.chapter_span
       ? { chapter_span: { ...raw.chapter_span, manuscript_version_id: versionId } }
-      : {}),
-    ...(raw.repair ? { repair: raw.repair } : {}),
+      : quoted
+        ? { chapter_span: { manuscript_version_id: versionId, ...quoted } }
+        : {}),
+    ...(repair ? { repair } : {}),
     ...(raw.conflicting_canon ? { conflicting_canon: raw.conflicting_canon } : {}),
     ...(raw.canon_evidence ? { canon_evidence: raw.canon_evidence } : {}),
     ...(raw.metric ? { metric: raw.metric } : {}),
@@ -382,7 +400,9 @@ export async function evaluateVersion(
     'evaluate',
     async () => {
       const det = runDeterministicChecks(ctx, v, input.contract, input.allowlist);
-      const paragraphs = segmentParagraphs(toNfcText(v.text));
+      const nfc = toNfcText(v.text);
+      const paragraphs = segmentParagraphs(nfc);
+      const anchor = { text: nfc, paragraphs };
       const chapterText = paragraphs.map((p) => `[${p.id}] ${p.text}`).join('\n\n');
       const evaluatorCalls: string[] = [];
       const issues: Issue[] = [...det.issues];
@@ -469,7 +489,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(continuity.llmCallId);
       (continuity.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:continuity_checker', 'continuity', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:continuity_checker', 'continuity', r, i, anchor)),
       );
 
       const leak = await modelCall<{ issues?: RawIssue[] }>(ctx, {
@@ -486,7 +506,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(leak.llmCallId);
       (leak.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:knowledge_leak_checker', 'knowledge', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:knowledge_leak_checker', 'knowledge', r, i, anchor)),
       );
 
       // Two separate judges, two separate identity variants, two separate gates.
@@ -505,7 +525,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(prose.llmCallId);
       (prose.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:prose_judge', 'prose', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:prose_judge', 'prose', r, i, anchor)),
       );
       const structure = await modelCall<JudgeOutput>(ctx, {
         step: 'evaluate',
@@ -526,7 +546,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(structure.llmCallId);
       (structure.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:structure_judge', 'structure', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:structure_judge', 'structure', r, i, anchor)),
       );
 
       // Dimensions C and D. `standard.v1` gates genre and voice, so their evidence is required: without
@@ -549,7 +569,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(genre.llmCallId);
       (genre.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:genre_judge', 'genre', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:genre_judge', 'genre', r, i, anchor)),
       );
       const voice = await modelCall<JudgeOutput>(ctx, {
         step: 'evaluate',
@@ -567,7 +587,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(voice.llmCallId);
       (voice.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:voice_judge', 'voice', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:voice_judge', 'voice', r, i, anchor)),
       );
 
       const gates = ctx.policy.gates;
@@ -632,14 +652,14 @@ export async function evaluateVersion(
         sections: {
           prose: section('prose', proseScore, dimensionPassed('prose'), {
             judge_score: proseScore,
-            drift_flags: prose.output.drift_flags ?? [],
-            dimension_scores: prose.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('prose', prose.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(prose.output.dimension_scores),
             evaluator_call_id: prose.llmCallId,
           }),
           structure: section('structure', structureScore, dimensionPassed('structure'), {
             judge_score: structureScore,
-            drift_flags: structure.output.drift_flags ?? [],
-            dimension_scores: structure.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('structure', structure.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(structure.output.dimension_scores),
             ...(structure.output.hook_sentence_index !== undefined
               ? { hook_sentence_index: structure.output.hook_sentence_index }
               : {}),
@@ -653,14 +673,14 @@ export async function evaluateVersion(
           }),
           genre: section('genre', genreScore, dimensionPassed('genre'), {
             judge_score: genreScore,
-            drift_flags: genre.output.drift_flags ?? [],
-            dimension_scores: genre.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('genre', genre.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(genre.output.dimension_scores),
             evaluator_call_id: genre.llmCallId,
           }),
           voice: section('voice', voiceScore, dimensionPassed('voice'), {
             judge_score: voiceScore,
-            drift_flags: voice.output.drift_flags ?? [],
-            dimension_scores: voice.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('voice', voice.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(voice.output.dimension_scores),
             evaluator_call_id: voice.llmCallId,
           }),
           output_language: section(
