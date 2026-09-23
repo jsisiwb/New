@@ -28,9 +28,11 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 281;
+const TOTAL_PROMPT_VERSIONS = 282;
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';
+/** Families with a later live-run fix on top of ACTIVE_VERSION (ADR-0056). */
+const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = { arc_planner: '4.0.1' };
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -165,6 +167,13 @@ describe('prompt registry (ADR-0016)', () => {
     }
   });
 
+  it('arc_planner@4.0.1 gives repetition_check the schema object shape (live-run fix)', () => {
+    expect(reg.get('arc_planner@4.0.0').user_template).toContain('"repetition_check": "..."');
+    const fixed = reg.get('arc_planner@4.0.1');
+    expect(fixed.user_template).toContain('"repetition_check": {"compared_arc_ids": []');
+    expect(fixed.input_variables).toEqual(reg.get('arc_planner@4.0.0').input_variables);
+  });
+
   it('v4 keeps the v3 variable surfaces and output shapes, except the prose-only scene writer (ADR-0056)', () => {
     for (const fam of reg.families()) {
       const v3 = reg.get(`${fam}@3.0.0`);
@@ -192,7 +201,7 @@ describe('prompt registry (ADR-0016)', () => {
     const set = reg.activeSet();
     expect(Object.keys(set.mapping)).toHaveLength(25);
     for (const fam of Object.keys(set.mapping)) {
-      expect(set.mapping[fam], fam).toBe(`${fam}@${ACTIVE_VERSION}`);
+      expect(set.mapping[fam], fam).toBe(`${fam}@${ACTIVE_OVERRIDES[fam] ?? ACTIVE_VERSION}`);
     }
     expect(set.id).toMatch(/^set:[0-9a-f]{16}$/);
   });
