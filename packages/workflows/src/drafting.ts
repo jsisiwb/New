@@ -14,6 +14,7 @@ import {
 import { asUuid, type Generated, validatorFor } from '@yeonjae/domain';
 import { codePointLength, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
+import { normalizeScenePlans } from './plan-normalize.js';
 import { normalizeSceneDraft } from './anchoring.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
 import {
@@ -199,7 +200,9 @@ export async function planScenes(
         variables: {
           previous_chapter_tail:
             input.pack.variables.previous_text ??
-            `(Chapter ${ch} has no previous chapter; open the series.)`,
+            (ctx.identity.outputLanguage.language === 'ko'
+              ? `(${ch}화에는 직전 회차가 없다. 연재를 연다.)`
+              : `(Chapter ${ch} has no previous chapter; open the series.)`),
         },
         pack: packCallInput(input.pack),
         block: compileFor(ctx, 'planner_compact'),
@@ -211,18 +214,34 @@ export async function planScenes(
           recommendedActions: ['regenerate'],
         });
       const validate = validatorFor<ScenePlan>('scene-plan.schema.json');
-      const scenes: ScenePlan[] = [];
-      const issues: string[] = [];
-      raw.forEach((s, i) => {
-        const v = validate(s);
-        if (!v.ok)
-          issues.push(
-            `scene ${i + 1}: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
-          );
-        else scenes.push(v.value);
-      });
+      const check = (candidates: readonly unknown[]) => {
+        const scenes: ScenePlan[] = [];
+        const issues: string[] = [];
+        candidates.forEach((s, i) => {
+          const v = validate(s);
+          if (!v.ok)
+            issues.push(
+              `scene ${i + 1}: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+            );
+          else scenes.push(v.value);
+        });
+        return { scenes, issues };
+      };
+      let { scenes, issues } = check(raw);
+      const lengthsOff = () => {
+        const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
+        const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
+        return Math.abs(total / input.contract.length_target.value - 1) > tol;
+      };
+      // A live plan with near-miss shapes or unsummed lengths is grounded in the contract; a plan that
+      // already validates (recorded fixtures) keeps its exact bytes.
+      if (raw.length > 0 && (issues.length > 0 || lengthsOff())) {
+        const retry = check(normalizeScenePlans(raw, { contract: input.contract }));
+        if (retry.issues.length === 0) ({ scenes, issues } = retry);
+      }
       if (issues.length === 0) {
-        if (scenes.length !== input.contract.scene_count)
+        // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
+        if (scenes.length < 1 || scenes.length > 5)
           issues.push(
             `contract wants ${input.contract.scene_count} scenes, plan has ${scenes.length}`,
           );

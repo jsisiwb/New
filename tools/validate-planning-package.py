@@ -61,6 +61,13 @@ EXAMPLES = [
     ("examples/narrative-profiles/genre-academy.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/genre-romance-fantasy.v1.json", "narrative-identity.schema.json"),
     ("examples/narrative-profiles/project-second-awakening.composed.v1.json", "narrative-identity.schema.json"),
+    # Korean-authored layers for Korean-manuscript projects (ADR-0055).
+    ("examples/narrative-profiles/lang-ko.v2.json", "narrative-identity.schema.json"),
+    ("examples/narrative-profiles/tradition-kr-webnovel.v2.json", "narrative-identity.schema.json"),
+    ("examples/narrative-profiles/genre-hunter-gate.v2.json", "narrative-identity.schema.json"),
+    ("examples/narrative-profiles/genre-regression.v2.json", "narrative-identity.schema.json"),
+    ("examples/narrative-profiles/genre-academy.v2.json", "narrative-identity.schema.json"),
+    ("examples/narrative-profiles/genre-romance-fantasy.v2.json", "narrative-identity.schema.json"),
     ("examples/production-policies/standard.v1.json", "production-policy.schema.json"),
     ("examples/production-policies/economy.v1.json", "production-policy.schema.json"),
     ("examples/production-policies/premium.v1.json", "production-policy.schema.json"),

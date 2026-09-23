@@ -1,0 +1,33 @@
+{
+  "family": "factual_summarizer",
+  "version": "3.0.0",
+  "role": "factual_summarizer",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "summarizer_min",
+  "model_class": "C",
+  "input_variables": [
+    "chapter_text",
+    "registry",
+    "committed_delta"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 600,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "factual_summarizer.fixture.smoke"
+  ],
+  "content_hash": "sha256:532b3fef8b65203a028b0c0a39f2c24d489230648a3f6a889a6b57ad74619bbf"
+}

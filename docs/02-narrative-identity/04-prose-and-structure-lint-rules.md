@@ -89,6 +89,11 @@ Patterns that betray a source-language template in English. Each has weight and 
 | TRN-16 | Unnatural formality register in casual scenes ("Would you be so kind as to pass the salt" between siblings) — flagged only with register digest | 0.4 | uses register check |
 | TRN-KO-01 | Essayistic stock openers that break serialized flow ("참고로", "일단은", "한 마디로") | 0.6 | Korean-manuscript drift (ADR-0054) |
 | TRN-KO-02 | Untranslated English words left in Korean prose outside the terminology allowlist | 0.4 | Korean-manuscript drift (ADR-0054) |
+| TRN-KO-03 | "~를 통해" used as an all-purpose instrument particle (English "through") | 0.4 | Korean translationese (ADR-0055) |
+| TRN-KO-04 | "~에 있어(서)" borrowed formality (Japanese において / English "in") | 0.6 | Korean translationese (ADR-0055) |
+| TRN-KO-05 | Double passive ("되어지다", "잊혀지다") | 0.6 | Korean translationese (ADR-0055) |
+| TRN-KO-06 | "~를 가지고 있다" for possession or traits (English "have") | 0.4 | Korean translationese (ADR-0055) |
+| TRN-KO-07 | "~하는 중이다" progressive (English "be -ing") | 0.3 | Korean translationese (ADR-0055) |
 
 The list is data (`output_language.translation_markers`), not code; changes are profile versions and go
 through the contrast-set regression (translation-like variants must keep scoring higher).

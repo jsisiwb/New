@@ -3,6 +3,48 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Checkpoint K1 — defect pass, Korean architecture, fully Korean prompts — 2026-09-22
+
+Branch `hoplite/gortyn-c23fe3a9` (base `4a86abe`). Steps 1–3 of the Korean-webnovel quality programme;
+ADR-0055 records the decision.
+
+**Defects fixed (live-path blockers first):**
+
+- The Active Constraint Set demanded an English `text_en` for every non-English requirement; the Korean
+  requirement interpreter omits it by design, so the first Korean chapter contract failed with
+  `CONSTRAINT_UNRENDERABLE`. The set now renders in the project's working language (all compile sites
+  pass it, so contract and pack ACS hashes agree); English projects still fail closed.
+- The v2.x `chapter_planner` and `scene_planner` output-shape notes did not match their schemas (e.g.
+  `must_happen` without `id/kind/verifiable_by`, `role` for `role_in_chapter`, `source_id` for `from_id`,
+  `emotional_movement.from/to`, beat types `reaction/interior`, `speaker_pairs` by name). Every live
+  contract and scene plan would have failed validation. Shapes are now exact, and new normalizers
+  (`plan-normalize.ts`) coerce near-miss live output toward the schema only when the raw output does not
+  validate (recorded fixtures keep their bytes); ungroundable ids are dropped, never invented.
+- `contract_checker` was asked for `issues` while the workflow reads `criteria[].criterion_id`, so every
+  acceptance criterion failed in live mode.
+- Two v2.x templates sent a literal `{length_target_words}` (single braces) to the model.
+- Korean projects composed English-manuscript policies: romanized naming, "never native-script names",
+  "Use these English terms", `sir/ma’am` register rules, English status-window grammar, and a
+  `modern_korea` default setting for fantasy intakes. The operator's terminology note was silently dropped.
+- `story-intake.target_words_per_chapter` was required even for Korean projects (now required only for
+  English ones); the identity-block Guard and pack validation only recognised English contract headings.
+- Lint errors in `http-provider.ts` and `registry.test.ts`; stray `tatus` file removed.
+
+**Architecture (ADR-0055):** language-aware Narrative Identity compilation (`compiler-ko.ts`); Korean-authored
+global layers `lang/ko@2`, `tradition/kr-webnovel@2`, `genre/{academy,romance-fantasy,regression,hunter-gate}@2`
+(Korean status windows, 호칭 and Korean dialogue-register rules, 엑스트라 observer device); language-aware context packs
+(Korean section titles, contract, knowledge, relationship, promise, previous-chapter and guard lines);
+Korean planner briefs (cast brief, season/arc brief, bible summary, blueprint, knowledge, promises).
+
+**Prompts:** all 25 families have a fully Korean v3.0.0 (instructions, labels, output-shape notes; JSON keys
+and enums stay schema identifiers), authored by `tools/seed-prompt-families-ko-v3.py` from
+`tools/ko_prompts/`. The contrast baseline was re-frozen (2,000 entries byte-identical, pins updated).
+
+Tests added: Korean identity block per role has no English instructions; v3 prompts have no English labels
+or single-brace placeholders; Korean Active Constraint Set; planner-output normalization from the v2.2.5
+shape; a Korean simulated novel run (`novel-ko.integration.test.ts`) that plans, drafts, evaluates and
+accepts two chapters with Korean prompts end to end.
+
 ## Deployment-safe workflow resume — 2026-09-20
 
 Follow-up to merged fork PR #1, based on `05ecc4c`, on

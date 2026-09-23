@@ -102,8 +102,11 @@ export function guardRequest(req: GatewayRequest, ctx: GuardContext = {}): Guard
       `embedded block hash ${actual} ≠ referenced ${ref.blockHash}`,
     );
   if (
-    !embedded.includes('## Output-Language Contract') ||
-    !embedded.includes('## Narrative-Tradition Contract')
+    // English and Korean blocks (ADR-0055) name the two contract sections in their own language.
+    !(embedded.includes('## Output-Language Contract') || embedded.includes('## 출력 언어 계약')) ||
+    !(
+      embedded.includes('## Narrative-Tradition Contract') || embedded.includes('## 서사 전통 계약')
+    )
   ) {
     throw new GatewayError(
       'NARRATIVE_IDENTITY_NOT_EMBEDDED',

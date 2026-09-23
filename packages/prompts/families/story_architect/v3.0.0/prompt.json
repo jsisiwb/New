@@ -1,0 +1,36 @@
+{
+  "family": "story_architect",
+  "version": "3.0.0",
+  "role": "story_architect",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "bible_summary",
+    "target_chapters"
+  ],
+  "output_schema": "series-blueprint.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 10000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "story_architect.contiguous_seasons",
+    "story_architect.complete_ending",
+    "story_architect.planned_bible"
+  ],
+  "content_hash": "sha256:85cb4f04bb8c984b4438fd40a06dbbf8f3cb580dcc75cb5a559e68378897430a"
+}

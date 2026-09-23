@@ -50,7 +50,10 @@ Rules:
 - **Untrusted text** only in the user message, wrapped in `<<UNTRUSTED source=…>>` and preceded by an
   instruction to treat it as data; never in system.
 - **Language**: prompt instructions are written in the project's manuscript language (English or Korean,
-  ADR-0054). For English projects the instructions are English; for Korean projects they are Korean.
+  ADR-0054). For English projects the instructions are English; for Korean projects they are Korean —
+  and so is everything interpolated into them: identity block, context-pack titles and canon lines,
+  Active Constraint Set, planner briefs (ADR-0055). JSON keys, schema enums, ids and provenance tags stay
+  identifiers. The fully Korean families are authored by `tools/seed-prompt-families-ko-v3.py`.
   Korean craft terminology appears glossed inside the Narrative Identity Block (e.g., "satisfaction beat
   (사이다)") and inside the naming/terminology registry (native-script names, preserved terms).
   Generation composes directly in the manuscript language and never contains an in-loop translation
