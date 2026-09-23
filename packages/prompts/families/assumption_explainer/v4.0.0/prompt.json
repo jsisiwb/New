@@ -1,0 +1,31 @@
+{
+  "family": "assumption_explainer",
+  "version": "4.0.0",
+  "role": "assumption_explainer",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.0.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "C",
+  "input_variables": [
+    "assumptions_json"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 1000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.0 — Korean webnovel craft engine (ADR-0056): instructions rebuilt around the daily 5,000-자 mobile episode (초반 25화 funnel, one core event per 화, 사이다 cadence, 절단), 캐빨 cast and heroine-route design, and the language layer's 번역투/AI 상투구 lists; variable surfaces and output shapes unchanged from 3.0.0.",
+  "regression_cases": [
+    "assumption_explainer.fixture.smoke"
+  ],
+  "content_hash": "sha256:45091fea0d6913897b06a7b7234685da26b616c465849db76a44b417631e44f6"
+}

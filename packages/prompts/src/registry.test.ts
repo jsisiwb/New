@@ -28,9 +28,9 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 256;
+const TOTAL_PROMPT_VERSIONS = 281;
 /** The active default set (latest `active` version of every family). */
-const ACTIVE_VERSION = '3.0.0';
+const ACTIVE_VERSION = '4.0.0';
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -146,9 +146,9 @@ describe('prompt registry (ADR-0016)', () => {
     ).toThrow(/narrative_identity_block/);
   });
 
-  it('v3 prompts are Korean end to end: no English section labels or instructions (ADR-0055)', () => {
+  it('v3 and v4 prompts are Korean end to end: no English section labels or instructions (ADR-0055)', () => {
     const provenanceTags = new Set(['FACT', 'PLANNED', 'SUMMARY', 'EVIDENCE', 'UNTRUSTED']);
-    for (const v of reg.list().filter((x) => x.version.startsWith('3.'))) {
+    for (const v of reg.list().filter((x) => /^[34]\./.test(x.version))) {
       const text = `${v.system_template}\n${v.user_template}`;
       for (const m of text.matchAll(/\[([A-Z][A-Z ]{2,})/g)) {
         const label = (m[1] ?? '').trim();
@@ -163,6 +163,29 @@ describe('prompt registry (ADR-0016)', () => {
         .join('\n');
       expect(prose, v.id).not.toMatch(/\b(the|and|must|never|return|write)\b [a-z]+ [a-z]+/i);
     }
+  });
+
+  it('v4 keeps the v3 variable surfaces and output shapes, except the prose-only scene writer (ADR-0056)', () => {
+    for (const fam of reg.families()) {
+      const v3 = reg.get(`${fam}@3.0.0`);
+      const v4 = reg.get(`${fam}@4.0.0`);
+      expect(v4.output_schema, fam).toBe(v3.output_schema);
+      if (fam === 'scene_writer') continue;
+      expect(v4.input_variables, fam).toEqual(v3.input_variables);
+      expect(v4.output_mode, fam).toBe(v3.output_mode);
+    }
+    const writer = reg.get('scene_writer@4.0.0');
+    // The writer answers with prose itself; the workflow builds the scene-draft envelope.
+    expect(writer.output_mode).toBe('text');
+    expect(writer.input_variables).toEqual(
+      expect.arrayContaining([
+        ...reg.get('scene_writer@3.0.0').input_variables,
+        'scene_total',
+        'scene_role',
+      ]),
+    );
+    expect(writer.user_template).not.toMatch(/speaker_annotations|claims/);
+    expect(writer.system_template).toMatch(/원고 본문만 출력한다/);
   });
 
   it('builds a pinned prompt set from the active versions', () => {

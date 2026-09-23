@@ -21,16 +21,16 @@
       "voice_judge"
     ],
     "prompt_version_ids": {
-      "genre_judge": "genre_judge@3.0.0",
-      "prose_judge": "prose_judge@3.0.0",
-      "structure_judge": "structure_judge@3.0.0",
-      "voice_judge": "voice_judge@3.0.0"
+      "genre_judge": "genre_judge@4.0.0",
+      "prose_judge": "prose_judge@4.0.0",
+      "structure_judge": "structure_judge@4.0.0",
+      "voice_judge": "voice_judge@4.0.0"
     },
     "prompt_content_hashes": {
-      "genre_judge": "sha256:9eaf96f3806e7157136cd1b309f9ef9756eca1a02db97a7fc8f959ec0c2b984d",
-      "prose_judge": "sha256:9e183ef8ad6dba6f03f4117bb540b545f0cd41c5a6214a4c722231fe8e404dc4",
-      "structure_judge": "sha256:4229f324922c079a770b41f448867a888c47794b6c5a49e25aefc90b5626d453",
-      "voice_judge": "sha256:4c88f7901cb4d979c90b93748bdf17d8a9036a07d884466dd7148b5698b7e9ee"
+      "genre_judge": "sha256:5b75109e93694b3f0398c81af0bad01a441b5ee38cbf0c135e55289702c946fc",
+      "prose_judge": "sha256:755f133c357adc8e5c00751614969fdc5117c6337d7295799ca5ec9bbbbd4c29",
+      "structure_judge": "sha256:615e8409a3e04d34499c2542ee0cab16067d8035f056bf214b4aa562bab8bf85",
+      "voice_judge": "sha256:37d1e62c8aece23a7ef88c9ebeafd9c6d8c2a6c51cd400d9994f5aa11fd40dcf"
     }
   },
   "entries": [
@@ -23635,5 +23635,5 @@
       "drift_flags": []
     }
   ],
-  "fixture_hash": "sha256:e6ca31022478e75ab180361fdde86e5403a31251248c04e5b22acd8c332296fe"
+  "fixture_hash": "sha256:12c98ffad55ef0c99cb673aaa5523f4ca311f840b95fb960170f53e9ba1726e7"
 }

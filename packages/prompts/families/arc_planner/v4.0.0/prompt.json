@@ -1,0 +1,36 @@
+{
+  "family": "arc_planner",
+  "version": "4.0.0",
+  "role": "arc_planner",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "blueprint",
+    "season",
+    "arc_brief",
+    "canon_state",
+    "open_promises"
+  ],
+  "output_schema": "arc-plan.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.0 — Korean webnovel craft engine (ADR-0056): instructions rebuilt around the daily 5,000-자 mobile episode (초반 25화 funnel, one core event per 화, 사이다 cadence, 절단), 캐빨 cast and heroine-route design, and the language layer's 번역투/AI 상투구 lists; variable surfaces and output shapes unchanged from 3.0.0.",
+  "regression_cases": [
+    "arc_planner.full_planned_bible",
+    "arc_planner.promise_continuity"
+  ],
+  "content_hash": "sha256:b700e40e23a8dc93e51bd51e4d066fcad295b7e0ddd9f25dba6ca992951e2068"
+}

@@ -22,7 +22,7 @@ BASE = os.path.join(ROOT, "packages", "prompts", "families")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 SOURCE_VERSION = "2.2.5"
-KNOWN = ["3.0.0"]
+KNOWN = ["3.0.0", "4.0.0"]
 
 
 def content_hash(meta: dict, system: str, user: str) -> str:
@@ -55,14 +55,15 @@ def source_meta(family: str, source: str) -> dict:
 
 
 def write(family: str, version: str, changelog: str, system: str, user: str,
-          overrides: dict | None, source: str, base: dict | None = None) -> None:
+          overrides: dict | None, source: str, base: dict | None = None,
+          purpose: str | None = None) -> None:
     # A new family has no source version: its module supplies the complete base metadata.
     src = base if base is not None else source_meta(family, source)
     meta = {
         "family": family,
         "version": version,
         "role": src["role"],
-        "purpose": f"Korean manuscript-language prompt, fully Korean surface (ADR-0055), {version}.",
+        "purpose": (purpose or "Korean manuscript-language prompt, fully Korean surface (ADR-0055), {version}.").format(version=version),
         "style_sensitive": src["style_sensitive"],
         "manuscript_producing": src["manuscript_producing"],
         "identity_variant": src.get("identity_variant"),
@@ -108,7 +109,8 @@ def main(argv: list[str]) -> None:
             overrides = dict(spec[2]) if len(spec) > 2 else {}
             base = overrides.pop("__base", None)
             src = overrides.pop("__source", source)
-            write(family, version, mod.CHANGELOG, system, user, overrides, src, base)
+            write(family, version, mod.CHANGELOG, system, user, overrides, src, base,
+                  getattr(mod, "PURPOSE", None))
 
 
 if __name__ == "__main__":
