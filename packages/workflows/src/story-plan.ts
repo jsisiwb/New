@@ -1610,7 +1610,7 @@ export function renderArcPlanningDigest(
   for (const c of recs(cast.characters)) {
     const arc = (c.arc ?? {}) as DesignRecord;
     const parts = [
-      `- ${text(c.display_name)} (${text(c.role)}${c.age_at_start !== undefined ? `, ${String(c.age_at_start)}` : ''}${c.rank ? `, ${text(c.rank)}` : ''})`,
+      `- ${text(c.display_name)} (${text(c.role)}${typeof c.age_at_start === 'number' || typeof c.age_at_start === 'string' ? `, ${String(c.age_at_start)}` : ''}${c.rank ? `, ${text(c.rank)}` : ''})`,
       c.background ? `  ${L.bg}: ${text(c.background)}` : '',
       `  ${L.goals}: ${text(c.goals)} / ${L.flaws}: ${text(c.flaws)}`,
       text(c.voice_notes) ? `  ${L.voice}: ${text(c.voice_notes)}` : '',
