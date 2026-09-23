@@ -197,6 +197,13 @@ run('dependency status: probes against real PostgreSQL 16', () => {
     expect(stateOf(live.components, 'provider_simulator')).toBe('disabled');
     // Live mode is a configuration, not a fault, so it must not degrade the whole report.
     expect(live.ready).toBe(true);
+
+    // Bridge modes (genspark, notion) are real providers too: the simulator is not in play.
+    for (const mode of ['genspark', 'notion']) {
+      const bridge = await dependencyReport({ db: pool, env: { YEONJAE_PROVIDER_MODE: mode } });
+      expect(stateOf(bridge.components, 'provider_simulator')).toBe('disabled');
+      expect(bridge.ready).toBe(true);
+    }
   });
 
   it('reports an unrecognised provider mode as unavailable rather than guessing', async () => {

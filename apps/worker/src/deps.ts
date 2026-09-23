@@ -2,7 +2,7 @@
  * How the worker builds its model gateway (Checkpoint 7; shared enforcement in Phase 4).
  *
  * There is no default that reaches a paid provider. `YEONJAE_PROVIDER_MODE` must be set explicitly to
- * `replay` (recorded fixtures), `genspark` (the local bridge) or `live` (an OpenAI-compatible or Anthropic
+ * `replay` (recorded fixtures), `genspark` (the local bridge), `notion` (the Notion AI bridge) or `live` (an OpenAI-compatible or Anthropic
  * API named by `YEONJAE_LIVE_*`); the resolution lives in `@yeonjae/gateway` so the API and the worker
  * read the same variables the same way.
  *
@@ -26,6 +26,7 @@ import { PgAuditStore, PgProviderAdmission, SharedBudget, type Pool } from '@yeo
 // Re-exported so existing callers and tests keep one import site.
 export {
   gensparkRouting,
+  notionRouting,
   providerModeFromEnv,
   replayRouting,
   type ProviderMode,
