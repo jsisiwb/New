@@ -78,6 +78,21 @@ can answer HTTP 200 with an empty completion.
    exit state carried into the brief across season boundaries. The live run showed that one 50-chapter arc
    plan is too coarse to pace 사이다 and too large for a single planning call; short seasons (fixtures)
    remain one arc, so their arc ids and recordings are unchanged.
+10. **Arc planners read the complete design as labelled text.** The arc planner's canon state carries the
+   complete bible design (ADR-0052) rendered as labelled Korean text instead of a raw JSON dump; fields
+   without a label are rendered verbatim as JSON, so nothing is dropped. The live bridge repeatedly failed
+   the 43k-character JSON form of the same content.
+11. **Live-run output fixes extend ADR-0051 §6.** Offsets the model cannot count and shapes the prompts
+   themselves mis-taught are normalized; no claim changes. The arc plan's `repetition_check` /
+   `cadence_check` may arrive as prose (kept in their `notes`); the contract envelope fills `version`.
+   A revision patch is anchored by its `original_quote` exactly like extractor evidence: offsets are kept
+   only when the parent text at them equals the quote, otherwise the quote's occurrence (inside the
+   revision window first) supplies them, and a quote absent from the text still fails `PATCH_UNANCHORED`.
+   A patch without a span rewrites the whole window it was shown (and must be at least half its length);
+   `dimension` is the round's, not the model's echo; `changed_claims` pairs become `before → after`
+   lines, a boolean `regression` is dropped and prose in `preserved_facts_ack` is dropped so the
+   acknowledgement check still decides. `arc_planner@4.0.1` and `targeted_reviser@4.0.1` correct the
+   output-shape notes that taught those shapes (the reviser now asks for the exact quote, never offsets).
 
 ## Alternatives considered
 
@@ -94,7 +109,8 @@ can answer HTTP 200 with an empty completion.
 
 - Schemas: `story-intake` genre id `harem`; `narrative-identity` `style_exemplars` (genre, tradition).
   Generated types regenerated.
-- New profiles; the registry gains 25 versions (281 total) and the active set moves to v4.0.0.
+- New profiles; the registry gains 27 versions (283 total): the active set moves to v4.0.0, with
+  `arc_planner` and `targeted_reviser` at v4.0.1.
 - Korean scorecards carry `lint:ko_style` issues; the Korean simulated model's scene text is
   dialogue-forward so the deterministic e2e run stays approvable.
 - Exemplar copy detection is lexical (a verbatim line of ≥ 14 characters), not semantic.

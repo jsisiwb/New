@@ -28,11 +28,14 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 282;
+const TOTAL_PROMPT_VERSIONS = 283;
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';
 /** Families with a later live-run fix on top of ACTIVE_VERSION (ADR-0056). */
-const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = { arc_planner: '4.0.1' };
+const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = {
+  arc_planner: '4.0.1',
+  targeted_reviser: '4.0.1',
+};
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -172,6 +175,18 @@ describe('prompt registry (ADR-0016)', () => {
     const fixed = reg.get('arc_planner@4.0.1');
     expect(fixed.user_template).toContain('"repetition_check": {"compared_arc_ids": []');
     expect(fixed.input_variables).toEqual(reg.get('arc_planner@4.0.0').input_variables);
+  });
+
+  it('targeted_reviser@4.0.1 asks for the exact quote and the schema shapes (live-run fix)', () => {
+    const old = reg.get('targeted_reviser@4.0.0');
+    expect(old.user_template).toContain('"changed_claims": [{"before": "...", "after": "..."}]');
+    const fixed = reg.get('targeted_reviser@4.0.1');
+    expect(fixed.user_template).toContain('"span": {"original_quote":');
+    expect(fixed.user_template).toContain('"changed_claims": []');
+    expect(fixed.user_template).not.toContain('"regression"');
+    expect(fixed.user_template).not.toContain('"start": 0');
+    expect(fixed.input_variables).toEqual(old.input_variables);
+    expect(fixed.output_schema).toBe(old.output_schema);
   });
 
   it('v4 keeps the v3 variable surfaces and output shapes, except the prose-only scene writer (ADR-0056)', () => {
