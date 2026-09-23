@@ -124,9 +124,31 @@ can answer HTTP 200 with an empty completion.
    first-meeting knowledge, the prose judge spelling. The judge shape notes show enum issue kinds, 1–5
    sub-scores, the scorecard's drift-flag values and the repair object: 4.0.0's `prose_issue`-style kinds
    all became `other`, which left the ADR-0014 regression check unable to tell one issue from another.
-   Korean drafts and Korean patch text pair ASCII quotation marks into the writer contract's “ ” ‘ ’ line
-   by line (an odd count is left alone), so a chapter no longer switches style between scenes. The
-   contrast baseline is re-frozen against the v4.1.0 judges (2,000 entries byte-identical, pins → @4.1.0).
+  Korean drafts and Korean patch text pair ASCII quotation marks into the writer contract's “ ” ‘ ’ line
+  by line (an odd count is left alone), so a chapter no longer switches style between scenes. The
+  contrast baseline is re-frozen against the v4.1.0 judges (2,000 entries byte-identical, pins → @4.1.0).
+14. **v4.2.0: the writer does not count its own draft.** The regenerated 1화 never finished its third scene:
+   the bridge gives one Notion AI completion 600 s per workspace and fails over once, and five capped
+   attempts plus a transport fault used up the gateway's three routes. A probe sent that exact request in
+   four variants at the same time. The two without the writer's "분량은 목표 글자 수 … ±12% 안" line
+   finished on their first workspace (317 s, 468 s). The unchanged request timed out on both workspaces
+   (502 at 1,207 s). A variant with every plan contradiction repaired but that line kept exceeded the cap
+   on its first workspace and finished on failover at 1,009 s. This was one sample per variant,
+   consistent with the five earlier timeouts, not a benchmark. A reasoning model asked
+   to land within a band counts its own Korean draft, while the workflow already measures length
+   deterministically and gates it from the pinned policy. `scene_writer@4.2.0` therefore aims at the
+   target, fills every beat and does not count. The same brief also contradicted itself: the plan put the
+   forest north after the earlier scenes had written it east, and landed "사흘. 아니, 이제 이틀." under an
+   unchanged 72-hour display. The writer now resolves such conflicts by one order of precedence (정사 상태·지식
+   표 > 이전 텍스트 > 회차 계약 > 장면 계획) instead of deliberating over them. Both contradictions began in
+   planning: the contract's must_happen quoted a promise-ledger running gag verbatim while its own risk
+   note fixed 72시간 = 사흘. `chapter_planner@4.2.0` and `scene_planner@4.2.0` now treat ledger and
+   verbal-habit lines as templates fitted to the chapter's timeline, keep must_happen and the hook
+   consistent with the contract's risk notes, and carry places, directions and belongings forward from
+   earlier scenes. Variable surfaces and output shapes are unchanged. The Notion adapter's default deadline
+   is now two bridge attempts plus a minute (1,260 s). A 600 s client deadline aborted every slow call
+   exactly when the bridge moved it to its second workspace, and live, that second workspace returned a
+   scene at 1,150 s.
 
 ## Alternatives considered
 
@@ -138,14 +160,17 @@ can answer HTTP 200 with an empty completion.
   anchored; the lint-driven targeted revision fixes spans with the existing patch and regression rules.
 - Keeping the JSON envelope but dropping the annotation fields — rejected: escaping multi-thousand-character
   Korean prose inside JSON still costs quality and failure modes for no downstream consumer.
+- Splitting a scene into several shorter drafting calls to stay under the bridge's cap (§14) — rejected:
+  every extra seam is a place where voice and continuity break. The probe located the delay in one
+  instruction, so the fix belongs in that instruction.
 
 ## Consequences
 
 - Schemas: `story-intake` genre id `harem`; `narrative-identity` `style_exemplars` (genre, tradition).
   Generated types regenerated.
-- New profiles; the registry gains 36 versions (292 total): the active set moves to v4.0.0, with
-  `arc_planner` and `targeted_reviser` at v4.0.1 and the planners, writer, judges and checkers of §13 at
-  v4.1.0.
+- New profiles; the registry gains 39 versions (295 total): the active set moves to v4.0.0, with
+  `arc_planner` and `targeted_reviser` at v4.0.1, the judges and checkers of §13 at v4.1.0 and the
+  chapter planner, scene planner and writer of §14 at v4.2.0.
 - Korean scorecards carry `lint:ko_style` issues; the Korean simulated model's scene text is
   dialogue-forward so the deterministic e2e run stays approvable.
 - Exemplar copy detection is lexical (a verbatim line of ≥ 14 characters), not semantic.

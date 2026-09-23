@@ -23,7 +23,14 @@ import { HttpProvider } from './http-provider.js';
 import { type Provider, type ProviderRequest, type ProviderResponse } from './types.js';
 
 export const DEFAULT_NOTION_MODEL = 'notion-ai';
-export const DEFAULT_NOTION_TIMEOUT_MS = 600_000;
+/** The bridge gives one Notion workspace this long to finish, then fails over to the next one once. */
+export const NOTION_BRIDGE_ATTEMPT_CAP_MS = 600_000;
+/**
+ * Outlasts the bridge's own failover (two capped workspace attempts, observed at ~1,205 s end to end).
+ * A 600 s client deadline aborted every slow call at the moment the bridge moved it to a second workspace;
+ * live, a scene that failed on one workspace was returned by the other at 1,150 s.
+ */
+export const DEFAULT_NOTION_TIMEOUT_MS = 2 * NOTION_BRIDGE_ATTEMPT_CAP_MS + 60_000;
 
 export const NOTION_COMPLETION_FRAME =
   'You are running as a stateless text-completion API. Tools are disabled: you cannot create, edit, ' +
@@ -44,7 +51,7 @@ export interface NotionProviderOptions {
   readonly baseUrl: string;
   /** Bearer token for the bridge. Sent as `authorization`; never logged. */
   readonly token?: string | undefined;
-  /** Whole-request deadline in milliseconds. Default 600 s: bible-stage calls are long. */
+  /** Whole-request deadline in milliseconds. Default: two bridge attempts plus a minute. */
   readonly timeoutMs?: number | undefined;
   /** Hard ceiling on a response body. Default 4 MiB. */
   readonly maxResponseBytes?: number | undefined;

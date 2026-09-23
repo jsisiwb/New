@@ -28,6 +28,11 @@ Branch `hoplite/epidamnos-dyrrhachion-8a8e00dd` (base `2e1f764`). ADR-0056 recor
   one opening rule, a 절단 that changes the situation, 개연성 rules, enum-shaped judge notes. Korean drafts
   and patch text pair ASCII quotation marks into “ ” ‘ ’. The contrast baseline is re-frozen against the
   v4.1.0 judges (2,000 entries byte-identical, pins → `@4.1.0`).
+- v4.2.0 for the chapter planner, scene planner and writer (ADR-0056 §14): the writer aims at the length
+  target without counting its own draft and resolves conflicting inputs by one order of precedence;
+  planners fit ledger and verbal-habit lines to the chapter's timeline and keep must_happen consistent
+  with the contract's risk notes. The Notion adapter's default deadline outlasts the bridge's failover
+  (1,260 s).
 
 **Verification (local, Postgres 16):** full `vitest` run after the arc-plan/contract fixes: 123/123 files,
 1,836 tests green. After the reviser fix: the revision, registry and CLI unit suites and the
@@ -98,6 +103,14 @@ including NTR and indecision, four mandatory scenes, 15세, 5,500자 per 화).
   status window (`[이안 하르트]` …), and the writer-output check read the leading `[` as a JSON answer and
   failed `SCENE_DRAFT_INVALID`. A `[` now opens structured output only when the text is JSON or its first
   line is not a closed bracket label; the checkpointed scene replayed without a new call.
+- Found by monitoring and fixed: the regenerated chapter drafted scenes 1–2 (1,883자 in 577 s; 1,936자 at
+  1,150 s after one workspace timed out) and then ran out of routes on scene 3: five attempts hit the
+  bridge's 600 s per-workspace cap and one hit a transport fault, so the run stopped with
+  `MODEL_CALL_FAILED`. Neither workspace was rate-limited. In a probe of that exact request, only the
+  variants without the writer's ±12% self-check finished on their first workspace (317 s, 468 s), so
+  v4.2.0 drops it (ADR-0056 §14). The brief's contradictions (forest north vs the scenes' east; "이제
+  이틀" under an unchanged 72-hour display) came from the contract quoting a running gag verbatim against
+  its own risk note. Chapter 1 is being regenerated from the post-bible snapshot with v4.2.0.
 
 ## Checkpoint K1 — defect pass, Korean architecture, fully Korean prompts — 2026-09-22
 

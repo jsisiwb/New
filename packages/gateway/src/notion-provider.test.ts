@@ -7,7 +7,9 @@ import { Gateway, MemoryAuditStore, MemoryBudget } from './gateway.js';
 import { DEFAULT_PARAMS } from './mock-provider.js';
 import {
   DEFAULT_NOTION_MODEL,
+  DEFAULT_NOTION_TIMEOUT_MS,
   framedForNotion,
+  NOTION_BRIDGE_ATTEMPT_CAP_MS,
   NOTION_COMPLETION_FRAME,
   NotionProvider,
 } from './notion-provider.js';
@@ -167,6 +169,10 @@ describe('NotionProvider', () => {
 describe('notion provider mode', () => {
   it('is an explicit mode', () => {
     expect(providerModeFromEnv({ YEONJAE_PROVIDER_MODE: 'notion' })).toBe('notion');
+  });
+
+  it('waits out the bridge failover by default instead of aborting when it moves to a second workspace', () => {
+    expect(DEFAULT_NOTION_TIMEOUT_MS).toBeGreaterThan(2 * NOTION_BRIDGE_ATTEMPT_CAP_MS);
   });
 
   it('refuses to start without a bridge URL or with a bad timeout', () => {

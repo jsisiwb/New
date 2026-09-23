@@ -28,16 +28,16 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 292;
+const TOTAL_PROMPT_VERSIONS = 295;
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';
 /** Families with a later live-run fix on top of ACTIVE_VERSION (ADR-0056). */
 const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = {
   arc_planner: '4.0.1',
   targeted_reviser: '4.0.1',
-  chapter_planner: '4.1.0',
-  scene_planner: '4.1.0',
-  scene_writer: '4.1.0',
+  chapter_planner: '4.2.0',
+  scene_planner: '4.2.0',
+  scene_writer: '4.2.0',
   structure_judge: '4.1.0',
   prose_judge: '4.1.0',
   genre_judge: '4.1.0',
@@ -231,6 +231,30 @@ describe('prompt registry (ADR-0016)', () => {
     expect(reg.get('chapter_planner@4.1.0').system_template).not.toContain('사건 한복판으로 친다');
     for (const fam of ['chapter_planner', 'structure_judge', 'scene_writer'])
       expect(reg.get(`${fam}@4.1.0`).system_template, fam).toContain('‘눈을 떴다’');
+  });
+
+  it('v4.2.0: the writer does not count its own draft and resolves conflicts by precedence (ADR-0056 §14)', () => {
+    for (const fam of ['chapter_planner', 'scene_planner', 'scene_writer']) {
+      const old = reg.get(`${fam}@4.1.0`);
+      const v = reg.get(`${fam}@4.2.0`);
+      expect(v.input_variables, fam).toEqual(old.input_variables);
+      expect(v.output_mode, fam).toBe(old.output_mode);
+      expect(v.output_schema, fam).toBe(old.output_schema);
+      expect(v.user_template, fam).toBe(old.user_template);
+    }
+    const writer = reg.get('scene_writer@4.2.0').system_template;
+    expect(reg.get('scene_writer@4.1.0').system_template).toContain('±12% 안');
+    expect(writer).not.toContain('±12%');
+    expect(writer).toContain('글자 수를 세거나 검산하지 않는다');
+    expect(writer).toContain(
+      '정사 상태·지식 표 > 이전 텍스트 > 회차 계약(위험·대응 포함) > 장면 계획',
+    );
+    expect(reg.get('chapter_planner@4.2.0').system_template).toContain(
+      '말버릇에 적힌 대사는 틀이다',
+    );
+    expect(reg.get('scene_planner@4.2.0').system_template).toContain(
+      '이전 장면에서 이미 정해진 대로 이어 간다',
+    );
   });
 
   it('v4 keeps the v3 variable surfaces and output shapes, except the prose-only scene writer (ADR-0056)', () => {
