@@ -307,7 +307,7 @@ export async function draftScenes(
       ctx,
       'scene_draft',
       async () => {
-        const call = await modelCall<SceneDraft>(ctx, {
+        const call = await modelCall<SceneDraft | string>(ctx, {
           step: 'scene_draft',
           family: 'scene_writer',
           activityId: `scene_draft:${ch}:${scene.scene_no}`,
@@ -316,12 +316,32 @@ export async function draftScenes(
             scene_no: String(scene.scene_no),
             previous_text: previous,
             length_target_words: String(scene.length_target.value),
+            // Where this scene sits in the episode curve (v4 writers close only the LAST scene on the 절단).
+            scene_total: String(input.scenes.length),
+            scene_role: sceneRole(
+              scene.scene_no,
+              input.scenes.length,
+              ctx.identity.outputLanguage.language ?? 'en',
+            ),
           },
           pack: packCallInput(input.pack),
         });
-        // A recorded (or well-formed) draft is taken verbatim; a live draft whose offsets or paragraph
-        // table disagree with its own prose is normalized from the prose and validated again.
-        const draft = validateOrNormalizeSceneDraft(call.output, scene.scene_no);
+        // A prose-only (text-mode) writer answers with the manuscript itself; the envelope is built here
+        // deterministically. A recorded (or well-formed) JSON draft is taken verbatim; a live draft whose
+        // offsets or paragraph table disagree with its own prose is normalized from the prose.
+        const draft =
+          typeof call.output === 'string'
+            ? validateSceneDraft(
+                normalizeSceneDraft(
+                  proseEnvelope(
+                    call.output,
+                    scene.scene_no,
+                    ctx.identity.outputLanguage.language ?? 'en',
+                  ),
+                ),
+                scene.scene_no,
+              )
+            : validateOrNormalizeSceneDraft(call.output, scene.scene_no);
         const ref = await saveArtifact(ctx, {
           step: 'scene_draft',
           kind: 'scene_draft',
@@ -348,6 +368,106 @@ export async function draftScenes(
     texts.push(toNfcText(draft.text).text);
   }
   return { drafts, texts };
+}
+
+/**
+ * The scene's place in the episode curve, in the manuscript language. A Korean webnovel episode opens on a
+ * hook, builds, and closes ONLY at its end on the 절단; a middle scene that wraps itself up with a reflective
+ * closing line is the Western/AI habit the tradition contract forbids.
+ */
+export function sceneRole(sceneNo: number, total: number, language: string): string {
+  if (language !== 'ko') {
+    if (total <= 1) return 'single scene: open on the hook, close on the chapter-ending hook';
+    if (sceneNo === 1)
+      return 'first scene: open on the hook; end mid-tension, pushing into the next scene';
+    if (sceneNo === total)
+      return 'last scene: build to the payoff, then close on the chapter-ending hook';
+    return 'middle scene: escalate; end mid-tension, pushing into the next scene';
+  }
+  if (total <= 1)
+    return '단독 장면 — 첫 세 문장 안에 훅을 걸고, 이번 화의 보상을 터뜨린 뒤 절단으로 끝낸다.';
+  if (sceneNo === 1)
+    return `첫 장면(1/${String(total)}) — 첫 세 문장 안에 훅을 건다. 장면을 정리하거나 교훈으로 닫지 말고, 다음 장면으로 밀어 넣는 긴장 속에서 끊는다.`;
+  if (sceneNo === total)
+    return `마지막 장면(${String(total)}/${String(total)}) — 이번 화의 보상(사이다·폭로·감정·성장·웃음)을 터뜨리고, 계약의 절단(hook)으로 끝낸다. 마지막 한두 줄은 한 줄 문단으로, 요약·관조·하루 마무리 금지.`;
+  return `중간 장면(${String(sceneNo)}/${String(total)}) — 갈등을 한 칸 키운다. 장면을 정리하지 말고, 다음 장면으로 이어지는 긴장 속에서 끊는다.`;
+}
+
+const LEAD_CHATTER =
+  /^(물론(이죠|입니다)?|네[,.!]|좋습니다|알겠습니다|다음은|아래는|요청하신|여기\s?있습니다|Sure|Here is|Here's)[^\n]*\n+/u;
+const TRAIL_CHATTER =
+  /\n+(필요하시면|원하시면|수정이 필요하|더 (길게|짧게)|다른 버전|이상입니다|Let me know)[^\n]*$/u;
+
+/** Strip the assistant chatter a chat model wraps around prose (fences, preambles, sign-offs, labels). */
+export function stripProseChatter(raw: string): string {
+  let t = raw.replace(/\r\n?/g, '\n').trim();
+  for (let i = 0; i < 2; i++) t = t.replace(LEAD_CHATTER, '').trim();
+  t = t.replace(TRAIL_CHATTER, '').trim();
+  // A fenced answer: keep what is inside the fence.
+  t = t
+    .replace(/^```[a-zA-Z]*\n/u, '')
+    .replace(/\n```$/u, '')
+    .trim();
+  // Scene/chapter labels and horizontal rules at the edges are not manuscript.
+  t = t
+    // (Only unmistakable labels: a bare "3화. …" first line can be narration, so it stays.)
+    .replace(
+      /^(\[장면\s*\d+[^\n\]]*\]|장면\s*\d+\s*[:：]|【[^\n】]*】|제\s?\d+\s?화[^\n]*|#{1,6}\s[^\n]*|-{3,}|\*{3,})\n+/u,
+      '',
+    )
+    .replace(/\n+(-{3,}|\*{3,}|〔끝〕|\(끝\)|끝\.?)$/u, '')
+    .trim();
+  return t;
+}
+
+/**
+ * Build the writer-output envelope from bare prose. A model that ignored text mode and answered with the
+ * JSON envelope anyway is unwrapped rather than stored as JSON-looking manuscript.
+ */
+export function proseEnvelope(
+  raw: string,
+  sceneNo: number,
+  language: string,
+): {
+  scene_no: number;
+  language: 'ko' | 'en';
+  text: string;
+  paragraphs: never[];
+  speaker_annotations: never[];
+  claims: never[];
+} {
+  let text = stripProseChatter(raw);
+  if (/^[{[]/.test(text)) {
+    // A structured answer is either a complete envelope carrying the prose, or a fault (truncated or
+    // malformed JSON). A fault fails closed: JSON-looking text must never be stored as manuscript.
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = undefined;
+    }
+    const inner = (parsed as { text?: unknown } | undefined)?.text;
+    if (typeof inner !== 'string')
+      throw new WorkflowError(
+        'SCENE_DRAFT_INVALID',
+        'the prose writer returned malformed or truncated structured output instead of prose',
+        { step: 'scene_draft', recommendedActions: ['regenerate'] },
+      );
+    text = stripProseChatter(inner);
+  }
+  if (text.trim().length === 0)
+    throw new WorkflowError('SCENE_DRAFT_INVALID', 'the prose writer returned no manuscript text', {
+      step: 'scene_draft',
+      recommendedActions: ['regenerate'],
+    });
+  return {
+    scene_no: sceneNo,
+    language: language === 'ko' ? 'ko' : 'en',
+    text,
+    paragraphs: [],
+    speaker_annotations: [],
+    claims: [],
+  };
 }
 
 export function validateSceneDraft(raw: unknown, expectedSceneNo: number): SceneDraft {

@@ -12,13 +12,17 @@
 import { createHash } from 'node:crypto';
 import { type ManuscriptVersionRow } from '@yeonjae/db';
 import { type Generated, loadSchemas, overrideClassFor, validatorFor } from '@yeonjae/domain';
+import { exemplarsOf } from '@yeonjae/narrative';
 import {
   checkOutputLanguage,
   judgeLength,
+  koStyleDigest,
+  lintKoreanWebnovel,
   measure,
   segmentParagraphs,
   targetCount,
   toNfcText,
+  type KoStyleReport,
 } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
 import { checkpointPack, packCallInput } from './drafting.js';
@@ -122,6 +126,8 @@ export interface DeterministicChecks {
   };
   readonly truncation: { passed: boolean; reason?: string | undefined };
   readonly contract_shape: { passed: boolean; notes: string[] };
+  /** Korean webnovel style lint (ADR-0056); absent for English manuscripts. */
+  readonly ko_style?: KoStyleReport | undefined;
   readonly issues: Issue[];
 }
 
@@ -159,6 +165,51 @@ export function runDeterministicChecks(
         n++,
       ),
     );
+  // ADR-0056: the Korean style lint measures the language layer's own 번역투 / AI-상투구 lists plus the
+  // mobile-serial rhythm. Rate breaches and format drift gate (major); single hits are minor evidence that
+  // the prose judge and the targeted reviser receive with their spans.
+  let koStyle: KoStyleReport | undefined;
+  if (language === 'ko') {
+    const ol = ctx.identity.outputLanguage;
+    koStyle = lintKoreanWebnovel(nfc.text, {
+      translationMarkers: ol.translation_markers,
+      forbiddenPatterns: ol.forbidden_patterns,
+      thresholds: ol.lint_thresholds,
+      allowlist,
+      exemplarTexts: exemplarsOf(ctx.identity).map((e) => e.text),
+    });
+    for (const f of koStyle.findings)
+      issues.push(
+        toIssue(
+          ctx,
+          version.id,
+          'lint:ko_style',
+          f.kind === 'weak_ending' ? 'structure' : 'prose',
+          {
+            kind: f.kind,
+            severity: f.severity,
+            confidence: 1,
+            claim: f.message,
+            chapter_span: {
+              paragraph_ids: [...f.paragraph_ids],
+              ...(f.start !== undefined ? { start: f.start } : {}),
+              ...(f.end !== undefined ? { end: f.end } : {}),
+              ...(f.quote !== undefined ? { quote: f.quote } : {}),
+            },
+            ...(f.value !== undefined
+              ? {
+                  metric: {
+                    rule_id: f.rule_id,
+                    value: f.value,
+                    ...(f.threshold !== undefined ? { threshold: f.threshold } : {}),
+                  },
+                }
+              : { metric: { rule_id: f.rule_id } }),
+          },
+          n++,
+        ),
+      );
+  }
   const m = measure(nfc);
   const count = targetCount(m, contract.length_target.unit);
   const len = judgeLength(count, contract.length_target, ctx.policy.length.fail_tolerance_ratio);
@@ -290,6 +341,7 @@ export function runDeterministicChecks(
       ...(truncated ? { reason: 'final paragraph incomplete' } : {}),
     },
     contract_shape: { passed: shapeOk, notes },
+    ...(koStyle ? { ko_style: koStyle } : {}),
     issues,
   };
 }
@@ -446,7 +498,7 @@ export async function evaluateVersion(
           chapter_text: chapterText,
           prose_lint_report:
             ctx.identity.outputLanguage.language === 'ko'
-              ? `한국어 출력 언어 검사: 신뢰도 ${det.output_language.english_confidence}; 분량 ${det.length.count}${det.length.unit === 'characters' ? '자' : ` ${det.length.unit}`}.`
+              ? `한국어 출력 언어 검사: 신뢰도 ${det.output_language.english_confidence}; 분량 ${det.length.count}${det.length.unit === 'characters' ? '자' : ` ${det.length.unit}`}.${det.ko_style ? `\n[결정적 문체 검사 — 번역투·AI 상투구·모바일 호흡]\n${koStyleDigest(det.ko_style)}` : ''}`
               : `English output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.count} ${det.length.unit}.`,
         },
         block: compileFor(ctx, 'judge_rubric_prose'),
@@ -463,7 +515,7 @@ export async function evaluateVersion(
           chapter_text: chapterText,
           structure_lint_report:
             ctx.identity.outputLanguage.language === 'ko'
-              ? `문단 ${paragraphs.length}개; 잘림 검사 ${det.truncation.passed ? '통과' : '실패'}.`
+              ? `문단 ${paragraphs.length}개; 잘림 검사 ${det.truncation.passed ? '통과' : '실패'}.${det.ko_style ? ` 대사 비중 ${String(Math.round(det.ko_style.metrics.dialogue_ratio * 100))}%, 긴 서술 문단 ${String(Math.round(det.ko_style.metrics.long_paragraph_ratio * 100))}%, 최장 문단 ${String(det.ko_style.metrics.max_paragraph_chars)}자.${det.ko_style.findings.some((f) => f.rule_id === 'KO-END-01') ? ' 마지막 문단이 요약·관조형으로 판정됨(KO-END-01).' : ''}` : ''}`
               : `paragraphs ${paragraphs.length}; truncation check ${det.truncation.passed ? 'passed' : 'FAILED'}.`,
           contract_shape:
             ctx.identity.outputLanguage.language === 'ko'

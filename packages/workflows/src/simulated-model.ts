@@ -84,10 +84,12 @@ export function sceneTextKo(
     `“그럼 감사 전까지 무시당하지 않을 사람이 돼야겠군.”`,
     `저녁 입소를 알리는 종이 울렸다. ${protagonist}은(는) 장부 한 장을 접어 소매 속에 넣었다.`,
   ];
-  const filler = Array.from(
-    { length: 6 },
-    (_, i) =>
-      `그 값을 셀 수 있는 단위는 하나뿐이었다. 아무도 읽지 않을 장부의 ${i + 1}번째 줄, 종이 울리기 전에 봉인하고 날짜를 적은 그 줄.`,
+  // Alternating dialogue and short narration: a Korean webnovel scene, not a wall of monologue (the
+  // ADR-0056 style lint gates a dialogue share below the tradition's floor).
+  const filler = Array.from({ length: 6 }, (_, i) =>
+    i % 2 === 0
+      ? `“${i + 1}번째 줄도 봉인해 둘까요? 감사관이 오기 전에 날짜까지 맞춰 놓는 게 좋겠어요.”`
+      : `아무도 읽지 않을 장부의 ${i + 1}번째 줄. 종이 울리기 전에 봉인하고 날짜를 적은 그 줄을 손끝으로 한 번 더 짚었다.`,
   );
   return [...lines, ...filler].join('\n\n');
 }

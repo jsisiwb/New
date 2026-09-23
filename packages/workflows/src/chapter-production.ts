@@ -601,8 +601,11 @@ export async function produceChapter(
             recommendedActions: ['regenerate', 'edit_manually'],
           },
         );
-      // Only the single representative revision path belongs to this checkpoint: one patch per run.
-      break;
+      // The English lineage keeps the Checkpoint-5 single representative revision (its recorded fixtures
+      // replay byte-identically). A Korean craft-engine run (ADR-0056) may take further rounds, each on
+      // the dimension with the most open blocking/major issues and each regression-checked, up to the
+      // pinned policy's max_rounds.
+      if (ctx.identity.outputLanguage.language !== 'ko') break;
     }
     revision ??= { rounds: 0 };
 
