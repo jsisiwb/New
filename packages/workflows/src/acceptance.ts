@@ -22,7 +22,7 @@ import {
   type DependencyEdgeInput,
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
-import { type Generated, validatorFor } from '@yeonjae/domain';
+import { type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
 import { checkOutputLanguage, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { anchorEvidence } from './anchoring.js';
 import { checkpointPack, packCallInput, type StoredPack } from './drafting.js';
@@ -196,6 +196,8 @@ export async function extractCanon(
         stage: 'extracted_a',
         extractor_call_id: call.llmCallId,
       };
+      if (JSON.stringify(anchoredItems) !== JSON.stringify(rawItems))
+        recordNormalization('evidence_anchor');
       // The extractor may only cite the version it was given: any other manuscript_version_id is rejected.
       for (const item of anchoredItems) {
         for (const ev of item.evidence) {

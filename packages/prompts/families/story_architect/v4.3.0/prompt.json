@@ -1,0 +1,36 @@
+{
+  "family": "story_architect",
+  "version": "4.3.0",
+  "role": "story_architect",
+  "purpose": "Korean webnovel craft prompt (ADR-0056) with a schema-generated output shape (ADR-0057), 4.3.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "bible_summary",
+    "target_chapters"
+  ],
+  "output_schema": "series-blueprint.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 10000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.3.0 — output shape generated from the answer schema (ADR-0057): every required field, schema enum values only, derived shape notes; canon_extractor shows a complete item payload, story_architect's label names every workflow-filled field.",
+  "regression_cases": [
+    "story_architect.contiguous_seasons",
+    "story_architect.complete_ending",
+    "story_architect.planned_bible"
+  ],
+  "content_hash": "sha256:fc43764decf5dfdadf106eca4108c8e4b66a10a474c09e23bdaf5efd8f27be04"
+}

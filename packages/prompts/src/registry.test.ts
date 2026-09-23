@@ -28,12 +28,14 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 295;
+const TOTAL_PROMPT_VERSIONS = 297;
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';
 /** Families with a later live-run fix on top of ACTIVE_VERSION (ADR-0056). */
 const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = {
   arc_planner: '4.0.1',
+  canon_extractor: '4.3.0',
+  story_architect: '4.3.0',
   targeted_reviser: '4.0.1',
   chapter_planner: '4.2.0',
   scene_planner: '4.2.0',

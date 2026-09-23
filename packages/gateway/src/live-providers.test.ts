@@ -212,4 +212,54 @@ describe('liveGatewayFromEnv', () => {
       liveGatewayFromEnv({ YEONJAE_LIVE_API_KEY: 'k', YEONJAE_LIVE_PROVIDER: 'nope' }),
     ).toThrow(/YEONJAE_LIVE_PROVIDER/);
   });
+
+  it('declares native JSON-schema output only when configured, and only for OpenAI-compatible endpoints (ADR-0057)', () => {
+    const base = { YEONJAE_LIVE_API_KEY: 'k', YEONJAE_MODEL_DEFAULT: 'm' };
+    const plain = liveGatewayFromEnv(base);
+    expect(plain.routing.M[0]?.nativeStructuredOutput).toBeUndefined();
+    expect(plain.config.primary.structuredOutput).toBe('json_object');
+    const native = liveGatewayFromEnv({ ...base, YEONJAE_LIVE_STRUCTURED_OUTPUT: 'json_schema' });
+    expect(native.routing.M[0]?.nativeStructuredOutput).toBe('json_schema');
+    expect(() =>
+      liveGatewayFromEnv({
+        ...base,
+        YEONJAE_LIVE_PROVIDER: 'anthropic',
+        YEONJAE_LIVE_STRUCTURED_OUTPUT: 'json_schema',
+      }),
+    ).toThrow(/OpenAI-compatible/);
+    expect(() => liveGatewayFromEnv({ ...base, YEONJAE_LIVE_STRUCTURED_OUTPUT: 'yes' })).toThrow(
+      /YEONJAE_LIVE_STRUCTURED_OUTPUT/,
+    );
+  });
+});
+
+describe('native structured output (ADR-0057)', () => {
+  it('sends the answer schema as a non-strict json_schema response format', async () => {
+    let seen: RequestInit | undefined;
+    const provider = new OpenAiCompatibleProvider({
+      name: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      apiKey: 'sk-test',
+      fetchImpl: fetchReturning(
+        200,
+        { choices: [{ message: { content: '{"issues":[]}' }, finish_reason: 'stop' }] },
+        (init) => {
+          seen = init;
+        },
+      ),
+    });
+    const schema = {
+      type: 'object',
+      required: ['issues'],
+      properties: { issues: { type: 'array' } },
+    };
+    await provider.complete({
+      ...REQ,
+      responseFormat: { kind: 'json_schema', name: 'continuity_checker', schema },
+    });
+    expect(bodyOf(seen).response_format).toEqual({
+      type: 'json_schema',
+      json_schema: { name: 'continuity_checker', schema, strict: false },
+    });
+  });
 });

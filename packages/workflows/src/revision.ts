@@ -11,7 +11,7 @@ import {
   setChapterStatus,
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
-import { type Generated, validatorFor } from '@yeonjae/domain';
+import { type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
 import {
   checkOutputLanguage,
   codePointLength,
@@ -239,12 +239,16 @@ export async function reviseVersion(
       const fields = normalizePatchFields(
         output && typeof output === 'object' ? (output as Record<string, unknown>) : {},
       );
+      if (JSON.stringify(fields) !== JSON.stringify(output)) recordNormalization('patch_fields');
       // Replacement text follows the manuscript's quotation marks, like a drafted scene (ADR-0056 §13).
       const raw =
         ctx.identity.outputLanguage.language === 'ko' && typeof fields.new_text === 'string'
           ? { ...fields, new_text: koQuoteMarks(fields.new_text) }
           : fields;
       const anchored = anchorPatchSpan(nfc, { start, end }, raw.span);
+      const rawSpan = raw.span as { start?: unknown; end?: unknown } | undefined;
+      if (anchored && rawSpan && (rawSpan.start !== anchored.start || rawSpan.end !== anchored.end))
+        recordNormalization('patch_quote_anchor');
       if (!anchored)
         throw new WorkflowError(
           'PATCH_UNANCHORED',

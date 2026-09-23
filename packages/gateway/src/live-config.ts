@@ -23,6 +23,8 @@ export interface LiveProviderSpec {
   readonly priceOutPerMTokCents: number;
   readonly maxContextTokens: number;
   readonly timeoutMs: number;
+  /** Native structured output the endpoint accepts (ADR-0057); only OpenAI-compatible endpoints may set it. */
+  readonly structuredOutput: 'json_schema' | 'json_object';
 }
 
 export interface LiveConfig {
@@ -104,8 +106,26 @@ function specFrom(
       `${prefix}_MAX_CONTEXT_TOKENS`,
     ),
     timeoutMs: intOf(env[`${prefix}_TIMEOUT_MS`], 300_000, `${prefix}_TIMEOUT_MS`),
+    structuredOutput: structuredOutputOf(env[`${prefix}_STRUCTURED_OUTPUT`], kind, prefix),
   };
   return { spec, apiKey };
+}
+
+function structuredOutputOf(
+  raw: string | undefined,
+  kind: LiveProviderKind,
+  prefix: string,
+): LiveProviderSpec['structuredOutput'] {
+  if (raw === undefined || raw === '' || raw === 'json_object') return 'json_object';
+  if (raw !== 'json_schema')
+    throw new LiveConfigError(
+      `${prefix}_STRUCTURED_OUTPUT must be 'json_schema' or 'json_object'; got '${raw}'`,
+    );
+  if (kind !== 'openai')
+    throw new LiveConfigError(
+      `${prefix}_STRUCTURED_OUTPUT=json_schema needs an OpenAI-compatible provider`,
+    );
+  return 'json_schema';
 }
 
 /** Build providers and a routing table from the environment. Throws `LiveConfigError` naming the variable. */
@@ -143,6 +163,9 @@ export function liveGatewayFromEnv(env: NodeJS.ProcessEnv = process.env): {
       priceOutPerMTokCents: s.spec.priceOutPerMTokCents,
       maxContextTokens: s.spec.maxContextTokens,
       supportsJsonSchema: s.spec.kind === 'openai',
+      ...(s.spec.structuredOutput === 'json_schema'
+        ? { nativeStructuredOutput: 'json_schema' as const }
+        : {}),
     }));
   const routing: RoutingTable = {
     R: routesFor('R'),

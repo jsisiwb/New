@@ -44,6 +44,13 @@ export interface GatewayRequest {
    * workflow as a string. Defaults to `json` when `outputSchemaRef` is set, `text` otherwise.
    */
   readonly outputMode?: 'json' | 'text' | undefined;
+  /**
+   * The self-contained schema of the model's answer (ADR-0057). Sent to the provider only on a route whose
+   * `nativeStructuredOutput` is `json_schema`; every other route receives the request exactly as before, and
+   * the gateway's own validation and bounded repair apply either way.
+   */
+  readonly responseSchema?:
+    { readonly name: string; readonly schema: Readonly<Record<string, unknown>> } | undefined;
   readonly params?: Partial<ModelParams> | undefined;
   readonly modelClass: ModelClass;
 }
@@ -75,6 +82,14 @@ export interface ProviderRequest {
   readonly user: string;
   readonly params: ModelParams;
   readonly outputSchema?: Record<string, unknown> | undefined;
+  /** Native structured output for this call (only on routes that declare the capability). */
+  readonly responseFormat?:
+    | {
+        readonly kind: 'json_schema';
+        readonly name: string;
+        readonly schema: Readonly<Record<string, unknown>>;
+      }
+    | undefined;
   /** Workflow trace (role + activity + idempotency key); replay providers may key recordings by it. */
   readonly trace?:
     | { readonly role: string; readonly activityId: string; readonly idempotencyKey: string }
