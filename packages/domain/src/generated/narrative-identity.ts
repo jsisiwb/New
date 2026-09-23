@@ -140,6 +140,7 @@ export type NarrativeIdentityProfile = {
      * Structure Judge rubric (dimension B)
      */
     rubric?: RubricDimension[];
+    style_exemplars?: StyleExemplars;
   };
   /**
    * Layer 3 — Genre profile (overlay; JSON Merge Patch semantics over the composed identity)
@@ -188,6 +189,7 @@ export type NarrativeIdentityProfile = {
      * Genre Judge rubric (dimension C)
      */
     rubric?: RubricDimension[];
+    style_exemplars?: StyleExemplars;
   };
   /**
    * Layer 4 — Setting & cultural profile
@@ -327,6 +329,101 @@ export type EndingType =
   | 'mid_scene_fade'
   | 'summary_reflection';
 /**
+ * Studio-authored synthetic voice anchors (ADR-0025, ADR-0056): original passages that show register, paragraph rhythm and beat density. Rendered only into writer/editor identity blocks as rhythm references; their names, events and sentences are never reused.
+ *
+ * @maxItems 3
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "styleExemplars".
+ */
+export type StyleExemplars =
+  | []
+  | [
+      {
+        id: string;
+        /**
+         * @minItems 1
+         */
+        functions: [ExemplarFunction, ...ExemplarFunction[]];
+        pov?: 'first' | 'third_limited';
+        provenance: 'studio_synthetic';
+        note?: string;
+        text: string;
+      },
+    ]
+  | [
+      {
+        id: string;
+        /**
+         * @minItems 1
+         */
+        functions: [ExemplarFunction, ...ExemplarFunction[]];
+        pov?: 'first' | 'third_limited';
+        provenance: 'studio_synthetic';
+        note?: string;
+        text: string;
+      },
+      {
+        id: string;
+        /**
+         * @minItems 1
+         */
+        functions: [ExemplarFunction, ...ExemplarFunction[]];
+        pov?: 'first' | 'third_limited';
+        provenance: 'studio_synthetic';
+        note?: string;
+        text: string;
+      },
+    ]
+  | [
+      {
+        id: string;
+        /**
+         * @minItems 1
+         */
+        functions: [ExemplarFunction, ...ExemplarFunction[]];
+        pov?: 'first' | 'third_limited';
+        provenance: 'studio_synthetic';
+        note?: string;
+        text: string;
+      },
+      {
+        id: string;
+        /**
+         * @minItems 1
+         */
+        functions: [ExemplarFunction, ...ExemplarFunction[]];
+        pov?: 'first' | 'third_limited';
+        provenance: 'studio_synthetic';
+        note?: string;
+        text: string;
+      },
+      {
+        id: string;
+        /**
+         * @minItems 1
+         */
+        functions: [ExemplarFunction, ...ExemplarFunction[]];
+        pov?: 'first' | 'third_limited';
+        provenance: 'studio_synthetic';
+        note?: string;
+        text: string;
+      },
+    ];
+/**
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "exemplarFunction".
+ */
+export type ExemplarFunction =
+  | 'hook'
+  | 'action'
+  | 'banter'
+  | 'status_window'
+  | 'emotional_beat'
+  | 'cliffhanger'
+  | 'exposition_in_action'
+  | 'comedy_beat';
+/**
  * This interface was referenced by `undefined`'s JSON-Schema
  * via the `definition` "terminologyEntry".
  */
@@ -356,19 +453,6 @@ export type TerminologyEntry = {
    */
   entity_id?: string;
 };
-/**
- * This interface was referenced by `undefined`'s JSON-Schema
- * via the `definition` "exemplarFunction".
- */
-export type ExemplarFunction =
-  | 'hook'
-  | 'action'
-  | 'banter'
-  | 'status_window'
-  | 'emotional_beat'
-  | 'cliffhanger'
-  | 'exposition_in_action'
-  | 'comedy_beat';
 
 /**
  * This interface was referenced by `undefined`'s JSON-Schema

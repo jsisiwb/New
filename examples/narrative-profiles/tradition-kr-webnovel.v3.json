@@ -1,0 +1,235 @@
+{
+  "id": "tradition/kr-webnovel",
+  "kind": "tradition",
+  "version": 3,
+  "name": "한국 연재 웹소설 서사 전통 v3 (모바일 연재 호흡, 절단, 사이다 리듬)",
+  "tradition": {
+    "tradition_id": "kr-webnovel",
+    "contract_text": "이 원고는 노벨피아·카카오페이지·문피아·네이버 시리즈에 매일 올라가는 한국 연재 웹소설의 한 회차다. 독자는 휴대폰으로 읽고, 첫 화면에서 붙잡히지 않으면 뒤로 가기를 누른다. 그래서 첫 세 문장 안에 긴장이나 전 회차 절단의 연결로 들어가고, 문단은 한두 문장으로 끊으며, 강조할 문장은 한 줄 문단으로 떼어 놓는다. 장면은 행동→반응→속마음(‘ ’)→대사 비트가 빠르게 돌고, 설정과 정보는 행동·대사·상태창·주인공의 짧은 속마음에 녹인다. 한 회차에는 핵심 사건 하나와 로컬 보상(사이다·폭로·감정의 한 걸음·성장 확인·웃음) 하나 이상이 반드시 있고, 회차 끝은 다음 화를 누를 수밖에 없는 절단(위기 직전, 폭로 직전, 결단, 새 인물·위협의 등장, 감정의 정점, 불길한 여운)으로 닫는다. 요약, 교훈, 회상, ‘그렇게 하루가 저물었다’ 식 마무리로 끝내지 않는다. 고구마(답답함)는 짧게, 사이다는 확실하게 준다. 서구 서사시 판타지·순문학·번역 소설의 호흡(긴 풍경 묘사, 전지적 해설, 철학적 관조, 은유 연쇄, 느린 도입)으로 흐르지 않는다. 특정 작가나 작품을 흉내 내지 않고, 장르 관습은 이 작품의 설정 안에서 쓴다.",
+    "structure": {
+      "hook_within_sentences": 3,
+      "opening_types_allowed": [
+        "continue_cliffhanger",
+        "in_medias_res",
+        "sharp_dialogue",
+        "status_update",
+        "time_skip_with_tension"
+      ],
+      "opening_types_forbidden": [
+        "weather_landscape",
+        "lore_dump",
+        "waking_up_routine"
+      ],
+      "scene_count_band": {
+        "min": 2,
+        "max": 4
+      },
+      "local_payoff_required_any_of": [
+        "satisfaction",
+        "revelation",
+        "emotional_step",
+        "growth_confirmed",
+        "humor_beat"
+      ],
+      "ending_types_allowed": [
+        "cliffhanger",
+        "reveal",
+        "decision",
+        "arrival_of_threat",
+        "emotional_peak",
+        "quiet_ominous"
+      ],
+      "ending_types_forbidden": [
+        "mid_scene_fade",
+        "summary_reflection"
+      ],
+      "cadence": {
+        "progression_event_every_chapters": 4,
+        "satisfaction_every_chapters": 3,
+        "max_frustration_streak": 2
+      },
+      "exposition": {
+        "max_consecutive_sentences": 3,
+        "lore_via": [
+          "action",
+          "dialogue",
+          "status_text",
+          "narration_slot"
+        ],
+        "new_terms_per_chapter_max": 5
+      }
+    },
+    "rhythm": {
+      "paragraph_max_sentences": 3,
+      "paragraph_max_words_narration": 28,
+      "paragraph_max_words_dialogue": 30,
+      "single_line_ok": true,
+      "sentence_variance": "high",
+      "dialogue_ratio_band": {
+        "min": 0.25,
+        "max": 0.6,
+        "target": 0.4
+      },
+      "reaction_beats": "interleave",
+      "monologue_ratio_band": {
+        "min": 0.05,
+        "max": 0.3
+      },
+      "hindsight_monologue_max_ratio": 0.2
+    },
+    "devices": [
+      {
+        "id": "status_window",
+        "description": "대괄호 상태창. 항목명은 한국어, 숫자는 정사 사실로 기록되고 앞선 수치와 맞아야 한다. 한 회차에 두 번 이하, 보여 줄 이유(성장·판정·반전)가 있을 때만.",
+        "format_grammar": "[상태창]\n이름: <이름>\n등급: <등급>\n근력 <n> / 민첩 <n> / 체력 <n> / 마력 <n>\n스킬: <스킬>(Lv.<n>)",
+        "max_per_chapter": 2
+      },
+      {
+        "id": "system_message",
+        "description": "한 줄짜리 대괄호 시스템 알림. 하십시오체 평서문(~했습니다). 여러 알림은 한 줄에 하나씩, 연속 세 줄 이하.",
+        "format_grammar": "[<시스템 메시지.>]"
+      },
+      {
+        "id": "community_interlude",
+        "description": "게시판·댓글·방송 채팅 인터루드. 반말·인터넷 말투, 실제 플랫폼 이름 금지, 8줄 이하. 세계 안에 그런 매체가 있을 때만.",
+        "format_grammar": "└ <닉네임>: <한 줄 댓글>",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "hindsight_monologue",
+        "description": "작은따옴표 속마음으로 원작 지식·지난 생을 떠올리는 한두 문장. 문단 단위 회상 금지. 회차의 20% 이하."
+      },
+      {
+        "id": "rank_reveal",
+        "description": "측정 결과 → 주변 인물의 반응(인물마다 다르게, 최대 세 줄) → 주인공의 반응. 한 회차에 한 번.",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "letter",
+        "description": "편지·쪽지·서신 블록. 짧게, 서명으로 끝낸다."
+      }
+    ],
+    "lint_thresholds": {
+      "ST-HOOK-01": {
+        "warn": 3,
+        "fail": 6
+      },
+      "ST-SCENE-01": {
+        "warn": 1,
+        "fail": 2
+      },
+      "ST-EXP-01": {
+        "warn": 3,
+        "fail": 6
+      },
+      "ST-EXP-02": {
+        "warn": 5,
+        "fail": 9
+      },
+      "ST-DLG-01": {
+        "warn": 0.05,
+        "fail": 0.12
+      },
+      "ST-MON-01": {
+        "warn": 0.05,
+        "fail": 0.12
+      },
+      "ST-MON-02": {
+        "warn": 0.2,
+        "fail": 0.3
+      },
+      "ST-CAD-01": {
+        "warn": 1,
+        "fail": 3
+      },
+      "ST-PARA-01": {
+        "warn": 0.12,
+        "fail": 0.25
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "도입 훅",
+        "weight": 0.15,
+        "anchors": {
+          "1": "풍경·일상·설명·회상으로 시작해 첫 화면에서 끌어당김이 없다.",
+          "3": "몇 문단 준비 뒤에야 긴장이 걸린다.",
+          "5": "첫 세 문장 안에 긴장·질문·전 회차 절단의 연결이 걸린다."
+        }
+      },
+      {
+        "dimension": "회차 보상(사이다)",
+        "weight": 0.2,
+        "anchors": {
+          "1": "이번 화에 터지는 것이 없다. 깔기만 한다.",
+          "3": "보상이 있지만 흐릿하거나 설명으로 처리된다.",
+          "5": "사이다·폭로·감정의 한 걸음·성장·웃음 중 하나가 지면에서 분명히 터지고 주변 반응으로 증폭된다."
+        }
+      },
+      {
+        "dimension": "호흡과 비트",
+        "weight": 0.15,
+        "anchors": {
+          "1": "움직임 없는 서술 문단이 길게 이어진다.",
+          "3": "한 장면이 처진다.",
+          "5": "행동·반응·속마음·대사 비트가 빠르게 교차하고 한 줄 문단이 리듬을 만든다."
+        }
+      },
+      {
+        "dimension": "설명 통제",
+        "weight": 0.1,
+        "anchors": {
+          "1": "백과사전식 설정 설명이 이야기를 멈춘다.",
+          "3": "설명 문단이 한두 개 튄다.",
+          "5": "세계 정보가 행동·대사·상태창·짧은 속마음으로만 들어온다."
+        }
+      },
+      {
+        "dimension": "대사 중심성",
+        "weight": 0.1,
+        "anchors": {
+          "1": "장면이 요약 서술로 처리된다.",
+          "3": "대사는 있지만 서술이 무겁다.",
+          "5": "대사가 장면을 끌고 짧은 반응 비트가 사이를 채운다."
+        }
+      },
+      {
+        "dimension": "절단(엔딩)의 당김",
+        "weight": 0.2,
+        "anchors": {
+          "1": "요약·교훈·회상·하루 마무리로 끝나 당김이 없다.",
+          "3": "자연스러운 멈춤, 약한 궁금증.",
+          "5": "마지막 한두 줄이 다음 화를 바로 눌러야 할 이유를 만든다."
+        }
+      },
+      {
+        "dimension": "웹소설다움",
+        "weight": 0.1,
+        "anchors": {
+          "1": "서구 번역 소설·순문학의 문체와 호흡(전지적 해설, 관조, 긴 묘사)이다.",
+          "3": "대체로 웹소설이지만 서구식 문장이 섞인다.",
+          "5": "처음부터 끝까지 한국 연재 웹소설 독자가 기대하는 문체와 호흡이다."
+        }
+      }
+    ],
+    "style_exemplars": [
+      {
+        "id": "kwn-rhythm-confrontation",
+        "functions": [
+          "hook",
+          "action",
+          "banter",
+          "cliffhanger"
+        ],
+        "pov": "first",
+        "provenance": "studio_synthetic",
+        "note": "대사로 여는 도입, 한두 문장 문단, 속마음 한 줄, 행동 속 정보, 한 줄 시스템 알림, 새 인물 등장으로 끊는 절단의 리듬.",
+        "text": "“비켜.”\n\n문 앞을 막은 사내가 턱을 치켜들었다. 어깨에 은색 견장. 3반 반장이었다.\n\n“싫은데?”\n\n“그럼 말을 바꾸지. 비켜 주세요.”\n\n주변에서 킥킥거리는 소리가 났다. 나는 웃지 않았다.\n\n‘셋. 왼쪽 둘은 허세고, 진짜는 뒤에 있는 놈.’\n\n반장의 손끝에서 푸른 불꽃이 튀었다. 입학 석 달 만에 2서클. 자랑할 만했다.\n\n“평민 주제에 말이 많네. 무릎 꿇으면 봐줄게.”\n\n“그 불, 꺼.”\n\n“뭐?”\n\n“오른쪽 소매. 타고 있다고.”\n\n반장이 고개를 숙였다. 정말로 소매 끝이 그을리고 있었다. 제 마력을 못 다룬 거다.\n\n그 한순간이면 충분했다.\n\n나는 반 발짝 들어가 손목을 꺾었다. 불꽃이 바닥에 떨어져 꺼졌다.\n\n“아, 아악!”\n\n[근력이 1 올랐습니다.]\n\n……이 타이밍에?\n\n문 뒤에서 누가 박수를 쳤다. 느리게, 딱 세 번.\n\n“재밌는 신입이 들어왔네.”\n\n학생회 완장을 찬 여자가 웃고 있었다."
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "시작값(ADR-0056). 프로젝트별로 승인 회차 10개 이상에서 보정한다 (ADR-0029)."
+  }
+}

@@ -33,7 +33,22 @@ const GENRE_PROFILES: Readonly<Record<string, string>> = {
   'system-progression': 'genre/hunter-gate@1',
   'apocalypse-survival': 'genre/hunter-gate@1',
   'game-world': 'genre/hunter-gate@1',
+  // Korean-only layer (ADR-0056): no English lineage exists, so English projects skip it.
+  harem: 'genre/harem@1',
 };
+
+/**
+ * The newest Korean-authored version (≥ 2) of a profile id in the store, or undefined. Korean projects
+ * compose from the latest craft layers at novel start (ADR-0056); the composed document is then pinned,
+ * so a project never drifts when a newer layer is added later.
+ */
+function latestKoreanRef(store: ProfileStore, id: string): string | undefined {
+  const versions = store
+    .list()
+    .filter((p) => p.id === id && p.version >= 2)
+    .map((p) => p.version);
+  return versions.length > 0 ? `${id}@${String(Math.max(...versions))}` : undefined;
+}
 
 export function composedRefFor(projectId: string): string {
   return `project/${projectId}@1`;
@@ -51,15 +66,17 @@ export function identityProfileFromIntake(
   // ADR-0055: a Korean project composes from the Korean-authored layers (@2), so every rule the model
   // reads is Korean and none of the English-manuscript policies (romanization, English terms) apply.
   const isKo = intake.manuscript_language === 'ko';
-  const langRef = isKo ? 'lang/ko@2' : 'lang/en@1';
-  const tradRef = isKo ? 'tradition/kr-webnovel@2' : 'tradition/kr-webnovel@1';
+  const langRef = isKo ? (latestKoreanRef(store, 'lang/ko') ?? 'lang/ko@2') : 'lang/en@1';
+  const tradRef = isKo
+    ? (latestKoreanRef(store, 'tradition/kr-webnovel') ?? 'tradition/kr-webnovel@2')
+    : 'tradition/kr-webnovel@1';
   const lang = store.get(langRef).output_language;
   const trad = store.get(tradRef).tradition;
   if (!lang?.contract_text || !trad?.contract_text)
     throw new Error(`the global ${langRef} and ${tradRef} profiles must carry contract text`);
   const overlays = [intake.genre.primary, ...(intake.genre.secondary ?? [])]
     .map((g) => GENRE_PROFILES[g])
-    .map((ref) => (ref && isKo ? ref.replace(/@1$/, '@2') : ref))
+    .map((ref) => (ref && isKo ? latestKoreanRef(store, ref.replace(/@\d+$/, '')) : ref))
     .filter((ref): ref is string => ref !== undefined && known.has(ref));
   const unique = [...new Set(overlays)];
   const genres: NonNullable<NonNullable<NarrativeProfile['lineage']>['genres']> =

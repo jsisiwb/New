@@ -356,7 +356,8 @@ export type GenreId =
   | 'game-world'
   | 'comedy'
   | 'character-drama'
-  | 'slow-burn-romance';
+  | 'slow-burn-romance'
+  | 'harem';
 
 /**
  * This interface was referenced by `undefined`'s JSON-Schema
