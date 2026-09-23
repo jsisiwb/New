@@ -515,6 +515,8 @@ export async function generateContract(
       );
       const envelope = (content: Partial<ChapterContract>): ChapterContract => ({
         ...(content as ChapterContract),
+        // The prompt tells the model the workflow fills the version; a fresh contract is version 1.
+        version: typeof content.version === 'number' ? content.version : 1,
         id: input.contractId,
         project_id: ctx.projectId,
         chapter_number: input.chapterNo,

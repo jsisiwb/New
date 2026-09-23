@@ -77,8 +77,10 @@ suite('complete story bible before prose', () => {
     return { projectId, provider, deps, approved };
   }
 
-  it('accepts a live arc plan whose repetition and cadence checks arrive as prose (ADR-0056)', async () => {
+  it('accepts live plans that omit workflow-filled fields and write check objects as prose (ADR-0056)', async () => {
     const { projectId, deps, approved } = await setup((role, output) => {
+      // The prompts tell planners the workflow fills the contract version; a live model omits it.
+      if (role === 'chapter_planner') delete output.version;
       if (role === 'arc_planner') {
         output.repetition_check = '이전 아크와 겹침 없음.';
         output.cadence_check = { cider_interval_ok: true, notes: '사이다 간격 준수.' };
