@@ -72,6 +72,12 @@ can answer HTTP 200 with an empty completion.
    Notion AI bridge (`YEONJAE_NOTION_URL`, bearer `YEONJAE_NOTION_TOKEN`). An empty completion is a
    `retryable_provider` failure, and each class carries fallback routes, so the gateway retries on the
    next route (another pooled workspace) instead of spending JSON repairs.
+   The bridge drives Notion's agent, which answers an authoring request by writing a page and leaving
+   the chat reply empty: live, every Korean scene-writer call came back empty on both workspaces, in
+   text and JSON form, with or without a "do not create pages" line. The adapter therefore sends every
+   request inside a fixed transport frame (a stateless completion, tools disabled, the chat reply is
+   the only output) that wraps the rendered system prompt verbatim; framed, both workspaces returned
+   the scene. The frame names no craft rule and changes no prompt version.
 
 9. **Seasons are planned as 에피소드 arcs.** A season longer than 15 chapters is split into arcs of about
    ten chapters (`ARC_WINDOW`), each planned when its first chapter is reached, with the previous arc's

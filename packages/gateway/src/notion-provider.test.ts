@@ -5,13 +5,24 @@ import { asUuid } from '@yeonjae/domain';
 import { isRetryable, ProviderFailure } from './failures.js';
 import { Gateway, MemoryAuditStore, MemoryBudget } from './gateway.js';
 import { DEFAULT_PARAMS } from './mock-provider.js';
-import { DEFAULT_NOTION_MODEL, NotionProvider } from './notion-provider.js';
+import {
+  DEFAULT_NOTION_MODEL,
+  framedForNotion,
+  NOTION_COMPLETION_FRAME,
+  NotionProvider,
+} from './notion-provider.js';
 import { notionRouting, providerModeFromEnv, resolveProvidersFromEnv } from './provider-mode.js';
 import { type GatewayRequest, type ProviderRequest } from './types.js';
 
 /** A stand-in Notion bridge: answers `/notion/v1/complete` from a queue of texts. */
 class FakeBridge {
-  readonly seen: { path: string; auth: string | undefined; modelId: string }[] = [];
+  readonly seen: {
+    path: string;
+    auth: string | undefined;
+    modelId: string;
+    system: string;
+    user: string;
+  }[] = [];
   private server: Server | undefined;
   constructor(private readonly texts: string[]) {}
 
@@ -20,11 +31,17 @@ class FakeBridge {
       const chunks: Buffer[] = [];
       req.on('data', (c: Buffer) => chunks.push(c));
       req.on('end', () => {
-        const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { modelId: string };
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+          modelId: string;
+          system: string;
+          user: string;
+        };
         this.seen.push({
           path: req.url ?? '',
           auth: req.headers.authorization,
           modelId: body.modelId,
+          system: body.system,
+          user: body.user,
         });
         const text = this.texts.shift() ?? '';
         const payload = JSON.stringify({
@@ -90,6 +107,17 @@ describe('NotionProvider', () => {
         '/notion/v1/complete',
       ]);
       expect(bridge.seen[0]?.auth).toBe('Bearer t0ken');
+    });
+
+    it('sends the prompt inside the stateless-completion frame, instructions unchanged', async () => {
+      const provider = new NotionProvider({ baseUrl: url, token: 't0ken' });
+      await provider.complete(request).catch(() => undefined);
+      const sent = bridge.seen[0];
+      expect(sent?.system).toBe(
+        `${NOTION_COMPLETION_FRAME}\n\n<instructions>\n${request.system}\n</instructions>`,
+      );
+      expect(sent?.user).toBe(request.user);
+      expect(framedForNotion(request).system).toBe(sent?.system);
     });
 
     it('falls through to the next route inside the gateway when a route answers empty', async () => {

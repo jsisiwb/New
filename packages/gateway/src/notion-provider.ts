@@ -10,6 +10,13 @@
  * later schema or length gate far from its cause; treated as a JSON repair it would burn the bounded
  * repair budget on a transport fault. It is therefore a `retryable_provider` failure here, so the gateway
  * falls through to the next route — which, on a round-robin pool, lands on another workspace.
+ *
+ * The empty answer has a cause the bridge cannot see: it drives Notion's agent, and the agent answers an
+ * authoring request ("write this scene") by writing a page and leaving the chat reply empty. Live, every
+ * Korean scene-writer call came back empty in every output format until the request was framed as a
+ * stateless completion whose tools are disabled and whose chat reply is the only output; then both pooled
+ * workspaces returned the scene. Every request is therefore sent inside `NOTION_COMPLETION_FRAME`. The
+ * frame is transport, like a header: it names no craft rule, and the wrapped instructions are unchanged.
  */
 import { ProviderFailure } from './failures.js';
 import { HttpProvider } from './http-provider.js';
@@ -17,6 +24,19 @@ import { type Provider, type ProviderRequest, type ProviderResponse } from './ty
 
 export const DEFAULT_NOTION_MODEL = 'notion-ai';
 export const DEFAULT_NOTION_TIMEOUT_MS = 600_000;
+
+export const NOTION_COMPLETION_FRAME =
+  'You are running as a stateless text-completion API. Tools are disabled: you cannot create, edit, ' +
+  'search or open pages, and any tool call fails. Your chat reply is the only output anyone reads. ' +
+  'Follow the instructions below exactly and reply with the requested output directly in the chat.';
+
+/** The request as the bridge receives it: the prompt's system text wrapped, verbatim, in the frame. */
+export function framedForNotion(req: ProviderRequest): ProviderRequest {
+  return {
+    ...req,
+    system: `${NOTION_COMPLETION_FRAME}\n\n<instructions>\n${req.system}\n</instructions>`,
+  };
+}
 
 export interface NotionProviderOptions {
   readonly name?: string | undefined;
@@ -52,7 +72,7 @@ export class NotionProvider implements Provider {
     req: ProviderRequest,
     signal?: AbortSignal,
   ): Promise<ProviderResponse & { readonly usageReported: boolean }> {
-    const res = await this.adapter.complete(req, signal);
+    const res = await this.adapter.complete(framedForNotion(req), signal);
     const empty = (res.text === undefined || res.text.trim() === '') && res.json === undefined;
     if (empty && res.finishReason !== 'content_filter')
       throw new ProviderFailure(
