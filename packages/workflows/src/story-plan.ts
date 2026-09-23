@@ -1179,8 +1179,19 @@ export async function planArcFromBlueprint(
         ...(b.participants ? { participants: onlyKnown(b.participants) } : {}),
         ...(b.promise_refs ? { promise_refs: onlyPromises(b.promise_refs) } : {}),
       }));
+      // Live planners write the two check objects as prose; keep the prose in their notes fields.
+      const repetition: unknown = raw.repetition_check;
+      const cadence: unknown = raw.cadence_check;
+      const cadenceNotes: unknown =
+        cadence && typeof cadence === 'object' ? (cadence as { notes?: unknown }).notes : undefined;
       const candidate = {
         ...raw,
+        ...(typeof repetition === 'string' ? { repetition_check: { notes: repetition } } : {}),
+        ...(typeof cadence === 'string'
+          ? { cadence_check: { notes: [cadence] } }
+          : typeof cadenceNotes === 'string'
+            ? { cadence_check: { ...(cadence as object), notes: [cadenceNotes] } }
+            : {}),
         id: input.arc.id,
         project_id: ctx.projectId,
         season_id: input.arc.seasonId,
