@@ -1150,7 +1150,10 @@ export async function planArcFromBlueprint(
           arc_brief: ko
             ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.`
             : `Arc ${input.arc.arcInSeason} of season ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
-          canon_state: renderBibleSummary(input.bible, lang),
+          canon_state: renderArcPlanningDigest(input.bible, lang, {
+            from: input.arc.from,
+            to: input.arc.to,
+          }),
           open_promises: renderPromiseLines(input.bible, lang),
         },
         block,
@@ -1516,6 +1519,162 @@ export function renderBibleSummary(b: StoryBible, lang: 'en' | 'ko' = 'en'): str
   const ko = lang === 'ko';
   return [
     renderBibleDesign(b, lang),
+    ...b.entities.map(
+      (e) =>
+        `- [${e.id}] ${e.display_name} (${e.type})${e.short_forms?.length ? ` ${ko ? '약칭' : 'a.k.a.'} ${e.short_forms.join(', ')}` : ''}${e.description ? `: ${e.description}` : ''}`,
+    ),
+    ...b.propositions.map(
+      (p) =>
+        `- ${ko ? '명제' : 'proposition'} ${p.local_id}: ${p.statement} [${p.truth}${p.secret ? (ko ? ', 비밀' : ', secret') : ''}]`,
+    ),
+  ].join('\n');
+}
+
+type DesignRecord = Record<string, unknown>;
+const recs = (v: unknown): DesignRecord[] =>
+  Array.isArray(v) ? v.filter((x): x is DesignRecord => typeof x === 'object' && x !== null) : [];
+const text = (v: unknown): string =>
+  typeof v === 'string' ? v : Array.isArray(v) ? v.filter(isString).join('; ') : '';
+const windowOf = (t: DesignRecord): { from: number; to: number } | undefined => {
+  const w = t.window as { from?: unknown; to?: unknown } | undefined;
+  const from = typeof w?.from === 'number' ? w.from : t.chapter_from;
+  const to = typeof w?.to === 'number' ? w.to : t.chapter_to;
+  return typeof from === 'number' && typeof to === 'number' ? { from, to } : undefined;
+};
+
+/**
+ * The COMPLETE bible design rendered as planner-readable text for one arc's planner (ADR-0052 keeps the
+ * whole design available to planners; ADR-0056 changes only its rendering). A JSON dump of the design is
+ * tens of thousands of characters of quoting and keys; the same content as labelled lines is far smaller
+ * and easier to plan from. Turning points and milestones near the arc window are marked ★. Registry and
+ * proposition lines keep the `renderBibleSummary` format.
+ */
+export function renderArcPlanningDigest(
+  b: StoryBible,
+  lang: 'en' | 'ko',
+  window: { readonly from: number; readonly to: number },
+): string {
+  const ko = lang === 'ko';
+  const star = (t: DesignRecord) => {
+    const w = windowOf(t);
+    return w !== undefined && w.to >= window.from - 10 && w.from <= window.to + 30 ? '★' : '';
+  };
+  const span = (t: DesignRecord) => {
+    const w = windowOf(t);
+    return w ? ` (${String(w.from)}~${String(w.to)})` : '';
+  };
+  const d = (b.design ?? {}) as DesignRecord;
+  const world = (d.world ?? {}) as DesignRecord;
+  const cast = (d.characters ?? {}) as DesignRecord;
+  const prog = (d.progression ?? {}) as DesignRecord;
+  const L = ko
+    ? {
+        goals: '목표',
+        flaws: '결점',
+        voice: '말투',
+        secret: '비밀',
+        arc: '아크',
+        turns: '전환점',
+        bg: '배경',
+        reg: '말높이',
+        before: '화 이전 공개 금지',
+      }
+    : {
+        goals: 'goals',
+        flaws: 'flaws',
+        voice: 'voice',
+        secret: 'secrets',
+        arc: 'arc',
+        turns: 'turning points',
+        bg: 'background',
+        reg: 'registers',
+        before: ' is the earliest reveal',
+      };
+  const lines: string[] = [
+    ko
+      ? `[PLANNED — 완성된 스토리 설계(전체), 아직 일어난 사건이 아님. ★ = 이번 아크 ${String(window.from)}~${String(window.to)}화 근처]`
+      : `[PLANNED — complete story design, not realized events. ★ = near this arc, chapters ${String(window.from)}–${String(window.to)}]`,
+    ko ? '인물:' : 'Characters:',
+  ];
+  for (const c of recs(cast.characters)) {
+    const arc = (c.arc ?? {}) as DesignRecord;
+    const parts = [
+      `- ${text(c.display_name)} (${text(c.role)}${c.age_at_start !== undefined ? `, ${String(c.age_at_start)}` : ''}${c.rank ? `, ${text(c.rank)}` : ''})`,
+      c.background ? `  ${L.bg}: ${text(c.background)}` : '',
+      `  ${L.goals}: ${text(c.goals)} / ${L.flaws}: ${text(c.flaws)}`,
+      text(c.voice_notes) ? `  ${L.voice}: ${text(c.voice_notes)}` : '',
+      ...recs(c.secrets).map(
+        (x) =>
+          `  ${L.secret}: ${text(x.statement)}${typeof x.reveal_not_before_chapter === 'number' ? ` (${String(x.reveal_not_before_chapter)}${L.before})` : ''}`,
+      ),
+      arc.start_state || arc.end_state
+        ? `  ${L.arc}: ${text(arc.start_state)} → ${text(arc.end_state)}`
+        : '',
+      ...recs(arc.turning_points).map(
+        (t) => `  ${star(t)}${L.turns}: ${text(t.description)}${span(t)}`,
+      ),
+      recs(c.registers).length
+        ? `  ${L.reg}: ${recs(c.registers)
+            .map(
+              (r) =>
+                `→${text(r.toward)} ${text(r.type)}${Array.isArray(r.address_terms) && r.address_terms.length ? ` ‘${text(r.address_terms)}’` : ''}`,
+            )
+            .join('; ')}`
+        : '',
+    ];
+    // Completeness (ADR-0052): any design field without a label above travels verbatim.
+    const shown = new Set([
+      'display_name',
+      'role',
+      'age_at_start',
+      'rank',
+      'background',
+      'goals',
+      'flaws',
+      'voice_notes',
+      'secrets',
+      'arc',
+      'registers',
+      'short_forms',
+      'aliases',
+    ]);
+    const rest = Object.fromEntries(Object.entries(c).filter(([k]) => !shown.has(k)));
+    if (Object.keys(rest).length) parts.push(`  ${JSON.stringify(rest)}`);
+    lines.push(...parts.filter((x) => x.length > 0));
+  }
+  const castRest = Object.fromEntries(Object.entries(cast).filter(([k]) => k !== 'characters'));
+  if (Object.keys(castRest).length) lines.push(JSON.stringify(castRest));
+  lines.push(ko ? '세계 규칙:' : 'World rules:');
+  for (const r of recs(world.world_rules))
+    lines.push(`- ${text(r.attribute)}: ${text(r.statement)}`);
+  lines.push(ko ? '장소:' : 'Locations:');
+  for (const l of recs(world.locations))
+    lines.push(`- ${text(l.display_name)}: ${text(l.description)}`);
+  lines.push(ko ? '조직:' : 'Organizations:');
+  for (const o of recs(world.organizations))
+    lines.push(`- ${text(o.display_name)}: ${text(o.description)}`);
+  const terms = recs(world.terminology)
+    .map((t) => text(t.term))
+    .filter((t) => t.length > 0);
+  if (terms.length) lines.push(`${ko ? '용어' : 'Terms'}: ${terms.join(', ')}`);
+  lines.push(ko ? '성장 체계:' : 'Progression:');
+  for (const r of recs(prog.system_rules))
+    lines.push(`- ${text(r.attribute)}: ${text(r.statement)}`);
+  for (const r of recs(prog.ranks))
+    lines.push(`- ${ko ? '등급' : 'rank'} ${text(r.name)}: ${text(r.description)}`);
+  for (const a of recs(prog.abilities))
+    lines.push(
+      `- ${ko ? '능력' : 'ability'} ${text(a.display_name)}${a.owner ? ` (${text(a.owner)})` : ''}: ${text(a.description)}`,
+    );
+  for (const m of recs(prog.milestones))
+    lines.push(`- ${star(m)}${ko ? '마일스톤' : 'milestone'}${span(m)}: ${text(m.description)}`);
+  lines.push(
+    ko
+      ? '아래 등록부 id를 쓴다. 정사로 확정된 내용이 계획보다 우선하고, 비밀은 공개된 지식이 아니다.'
+      : 'Use registry IDs below. Accepted canon takes precedence over the plan; secrets are not public knowledge.',
+  );
+  return [
+    ...lines,
     ...b.entities.map(
       (e) =>
         `- [${e.id}] ${e.display_name} (${e.type})${e.short_forms?.length ? ` ${ko ? '약칭' : 'a.k.a.'} ${e.short_forms.join(', ')}` : ''}${e.description ? `: ${e.description}` : ''}`,
