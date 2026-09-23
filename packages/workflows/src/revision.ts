@@ -130,7 +130,11 @@ export async function reviseVersion(
           span_text: spanText,
           context_before: before,
           context_after: after,
-          must_preserve: mustPreserve.length ? mustPreserve.join('\n') : '(none)',
+          must_preserve: mustPreserve.length
+            ? mustPreserve.join('\n')
+            : ctx.identity.outputLanguage.language === 'ko'
+              ? '(없음)'
+              : '(none)',
           register_digests: input.registerDigests,
           length_budget_words: String(spanText.split(/\s+/).filter(Boolean).length),
         },

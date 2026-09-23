@@ -465,7 +465,10 @@ export async function modelCall<T = unknown>(
     });
   const pv = ctx.registry.get(versionId);
   const vars: Record<string, string> = { ...(input.pack?.variables ?? {}), ...input.variables };
-  for (const v of pv.input_variables) vars[v] ??= '(none)';
+  // An absent context variable reads as "none" in the prompt's own language (ADR-0055: a Korean prompt
+  // must not carry English filler).
+  const none = ctx.identity.outputLanguage.language === 'ko' ? '(없음)' : '(none)';
+  for (const v of pv.input_variables) vars[v] ??= none;
   let identityRef: NarrativeIdentityRef | undefined;
   if (pv.style_sensitive) {
     // A role-specific block wins (planner/judge/editor variants); otherwise the pack's own block is embedded.

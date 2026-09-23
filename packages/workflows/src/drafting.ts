@@ -302,7 +302,9 @@ export async function draftScenes(
     const previous = texts.length
       ? texts.join('\n\n')
       : (input.pack.variables.previous_text ??
-        `(Chapter ${ch} opens the series; nothing precedes it.)`);
+        (ctx.identity.outputLanguage.language === 'ko'
+          ? `(${ch}화가 연재를 연다. 앞에 이어지는 원고가 없다.)`
+          : `(Chapter ${ch} opens the series; nothing precedes it.)`));
     const ref = await runStep(
       ctx,
       'scene_draft',
