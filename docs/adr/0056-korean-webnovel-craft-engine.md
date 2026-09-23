@@ -73,6 +73,12 @@ can answer HTTP 200 with an empty completion.
    `retryable_provider` failure, and each class carries fallback routes, so the gateway retries on the
    next route (another pooled workspace) instead of spending JSON repairs.
 
+9. **Seasons are planned as 에피소드 arcs.** A season longer than 15 chapters is split into arcs of about
+   ten chapters (`ARC_WINDOW`), each planned when its first chapter is reached, with the previous arc's
+   exit state carried into the brief across season boundaries. The live run showed that one 50-chapter arc
+   plan is too coarse to pace 사이다 and too large for a single planning call; short seasons (fixtures)
+   remain one arc, so their arc ids and recordings are unchanged.
+
 ## Alternatives considered
 
 - More and longer rules in the prompts — rejected: the v3 prompts already stated the rules; the missing

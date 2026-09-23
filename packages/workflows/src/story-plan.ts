@@ -1040,20 +1040,63 @@ export interface ArcSchedule {
     seasonId: string;
     from: number;
     to: number;
+    /** The season's ordinal (arcs are planned within their season). */
     ordinal: number;
+    /** 1-based position of this arc inside its season. */
+    arcInSeason: number;
   }[];
 }
 
-/** Which arc a chapter belongs to, from the blueprint's season windows. Each season is one major arc. */
+/**
+ * Seasons longer than this are split into arcs of about ARC_WINDOW chapters (ADR-0056). A Korean serial
+ * season of 40–60 화 is several 에피소드 arcs, and one 50-chapter arc plan is both too coarse to pace
+ * 사이다 and too large for one planning call. Short seasons (fixtures, novellas) stay one arc.
+ */
+export const ARC_WINDOW = 10;
+const SPLIT_SEASONS_LONGER_THAN = 15;
+
+/** Which arc a chapter belongs to, from the blueprint's season windows. */
 export function scheduleFromBlueprint(projectId: string, blueprint: SeriesBlueprint): ArcSchedule {
-  const arcs = blueprint.seasons.map((s) => ({
-    id: planIds.arc(projectId, s.ordinal, 1),
-    seasonId: s.id ?? planIds.season(projectId, s.ordinal),
-    from: s.chapter_range_est.from,
-    to: s.chapter_range_est.to,
-    ordinal: s.ordinal,
-  }));
+  const arcs = blueprint.seasons.flatMap((s) => {
+    const seasonId = s.id ?? planIds.season(projectId, s.ordinal);
+    const { from, to } = s.chapter_range_est;
+    const length = to - from + 1;
+    if (length <= SPLIT_SEASONS_LONGER_THAN)
+      return [
+        {
+          id: planIds.arc(projectId, s.ordinal, 1),
+          seasonId,
+          from,
+          to,
+          ordinal: s.ordinal,
+          arcInSeason: 1,
+        },
+      ];
+    // Windows of ARC_WINDOW chapters; a remainder shorter than half a window joins the last arc.
+    const count = Math.max(1, Math.round(length / ARC_WINDOW));
+    return Array.from({ length: count }, (_, i) => {
+      const a = from + i * ARC_WINDOW;
+      const b = i === count - 1 ? to : Math.min(to, a + ARC_WINDOW - 1);
+      return {
+        id: planIds.arc(projectId, s.ordinal, i + 1),
+        seasonId,
+        from: a,
+        to: b,
+        ordinal: s.ordinal,
+        arcInSeason: i + 1,
+      };
+    });
+  });
   return { arcs };
+}
+
+/** The arc scheduled immediately before `arc` (across season boundaries), if any. */
+export function previousArcOf(
+  schedule: ArcSchedule,
+  arc: ArcSchedule['arcs'][number],
+): ArcSchedule['arcs'][number] | undefined {
+  const i = schedule.arcs.findIndex((a) => a.id === arc.id);
+  return i > 0 ? schedule.arcs[i - 1] : undefined;
 }
 
 export function arcForChapter(schedule: ArcSchedule, chapterNo: number) {
@@ -1105,8 +1148,8 @@ export async function planArcFromBlueprint(
               ? `Season ${season.ordinal} "${season.title}" (id ${input.arc.seasonId}), chapters ${season.chapter_range_est.from}–${season.chapter_range_est.to}: ${season.objective}${season.thesis ? ` Thesis: ${season.thesis}` : ''}`
               : `Season ${input.arc.ordinal} (id ${input.arc.seasonId})`,
           arc_brief: ko
-            ? `아크 ${input.arc.ordinal} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화를 덮는다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.`
-            : `Arc ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
+            ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.`
+            : `Arc ${input.arc.arcInSeason} of season ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
           canon_state: renderBibleSummary(input.bible, lang),
           open_promises: renderPromiseLines(input.bible, lang),
         },
@@ -1121,7 +1164,11 @@ export async function planArcFromBlueprint(
         Array.isArray(ids) ? ids.filter((x): x is string => isString(x) && promiseIds.has(x)) : [];
       const beats = (Array.isArray(raw.beats) ? raw.beats : []).map((b, i) => ({
         ...b,
-        id: str(b.id) ?? `arc${input.arc.ordinal}.beat.${String(i + 1).padStart(2, '0')}`,
+        id:
+          str(b.id) ??
+          (input.arc.arcInSeason === 1
+            ? `arc${input.arc.ordinal}.beat.${String(i + 1).padStart(2, '0')}`
+            : `arc${input.arc.ordinal}.${input.arc.arcInSeason}.beat.${String(i + 1).padStart(2, '0')}`),
         target_chapter_offset: Math.max(
           0,
           Math.min(input.arc.to - input.arc.from, Math.round(b.target_chapter_offset || 0)),
@@ -1135,7 +1182,7 @@ export async function planArcFromBlueprint(
         project_id: ctx.projectId,
         season_id: input.arc.seasonId,
         kind: 'major',
-        ordinal: input.arc.ordinal,
+        ordinal: input.arc.arcInSeason,
         version: 1,
         title: str(raw.title) ?? season?.title ?? `Arc ${input.arc.ordinal}`,
         objective: str(raw.objective) ?? season?.objective ?? '',

@@ -71,6 +71,7 @@ import { pickRevisionDimension, reviseVersion } from './revision.js';
 import {
   arcForChapter,
   planArcFromBlueprint,
+  previousArcOf,
   scheduleFromBlueprint,
   type SeriesBlueprint,
 } from './story-plan.js';
@@ -759,7 +760,7 @@ async function planFromBlueprint(
       step: 'arc_plan',
       data: { chapter_no: chapterNo },
     });
-  const previous = schedule.arcs.find((a) => a.ordinal === arc.ordinal - 1);
+  const previous = previousArcOf(schedule, arc);
   let previousArcExit: string | undefined;
   if (previous) {
     const prior = await ctx.pool.query<{ payload: ArcPlan }>(
