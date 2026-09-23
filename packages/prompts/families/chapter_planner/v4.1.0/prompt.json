@@ -1,0 +1,39 @@
+{
+  "family": "chapter_planner",
+  "version": "4.1.0",
+  "role": "chapter_planner",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.1.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "arc_plan",
+    "chapter_number",
+    "previous_chapter_summary",
+    "canon_state",
+    "knowledge_state",
+    "open_promises",
+    "active_constraints",
+    "length_target_words"
+  ],
+  "output_schema": "chapter-contract.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.4,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.1.0 — first live chapter (ADR-0056 §13): one opening rule across planner, scene planner, writer and structure judge (a possession opening carries premise and stake in its first three sentences); a 절단 changes the situation; 개연성 rules (first-meeting names, countdown arithmetic, invented words); judge shape notes show enum issue kinds, 1–5 sub-scores, the scorecard drift-flag values and the repair object.",
+  "regression_cases": [
+    "chapter_planner.full_planned_bible",
+    "chapter_planner.ending_continuity"
+  ],
+  "content_hash": "sha256:030529c92beb1f1ea7df6989279d52ea901ab5bef24d81978edec4640244f110"
+}

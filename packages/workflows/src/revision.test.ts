@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toNfcText } from '@yeonjae/prose';
+import { codePointLength, toNfcText } from '@yeonjae/prose';
 import { anchorPatchSpan, normalizePatchFields } from './revision.js';
 
 const TEXT = toNfcText(
@@ -30,6 +30,19 @@ describe('anchorPatchSpan (live reviser spans, ADR-0056 §11)', () => {
     expect(anchorPatchSpan(TEXT, { start: 0, end: 5 }, { original_quote: '없는 문장.' })).toBe(
       undefined,
     );
+  });
+
+  it('anchors a whole-window quote whose quotation marks the reviser retyped (live chapter 1)', () => {
+    const chapter = toNfcText('“이게 무슨……”\n\n‘이 얼굴은 내가 아니다.’\n\n문이 열렸다.');
+    const total = codePointLength(chapter.text);
+    const retyped = '"이게 무슨……"\n\n\'이 얼굴은 내가 아니다.\'\n\n문이 열렸다.';
+    expect(
+      anchorPatchSpan(
+        chapter,
+        { start: 0, end: total },
+        { start: 0, end: 20, original_quote: retyped },
+      ),
+    ).toEqual({ start: 0, end: total, original_quote: chapter.text });
   });
 
   it('treats a missing span as the whole window and leaves unquoted offsets to the range check', () => {

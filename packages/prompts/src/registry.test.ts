@@ -28,13 +28,22 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 283;
+const TOTAL_PROMPT_VERSIONS = 292;
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';
 /** Families with a later live-run fix on top of ACTIVE_VERSION (ADR-0056). */
 const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = {
   arc_planner: '4.0.1',
   targeted_reviser: '4.0.1',
+  chapter_planner: '4.1.0',
+  scene_planner: '4.1.0',
+  scene_writer: '4.1.0',
+  structure_judge: '4.1.0',
+  prose_judge: '4.1.0',
+  genre_judge: '4.1.0',
+  voice_judge: '4.1.0',
+  continuity_checker: '4.1.0',
+  knowledge_leak_checker: '4.1.0',
 };
 
 describe('prompt registry (ADR-0016)', () => {
@@ -187,6 +196,41 @@ describe('prompt registry (ADR-0016)', () => {
     expect(fixed.user_template).not.toContain('"start": 0');
     expect(fixed.input_variables).toEqual(old.input_variables);
     expect(fixed.output_schema).toBe(old.output_schema);
+  });
+
+  it('v4.1.0 applies the first live chapter: enum shapes and one opening rule (ADR-0056 §13)', () => {
+    const judges = ['prose_judge', 'structure_judge', 'genre_judge', 'voice_judge'];
+    const checkers = ['continuity_checker', 'knowledge_leak_checker'];
+    const planners = ['chapter_planner', 'scene_planner', 'scene_writer'];
+    for (const fam of [...judges, ...checkers, ...planners]) {
+      const old = reg.get(`${fam}@4.0.0`);
+      const v = reg.get(`${fam}@4.1.0`);
+      expect(v.input_variables, fam).toEqual(old.input_variables);
+      expect(v.output_mode, fam).toBe(old.output_mode);
+      expect(v.output_schema, fam).toBe(old.output_schema);
+    }
+    for (const fam of judges) {
+      const user = reg.get(`${fam}@4.1.0`).user_template;
+      expect(user, fam).not.toMatch(/"kind": "(prose|structure|genre|voice)_issue"/);
+      expect(user, fam).not.toMatch(/"dimension_scores": \{"(prose|structure|genre|voice)": 72\}/);
+      expect(user, fam).toMatch(/1~5점/);
+    }
+    expect(reg.get('prose_judge@4.1.0').user_template).toContain(
+      '"drift_flags": ["translation_like|literary|light_novel|format"]',
+    );
+    expect(reg.get('structure_judge@4.1.0').user_template).toContain(
+      '"drift_flags": ["western_novel|serial|exposition|cadence"]',
+    );
+    expect(reg.get('continuity_checker@4.1.0').user_template).toContain(
+      '"repair": {"scope": "sentence|paragraph|dialogue|scene", "suggestion":',
+    );
+    // The planner no longer exempts a possession wake-up; the judge and writer name the same opening.
+    expect(reg.get('chapter_planner@4.0.0').system_template).toContain(
+      '빙의 직후의 충격은 사건 한복판으로 친다',
+    );
+    expect(reg.get('chapter_planner@4.1.0').system_template).not.toContain('사건 한복판으로 친다');
+    for (const fam of ['chapter_planner', 'structure_judge', 'scene_writer'])
+      expect(reg.get(`${fam}@4.1.0`).system_template, fam).toContain('‘눈을 떴다’');
   });
 
   it('v4 keeps the v3 variable surfaces and output shapes, except the prose-only scene writer (ADR-0056)', () => {

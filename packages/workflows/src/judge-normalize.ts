@@ -13,7 +13,7 @@
  * `chapter_span` only where it occurs in the manuscript. Output that already matches the schema passes
  * through unchanged, so recorded replays stay byte-identical.
  */
-import { type Paragraph, sliceCodePoints, toNfcText, type NfcText } from '@yeonjae/prose';
+import { type NfcText, type Paragraph } from '@yeonjae/prose';
 import { locateQuote } from './anchoring.js';
 
 export type JudgeSection = 'prose' | 'structure' | 'genre' | 'voice';
@@ -115,15 +115,10 @@ export function normalizeRepair(raw: unknown): IssueRepair | undefined {
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-/** Typographic quotes → ASCII, one code point for one, so offsets in the folded text are offsets in the original. */
-function foldQuoteMarks(s: string): string {
-  return s.replace(/[“”„‟〝〞＂]/g, '"').replace(/[‘’‚‛＇]/g, "'");
-}
-
 /**
- * Where a judge's quote sits in the chapter. Judges read `[pN] ` paragraph markers and may copy them, or
- * retype curly quotes as straight ones; both are tolerated. The returned quote is the manuscript's own
- * text, so the span is exact.
+ * Where a judge's quote sits in the chapter. Judges read `[pN] ` paragraph markers and may copy them;
+ * `locateQuote` tolerates retyped quotation marks and returns the manuscript's own text, so the span is
+ * exact.
  */
 export function anchorIssueQuote(
   text: NfcText,
@@ -133,17 +128,10 @@ export function anchorIssueQuote(
   if (typeof quote !== 'string') return undefined;
   const cleaned = quote.replace(/\[p\d+\]\s*/g, '').trim();
   if (!cleaned) return undefined;
-  const found =
-    locateQuote(text, cleaned) ??
-    locateQuote(toNfcText(foldQuoteMarks(text.text)), foldQuoteMarks(cleaned));
+  const found = locateQuote(text, cleaned);
   if (!found) return undefined;
   const paragraph_ids = paragraphs
     .filter((p) => p.start < found.end && p.end > found.start)
     .map((p) => p.id);
-  return {
-    start: found.start,
-    end: found.end,
-    quote: sliceCodePoints(text, found.start, found.end),
-    paragraph_ids,
-  };
+  return { start: found.start, end: found.end, quote: found.quote, paragraph_ids };
 }

@@ -423,6 +423,26 @@ export function stripProseChatter(raw: string): string {
 }
 
 /**
+ * Korean manuscripts use “ ” for dialogue and ‘ ’ for inner speech (the writer's output contract), but a
+ * live model switches to ASCII quotes between scenes and a reviser retypes them. Pair ASCII marks line by
+ * line into the typographic ones; a line with an odd count is ambiguous and left as it is. Korean prose
+ * has no apostrophes, and the replacement is one code point for one.
+ */
+export function koQuoteMarks(text: string): string {
+  return text
+    .split('\n')
+    .map((line) => pairMarks(pairMarks(line, '"', '“', '”'), "'", '‘', '’'))
+    .join('\n');
+}
+
+function pairMarks(line: string, mark: '"' | "'", open: string, close: string): string {
+  const count = line.split(mark).length - 1;
+  if (count === 0 || count % 2 !== 0) return line;
+  let n = 0;
+  return line.replaceAll(mark, () => (n++ % 2 === 0 ? open : close));
+}
+
+/**
  * Build the writer-output envelope from bare prose. A model that ignored text mode and answered with the
  * JSON envelope anyway is unwrapped rather than stored as JSON-looking manuscript.
  */
@@ -462,6 +482,7 @@ export function proseEnvelope(
       step: 'scene_draft',
       recommendedActions: ['regenerate'],
     });
+  if (language === 'ko') text = koQuoteMarks(text);
   return {
     scene_no: sceneNo,
     language: language === 'ko' ? 'ko' : 'en',

@@ -20,7 +20,7 @@ import {
   type NfcText,
 } from '@yeonjae/prose';
 import { locateQuote } from './anchoring.js';
-import { contentHashOf } from './drafting.js';
+import { contentHashOf, koQuoteMarks } from './drafting.js';
 import { type Issue } from './evaluation.js';
 import { WorkflowError } from './errors.js';
 import { compileFor } from './planning.js';
@@ -236,9 +236,14 @@ export async function reviseVersion(
       });
       // The model's output is untrusted JSON whatever the call's type parameter says.
       const output: unknown = call.output;
-      const raw = normalizePatchFields(
+      const fields = normalizePatchFields(
         output && typeof output === 'object' ? (output as Record<string, unknown>) : {},
       );
+      // Replacement text follows the manuscript's quotation marks, like a drafted scene (ADR-0056 §13).
+      const raw =
+        ctx.identity.outputLanguage.language === 'ko' && typeof fields.new_text === 'string'
+          ? { ...fields, new_text: koQuoteMarks(fields.new_text) }
+          : fields;
       const anchored = anchorPatchSpan(nfc, { start, end }, raw.span);
       if (!anchored)
         throw new WorkflowError(

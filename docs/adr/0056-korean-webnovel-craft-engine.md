@@ -108,6 +108,25 @@ can answer HTTP 200 with an empty completion.
    `chapter_span` (offsets and paragraph ids) where it occurs in the manuscript, tolerating copied
    `[pN]` markers and retyped quotation marks; a revision window is then the flagged text, not the whole
    chapter. Schema-valid output passes through unchanged, so recorded replays stay byte-identical.
+   `locateQuote` — shared by extractor evidence, revision patches and judge quotes — also matches with
+   typographic quotation marks folded to ASCII (one code point for one; the returned quote is the
+   manuscript's own slice): the first live revision quoted the whole 5,270-character chapter with every
+   “ ” retyped as `"` and failed `PATCH_UNANCHORED`.
+13. **v4.1.0: what the first live chapter taught.** One opening rule now holds in the chapter planner,
+   scene planner, writer and structure judge: a possession or regression opening is a hook only when its
+   first three sentences carry the premise and the stake; a "눈을 떴다"/"낯선 천장" first sentence or a long
+   body-and-room exploration is a late hook, and 1화 lands its biggest crisis in its first 10% (4.0.0's
+   planner exempted "빙의 직후의 충격" as in medias res while its judge banned the same opening; the live
+   1화 reached its death flag at paragraph 54). A 절단 changes the situation — a new threat, reveal, status
+   alert, unexpected entrance, decisive line or reversal — so an everyday question, a resolution or musing
+   is not one. Planners keep 개연성 (countdown and date arithmetic, first-meeting names, rank and room rules,
+   no invented words); the continuity checker also reads in-chapter contradictions, the knowledge checker
+   first-meeting knowledge, the prose judge spelling. The judge shape notes show enum issue kinds, 1–5
+   sub-scores, the scorecard's drift-flag values and the repair object: 4.0.0's `prose_issue`-style kinds
+   all became `other`, which left the ADR-0014 regression check unable to tell one issue from another.
+   Korean drafts and Korean patch text pair ASCII quotation marks into the writer contract's “ ” ‘ ’ line
+   by line (an odd count is left alone), so a chapter no longer switches style between scenes. The
+   contrast baseline is re-frozen against the v4.1.0 judges (2,000 entries byte-identical, pins → @4.1.0).
 
 ## Alternatives considered
 
@@ -124,8 +143,9 @@ can answer HTTP 200 with an empty completion.
 
 - Schemas: `story-intake` genre id `harem`; `narrative-identity` `style_exemplars` (genre, tradition).
   Generated types regenerated.
-- New profiles; the registry gains 27 versions (283 total): the active set moves to v4.0.0, with
-  `arc_planner` and `targeted_reviser` at v4.0.1.
+- New profiles; the registry gains 36 versions (292 total): the active set moves to v4.0.0, with
+  `arc_planner` and `targeted_reviser` at v4.0.1 and the planners, writer, judges and checkers of §13 at
+  v4.1.0.
 - Korean scorecards carry `lint:ko_style` issues; the Korean simulated model's scene text is
   dialogue-forward so the deterministic e2e run stays approvable.
 - Exemplar copy detection is lexical (a verbatim line of ≥ 14 characters), not semantic.

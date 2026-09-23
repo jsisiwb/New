@@ -26,8 +26,36 @@ export interface SpanLike {
   quote?: string | undefined;
 }
 
-/** Find `quote` in `text` (exact, then whitespace-insensitive). Returns code-point offsets or undefined. */
+/**
+ * Find `quote` in `text`: exact, then whitespace-insensitive, then both again with typographic quotation
+ * marks folded to ASCII — a model copying Korean prose retypes “ ” ‘ ’ as " ' (a live reviser did so
+ * across a whole 5,270-character chapter). The fold maps one code point to one, so its offsets are the
+ * text's own; the returned quote is always the text's own slice. Undefined when nothing matches.
+ */
 export function locateQuote(
+  text: NfcText,
+  quote: string,
+  near?: number,
+): { start: number; end: number; quote: string } | undefined {
+  const found = locateIn(text, quote, near);
+  if (found) return found;
+  const folded = foldQuoteMarks(text.text);
+  const q = foldQuoteMarks(quote);
+  if (folded === text.text && q === quote) return undefined;
+  const hay = toNfcText(folded);
+  if (codePointLength(hay.text) !== codePointLength(text.text)) return undefined;
+  const f = locateIn(hay, q, near);
+  return f
+    ? { start: f.start, end: f.end, quote: sliceCodePoints(text, f.start, f.end) }
+    : undefined;
+}
+
+/** Typographic quotation marks → ASCII, one code point for one. */
+export function foldQuoteMarks(s: string): string {
+  return s.replace(/[“”„‟〝〞＂]/g, '"').replace(/[‘’‚‛＇]/g, "'");
+}
+
+function locateIn(
   text: NfcText,
   quote: string,
   near?: number,

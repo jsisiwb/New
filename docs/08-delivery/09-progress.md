@@ -24,6 +24,10 @@ Branch `hoplite/epidamnos-dyrrhachion-8a8e00dd` (base `2e1f764`). ADR-0056 recor
   chapter-1 "opens the series" note).
 - v4.0.0 for all 25 prompt families (`tools/ko_prompts/v4_*.py`); the contrast baseline is re-frozen
   against the v4 judges (2,000 entries byte-identical, pins → `@4.0.0`).
+- v4.1.0 for the chapter and scene planners, the writer, the four judges and both checkers (ADR-0056 §13):
+  one opening rule, a 절단 that changes the situation, 개연성 rules, enum-shaped judge notes. Korean drafts
+  and patch text pair ASCII quotation marks into “ ” ‘ ’. The contrast baseline is re-frozen against the
+  v4.1.0 judges (2,000 entries byte-identical, pins → `@4.1.0`).
 
 **Verification (local, Postgres 16):** full `vitest` run after the arc-plan/contract fixes: 123/123 files,
 1,836 tests green. After the reviser fix: the revision, registry and CLI unit suites and the
@@ -32,6 +36,9 @@ chapter-production, Korean e2e, longform-replay, recovery and comparison integra
 After the judge-output fix (ADR-0056 §12): the judge-normalization unit suite (14) and the
 chapter-production, Korean e2e, longform-replay and revision suites (62 tests) green, English replays
 byte-identical.
+After v4.1.0 and the quotation-mark fixes (ADR-0056 §12–13): the workflows, prompts, CLI and eval suites
+(34 files, 599 tests) green; contrast regression `PASSED` on the re-frozen baseline; planning validator
+`ALL OK`.
 
 **Live run (`YEONJAE_PROVIDER_MODE=notion`, pooled `notion-ai`) — 「엑스트라로 세계를 구하는 방법」, 200화, ko,
 academy + possession + harem.** Intake written in Korean (premise, 12 tropes, six forbidden developments
@@ -78,6 +85,15 @@ including NTR and indecision, four mandatory scenes, 15세, 5,500자 per 화).
   death flag first at paragraph 54, a 절단 on a roommate's everyday question), prose 88, genre 64, voice 70,
   and a continuity major (a 2인실 against the rank-based dormitory rule) — and the first live revision round
   started.
+- Found by monitoring and fixed: that round's reviser quoted the whole 5,270자 chapter as its
+  `original_quote` with every “ ” retyped as ASCII, and the patch failed `PATCH_UNANCHORED`; the shared
+  quote locator now folds quotation marks (ADR-0056 §12) and anchors that exact reply.
+- Reviewed and changed (v4.1.0): the gate deficits (structure 53 < 78, genre 64 < 72, voice 70 < 76) came
+  from the v4.0.0 plan — the planner counted "낯선 침대에서 눈을 떠" as in medias res, put the death flag in
+  scene 2 and planned a 절단 on "왜 그렇게 창백해?" — and the scene plan itself carried a first-meeting
+  greeting by name and an invented word (세면도실); every v4.0.0 judge issue had kind `other`, so the
+  regression check could not tell one from another. A prose patch cannot close that, so chapter 1 is
+  regenerated from the post-bible snapshot with v4.1.0 instead of spending the remaining rounds.
 
 ## Checkpoint K1 — defect pass, Korean architecture, fully Korean prompts — 2026-09-22
 

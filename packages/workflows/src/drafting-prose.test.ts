@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeSceneDraft } from './anchoring.js';
-import { proseEnvelope, sceneRole, stripProseChatter, validateSceneDraft } from './drafting.js';
+import {
+  koQuoteMarks,
+  proseEnvelope,
+  sceneRole,
+  stripProseChatter,
+  validateSceneDraft,
+} from './drafting.js';
 
 describe('prose-only scene writer output (ADR-0056)', () => {
   it('strips assistant chatter, fences and edge labels but keeps the manuscript', () => {
@@ -32,6 +38,19 @@ describe('prose-only scene writer output (ADR-0056)', () => {
     for (const bad of ['{"scene_no": 1, "text": "The gate', '{"scene_no": 1}', '   ', '[1, 2']) {
       expect(() => proseEnvelope(bad, 1, 'ko')).toThrow(/SCENE_DRAFT_INVALID|prose writer/);
     }
+  });
+
+  it('pairs ASCII quotation marks into the Korean manuscript marks, line by line', () => {
+    expect(koQuoteMarks('"어, 이안!"\n\n\'사흘.\'\n\n“이미 둥근.”')).toBe(
+      '“어, 이안!”\n\n‘사흘.’\n\n“이미 둥근.”',
+    );
+    expect(koQuoteMarks('"그가 \'비켜\'라고 했다."')).toBe('“그가 ‘비켜’라고 했다.”');
+    // An odd count on a line is ambiguous and left alone.
+    expect(koQuoteMarks('"끝나지 않은 인용\n이어짐"')).toBe('"끝나지 않은 인용\n이어짐"');
+    expect(proseEnvelope('"비켜."\n\n반장이 턱을 치켜들었다.', 1, 'ko').text).toBe(
+      '“비켜.”\n\n반장이 턱을 치켜들었다.',
+    );
+    expect(proseEnvelope('"Move."', 1, 'en').text).toBe('"Move."');
   });
 
   it('tells each scene its place in the episode curve; only the last closes on the 절단', () => {

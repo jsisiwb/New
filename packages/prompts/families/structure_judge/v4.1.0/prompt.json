@@ -1,0 +1,33 @@
+{
+  "family": "structure_judge",
+  "version": "4.1.0",
+  "role": "structure_judge",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.1.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_structure",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "structure_lint_report",
+    "contract_shape"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.1.0 — first live chapter (ADR-0056 §13): one opening rule across planner, scene planner, writer and structure judge (a possession opening carries premise and stake in its first three sentences); a 절단 changes the situation; 개연성 rules (first-meeting names, countdown arithmetic, invented words); judge shape notes show enum issue kinds, 1–5 sub-scores, the scorecard drift-flag values and the repair object.",
+  "regression_cases": [
+    "structure_judge.fixture.smoke"
+  ],
+  "content_hash": "sha256:3ca007f07832435d0e36ab49a116014123862193a32c626ea39376dfd29a493e"
+}
