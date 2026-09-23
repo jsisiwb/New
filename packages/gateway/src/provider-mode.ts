@@ -4,6 +4,8 @@
  * There is no default that reaches a paid provider. `YEONJAE_PROVIDER_MODE` must be one of:
  *   * `replay`   — recorded fixture responses (tests, CLI demos); needs `YEONJAE_REPLAY_FILE`.
  *   * `genspark` — the local Genspark bridge (`tools/genspark_provider_bridge.py`).
+ *   * `notion`   — the operator's Notion AI bridge (`YEONJAE_NOTION_URL`, bearer `YEONJAE_NOTION_TOKEN`);
+ *     same `/v1/complete` protocol, pooled workspaces, empty completions retried (ADR-0056).
  *   * `live`     — an OpenAI-compatible or Anthropic API keyed by `YEONJAE_LIVE_*` (see live-config.ts).
  *   * `simulated` — a deterministic role-scripted stand-in supplied by the caller (`@yeonjae/workflows`
  *     ships one); no network, no spend, no prose quality claim. For local dry runs of the whole loop.
@@ -14,20 +16,22 @@
 import { readFileSync } from 'node:fs';
 import { type RouteEntry, type RoutingTable } from './gateway.js';
 import { DEFAULT_GENSPARK_BRIDGE_URL, GensparkProvider } from './genspark-provider.js';
+import { DEFAULT_NOTION_MODEL, NotionProvider } from './notion-provider.js';
 import { liveGatewayFromEnv } from './live-config.js';
 import { ReplayProvider, type Recording } from './replay-provider.js';
 import { type Provider } from './types.js';
 
-export type ProviderMode = 'replay' | 'genspark' | 'live' | 'simulated';
+export type ProviderMode = 'replay' | 'genspark' | 'notion' | 'live' | 'simulated';
 
 export function providerModeFromEnv(env: NodeJS.ProcessEnv = process.env): ProviderMode {
   const mode = env.YEONJAE_PROVIDER_MODE;
   if (mode === 'replay') return 'replay';
   if (mode === 'genspark') return 'genspark';
+  if (mode === 'notion') return 'notion';
   if (mode === 'live') return 'live';
   if (mode === 'simulated') return 'simulated';
   throw new Error(
-    "YEONJAE_PROVIDER_MODE must be set to 'replay', 'genspark', 'live' or 'simulated'; the process refuses to start without an explicit " +
+    "YEONJAE_PROVIDER_MODE must be set to 'replay', 'genspark', 'notion', 'live' or 'simulated'; the process refuses to start without an explicit " +
       'provider mode so a misconfigured deployment cannot issue paid calls',
   );
 }
@@ -86,6 +90,38 @@ export function gensparkRouting(env: NodeJS.ProcessEnv = process.env): RoutingTa
   };
 }
 
+/**
+ * Notion routing: every class goes to the bridge's pooled model (`notion-ai` unless configured), and each
+ * class carries FALLBACK ROUTES so a retryable failure (an empty completion, a 5xx, a throttle) is retried
+ * on the next route instead of failing the call. On the bridge's round-robin pool the next attempt lands
+ * on another workspace; `YEONJAE_NOTION_FALLBACK_MODELS` (comma-separated) may pin workspace models.
+ */
+export function notionRouting(env: NodeJS.ProcessEnv = process.env): RoutingTable {
+  const base = env.YEONJAE_NOTION_MODEL ?? DEFAULT_NOTION_MODEL;
+  const fallbacks = (env.YEONJAE_NOTION_FALLBACK_MODELS ?? '')
+    .split(',')
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0);
+  const route = (modelId: string) =>
+    [modelId, ...(fallbacks.length > 0 ? fallbacks : [modelId, modelId])].map((m, i) => ({
+      modelId: m,
+      provider: 'notion',
+      priority: i + 1,
+      family: 'notion',
+      priceInPerMTokCents: 0,
+      priceOutPerMTokCents: 0,
+      maxContextTokens: 128_000,
+      supportsJsonSchema: false,
+    }));
+  return {
+    R: route(env.YEONJAE_MODEL_R ?? base),
+    P: route(env.YEONJAE_MODEL_P ?? base),
+    M: route(env.YEONJAE_MODEL_M ?? base),
+    C: route(env.YEONJAE_MODEL_C ?? base),
+    E: [],
+  };
+}
+
 export interface ResolvedProviders {
   readonly mode: ProviderMode;
   /** A fresh provider map per gateway; replay providers are stateful (misses/served), so a factory. */
@@ -122,6 +158,35 @@ export function resolveProvidersFromEnv(
   if (mode === 'live') {
     const live = liveGatewayFromEnv(env);
     return { mode, providers: () => live.providers, routing: live.routing };
+  }
+  if (mode === 'notion') {
+    const url = env.YEONJAE_NOTION_URL;
+    if (!url)
+      throw new Error(
+        'YEONJAE_NOTION_URL must name the Notion bridge endpoint when YEONJAE_PROVIDER_MODE=notion',
+      );
+    const timeout = env.YEONJAE_NOTION_TIMEOUT_MS
+      ? Number(env.YEONJAE_NOTION_TIMEOUT_MS)
+      : undefined;
+    if (timeout !== undefined && (!Number.isFinite(timeout) || timeout <= 0))
+      throw new Error('YEONJAE_NOTION_TIMEOUT_MS must be a positive number of milliseconds');
+    return {
+      mode,
+      providers: () =>
+        new Map<string, Provider>([
+          [
+            'notion',
+            new NotionProvider({
+              baseUrl: url,
+              // An explicitly configured bridge URL is deliberate operator config.
+              allowNonLoopback: true,
+              ...(env.YEONJAE_NOTION_TOKEN ? { token: env.YEONJAE_NOTION_TOKEN } : {}),
+              ...(timeout !== undefined ? { timeoutMs: timeout } : {}),
+            }),
+          ],
+        ]),
+      routing: notionRouting(env),
+    };
   }
   if (mode === 'genspark') {
     return {

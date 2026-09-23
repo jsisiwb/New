@@ -107,6 +107,14 @@ chapters; **H** = dominant hook/ending types.
   `prior_loop_memory` knowledge; ADR-0039); adult mind in a child's body → register tension is a feature
   (`intentional_shift` flags frequent).
 
+### 11. `genre/harem` — Harem (하렘), Korean manuscripts only (ADR-0056)
+- Korean-authored layer (`genre/harem@2`; no English lineage). Engine: heroines with distinct 말투, 사연 and
+  first-meeting friction warm to the protagonist one shared incident at a time; jealousy comedy and
+  devotion beats are shown through action, never narrated. Devices: `heroine_entrance`,
+  `jealousy_comedy`, `devotion_beat`, `misread_affection`. Taboos readers punish: NTR or a heroine's romance
+  with another man, an indecisive protagonist, six or more main heroines, heroines without their own arc,
+  love at first sight without cause, losing a heroine to the original protagonist.
+
 ## Production overlays (6)
 
 11. `genre/dungeon` — floor/level structure; resource and party tracking; boss cadence P=2.

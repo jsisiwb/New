@@ -1,0 +1,34 @@
+{
+  "family": "character_designer",
+  "version": "4.0.0",
+  "role": "character_designer",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "cast_brief"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.0 — Korean webnovel craft engine (ADR-0056): instructions rebuilt around the daily 5,000-자 mobile episode (초반 25화 funnel, one core event per 화, 사이다 cadence, 절단), 캐빨 cast and heroine-route design, and the language layer's 번역투/AI 상투구 lists; variable surfaces and output shapes unchanged from 3.0.0.",
+  "regression_cases": [
+    "character_designer.full_bible_names",
+    "character_designer.full_bible_fields"
+  ],
+  "content_hash": "sha256:5167dd685d9f0860b39ec729661c38a0c43d4c2c6bdc34cb05d61b87ca1fe073"
+}

@@ -28,9 +28,23 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 256;
+const TOTAL_PROMPT_VERSIONS = 295;
 /** The active default set (latest `active` version of every family). */
-const ACTIVE_VERSION = '3.0.0';
+const ACTIVE_VERSION = '4.0.0';
+/** Families with a later live-run fix on top of ACTIVE_VERSION (ADR-0056). */
+const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = {
+  arc_planner: '4.0.1',
+  targeted_reviser: '4.0.1',
+  chapter_planner: '4.2.0',
+  scene_planner: '4.2.0',
+  scene_writer: '4.2.0',
+  structure_judge: '4.1.0',
+  prose_judge: '4.1.0',
+  genre_judge: '4.1.0',
+  voice_judge: '4.1.0',
+  continuity_checker: '4.1.0',
+  knowledge_leak_checker: '4.1.0',
+};
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -146,9 +160,9 @@ describe('prompt registry (ADR-0016)', () => {
     ).toThrow(/narrative_identity_block/);
   });
 
-  it('v3 prompts are Korean end to end: no English section labels or instructions (ADR-0055)', () => {
+  it('v3 and v4 prompts are Korean end to end: no English section labels or instructions (ADR-0055)', () => {
     const provenanceTags = new Set(['FACT', 'PLANNED', 'SUMMARY', 'EVIDENCE', 'UNTRUSTED']);
-    for (const v of reg.list().filter((x) => x.version.startsWith('3.'))) {
+    for (const v of reg.list().filter((x) => /^[34]\./.test(x.version))) {
       const text = `${v.system_template}\n${v.user_template}`;
       for (const m of text.matchAll(/\[([A-Z][A-Z ]{2,})/g)) {
         const label = (m[1] ?? '').trim();
@@ -165,11 +179,112 @@ describe('prompt registry (ADR-0016)', () => {
     }
   });
 
+  it('arc_planner@4.0.1 gives repetition_check the schema object shape (live-run fix)', () => {
+    expect(reg.get('arc_planner@4.0.0').user_template).toContain('"repetition_check": "..."');
+    const fixed = reg.get('arc_planner@4.0.1');
+    expect(fixed.user_template).toContain('"repetition_check": {"compared_arc_ids": []');
+    expect(fixed.input_variables).toEqual(reg.get('arc_planner@4.0.0').input_variables);
+  });
+
+  it('targeted_reviser@4.0.1 asks for the exact quote and the schema shapes (live-run fix)', () => {
+    const old = reg.get('targeted_reviser@4.0.0');
+    expect(old.user_template).toContain('"changed_claims": [{"before": "...", "after": "..."}]');
+    const fixed = reg.get('targeted_reviser@4.0.1');
+    expect(fixed.user_template).toContain('"span": {"original_quote":');
+    expect(fixed.user_template).toContain('"changed_claims": []');
+    expect(fixed.user_template).not.toContain('"regression"');
+    expect(fixed.user_template).not.toContain('"start": 0');
+    expect(fixed.input_variables).toEqual(old.input_variables);
+    expect(fixed.output_schema).toBe(old.output_schema);
+  });
+
+  it('v4.1.0 applies the first live chapter: enum shapes and one opening rule (ADR-0056 §13)', () => {
+    const judges = ['prose_judge', 'structure_judge', 'genre_judge', 'voice_judge'];
+    const checkers = ['continuity_checker', 'knowledge_leak_checker'];
+    const planners = ['chapter_planner', 'scene_planner', 'scene_writer'];
+    for (const fam of [...judges, ...checkers, ...planners]) {
+      const old = reg.get(`${fam}@4.0.0`);
+      const v = reg.get(`${fam}@4.1.0`);
+      expect(v.input_variables, fam).toEqual(old.input_variables);
+      expect(v.output_mode, fam).toBe(old.output_mode);
+      expect(v.output_schema, fam).toBe(old.output_schema);
+    }
+    for (const fam of judges) {
+      const user = reg.get(`${fam}@4.1.0`).user_template;
+      expect(user, fam).not.toMatch(/"kind": "(prose|structure|genre|voice)_issue"/);
+      expect(user, fam).not.toMatch(/"dimension_scores": \{"(prose|structure|genre|voice)": 72\}/);
+      expect(user, fam).toMatch(/1~5점/);
+    }
+    expect(reg.get('prose_judge@4.1.0').user_template).toContain(
+      '"drift_flags": ["translation_like|literary|light_novel|format"]',
+    );
+    expect(reg.get('structure_judge@4.1.0').user_template).toContain(
+      '"drift_flags": ["western_novel|serial|exposition|cadence"]',
+    );
+    expect(reg.get('continuity_checker@4.1.0').user_template).toContain(
+      '"repair": {"scope": "sentence|paragraph|dialogue|scene", "suggestion":',
+    );
+    // The planner no longer exempts a possession wake-up; the judge and writer name the same opening.
+    expect(reg.get('chapter_planner@4.0.0').system_template).toContain(
+      '빙의 직후의 충격은 사건 한복판으로 친다',
+    );
+    expect(reg.get('chapter_planner@4.1.0').system_template).not.toContain('사건 한복판으로 친다');
+    for (const fam of ['chapter_planner', 'structure_judge', 'scene_writer'])
+      expect(reg.get(`${fam}@4.1.0`).system_template, fam).toContain('‘눈을 떴다’');
+  });
+
+  it('v4.2.0: the writer does not count its own draft and resolves conflicts by precedence (ADR-0056 §14)', () => {
+    for (const fam of ['chapter_planner', 'scene_planner', 'scene_writer']) {
+      const old = reg.get(`${fam}@4.1.0`);
+      const v = reg.get(`${fam}@4.2.0`);
+      expect(v.input_variables, fam).toEqual(old.input_variables);
+      expect(v.output_mode, fam).toBe(old.output_mode);
+      expect(v.output_schema, fam).toBe(old.output_schema);
+      expect(v.user_template, fam).toBe(old.user_template);
+    }
+    const writer = reg.get('scene_writer@4.2.0').system_template;
+    expect(reg.get('scene_writer@4.1.0').system_template).toContain('±12% 안');
+    expect(writer).not.toContain('±12%');
+    expect(writer).toContain('글자 수를 세거나 검산하지 않는다');
+    expect(writer).toContain(
+      '정사 상태·지식 표 > 이전 텍스트 > 회차 계약(위험·대응 포함) > 장면 계획',
+    );
+    expect(reg.get('chapter_planner@4.2.0').system_template).toContain(
+      '말버릇에 적힌 대사는 틀이다',
+    );
+    expect(reg.get('scene_planner@4.2.0').system_template).toContain(
+      '이전 장면에서 이미 정해진 대로 이어 간다',
+    );
+  });
+
+  it('v4 keeps the v3 variable surfaces and output shapes, except the prose-only scene writer (ADR-0056)', () => {
+    for (const fam of reg.families()) {
+      const v3 = reg.get(`${fam}@3.0.0`);
+      const v4 = reg.get(`${fam}@4.0.0`);
+      expect(v4.output_schema, fam).toBe(v3.output_schema);
+      if (fam === 'scene_writer') continue;
+      expect(v4.input_variables, fam).toEqual(v3.input_variables);
+      expect(v4.output_mode, fam).toBe(v3.output_mode);
+    }
+    const writer = reg.get('scene_writer@4.0.0');
+    // The writer answers with prose itself; the workflow builds the scene-draft envelope.
+    expect(writer.output_mode).toBe('text');
+    expect(writer.input_variables).toEqual(
+      expect.arrayContaining([
+        ...reg.get('scene_writer@3.0.0').input_variables,
+        'scene_total',
+        'scene_role',
+      ]),
+    );
+    expect(writer.user_template).not.toMatch(/speaker_annotations|claims/);
+    expect(writer.system_template).toMatch(/원고 본문만 출력한다/);
+  });
+
   it('builds a pinned prompt set from the active versions', () => {
     const set = reg.activeSet();
     expect(Object.keys(set.mapping)).toHaveLength(25);
     for (const fam of Object.keys(set.mapping)) {
-      expect(set.mapping[fam], fam).toBe(`${fam}@${ACTIVE_VERSION}`);
+      expect(set.mapping[fam], fam).toBe(`${fam}@${ACTIVE_OVERRIDES[fam] ?? ACTIVE_VERSION}`);
     }
     expect(set.id).toMatch(/^set:[0-9a-f]{16}$/);
   });

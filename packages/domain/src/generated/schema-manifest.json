@@ -18,7 +18,7 @@
   "knowledge-state.schema.json": "2ab0f2f892b0f2769b44d15269ba093138780481e724939c6fef31f8da44bf59",
   "lint-report.schema.json": "52d08b8848eac72241f5023332367ca0c5ff8dafb2722c8b5192abcbc816dd9b",
   "llm-call-record.schema.json": "177b9d5e8c5dd45a8385f1aad803823888f30b9555a94cd2b6f9da2117081a0f",
-  "narrative-identity.schema.json": "b4126ab3a81d8cebf9d326f6198f2f33124ed51a1a8fed2e54cf725323269c33",
+  "narrative-identity.schema.json": "aacb4d279fcaf5f07cd64b80166ca753b7af30d4eac99b8fc2bda69246d73f4f",
   "patch.schema.json": "b1e95036b8817a8b3347bbcb02c5ac9a8785117c2869efd25db5272c4162a39b",
   "production-policy.schema.json": "0d4143b6decaffee197e853459c771c42caf1213935fd6fed73c78011a7dff67",
   "promise.schema.json": "02025c5af27cc4c8bb29030dc6942c8ba834c5ef27666c6bc7ec0f1a98d82684",
@@ -30,6 +30,6 @@
   "scene-plan.schema.json": "1a50a10fd3bb1e51889e3df73dc8b429dac4b76e2b8c63f9f015bdf9f68d9ae3",
   "scorecard.schema.json": "5ee591c21a4282becfe8bf84fd87dae8096c99938fa2d1cde342414ccc30c160",
   "series-blueprint.schema.json": "72cb3c4ac2d1434c4c178a092ab59d4ad54a432589a5532bb3cfffa208f1465f",
-  "story-intake.schema.json": "f608f3117bdc7591f909d4869ff22a6fdbd7d808d672af10aa88f5b1d25e6534",
+  "story-intake.schema.json": "c391a825cee2abfddd28d699488a01f1fcf92e3581844c7f6d7b629a799d2709",
   "story-spec.schema.json": "31aa8ab1c3ec312eaf4e47dd2b80b04e84adcb43825649be6bc291bcdbdd67ab"
 }

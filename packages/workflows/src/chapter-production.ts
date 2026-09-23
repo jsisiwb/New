@@ -71,6 +71,7 @@ import { pickRevisionDimension, reviseVersion } from './revision.js';
 import {
   arcForChapter,
   planArcFromBlueprint,
+  previousArcOf,
   scheduleFromBlueprint,
   type SeriesBlueprint,
 } from './story-plan.js';
@@ -601,8 +602,11 @@ export async function produceChapter(
             recommendedActions: ['regenerate', 'edit_manually'],
           },
         );
-      // Only the single representative revision path belongs to this checkpoint: one patch per run.
-      break;
+      // The English lineage keeps the Checkpoint-5 single representative revision (its recorded fixtures
+      // replay byte-identically). A Korean craft-engine run (ADR-0056) may take further rounds, each on
+      // the dimension with the most open blocking/major issues and each regression-checked, up to the
+      // pinned policy's max_rounds.
+      if (ctx.identity.outputLanguage.language !== 'ko') break;
     }
     revision ??= { rounds: 0 };
 
@@ -756,7 +760,7 @@ async function planFromBlueprint(
       step: 'arc_plan',
       data: { chapter_no: chapterNo },
     });
-  const previous = schedule.arcs.find((a) => a.ordinal === arc.ordinal - 1);
+  const previous = previousArcOf(schedule, arc);
   let previousArcExit: string | undefined;
   if (previous) {
     const prior = await ctx.pool.query<{ payload: ArcPlan }>(

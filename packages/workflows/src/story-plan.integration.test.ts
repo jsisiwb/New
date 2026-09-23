@@ -77,6 +77,26 @@ suite('complete story bible before prose', () => {
     return { projectId, provider, deps, approved };
   }
 
+  it('accepts live plans that omit workflow-filled fields and write check objects as prose (ADR-0056)', async () => {
+    const { projectId, deps, approved } = await setup((role, output) => {
+      // The prompts tell planners the workflow fills the contract version; a live model omits it.
+      if (role === 'chapter_planner') delete output.version;
+      if (role === 'arc_planner') {
+        output.repetition_check = '이전 아크와 겹침 없음.';
+        output.cadence_check = { cider_interval_ok: true, notes: '사이다 간격 준수.' };
+      }
+    });
+    const planned = await advanceNovelRun(deps, approved);
+    const chapter = await advanceNovelRun(deps, planned.run);
+    expect(chapter.kind).toBe('chapter_accepted');
+    const arc = await pool.query<{ payload: Record<string, unknown> }>(
+      `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'arc_plan'`,
+      [projectId],
+    );
+    expect(arc.rows[0]?.payload.repetition_check).toEqual({ notes: '이전 아크와 겹침 없음.' });
+    expect(arc.rows[0]?.payload.cadence_check).toMatchObject({ notes: ['사이다 간격 준수.'] });
+  }, 120_000);
+
   it('retains complete design before any manuscript call and carries it into planners and writer cards', async () => {
     const voice = 'Counts pauses like overdue invoices.';
     const { projectId, provider, deps, approved } = await setup((role, output) => {

@@ -12,16 +12,28 @@
 import { createHash } from 'node:crypto';
 import { type ManuscriptVersionRow } from '@yeonjae/db';
 import { type Generated, loadSchemas, overrideClassFor, validatorFor } from '@yeonjae/domain';
+import { exemplarsOf } from '@yeonjae/narrative';
 import {
   checkOutputLanguage,
   judgeLength,
+  koStyleDigest,
+  lintKoreanWebnovel,
   measure,
   segmentParagraphs,
   targetCount,
   toNfcText,
+  type NfcText,
+  type Paragraph,
+  type KoStyleReport,
 } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
 import { checkpointPack, packCallInput } from './drafting.js';
+import {
+  anchorIssueQuote,
+  normalizeDimensionScores,
+  normalizeDriftFlags,
+  normalizeRepair,
+} from './judge-normalize.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
 import { modelCall, runStep, saveArtifact, type WorkflowContext } from './runtime.js';
 
@@ -35,7 +47,9 @@ interface RawIssue {
   confidence?: number;
   claim?: string;
   chapter_span?: Issue['chapter_span'];
-  repair?: Issue['repair'];
+  /** Live judges quote the manuscript instead of counting offsets; anchored into `chapter_span`. */
+  quote?: unknown;
+  repair?: unknown;
   conflicting_canon?: Issue['conflicting_canon'];
   canon_evidence?: Issue['canon_evidence'];
   metric?: Issue['metric'];
@@ -73,6 +87,7 @@ function toIssue(
   dimension: Issue['dimension'],
   raw: RawIssue,
   index: number,
+  anchor?: { readonly text: NfcText; readonly paragraphs: readonly Paragraph[] },
 ): Issue {
   const kind = raw.kind && isIssueKind(raw.kind) ? raw.kind : 'other';
   const severity = (['blocking', 'major', 'minor', 'note'] as const).includes(
@@ -80,6 +95,11 @@ function toIssue(
   )
     ? (raw.severity as Severity)
     : 'minor';
+  const repair = normalizeRepair(raw.repair);
+  const quoted =
+    !raw.chapter_span && anchor
+      ? anchorIssueQuote(anchor.text, anchor.paragraphs, raw.quote)
+      : undefined;
   return {
     id: issueIdFor(ctx, versionId, source, index),
     source,
@@ -92,8 +112,10 @@ function toIssue(
     status: 'open',
     ...(raw.chapter_span
       ? { chapter_span: { ...raw.chapter_span, manuscript_version_id: versionId } }
-      : {}),
-    ...(raw.repair ? { repair: raw.repair } : {}),
+      : quoted
+        ? { chapter_span: { manuscript_version_id: versionId, ...quoted } }
+        : {}),
+    ...(repair ? { repair } : {}),
     ...(raw.conflicting_canon ? { conflicting_canon: raw.conflicting_canon } : {}),
     ...(raw.canon_evidence ? { canon_evidence: raw.canon_evidence } : {}),
     ...(raw.metric ? { metric: raw.metric } : {}),
@@ -122,6 +144,8 @@ export interface DeterministicChecks {
   };
   readonly truncation: { passed: boolean; reason?: string | undefined };
   readonly contract_shape: { passed: boolean; notes: string[] };
+  /** Korean webnovel style lint (ADR-0056); absent for English manuscripts. */
+  readonly ko_style?: KoStyleReport | undefined;
   readonly issues: Issue[];
 }
 
@@ -159,6 +183,51 @@ export function runDeterministicChecks(
         n++,
       ),
     );
+  // ADR-0056: the Korean style lint measures the language layer's own 번역투 / AI-상투구 lists plus the
+  // mobile-serial rhythm. Rate breaches and format drift gate (major); single hits are minor evidence that
+  // the prose judge and the targeted reviser receive with their spans.
+  let koStyle: KoStyleReport | undefined;
+  if (language === 'ko') {
+    const ol = ctx.identity.outputLanguage;
+    koStyle = lintKoreanWebnovel(nfc.text, {
+      translationMarkers: ol.translation_markers,
+      forbiddenPatterns: ol.forbidden_patterns,
+      thresholds: ol.lint_thresholds,
+      allowlist,
+      exemplarTexts: exemplarsOf(ctx.identity).map((e) => e.text),
+    });
+    for (const f of koStyle.findings)
+      issues.push(
+        toIssue(
+          ctx,
+          version.id,
+          'lint:ko_style',
+          f.kind === 'weak_ending' ? 'structure' : 'prose',
+          {
+            kind: f.kind,
+            severity: f.severity,
+            confidence: 1,
+            claim: f.message,
+            chapter_span: {
+              paragraph_ids: [...f.paragraph_ids],
+              ...(f.start !== undefined ? { start: f.start } : {}),
+              ...(f.end !== undefined ? { end: f.end } : {}),
+              ...(f.quote !== undefined ? { quote: f.quote } : {}),
+            },
+            ...(f.value !== undefined
+              ? {
+                  metric: {
+                    rule_id: f.rule_id,
+                    value: f.value,
+                    ...(f.threshold !== undefined ? { threshold: f.threshold } : {}),
+                  },
+                }
+              : { metric: { rule_id: f.rule_id } }),
+          },
+          n++,
+        ),
+      );
+  }
   const m = measure(nfc);
   const count = targetCount(m, contract.length_target.unit);
   const len = judgeLength(count, contract.length_target, ctx.policy.length.fail_tolerance_ratio);
@@ -290,6 +359,7 @@ export function runDeterministicChecks(
       ...(truncated ? { reason: 'final paragraph incomplete' } : {}),
     },
     contract_shape: { passed: shapeOk, notes },
+    ...(koStyle ? { ko_style: koStyle } : {}),
     issues,
   };
 }
@@ -330,7 +400,9 @@ export async function evaluateVersion(
     'evaluate',
     async () => {
       const det = runDeterministicChecks(ctx, v, input.contract, input.allowlist);
-      const paragraphs = segmentParagraphs(toNfcText(v.text));
+      const nfc = toNfcText(v.text);
+      const paragraphs = segmentParagraphs(nfc);
+      const anchor = { text: nfc, paragraphs };
       const chapterText = paragraphs.map((p) => `[${p.id}] ${p.text}`).join('\n\n');
       const evaluatorCalls: string[] = [];
       const issues: Issue[] = [...det.issues];
@@ -417,7 +489,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(continuity.llmCallId);
       (continuity.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:continuity_checker', 'continuity', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:continuity_checker', 'continuity', r, i, anchor)),
       );
 
       const leak = await modelCall<{ issues?: RawIssue[] }>(ctx, {
@@ -434,7 +506,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(leak.llmCallId);
       (leak.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:knowledge_leak_checker', 'knowledge', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:knowledge_leak_checker', 'knowledge', r, i, anchor)),
       );
 
       // Two separate judges, two separate identity variants, two separate gates.
@@ -446,14 +518,14 @@ export async function evaluateVersion(
           chapter_text: chapterText,
           prose_lint_report:
             ctx.identity.outputLanguage.language === 'ko'
-              ? `한국어 출력 언어 검사: 신뢰도 ${det.output_language.english_confidence}; 분량 ${det.length.count}${det.length.unit === 'characters' ? '자' : ` ${det.length.unit}`}.`
+              ? `한국어 출력 언어 검사: 신뢰도 ${det.output_language.english_confidence}; 분량 ${det.length.count}${det.length.unit === 'characters' ? '자' : ` ${det.length.unit}`}.${det.ko_style ? `\n[결정적 문체 검사 — 번역투·AI 상투구·모바일 호흡]\n${koStyleDigest(det.ko_style)}` : ''}`
               : `English output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.count} ${det.length.unit}.`,
         },
         block: compileFor(ctx, 'judge_rubric_prose'),
       });
       evaluatorCalls.push(prose.llmCallId);
       (prose.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:prose_judge', 'prose', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:prose_judge', 'prose', r, i, anchor)),
       );
       const structure = await modelCall<JudgeOutput>(ctx, {
         step: 'evaluate',
@@ -463,7 +535,7 @@ export async function evaluateVersion(
           chapter_text: chapterText,
           structure_lint_report:
             ctx.identity.outputLanguage.language === 'ko'
-              ? `문단 ${paragraphs.length}개; 잘림 검사 ${det.truncation.passed ? '통과' : '실패'}.`
+              ? `문단 ${paragraphs.length}개; 잘림 검사 ${det.truncation.passed ? '통과' : '실패'}.${det.ko_style ? ` 대사 비중 ${String(Math.round(det.ko_style.metrics.dialogue_ratio * 100))}%, 긴 서술 문단 ${String(Math.round(det.ko_style.metrics.long_paragraph_ratio * 100))}%, 최장 문단 ${String(det.ko_style.metrics.max_paragraph_chars)}자.${det.ko_style.findings.some((f) => f.rule_id === 'KO-END-01') ? ' 마지막 문단이 요약·관조형으로 판정됨(KO-END-01).' : ''}` : ''}`
               : `paragraphs ${paragraphs.length}; truncation check ${det.truncation.passed ? 'passed' : 'FAILED'}.`,
           contract_shape:
             ctx.identity.outputLanguage.language === 'ko'
@@ -474,7 +546,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(structure.llmCallId);
       (structure.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:structure_judge', 'structure', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:structure_judge', 'structure', r, i, anchor)),
       );
 
       // Dimensions C and D. `standard.v1` gates genre and voice, so their evidence is required: without
@@ -497,7 +569,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(genre.llmCallId);
       (genre.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:genre_judge', 'genre', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:genre_judge', 'genre', r, i, anchor)),
       );
       const voice = await modelCall<JudgeOutput>(ctx, {
         step: 'evaluate',
@@ -515,7 +587,7 @@ export async function evaluateVersion(
       });
       evaluatorCalls.push(voice.llmCallId);
       (voice.output.issues ?? []).forEach((r, i) =>
-        issues.push(toIssue(ctx, v.id, 'judge:voice_judge', 'voice', r, i)),
+        issues.push(toIssue(ctx, v.id, 'judge:voice_judge', 'voice', r, i, anchor)),
       );
 
       const gates = ctx.policy.gates;
@@ -580,14 +652,14 @@ export async function evaluateVersion(
         sections: {
           prose: section('prose', proseScore, dimensionPassed('prose'), {
             judge_score: proseScore,
-            drift_flags: prose.output.drift_flags ?? [],
-            dimension_scores: prose.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('prose', prose.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(prose.output.dimension_scores),
             evaluator_call_id: prose.llmCallId,
           }),
           structure: section('structure', structureScore, dimensionPassed('structure'), {
             judge_score: structureScore,
-            drift_flags: structure.output.drift_flags ?? [],
-            dimension_scores: structure.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('structure', structure.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(structure.output.dimension_scores),
             ...(structure.output.hook_sentence_index !== undefined
               ? { hook_sentence_index: structure.output.hook_sentence_index }
               : {}),
@@ -601,14 +673,14 @@ export async function evaluateVersion(
           }),
           genre: section('genre', genreScore, dimensionPassed('genre'), {
             judge_score: genreScore,
-            drift_flags: genre.output.drift_flags ?? [],
-            dimension_scores: genre.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('genre', genre.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(genre.output.dimension_scores),
             evaluator_call_id: genre.llmCallId,
           }),
           voice: section('voice', voiceScore, dimensionPassed('voice'), {
             judge_score: voiceScore,
-            drift_flags: voice.output.drift_flags ?? [],
-            dimension_scores: voice.output.dimension_scores ?? {},
+            drift_flags: normalizeDriftFlags('voice', voice.output.drift_flags),
+            dimension_scores: normalizeDimensionScores(voice.output.dimension_scores),
             evaluator_call_id: voice.llmCallId,
           }),
           output_language: section(

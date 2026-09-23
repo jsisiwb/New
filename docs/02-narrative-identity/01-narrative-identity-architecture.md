@@ -117,6 +117,24 @@ Both contracts are **data** in the profiles (versioned text), not prompt literal
   English-manuscript policies (romanization, English address terms, contractions) do not apply to it.
   Context-pack section titles and canon renderings follow the same language.
 
+### 4.4 Korean craft sections: forbidden diction and studio exemplars (ADR-0056)
+
+- A Korean project composes from the newest Korean version of each layer at novel start
+  (`lang/ko@3`, `tradition/kr-webnovel@3`, `genre/academy@3`, `genre/regression@3`, the Korean-only
+  `genre/harem@2`); the composed document is pinned, so later layers never change a running project.
+- **쓰지 않는 문장 (forbidden diction).** The language layer's `translation_markers` (번역투) and
+  `forbidden_patterns` of category `stale_cliche`/`translation_like` carry replacement notes. Those notes
+  render into `writer_full`, `editor_full` and `judge_rubric_prose` blocks, and the same lists drive the
+  deterministic Korean style lint (`04-prose-and-structure-lint-rules.md`), so what the model is told to
+  avoid and what the lint measures are one source.
+- **문체 견본 (studio exemplars).** Genre and tradition layers may carry up to three `style_exemplars`:
+  short original passages authored by the studio (ADR-0025 studio-synthetic provenance) that show
+  paragraph length, dialogue/reaction spacing, a one-line 속마음, one-line emphasis paragraphs and the
+  절단. The compiler renders at most three (genre layers first, then the tradition's) into writer and editor
+  blocks only, framed as rhythm references whose names, events and sentences are never reused; they shed
+  first after preferences. Planner and judge blocks never contain them, and the style lint flags any
+  verbatim exemplar line in a manuscript.
+
 ## 5. Narrative Identity Guard (enforcement, ADR-0027)
 
 Gateway middleware:

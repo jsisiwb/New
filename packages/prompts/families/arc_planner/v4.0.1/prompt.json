@@ -1,0 +1,36 @@
+{
+  "family": "arc_planner",
+  "version": "4.0.1",
+  "role": "arc_planner",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.1.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "blueprint",
+    "season",
+    "arc_brief",
+    "canon_state",
+    "open_promises"
+  ],
+  "output_schema": "arc-plan.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.1 — live-run fixes (ADR-0056): arc_planner's output-shape note gives repetition_check as the schema's object {compared_arc_ids, similarity_score, notes} instead of a string.",
+  "regression_cases": [
+    "arc_planner.full_planned_bible",
+    "arc_planner.promise_continuity"
+  ],
+  "content_hash": "sha256:852210a828a27e77434aae0bcb7410a67326b7b1f54cfc1c608cfc199e8cbdbc"
+}

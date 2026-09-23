@@ -1,0 +1,36 @@
+{
+  "family": "canon_extractor",
+  "version": "4.0.0",
+  "role": "canon_extractor",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.0.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "registry",
+    "hypotheses",
+    "pre_pass",
+    "story_clock",
+    "sweep"
+  ],
+  "output_schema": "canon-delta.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 8000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.0 — Korean webnovel craft engine (ADR-0056): instructions rebuilt around the daily 5,000-자 mobile episode (초반 25화 funnel, one core event per 화, 사이다 cadence, 절단), 캐빨 cast and heroine-route design, and the language layer's 번역투/AI 상투구 lists; variable surfaces and output shapes unchanged from 3.0.0.",
+  "regression_cases": [
+    "canon_extractor.fixture.smoke"
+  ],
+  "content_hash": "sha256:f16a928424b189e98662c0be6a63c47fb6af698146c5d341cb6d61ac4b62f6f2"
+}

@@ -258,6 +258,65 @@ export function renderRubricKo(rubric: Rubric | undefined, title: string): strin
   );
 }
 
+const EXEMPLAR_FUNCTION_KO: Readonly<Record<string, string>> = {
+  hook: '도입 훅',
+  action: '행동',
+  banter: '티키타카 대사',
+  status_window: '상태창',
+  emotional_beat: '감정 비트',
+  cliffhanger: '절단',
+  exposition_in_action: '행동 속 설명',
+  comedy_beat: '웃음 포인트',
+};
+
+type Exemplar = NonNullable<NonNullable<ComposedIdentity['tradition']['style_exemplars']>[number]>;
+
+/** At most three: genre layers first (primary, then secondary), then the tradition's own. */
+export function exemplarsOf(id: ComposedIdentity): Exemplar[] {
+  const all = [
+    ...id.genres.flatMap((g) => g.style_exemplars ?? []),
+    ...(id.tradition.style_exemplars ?? []),
+  ];
+  const seen = new Set<string>();
+  return all.filter((e) => !seen.has(e.id) && seen.add(e.id)).slice(0, 3);
+}
+
+/**
+ * Studio-authored voice anchors (ADR-0025, ADR-0056). The model copies rhythm from concrete text far more
+ * reliably than from rules, so writers and editors see a few short original passages — framed as rhythm
+ * references whose names, events and sentences must never be reused.
+ */
+export function renderExemplarsKo(id: ComposedIdentity): string {
+  const xs = exemplarsOf(id);
+  if (xs.length === 0) return '';
+  const head =
+    '아래 견본은 이 스튜디오가 직접 쓴 합성 문장이다. 문단 길이, 대사와 반응의 간격, 속마음 한 줄, 한 줄 강조 문단, 절단의 리듬만 몸에 익힌다. 견본의 이름·설정·사건·문장은 이 작품에 절대 가져다 쓰지 않고, 시점과 인물은 회차 계약을 따른다.';
+  const body = xs.map((e, i) => {
+    const fns = e.functions.map((f) => EXEMPLAR_FUNCTION_KO[f] ?? f).join('·');
+    const pov = e.pov === 'first' ? '1인칭' : e.pov === 'third_limited' ? '밀착 3인칭' : '';
+    const label = [fns, pov].filter(Boolean).join(' | ');
+    return `〔견본 ${String(i + 1)} — ${label}〕${e.note ? `\n(${e.note})` : ''}\n${e.text}\n〔견본 ${String(i + 1)} 끝〕`;
+  });
+  return [head, ...body].join('\n\n');
+}
+
+/**
+ * The diction this identity forbids, as the replacement notes the language layer carries (번역투 markers
+ * and stale-cliché patterns). The same lists drive the deterministic Korean style lint, so what the model
+ * is told to avoid and what the lint flags are one source.
+ */
+export function renderAvoidKo(id: ComposedIdentity): string {
+  const lang = id.outputLanguage;
+  const lines = [
+    ...(lang.translation_markers ?? []).map((m) => m.note),
+    ...(lang.forbidden_patterns ?? [])
+      .filter((f) => f.category === 'stale_cliche' || f.category === 'translation_like')
+      .map((f) => f.note),
+  ].filter((n): n is string => typeof n === 'string' && n.length > 0);
+  if (lines.length === 0) return '';
+  return bullet([...new Set(lines)]);
+}
+
 export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
   structure: '구조와 호흡',
   cadence: '연재 카덴스',
@@ -268,6 +327,8 @@ export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
   participants: '등장인물 말투',
   terminology: '용어',
   preferences: '프로젝트 문체 선호',
+  avoid: '쓰지 않는 문장 (번역투·AI 상투구)',
+  exemplars: '문체 견본 (리듬 참고용, 베끼기 금지)',
   restrictions: '콘텐츠 제한 (절대)',
   prose_rubric: '채점 기준',
   structure_rubric: '채점 기준',

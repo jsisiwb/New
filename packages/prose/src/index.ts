@@ -7,3 +7,4 @@ export * from './language.js';
 export * from './typography.js';
 export * from './platform-format.js';
 export * from './local-embeddings.js';
+export * from './ko-style.js';
