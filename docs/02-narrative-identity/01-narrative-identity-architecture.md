@@ -111,6 +111,11 @@ Both contracts are **data** in the profiles (versioned text), not prompt literal
 - `IDENTITY_TAIL`: for writer/editor roles, a ≤ 70-token recency reminder appended after the task
   instruction: "English, composed directly, natural idiom · hook · short paragraphs · dialogue-forward ·
   local payoff · forward pull · no translation-like phrasing · no Western-novel pacing".
+- **Language of the block (ADR-0055).** The block is rendered in the project's manuscript language. A
+  Korean project's block is Korean end to end (headers, every section, rubrics, identity tail) and is
+  composed from the Korean-authored global layers (`lang/ko@2`, `tradition/kr-webnovel@2`, `genre/*@2`);
+  English-manuscript policies (romanization, English address terms, contractions) do not apply to it.
+  Context-pack section titles and canon renderings follow the same language.
 
 ## 5. Narrative Identity Guard (enforcement, ADR-0027)
 

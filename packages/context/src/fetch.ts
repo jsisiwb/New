@@ -44,9 +44,13 @@ import { buildQueryPlan, type QueryPlan } from './plan.js';
 import {
   attributeLabel,
   clockLabel,
+  clockLabelKo,
   elapsedLabel,
   registerLabel,
+  registerLabelKo,
   renderContract,
+  renderContractKo,
+  STANCE_KO,
   renderWithParagraphIds,
   trimQuote,
   valueLabel,
@@ -119,6 +123,8 @@ interface Ctx {
   readonly timelines: readonly TimelineInfo[];
   readonly names: Map<string, EntityDigest>;
   readonly propositions: Map<string, PropositionRow>;
+  /** Manuscript language of the pack (ADR-0055): Korean projects get Korean canon renderings. */
+  readonly lang: 'en' | 'ko';
 }
 
 const IMPORTANCE: Record<string, number> = { core: 1, major: 0.6, minor: 0.3 };
@@ -181,18 +187,23 @@ function factLine(
 ): { full: string; compact: string } {
   const n = nameOf(ctx);
   const head = `${n(f.entity_id)} · ${attributeLabel(f.attribute, f.key)} = ${valueLabel(f.value, f.value_text)}`;
-  const validity = `valid ${clockLabel(f.valid_from)} → ${clockLabel(f.valid_to)}`;
-  const meta = `${validity}; frame ${f.frame}; asserted v${f.asserted_at_version}${f.locked ? '; LOCKED' : ''}`;
+  const ko = ctx.lang === 'ko';
+  const validity = ko
+    ? `유효 ${clockLabelKo(f.valid_from)} → ${clockLabelKo(f.valid_to)}`
+    : `valid ${clockLabel(f.valid_from)} → ${clockLabel(f.valid_to)}`;
+  const meta = ko
+    ? `${validity}; 프레임 ${f.frame}; 기록 v${f.asserted_at_version}${f.locked ? '; 잠김' : ''}`
+    : `${validity}; frame ${f.frame}; asserted v${f.asserted_at_version}${f.locked ? '; LOCKED' : ''}`;
   const ev = evidence
     .map((e) =>
-      `ch.${e.chapter_no ?? '?'} ${e.paragraph_id ?? ''} “${trimQuote(e.quote)}”`.replace(
+      `${ko ? `${e.chapter_no ?? '?'}화` : `ch.${e.chapter_no ?? '?'}`} ${e.paragraph_id ?? ''} “${trimQuote(e.quote)}”`.replace(
         /\s+”/,
         '”',
       ),
     )
     .join(' | ');
   return {
-    full: `${head} (${meta})${ev ? ` — evidence: ${ev}` : ''}`,
+    full: `${head} (${meta})${ev ? ` — ${ko ? '근거' : 'evidence'}: ${ev}` : ''}`,
     compact: `${head} (${validity})`,
   };
 }
@@ -278,6 +289,16 @@ function propositionLine(ctx: Ctx, p: PropositionRow, truth: string): string {
           : ''
       })`
     : '';
+  if (ctx.lang === 'ko') {
+    const secretKo = p.secret
+      ? ` — 비밀 (소유자: ${(p.secret.owner_ids ?? []).map(n).join(', ') || '—'}; 알아도 되는 인물: ${(p.secret.allowed_knower_ids ?? []).map(n).join(', ') || '없음'}${
+          p.secret.reveal_not_before_chapter
+            ? `; ${p.secret.reveal_not_before_chapter}화 이전 공개 금지`
+            : ''
+        })`
+      : '';
+    return `명제 ${p.id}: “${p.statement}” (${p.kind}) — ${clockLabelKo(ctx.plan.clockStart)} 기준 이 타임라인에서 객관적으로 ${truthKo(truth)}${secretKo}`;
+  }
   return `Proposition ${p.id}: “${p.statement}” (${p.kind}) — objectively ${truth.toUpperCase()} on this timeline as of ${clockLabel(ctx.plan.clockStart)}${secret}`;
 }
 
@@ -343,7 +364,10 @@ async function fetchKnowledge(ctx: Ctx, out: Item[]): Promise<void> {
             ctx.plan.clockStart,
             ctx.canonVersion,
           );
-          memory += ` — remembered from ${tl.name} (${tl.kind}) where it is ${v.toUpperCase()}; NOT a fact of this timeline`;
+          memory +=
+            ctx.lang === 'ko'
+              ? ` — ${tl.name}(${tl.kind})에서 기억하는 내용, 그곳에서는 ${truthKo(v)}; 이 타임라인의 사실이 아님`
+              : ` — remembered from ${tl.name} (${tl.kind}) where it is ${v.toUpperCase()}; NOT a fact of this timeline`;
         }
       }
       const extra = [
@@ -353,7 +377,10 @@ async function fetchKnowledge(ctx: Ctx, out: Item[]): Promise<void> {
           ? `certainty ${(row as { certainty?: string }).certainty ?? ''}`
           : undefined,
       ].filter(Boolean);
-      const text = `${n(knower)} — ${row.stance.toUpperCase()}${extra.length ? ` (${extra.join('; ')})` : ''}: ${statement} [channel: ${kind}${informer}; since ${clockLabel(row.valid_from)}]${memory}`;
+      const text =
+        ctx.lang === 'ko'
+          ? `${n(knower)} — ${STANCE_KO[row.stance] ?? row.stance}${extra.length ? ` (${extra.join('; ')})` : ''}: ${statement} [경로: ${kind}${informer}; ${clockLabelKo(row.valid_from)}부터]${memory}`
+          : `${n(knower)} — ${row.stance.toUpperCase()}${extra.length ? ` (${extra.join('; ')})` : ''}: ${statement} [channel: ${kind}${informer}; since ${clockLabel(row.valid_from)}]${memory}`;
       const contractRef = relevant.has(row.proposition_id) ? 1 : 0;
       out.push({
         kind: 'knowledge_state',
@@ -422,11 +449,14 @@ async function fetchRelationships(
           .map(([k, v]) => `${k} ${v}`)
           .join(', ')
       : '—';
-    const reg = registerLabel(r.register);
-    const text = `${n(r.from_entity_id)} → ${n(r.to_entity_id)}: ${r.type}${r.power_dynamic ? ` (${r.power_dynamic})` : ''}; axes: ${axes}; register: ${reg}; since ${clockLabel(r.valid_from)}${r.note ? ` — ${r.note}` : ''}`;
+    const ko = ctx.lang === 'ko';
+    const reg = ko ? registerLabelKo(r.register) : registerLabel(r.register);
+    const text = ko
+      ? `${n(r.from_entity_id)} → ${n(r.to_entity_id)}: ${r.type}${r.power_dynamic ? ` (${r.power_dynamic})` : ''}; 축: ${axes}; 말높이: ${reg}; ${clockLabelKo(r.valid_from)}부터${r.note ? ` — ${r.note}` : ''}`
+      : `${n(r.from_entity_id)} → ${n(r.to_entity_id)}: ${r.type}${r.power_dynamic ? ` (${r.power_dynamic})` : ''}; axes: ${axes}; register: ${reg}; since ${clockLabel(r.valid_from)}${r.note ? ` — ${r.note}` : ''}`;
     registerLines.set(r.from_entity_id, [
       ...(registerLines.get(r.from_entity_id) ?? []),
-      `toward ${n(r.to_entity_id)}: ${reg}`,
+      ko ? `${n(r.to_entity_id)}에게: ${reg}` : `toward ${n(r.to_entity_id)}: ${reg}`,
     ]);
     if (!sec) continue;
     out.push({
@@ -459,15 +489,22 @@ async function fetchPromises(ctx: Ctx, out: Item[]): Promise<void> {
   });
   const touches = new Map(ctx.plan.promises.map((p) => [p.promiseId, p.kind]));
   for (const p of rows) {
+    const ko = ctx.lang === 'ko';
     const due =
       p.due_min_chapter !== null || p.due_max_chapter !== null
-        ? `; due ch.${p.due_min_chapter ?? '?'}–${p.due_max_chapter ?? '∞'}`
+        ? ko
+          ? `; 회수 창 ${p.due_min_chapter ?? '?'}~${p.due_max_chapter ?? '∞'}화`
+          : `; due ch.${p.due_min_chapter ?? '?'}–${p.due_max_chapter ?? '∞'}`
         : '';
     const last = p.last_event_kind
-      ? `; last ${p.last_event_kind}${p.last_event_chapter ? ` in ch.${p.last_event_chapter}` : ''}`
+      ? ko
+        ? `; 최근 ${p.last_event_kind}${p.last_event_chapter ? ` (${p.last_event_chapter}화)` : ''}`
+        : `; last ${p.last_event_kind}${p.last_event_chapter ? ` in ch.${p.last_event_chapter}` : ''}`
       : '';
     const touch = touches.get(p.id);
-    const text = `“${p.statement}” — ${p.type}, ${p.importance}, status ${p.status}${due}${last}${p.resolution_hint ? `; hint: ${p.resolution_hint}` : ''}${touch ? ` — PLANNED in this chapter: ${touch}` : ''}`;
+    const text = ko
+      ? `“${p.statement}” — ${p.type}, ${p.importance}, 상태 ${p.status}${due}${last}${p.resolution_hint ? `; 힌트: ${p.resolution_hint}` : ''}${touch ? ` — 이번 회차 PLANNED: ${touch}` : ''}`
+      : `“${p.statement}” — ${p.type}, ${p.importance}, status ${p.status}${due}${last}${p.resolution_hint ? `; hint: ${p.resolution_hint}` : ''}${touch ? ` — PLANNED in this chapter: ${touch}` : ''}`;
     const urgency =
       p.due_max_chapter !== null ? Math.max(0, Math.min(1, 1 - (p.due_max_chapter - k) / 10)) : 0.3;
     out.push({
@@ -568,7 +605,10 @@ async function fetchWorldRules(ctx: Ctx, out: Item[]): Promise<void> {
       tier: sec.tier,
       provenance: 'canon_fact',
       source: canonSource(ctx, f.id, f.timeline_id),
-      text: `${f.entity_name} (${f.entity_type}) · ${attributeLabel(f.attribute, f.key)} = ${valueLabel(f.value, f.value_text)} (valid ${clockLabel(f.valid_from)} → ${clockLabel(f.valid_to)})`,
+      text:
+        ctx.lang === 'ko'
+          ? `${f.entity_name} (${f.entity_type}) · ${attributeLabel(f.attribute, f.key)} = ${valueLabel(f.value, f.value_text)} (유효 ${clockLabelKo(f.valid_from)} → ${clockLabelKo(f.valid_to)})`
+          : `${f.entity_name} (${f.entity_type}) · ${attributeLabel(f.attribute, f.key)} = ${valueLabel(f.value, f.value_text)} (valid ${clockLabel(f.valid_from)} → ${clockLabel(f.valid_to)})`,
       materiality: 'contextual',
       entityIds: [f.entity_id],
       dedupeKey: `fact:${f.entity_id}:${f.attribute}#${f.key ?? ''}`,
@@ -593,7 +633,10 @@ async function fetchWorldRules(ctx: Ctx, out: Item[]): Promise<void> {
       tier: sec.tier,
       provenance: 'canon_fact',
       source: canonSource(ctx, p.id, ctx.timeline.id),
-      text: `World rule: “${p.statement}” — ${truth.toUpperCase()} on this timeline`,
+      text:
+        ctx.lang === 'ko'
+          ? `세계 규칙: “${p.statement}” — 이 타임라인에서 ${truthKo(truth)}`
+          : `World rule: “${p.statement}” — ${truth.toUpperCase()} on this timeline`,
       materiality: 'contextual',
       entityIds: p.entity_ids,
       dedupeKey: `proposition:${p.id}`,
@@ -717,7 +760,10 @@ async function fetchPreviousChapter(
         chapter_no: prevNo,
         project_id: ctx.projectId,
       },
-      text: `Chapter ${prevNo} factual summary (L1, from the accepted version v${ch.version.version_no}): ${summary.text}`,
+      text:
+        ctx.lang === 'ko'
+          ? `${prevNo}화 사실 요약 (L1, 승인 버전 v${ch.version.version_no}): ${summary.text}`
+          : `Chapter ${prevNo} factual summary (L1, from the accepted version v${ch.version.version_no}): ${summary.text}`,
       materiality: 'material',
       dedupeKey: `summary:${ch.version.id}`,
     });
@@ -730,10 +776,16 @@ async function fetchPreviousChapter(
       tier: tailSec.tier,
       provenance: 'accepted_manuscript_excerpt',
       source,
-      text: `Chapter ${prevNo} ending, verbatim (last ${tail.words} words, code points ${tail.startCp}–${tail.endCp} of accepted v${ch.version.version_no}):\n${tail.text}`,
+      text:
+        ctx.lang === 'ko'
+          ? `${prevNo}화 마지막 부분 원문 그대로 (마지막 ${tail.words}어절, 승인 v${ch.version.version_no}의 코드포인트 ${tail.startCp}–${tail.endCp}):\n${tail.text}`
+          : `Chapter ${prevNo} ending, verbatim (last ${tail.words} words, code points ${tail.startCp}–${tail.endCp} of accepted v${ch.version.version_no}):\n${tail.text}`,
       compressed: {
         method: 'degraded',
-        text: `Chapter ${prevNo} ending, verbatim (last ${floor.words} words, code points ${floor.startCp}–${floor.endCp} of accepted v${ch.version.version_no}):\n${floor.text}`,
+        text:
+          ctx.lang === 'ko'
+            ? `${prevNo}화 마지막 부분 원문 그대로 (마지막 ${floor.words}어절, 승인 v${ch.version.version_no}의 코드포인트 ${floor.startCp}–${floor.endCp}):\n${floor.text}`
+            : `Chapter ${prevNo} ending, verbatim (last ${floor.words} words, code points ${floor.startCp}–${floor.endCp} of accepted v${ch.version.version_no}):\n${floor.text}`,
       },
       materiality: 'material',
       dedupeKey: `tail:${ch.version.id}`,
@@ -748,7 +800,10 @@ async function fetchPreviousChapter(
       tier: hookSec.tier,
       provenance: 'accepted_manuscript_excerpt',
       source,
-      text: `Chapter ${prevNo} ending hook: “${hook}”`,
+      text:
+        ctx.lang === 'ko'
+          ? `${prevNo}화 절단(엔딩 훅): “${hook}”`
+          : `Chapter ${prevNo} ending hook: “${hook}”`,
       materiality: 'material',
       dedupeKey: `hook:${ch.version.id}`,
     });
@@ -826,9 +881,10 @@ async function fetchRegistry(ctx: Ctx, out: Item[]): Promise<void> {
   for (const id of ids) {
     const e = ctx.names.get(id);
     if (!e) continue;
+    const ko = ctx.lang === 'ko';
     const parts = [`${e.display_name} (${e.type}; id ${e.id})`];
-    if (e.short_forms.length) parts.push(`short: ${e.short_forms.join(', ')}`);
-    if (e.aliases.length) parts.push(`aliases: ${e.aliases.join(', ')}`);
+    if (e.short_forms.length) parts.push(`${ko ? '약칭' : 'short'}: ${e.short_forms.join(', ')}`);
+    if (e.aliases.length) parts.push(`${ko ? '별칭' : 'aliases'}: ${e.aliases.join(', ')}`);
     const desc = typeof e.fields.description === 'string' ? e.fields.description : undefined;
     const design = e.fields.planned_design;
     const guidance =
@@ -840,7 +896,9 @@ async function fetchRegistry(ctx: Ctx, out: Item[]): Promise<void> {
           )
         : {};
     const planned = Object.keys(guidance).length
-      ? `\n[PLANNED DESIGN — not realized events; knowledge guards still apply] ${JSON.stringify(guidance)}`
+      ? ko
+        ? `\n[PLANNED 설계 — 실현된 사건이 아님; 지식 가드는 여전히 적용] ${JSON.stringify(guidance)}`
+        : `\n[PLANNED DESIGN — not realized events; knowledge guards still apply] ${JSON.stringify(guidance)}`
       : '';
     out.push({
       kind: 'registry_slice',
@@ -883,7 +941,9 @@ function candidateToItem(
     materiality: 'contextual' as const,
     entityIds: c.entityIds,
   };
-  const chapterTag = c.chapterNo !== null ? `ch.${c.chapterNo}` : 'canon';
+  const ko = ctx.lang === 'ko';
+  const chapterTag =
+    c.chapterNo !== null ? (ko ? `${c.chapterNo}화` : `ch.${c.chapterNo}`) : ko ? '정사' : 'canon';
   switch (c.kind) {
     case 'chapter_paragraph': {
       const sec = sectionFor(t, 'chapter_text', 'retrieved');
@@ -904,7 +964,7 @@ function candidateToItem(
           chapter_no: c.chapterNo ?? 0,
           project_id: ctx.projectId,
         },
-        text: `${chapterTag} ${c.refKey} (accepted text): “${c.text}”`,
+        text: `${chapterTag} ${c.refKey} (${ko ? '승인된 원문' : 'accepted text'}): “${c.text}”`,
         dedupeKey: `para:${c.manuscriptVersionId}#${c.refKey}`,
       };
     }
@@ -931,7 +991,7 @@ function candidateToItem(
           chapter_no: c.chapterNo ?? 0,
           project_id: ctx.projectId,
         },
-        text: `${chapterTag} summary (L1): ${c.text}`,
+        text: `${chapterTag} ${ko ? '요약' : 'summary'} (L1): ${c.text}`,
         dedupeKey: `summary:${c.manuscriptVersionId ?? c.refId}`,
       };
     }
@@ -954,7 +1014,7 @@ function candidateToItem(
           chapter_no: c.chapterNo ?? 0,
           project_id: ctx.projectId,
         },
-        text: `${chapterTag} event: ${c.text}`,
+        text: `${chapterTag} ${ko ? '사건' : 'event'}: ${c.text}`,
         dedupeKey: `event:${c.refId}`,
       };
     }
@@ -974,7 +1034,9 @@ function candidateToItem(
           version: String(c.canonVersionAdded),
           project_id: ctx.projectId,
         },
-        text: `Proposition ${c.refId}: “${c.text}” (retrieved; check the knowledge table for who knows it)`,
+        text: ko
+          ? `명제 ${c.refId}: “${c.text}” (검색됨; 누가 아는지는 지식 표를 확인)`
+          : `Proposition ${c.refId}: “${c.text}” (retrieved; check the knowledge table for who knows it)`,
         dedupeKey: `proposition:${c.refId}`,
       };
     }
@@ -997,7 +1059,7 @@ function candidateToItem(
           chapter_no: c.chapterNo ?? 0,
           project_id: ctx.projectId,
         },
-        text: `${chapterTag} evidence quote: “${trimQuote(c.text)}”`,
+        text: `${chapterTag} ${ko ? '근거 인용' : 'evidence quote'}: “${trimQuote(c.text)}”`,
         dedupeKey: `evidence:${c.refId}`,
       };
     }
@@ -1105,7 +1167,10 @@ async function chapterTextItem(ctx: Ctx, opts: FetchOptions): Promise<Item | und
       chapter_no: ctx.plan.chapterNo,
       project_id: ctx.projectId,
     },
-    text: `Chapter ${ctx.plan.chapterNo} text under evaluation (status ${status}; not canon):\n${renderWithParagraphIds(paragraphs)}`,
+    text:
+      ctx.lang === 'ko'
+        ? `평가 대상 ${ctx.plan.chapterNo}화 원고 (상태 ${status}; 정사 아님):\n${renderWithParagraphIds(paragraphs)}`
+        : `Chapter ${ctx.plan.chapterNo} text under evaluation (status ${status}; not canon):\n${renderWithParagraphIds(paragraphs)}`,
     materiality: 'material',
   };
 }
@@ -1159,6 +1224,7 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
       timelines,
       names: new Map(),
       propositions: new Map(),
+      lang: opts.identity?.outputLanguage.language ?? 'en',
     };
     await loadNames(ctx, plan.allEntityIds);
     await fetchRegistry(ctx, items);
@@ -1191,7 +1257,10 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
       participantIds: plan.allEntityIds,
       specVersion: opts.spec.version,
     },
-    { capTokens: opts.policy.context.active_constraints_cap_tokens },
+    {
+      capTokens: opts.policy.context.active_constraints_cap_tokens,
+      workingLanguage: opts.identity?.outputLanguage.language ?? 'en',
+    },
   );
   const acsSec = sectionFor(template, 'active_constraint_set', 'active_constraints');
   if (acsSec) {
@@ -1288,7 +1357,10 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
             version: String(opts.contract.version),
             project_id: opts.projectId,
           },
-          text: `${n(g.characterId)} must NOT know (or speak/act as if knowing): “${p?.statement ?? pid}”. Do not let this character reference it.`,
+          text:
+            opts.identity?.outputLanguage.language === 'ko'
+              ? `${n(g.characterId)}은(는) 다음을 알면 안 된다 (아는 것처럼 말하거나 행동해서도 안 된다): “${p?.statement ?? pid}”. 이 인물이 이것을 언급하게 하지 않는다.`
+              : `${n(g.characterId)} must NOT know (or speak/act as if knowing): “${p?.statement ?? pid}”. Do not let this character reference it.`,
           materiality: 'material',
           entityIds: [g.characterId],
         });
@@ -1310,7 +1382,10 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
         version: String(opts.contract.version),
         project_id: opts.projectId,
       },
-      text: renderContract(opts.contract, n),
+      text:
+        opts.identity?.outputLanguage.language === 'ko'
+          ? renderContractKo(opts.contract, n)
+          : renderContract(opts.contract, n),
       materiality: 'material',
     });
   }
@@ -1417,4 +1492,14 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
     jobId: opts.jobId,
   };
   return { input, plan, constraints, template };
+}
+
+function truthKo(truth: string): string {
+  const map: Record<string, string> = {
+    true: '참',
+    false: '거짓',
+    unknown: '미정',
+    undetermined: '미정',
+  };
+  return map[truth.toLowerCase()] ?? truth;
 }

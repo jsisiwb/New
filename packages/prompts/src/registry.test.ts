@@ -28,7 +28,9 @@ const REQUIRED_FAMILIES = [
   'extraction_reconciler',
   'factual_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 231;
+const TOTAL_PROMPT_VERSIONS = 256;
+/** The active default set (latest `active` version of every family). */
+const ACTIVE_VERSION = '3.0.0';
 
 describe('prompt registry (ADR-0016)', () => {
   const reg = PromptRegistry.fromDirectory();
@@ -67,7 +69,7 @@ describe('prompt registry (ADR-0016)', () => {
       const text = `${v.system_template}\n${v.user_template}`;
       expect(text, v.id).not.toMatch(/translate (it|this|the text) into English/i);
       const hasHangul = /[\uac00-\ud7a3]/.test(text);
-      if (/^2\./.test(v.version)) {
+      if (!v.version.startsWith('1.')) {
         expect(hasHangul, `${v.id} Korean version must be authored in Korean`).toBe(true);
       } else {
         expect(hasHangul, `${v.id} legacy version contains Hangul`).toBe(false);
@@ -144,11 +146,30 @@ describe('prompt registry (ADR-0016)', () => {
     ).toThrow(/narrative_identity_block/);
   });
 
+  it('v3 prompts are Korean end to end: no English section labels or instructions (ADR-0055)', () => {
+    const provenanceTags = new Set(['FACT', 'PLANNED', 'SUMMARY', 'EVIDENCE', 'UNTRUSTED']);
+    for (const v of reg.list().filter((x) => x.version.startsWith('3.'))) {
+      const text = `${v.system_template}\n${v.user_template}`;
+      for (const m of text.matchAll(/\[([A-Z][A-Z ]{2,})/g)) {
+        const label = (m[1] ?? '').trim();
+        expect(provenanceTags.has(label), `${v.id} has English label [${label}`).toBe(true);
+      }
+      // Single-brace placeholders never substitute; they reached the model verbatim in v2.x.
+      expect(text, v.id).not.toMatch(/(?<!\{)\{[a-z_]+\}(?!\})/);
+      // Instruction prose outside the JSON shape must not contain English sentences.
+      const prose = text
+        .split('\n')
+        .filter((l) => !l.trim().startsWith('{') && !l.includes('{{'))
+        .join('\n');
+      expect(prose, v.id).not.toMatch(/\b(the|and|must|never|return|write)\b [a-z]+ [a-z]+/i);
+    }
+  });
+
   it('builds a pinned prompt set from the active versions', () => {
     const set = reg.activeSet();
     expect(Object.keys(set.mapping)).toHaveLength(25);
     for (const fam of Object.keys(set.mapping)) {
-      expect(set.mapping[fam], fam).toBe(`${fam}@2.2.5`);
+      expect(set.mapping[fam], fam).toBe(`${fam}@${ACTIVE_VERSION}`);
     }
     expect(set.id).toMatch(/^set:[0-9a-f]{16}$/);
   });

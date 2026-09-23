@@ -16,13 +16,19 @@ describe('profile store and composition', () => {
         .sort(),
     ).toEqual([
       'genre/academy@1',
+      'genre/academy@2',
       'genre/hunter-gate@1',
+      'genre/hunter-gate@2',
       'genre/regression@1',
+      'genre/regression@2',
       'genre/romance-fantasy@1',
+      'genre/romance-fantasy@2',
       'lang/en@1',
       'lang/ko@1',
+      'lang/ko@2',
       COMPOSED,
       'tradition/kr-webnovel@1',
+      'tradition/kr-webnovel@2',
     ]);
     expect(identity.outputLanguage.language).toBe('en');
     expect(identity.genres.map((g) => g.genre_id)).toEqual(['hunter-gate', 'regression']);

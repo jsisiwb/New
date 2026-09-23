@@ -1,0 +1,103 @@
+{
+  "id": "genre/hunter-gate",
+  "kind": "genre",
+  "version": 2,
+  "name": "헌터·게이트·시스템 오버레이 (한국어)",
+  "genre": {
+    "genre_id": "hunter-gate",
+    "reader_fantasy": "서열 사회의 밑바닥에서 올라간다. 숨은 힘이 드러나고, 필요한 사람이 된다. 성장은 수치와 시스템 메시지로 증명된다.",
+    "vocabulary": {
+      "preferred_terms": [
+        "게이트",
+        "던전",
+        "각성",
+        "각성자",
+        "헌터",
+        "길드",
+        "등급",
+        "상태창",
+        "스킬",
+        "레벨",
+        "마석",
+        "공략"
+      ],
+      "discouraged_terms": [],
+      "terminology_defaults": []
+    },
+    "devices": [
+      {
+        "id": "rank_reveal",
+        "description": "측정 → 주변 반응(인물마다 다르게) → 주인공의 무심함이나 충격.",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "community_interlude",
+        "description": "커뮤니티 게시판 인터루드. 반말·인터넷 말투, 실제 플랫폼 이름 금지.",
+        "format_grammar": "(└ <댓글>\\n){2,8}",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "measurement_scene",
+        "description": "측정값은 사실이다. 이전보다 낮은 값에는 이야기 속 이유가 필요하다."
+      }
+    ],
+    "cadence": {
+      "progression_event_every_chapters": 3,
+      "satisfaction_every_chapters": 3,
+      "max_frustration_streak": 3
+    },
+    "register_notes": [
+      "길드 서열: 길드장, 부길드장, 공대장·팀장.",
+      "신입 헌터는 베테랑에게 ‘선배님’이나 직함으로 존대한다.",
+      "적대적인 인물은 짐꾼을 등급으로 낮춰 부른다(‘F급 주제에’)."
+    ],
+    "default_relationship_registers": [],
+    "taboos": [
+      "‘측정기가 고장 났다’를 두 번 이상",
+      "똑같은 등급 충격 반응",
+      "각성하자마자 S급"
+    ],
+    "judge_notes": [
+      "액션은 한 문장에 누가 무엇을 어디에 치는지 분명하게.",
+      "게시판 인터루드는 실제 커뮤니티처럼 읽혀야 한다. 비속어는 등급 안에서."
+    ],
+    "lint_thresholds": {
+      "ST-EXP-02": {
+        "warn": 8,
+        "fail": 12
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "수치로 증명되는 성장",
+        "weight": 0.4,
+        "anchors": {
+          "1": "성장이 주장뿐이다.",
+          "3": "수치는 있으나 무게가 없다.",
+          "5": "수치와 시스템 메시지가 성장의 쾌감을 만든다."
+        }
+      },
+      {
+        "dimension": "서열 반전의 쾌감",
+        "weight": 0.35,
+        "anchors": {
+          "1": "반전이 없다.",
+          "3": "반응이 평면적이다.",
+          "5": "주변 반응이 제각각이고 판이 뒤집힌다."
+        }
+      },
+      {
+        "dimension": "액션의 명료함",
+        "weight": 0.25,
+        "anchors": {
+          "1": "누가 무엇을 했는지 모른다.",
+          "3": "대체로 보인다.",
+          "5": "짧고 선명한 타격 비트."
+        }
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated"
+  }
+}

@@ -431,7 +431,7 @@ export async function produceChapter(
                 value: intake.target_characters_per_chapter ?? 5500,
                 tolerance_ratio: 0.12,
               }
-            : { unit: 'words', value: intake.target_words_per_chapter },
+            : { unit: 'words', value: intake.target_words_per_chapter ?? 2500 },
         contractId: input.ids.contractId,
         // Only the model-driven path renders the registry into the planner prompt; the fixture path keeps
         // its recorded prompt text byte-identical.
@@ -819,7 +819,11 @@ function versionSummary(v: ManuscriptVersionRow) {
 }
 
 async function previousChapterSummary(ctx: WorkflowContext, chapterNo: number): Promise<string> {
-  if (chapterNo === 1) return '(Chapter 1 opens the series; there is no previous chapter.)';
+  const ko = ctx.identity.outputLanguage.language === 'ko';
+  if (chapterNo === 1)
+    return ko
+      ? '(1화는 연재의 시작이다. 직전 회차가 없다.)'
+      : '(Chapter 1 opens the series; there is no previous chapter.)';
   const prev = await acceptedChapter(ctx.pool, ctx.projectId, chapterNo - 1);
   if (prev.state !== 'accepted')
     throw new WorkflowError(
@@ -838,6 +842,10 @@ async function previousChapterSummary(ctx: WorkflowContext, chapterNo: number): 
     [prev.chapter.version.id],
   );
   const s = r.rows[0];
+  if (ko)
+    return s
+      ? `${chapterNo - 1}화 (승인 v${prev.chapter.version.version_no}, 정사 v${prev.chapter.acceptedCanonVersion}): ${s.text}${s.ending_hook ? ` 절단: “${s.ending_hook}”` : ''}`
+      : `${chapterNo - 1}화 승인됨 (v${prev.chapter.version.version_no}, 정사 v${prev.chapter.acceptedCanonVersion}); 저장된 요약 없음.`;
   return s
     ? `Chapter ${chapterNo - 1} (accepted v${prev.chapter.version.version_no}, canon v${prev.chapter.acceptedCanonVersion}): ${s.text}${s.ending_hook ? ` Ending hook: “${s.ending_hook}”` : ''}`
     : `Chapter ${chapterNo - 1} accepted (v${prev.chapter.version.version_no}, canon v${prev.chapter.acceptedCanonVersion}); no L1 summary stored.`;

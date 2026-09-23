@@ -1,0 +1,38 @@
+{
+  "family": "targeted_reviser",
+  "version": "3.0.0",
+  "role": "targeted_reviser",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "editor_full",
+  "model_class": "P",
+  "input_variables": [
+    "dimension",
+    "issues",
+    "span_text",
+    "context_before",
+    "context_after",
+    "must_preserve",
+    "register_digests",
+    "length_budget_words"
+  ],
+  "output_schema": "patch.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 3000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "targeted_reviser.fixture.smoke"
+  ],
+  "content_hash": "sha256:e0ff689b6f4e33ec67e776d9b723e7ed83ee357a6bd27a9a772cba264b7cac2e"
+}

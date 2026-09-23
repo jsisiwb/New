@@ -78,8 +78,10 @@ export function validatePack(pack: ContextPack, input: AssemblyInput): Validatio
       if (
         !b.outputLanguageContractHash ||
         !b.traditionContractHash ||
-        !b.text.includes('## Output-Language Contract') ||
-        !b.text.includes('## Narrative-Tradition Contract')
+        !(b.text.includes('## Output-Language Contract') || b.text.includes('## 출력 언어 계약')) ||
+        !(
+          b.text.includes('## Narrative-Tradition Contract') || b.text.includes('## 서사 전통 계약')
+        )
       ) {
         bothContracts = false;
         failures.push(

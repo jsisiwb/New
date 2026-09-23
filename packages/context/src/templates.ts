@@ -638,3 +638,66 @@ export function budgetFor(
   if (t.budgetKey === 'writer_input_budget_tokens') return ctx.writer_input_budget_tokens;
   return ctx.input_budget_tokens?.[t.name];
 }
+
+/**
+ * Korean section titles for Korean-manuscript packs (ADR-0055). Keyed by the English title so every
+ * template shares one table; a title missing here falls back to English, which a test forbids.
+ */
+export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
+  'ACTIVE CONSTRAINTS — hard requirements (mandatory)': '활성 제약 — 하드 요구사항 (필수)',
+  'CANON STATE — current facts for the participants (as of chapter start)':
+    '정사 상태 — 참여자의 현재 사실 (회차 시작 시점)',
+  'CANON STATE — participants, as of the chapter start (with evidence)':
+    '정사 상태 — 참여자, 회차 시작 시점 기준 (근거 포함)',
+  'CANON STATE — what has happened; current facts': '정사 상태 — 이미 일어난 일과 현재 사실',
+  'CHAPTER CONTRACT — PLANNED (check the text against it; the text is the source of truth)':
+    '회차 계약 — PLANNED (원문을 이것과 대조한다. 판단 근거는 원문이다)',
+  'CHAPTER CONTRACT — PLANNED (has not happened yet)':
+    '회차 계약 — PLANNED (아직 일어나지 않은 일)',
+  'CHAPTER TEXT UNDER EVALUATION — job-scoped draft, not canon':
+    '평가 대상 원고 — 작업 범위 초안, 정사 아님',
+  'CHAPTER TEXT — approval-locked version, with paragraph ids':
+    '회차 원문 — 승인 잠금 버전, 문단 id 포함',
+  'CONTRACT SLOT — PLANNED objectives for this chapter (arc plan)':
+    '계약 슬롯 — 이번 회차의 PLANNED 목표 (아크 계획)',
+  'EXISTING CANON STATE — supersede these ids on change (as of chapter start)':
+    '기존 정사 상태 — 바뀌면 이 id를 대체한다 (회차 시작 시점)',
+  'EXISTING KNOWLEDGE STATES': '기존 지식 상태',
+  'EXISTING RELATIONSHIP STATES': '기존 관계 상태',
+  'HYPOTHESES — PLANNED by the contract; verify against the text':
+    '가설 — 계약이 PLANNED한 것, 원문과 대조해 검증',
+  'KNOWLEDGE GUARDS — who must NOT know what (hard)':
+    '지식 가드 — 누가 무엇을 몰라야 하는가 (절대)',
+  'KNOWLEDGE — knows / suspects / believes falsely / unaware, per participant':
+    '지식 — 참여자별 앎 / 의심 / 잘못된 믿음 / 모름',
+  'KNOWLEDGE — stances per participant': '지식 — 참여자별 입장',
+  'KNOWLEDGE — who knows what': '지식 — 누가 무엇을 아는가',
+  'LOCKED FACTS — never contradict': '잠긴 사실 — 절대 모순되지 않게',
+  'MINOR ENTITIES (optional)': '조연·단역 (선택)',
+  'NARRATIVE IDENTITY': '서사 정체성',
+  'OPEN PROMISES': '열린 약속(복선)',
+  'PREVIOUS CHAPTER — accepted version only': '직전 회차 — 승인된 버전만',
+  'PROMISES — open, due, and touched by this chapter':
+    '약속(복선) — 열림, 만기, 이번 회차에서 다루는 것',
+  PROMISES: '약속(복선)',
+  'RECENT EVENTS (T2)': '최근 사건 (T2)',
+  'RECENT EVENTS': '최근 사건',
+  'REGISTRY — entities, ids, names, aliases; known propositions and promises':
+    '등록부 — 엔티티, id, 이름, 별칭; 알려진 명제와 약속',
+  'REGISTRY — names, short forms, aliases': '등록부 — 이름, 약칭, 별칭',
+  'RELATED OLDER EVENTS (T2)': '관련된 과거 사건 (T2)',
+  'RELATIONSHIPS AND DIALOGUE REGISTER — directional (speaker → counterpart)':
+    '관계와 말높이 — 방향성 (화자 → 상대)',
+  'RELATIONSHIPS — directional': '관계 — 방향성',
+  'RETRIEVED OLDER CANON (T2)': '검색된 과거 정사 (T2)',
+  'RETRIEVED OLDER CANON — relevant accepted events and excerpts (T2)':
+    '검색된 과거 정사 — 관련 승인 사건과 발췌 (T2)',
+  'SOFT PREFERENCES AND ASSUMPTIONS': '소프트 선호와 가정',
+  'STORY CLOCK AND TIMELINE': '스토리 시계와 타임라인',
+  'TIMELINE POSITION — reality frame and pins': '타임라인 위치 — 현실 프레임과 고정값',
+  'WORLD AND POWER RULES': '세계와 힘의 규칙',
+};
+
+export function sectionTitle(title: string, lang: 'en' | 'ko'): string {
+  return lang === 'ko' ? (SECTION_TITLES_KO[title] ?? title) : title;
+}

@@ -1,0 +1,34 @@
+{
+  "family": "concept_comparator",
+  "version": "3.0.0",
+  "role": "concept_comparator",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "candidate_a",
+    "candidate_b",
+    "presentation_order"
+  ],
+  "output_schema": "comparison-verdict.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "concept_comparator.fixture.smoke"
+  ],
+  "content_hash": "sha256:c3a89e24e07c6db0e66b6de8b1682f9627793b527c6707d1a0d50b49db737dfc"
+}

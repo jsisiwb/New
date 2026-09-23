@@ -26,14 +26,14 @@ export function registry(prompt: string): { id: string; name: string; type: stri
     if (!out.some((e) => e.id === m[3]))
       out.push({ id: m[3] ?? '', name: (m[1] ?? '').trim(), type: m[2] ?? '' });
   // Contract rendering: `POV: Name (id uuid) …`, `Participants: Name (id uuid) [role]`, `Locations: Name (id uuid)`.
-  const pov = /POV: ([^\n(]+?) \(id ([0-9a-f-]{36})\)/.exec(prompt);
+  const pov = /(?:POV|시점): ([^\n(]+?) \(id ([0-9a-f-]{36})\)/.exec(prompt);
   if (pov && !out.some((e) => e.id === pov[2]))
     out.push({ id: pov[2] ?? '', name: (pov[1] ?? '').trim(), type: 'character' });
-  const parts = /Participants: ([^\n]+)\./.exec(prompt)?.[1] ?? '';
+  const parts = /(?:Participants|참여자): ([^\n]+)\./.exec(prompt)?.[1] ?? '';
   for (const m of parts.matchAll(/([^;(]+?) \(id ([0-9a-f-]{36})\)/g))
     if (!out.some((e) => e.id === m[2]))
       out.push({ id: m[2] ?? '', name: (m[1] ?? '').trim(), type: 'character' });
-  const locs = /Locations: ([^\n]+)\./.exec(prompt)?.[1] ?? '';
+  const locs = /(?:Locations|장소): ([^\n]+)\./.exec(prompt)?.[1] ?? '';
   for (const m of locs.matchAll(/([^,(]+?) \(id ([0-9a-f-]{36})\)/g))
     if (!out.some((e) => e.id === m[2]))
       out.push({ id: m[2] ?? '', name: (m[1] ?? '').trim(), type: 'location' });
@@ -41,7 +41,7 @@ export function registry(prompt: string): { id: string; name: string; type: stri
 }
 
 function propositionIds(prompt: string): string[] {
-  return [...prompt.matchAll(/- proposition \[([0-9a-f-]{36})\]/g)].map((m) => m[1] ?? '');
+  return [...prompt.matchAll(/- (?:proposition|명제) \[([0-9a-f-]{36})\]/g)].map((m) => m[1] ?? '');
 }
 
 export function sceneText(
@@ -66,8 +66,58 @@ export function sceneText(
   return [...lines, ...filler].join('\n\n');
 }
 
+/** Korean counterpart of `sceneText` for Korean-manuscript projects (ADR-0054/0055). */
+export function sceneTextKo(
+  chapter: number,
+  sceneNo: number,
+  protagonist: string,
+  mentor: string,
+): string {
+  const lines = [
+    `장부가 또 틀렸다. ${protagonist}은(는) 펜이 칸에 닿기도 전에 그걸 알았다.`,
+    `“셋째 장을 두 번 읽고 있잖아.”`,
+    `문가에서 ${mentor}이(가) 말했다.`,
+    `고개는 들지 않았다. ${chapter}화, ${sceneNo}번째 장면. 숫자는 여전히 맞지 않았다. 게이트 근무표에는 헌터 열한 명이 적혀 있었다. 급여 대장에는 열네 명.`,
+    `“유령이 셋이네요.”`,
+    `“매달 월급을 받는.”`,
+    `${mentor}이(가) 등 뒤로 문을 닫았다.`,
+    `“그럼 감사 전까지 무시당하지 않을 사람이 돼야겠군.”`,
+    `저녁 입소를 알리는 종이 울렸다. ${protagonist}은(는) 장부 한 장을 접어 소매 속에 넣었다.`,
+  ];
+  const filler = Array.from(
+    { length: 6 },
+    (_, i) =>
+      `그 값을 셀 수 있는 단위는 하나뿐이었다. 아무도 읽지 않을 장부의 ${i + 1}번째 줄, 종이 울리기 전에 봉인하고 날짜를 적은 그 줄.`,
+  );
+  return [...lines, ...filler].join('\n\n');
+}
+
+const KO_EVIDENCE_QUOTE = '게이트 근무표에는 헌터 열한 명이 적혀 있었다.';
+
+const KO_NAMES: readonly (readonly [string, string])[] = [
+  ['Seo Ji-an', '서지안'],
+  ['Baek Tae-ho', '백태호'],
+  ['Moon Hae-rin', '문해린'],
+  ['Ji-an', '지안'],
+];
+
 /** A competent live model, by role. Returns `undefined` for roles it does not know. */
 export function simulatedModelScript(req: ProviderRequest) {
+  const out = scriptByRole(req);
+  const prompt = `${req.system}\n${req.user}`;
+  // A Korean project names its cast in Hangul; the scripted cast follows the intake's language.
+  if (
+    !out ||
+    !('json' in out) ||
+    !(prompt.includes('lang=ko/') || prompt.includes('"manuscript_language":"ko"'))
+  )
+    return out;
+  let text = JSON.stringify(out.json);
+  for (const [en, ko] of KO_NAMES) text = text.split(en).join(ko);
+  return { json: JSON.parse(text) as unknown };
+}
+
+function scriptByRole(req: ProviderRequest) {
   const role = req.trace?.role ?? '';
   const prompt = `${req.system}\n${req.user}`;
   const reg = registry(prompt);
@@ -81,8 +131,32 @@ export function simulatedModelScript(req: ProviderRequest) {
       '1',
   );
   const json = (value: unknown) => ({ json: value });
+  // A Korean-manuscript project: the identity header or the intake names ko (ADR-0054/0055).
+  const korean =
+    prompt.includes('lang=ko/') ||
+    prompt.includes('"manuscript_language":"ko"') ||
+    /[\uac00-\ud7a3]/.test(chapterTextOf(prompt));
   switch (role) {
     case 'requirement_interpreter':
+      if (korean)
+        return json({
+          items: [
+            reqKo('REQ-001', 'hard', 'premise', premiseOf(prompt)),
+            reqKo('REQ-002', 'hard', 'genre', '주 장르는 헌터·게이트물, 보조 장르는 아카데미물.'),
+            reqKo('REQ-003', 'hard', 'content_restriction', '성적인 묘사 금지.'),
+            {
+              ...reqKo(
+                'REQ-004',
+                'assumption',
+                'world',
+                '도시에는 게이트 방위를 맡는 길드가 하나 있다.',
+              ),
+              provenance: 'model_inferred',
+              confirmed_by_user: false,
+              rationale: '전제가 길드 재무 담당 한 명만 언급하므로 길드가 하나라고 가정했다.',
+            },
+          ],
+        });
       return json({
         items: [
           req_('REQ-001', 'hard', 'premise', premiseOf(prompt)),
@@ -405,7 +479,13 @@ export function simulatedModelScript(req: ProviderRequest) {
             check_ref: 'contract_checker:MH-1',
           },
         ],
-        length_target: { unit: 'words', value: 600, tolerance_ratio: 0.2 },
+        length_target: korean
+          ? {
+              unit: 'characters',
+              value: Number(/목표 분량\(글자 수, 공백 포함\): (\d+)/.exec(prompt)?.[1] ?? 1400),
+              tolerance_ratio: 0.2,
+            }
+          : { unit: 'words', value: 600, tolerance_ratio: 0.2 },
       });
     }
     case 'scene_planner': {
@@ -422,7 +502,7 @@ export function simulatedModelScript(req: ProviderRequest) {
           { type: 'action', description: 'Ji-an reads the page.' },
           { type: 'dialogue', description: 'Tae-ho speaks from the doorway.' },
         ],
-        length_target: { unit: 'words', value: 300 },
+        length_target: korean ? { unit: 'characters', value: 700 } : { unit: 'words', value: 300 },
         speaker_pairs: [
           {
             speaker_id: m,
@@ -449,11 +529,13 @@ export function simulatedModelScript(req: ProviderRequest) {
       const ch = Number(/chapter_contract:(\d+)|Chapter (\d+)/.exec(prompt)?.[2] ?? chapterNo);
       const pName = protagonist?.name ?? 'Seo Ji-an';
       const mName = mentor?.name ?? 'Baek Tae-ho';
-      const text = sceneText(ch, sceneNo, pName, mName);
+      const text = korean
+        ? sceneTextKo(ch, sceneNo, pName, mName)
+        : sceneText(ch, sceneNo, pName, mName);
       // A live model: right text, sloppy offsets. Paragraph table deliberately wrong; claims fine.
       return json({
         scene_no: sceneNo,
-        language: 'en',
+        language: korean ? 'ko' : 'en',
         text,
         paragraphs: [{ id: 'p1', start: 0, end: 10, kind: 'narration' }],
         speaker_annotations: [
@@ -461,12 +543,14 @@ export function simulatedModelScript(req: ProviderRequest) {
             utterance_start: 5,
             utterance_end: 9999,
             speaker_id: mentor?.id ?? protagonist?.id ?? idFrom(prompt, 0),
-            quote: `“You are reading the third page twice,”`,
+            quote: korean
+              ? '“셋째 장을 두 번 읽고 있잖아.”'
+              : `“You are reading the third page twice,”`,
           },
         ],
         claims: [
           {
-            statement: 'The payroll lists three ghosts.',
+            statement: korean ? '급여 대장에 유령이 셋 있다.' : 'The payroll lists three ghosts.',
             paragraph_id: 'p3',
             entity_ids: [protagonist?.id ?? idFrom(prompt, 0)],
             frame: 'canonical',
@@ -490,7 +574,7 @@ export function simulatedModelScript(req: ProviderRequest) {
       const versionId =
         /manuscript_version_id[^0-9a-f]*([0-9a-f-]{36})/.exec(prompt)?.[1] ?? idFrom(prompt, 0);
       const chapterText = chapterTextOf(prompt);
-      const quote = 'The gate rota listed eleven hunters.';
+      const quote = korean ? KO_EVIDENCE_QUOTE : 'The gate rota listed eleven hunters.';
       const p = protagonist?.id ?? idFrom(prompt, 0);
       return json({
         items: [
@@ -541,6 +625,11 @@ export function simulatedModelScript(req: ProviderRequest) {
   }
 }
 
+/** A Korean requirement: authored in ko, no English paraphrase (the Korean interpreter never adds one). */
+function reqKo(id: string, kind: string, category: string, text: string) {
+  return { ...req_(id, kind, category, text), language: 'ko' };
+}
+
 function req_(id: string, kind: string, category: string, text: string) {
   return {
     id,
@@ -558,8 +647,9 @@ function idFrom(prompt: string, n: number, type?: string): string {
   return entries[n]?.id ?? entries[0]?.id ?? '00000000-0000-8000-8000-000000000000';
 }
 function chapterTextOf(prompt: string): string {
-  const m = /\[CHAPTER TEXT[^\]]*\]\n([\s\S]*)$/.exec(prompt);
-  return m?.[1] ?? '';
+  const m = /\[(?:CHAPTER TEXT|회차 원문)[^\]]*\]\n([\s\S]*)$/.exec(prompt);
+  // The chapter text ends where the output-shape note starts (v3 prompts append it after the text).
+  return (m?.[1] ?? '').split(/\n\n\[(?:출력 스키마|OUTPUT SCHEMA)/)[0] ?? '';
 }
 
 function premiseOf(prompt: string): string {

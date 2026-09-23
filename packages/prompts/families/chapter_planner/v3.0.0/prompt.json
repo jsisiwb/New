@@ -1,0 +1,39 @@
+{
+  "family": "chapter_planner",
+  "version": "3.0.0",
+  "role": "chapter_planner",
+  "purpose": "Korean manuscript-language prompt, fully Korean surface (ADR-0055), 3.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "arc_plan",
+    "chapter_number",
+    "previous_chapter_summary",
+    "canon_state",
+    "knowledge_state",
+    "open_promises",
+    "active_constraints",
+    "length_target_words"
+  ],
+  "output_schema": "chapter-contract.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.4,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "3.0.0 — fully Korean prompt surface (ADR-0055): Korean instructions, section labels and output-shape notes; JSON keys/enums stay schema identifiers; fixes the v2.x literal `{length_target_words}` placeholder (chapter_planner, scene_writer) and the contract_checker shape (criteria[].criterion_id).",
+  "regression_cases": [
+    "chapter_planner.full_planned_bible",
+    "chapter_planner.ending_continuity"
+  ],
+  "content_hash": "sha256:7b2cb60a5dccb7456dafa4e999519aaa8f7bc2ad2ca86043065de77da0fcee6a"
+}

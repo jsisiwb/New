@@ -130,3 +130,51 @@ describe('Active Constraint Set compiler (ADR-0033)', () => {
     ).toBe(false);
   });
 });
+
+describe('Active Constraint Set in a Korean project (ADR-0055)', () => {
+  const koSpec: StorySpec = {
+    project_id: spec.project_id,
+    version: 1,
+    items: [
+      {
+        id: 'REQ-001',
+        kind: 'hard',
+        category: 'content_restriction',
+        text: '성적인 묘사 금지.',
+        language: 'ko',
+        provenance: 'user',
+        confirmed_by_user: true,
+        scope: { level: 'series' },
+      },
+      {
+        id: 'REQ-002',
+        kind: 'soft',
+        category: 'tone',
+        text: '초반은 코믹하게.',
+        language: 'ko',
+        provenance: 'user',
+        confirmed_by_user: true,
+        scope: { level: 'series' },
+      },
+    ],
+  };
+  const scope = { chapterNo: 1, participantIds: [], specVersion: 1 };
+
+  it('renders Korean requirements verbatim with Korean headings', () => {
+    const acs = compileActiveConstraintSet(koSpec, scope, {
+      capTokens: 1200,
+      workingLanguage: 'ko',
+    });
+    expect(acs.hardText).toContain('하드 요구사항');
+    expect(acs.hardText).toContain('- [REQ-001] 성적인 묘사 금지.');
+    expect(acs.renderedText).toContain('## 활성 제약 세트');
+    expect(acs.renderedText).toContain('소프트 선호');
+    expect(acs.renderedText).not.toMatch(/Hard requirements|Soft preferences/);
+  });
+
+  it('an English project still refuses a Korean requirement with no English paraphrase', () => {
+    expect(() => compileActiveConstraintSet(koSpec, scope, { capTokens: 1200 })).toThrow(
+      ContextError,
+    );
+  });
+});

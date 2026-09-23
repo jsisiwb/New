@@ -60,5 +60,7 @@
 
 | [0054](0054-korean-manuscript-language.md) | The manuscript language is per project (English or Korean, chosen at intake); generation composes directly in it, and English is produced only by an explicit export/translation step |
 
+| [0055](0055-fully-korean-prompt-surface.md) | A Korean project's whole prompt surface is Korean: identity block, Korean-authored layers, context packs, Active Constraint Set and v3 prompt families |
+
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
