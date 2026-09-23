@@ -94,9 +94,42 @@ Patterns that betray a source-language template in English. Each has weight and 
 | TRN-KO-05 | Double passive ("되어지다", "잊혀지다") | 0.6 | Korean translationese (ADR-0055) |
 | TRN-KO-06 | "~를 가지고 있다" for possession or traits (English "have") | 0.4 | Korean translationese (ADR-0055) |
 | TRN-KO-07 | "~하는 중이다" progressive (English "be -ing") | 0.3 | Korean translationese (ADR-0055) |
+| TRN-KO-08 | "~에 의해(서)" English-style passive | 0.5 | Korean translationese (ADR-0056) |
+| TRN-KO-09 | "~을 느낄 수 있었다" (English "could feel") | 0.5 | Korean translationese (ADR-0056) |
+| TRN-KO-10 | "~것을/수 알 수 있었다" (English "could tell") | 0.4 | Korean translationese (ADR-0056) |
+| TRN-KO-11 | "~것이었다" repetition | 0.2 | Korean translationese (ADR-0056) |
+| TRN-KO-12 | "~에게 있어(서)" (English "for someone") | 0.6 | Korean translationese (ADR-0056) |
+| TRN-KO-13 | "~와 관련하여/관련된" (English "regarding") | 0.3 | Korean translationese (ADR-0056) |
+| TRN-KO-14 | "그/그녀" + particle as an English pronoun calque | 0.15 | Korean translationese (ADR-0056) |
 
 The list is data (`output_language.translation_markers`), not code; changes are profile versions and go
 through the contrast-set regression (translation-like variants must keep scoring higher).
+
+### 2.4 Korean webnovel style lint (`KO-*`, ADR-0056)
+
+For Korean manuscripts `lintKoreanWebnovel` (`@yeonjae/prose`) reads the composed identity's language layer
+(`translation_markers`, `forbidden_patterns`, `lint_thresholds`) and reports findings with paragraph ids and
+code-point spans. Thresholds are starting values in `lang/ko@3` (ADR-0029: calibration-dependent).
+
+| Rule | Metric | Severity | Span |
+| --- | --- | --- | --- |
+| `TRN-KO-*` 번역투 marker | each hit of a language-layer marker (‘~에 대해’, ‘~를 통해’, ‘~에 의해’, ‘~을 느낄 수 있었다’ …) | minor per hit | hit |
+| `KO-TRN-RATE` | weighted marker hits per 1,000 characters | warn → minor, fail → major | chapter |
+| `AIT-KO-*` AI 상투구 | each hit of a stale-cliché pattern (‘알 수 없는 감정’, ‘시간이 멈춘 듯’, ‘정적이 흘렀다’ …) | minor per hit | hit |
+| `KO-AIT-COUNT` | cliché hits per chapter | warn → minor, fail → major | chapter |
+| `KO-PRN-RATE` | ‘그/그녀’ + particle per 1,000 characters | warn → minor, fail → major | chapter |
+| `KO-SIM-RATE` | ‘마치’/‘~듯’ per 1,000 characters | warn → minor, fail → major | chapter |
+| `KO-PARA-LONG` | share of narration paragraphs over three sentences or the paragraph character warn threshold | warn → minor, fail → major | paragraphs |
+| `KO-PARA-CHARS` | a single paragraph at or over the fail length | major | paragraph |
+| `KO-DLG-LOW` | quoted-dialogue share (chapters of 12+ paragraphs) | at/below warn → minor, at/below fail → major | chapter |
+| `KO-CONJ-RATE` | sentence-initial ‘그리고/그러나/하지만…’ per 1,000 characters | warn → minor, fail → major | chapter |
+| `TRN-KO-02` | Latin-script word outside the name/term allowlist | major | hit |
+| `SP-*`, `LN-01` | format drift (screenplay, outline, labels, light-novel brackets) | the pattern's severity | hit |
+| `KO-END-01` | final paragraph closes on a summary/reflection (‘그렇게 하루가 저물었다’, ‘시작에 불과했다’ …) | major (structure) | last paragraph |
+| `EXEMPLAR-COPY` | a studio exemplar line of ≥ 14 characters appears verbatim | major | hit |
+
+Major findings gate approval and are revision targets; minor findings are evidence for the prose judge and
+the reviser. The digest (metrics line + strongest findings) is the prose judge's `prose_lint_report`.
 
 ## 3. Structure rules (ST-*)
 

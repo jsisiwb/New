@@ -1,0 +1,33 @@
+{
+  "family": "voice_judge",
+  "version": "4.0.0",
+  "role": "voice_judge",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_prose",
+  "model_class": "C",
+  "input_variables": [
+    "utterances",
+    "register_digests",
+    "register_check_report"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 1500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.0 — Korean webnovel craft engine (ADR-0056): instructions rebuilt around the daily 5,000-자 mobile episode (초반 25화 funnel, one core event per 화, 사이다 cadence, 절단), 캐빨 cast and heroine-route design, and the language layer's 번역투/AI 상투구 lists; variable surfaces and output shapes unchanged from 3.0.0.",
+  "regression_cases": [
+    "voice_judge.fixture.smoke"
+  ],
+  "content_hash": "sha256:37d1e62c8aece23a7ef88c9ebeafd9c6d8c2a6c51cd400d9994f5aa11fd40dcf"
+}

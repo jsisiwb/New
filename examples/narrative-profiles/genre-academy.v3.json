@@ -1,0 +1,205 @@
+{
+  "id": "genre/academy",
+  "kind": "genre",
+  "version": 3,
+  "name": "아카데미물 오버레이 v3 (한국 남성향, 서열·시험·대련·착각)",
+  "genre": {
+    "genre_id": "academy",
+    "reader_fantasy": "귀족과 천재들이 모인 아카데미에서, 무시당하던 주인공이 숨은 실력(또는 원작 지식)으로 서열을 뒤집는다. 시험·대련·실습·대항전처럼 규칙과 판돈이 분명한 무대에서 사이다가 터지고, 주변의 경악과 오해가 그 사이다를 키운다. 라이벌은 존중으로, 히로인과의 거리는 사건을 함께 겪을 때마다 한 칸씩 좁혀진다.",
+    "vocabulary": {
+      "preferred_terms": [
+        "입학식",
+        "신입생",
+        "1학년",
+        "반 배정",
+        "실기 평가",
+        "필기시험",
+        "순위표",
+        "교수",
+        "조교",
+        "기숙사",
+        "연무장",
+        "대련",
+        "결투 신청",
+        "실습",
+        "던전 실습",
+        "대항전",
+        "학생회",
+        "선배",
+        "후배",
+        "학기",
+        "특대생",
+        "퇴학"
+      ],
+      "discouraged_terms": [
+        "센파이",
+        "코하이",
+        "홈룸",
+        "프레시맨",
+        "클럽 활동",
+        "체육대회",
+        "문화제"
+      ],
+      "terminology_defaults": []
+    },
+    "devices": [
+      {
+        "id": "leaderboard",
+        "description": "상태창 형식의 순위표. 모든 순위와 점수는 유효 기간이 있는 사실이고 앞선 순위표와 맞아야 한다.",
+        "format_grammar": "[<평가 이름> — 순위]\n1위 <이름> <점수>\n2위 <이름> <점수>\n……\n<n>위 <주인공> <점수>",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "exam_arc",
+        "description": "3~6화 분량의 시험·대련·대항전 아크. 첫 라운드 전에 규칙과 판돈(퇴학, 반 강등, 특대생 자격, 가문의 체면)이 공개되고, 규칙은 잠긴 세계 사실이다."
+      },
+      {
+        "id": "rival_exchange",
+        "description": "라이벌과의 짧고 날 선 말다툼. 서술로 승패를 설명하지 않고, 상대가 받아칠 수 없는 한마디나 한 동작으로 끝난다.",
+        "max_per_chapter": 2
+      },
+      {
+        "id": "extra_observer",
+        "description": "주변 학생·교수의 반응 컷. 주인공의 비범함을 제3자의 오해·경악으로 보여 준다. 반응은 인물마다 다르게, 세 줄 이하.",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "misread_genius",
+        "description": "착각 연출: 주인공의 실수나 계산이 주변에는 숨은 의도·천재성으로 읽힌다. 독자는 진실을 알고, 인물은 오해한다. 오해는 다음 사건의 판돈을 키운다.",
+        "max_per_chapter": 1
+      }
+    ],
+    "cadence": {
+      "progression_event_every_chapters": 3,
+      "satisfaction_every_chapters": 3,
+      "max_frustration_streak": 2
+    },
+    "structure_overrides": {
+      "opening_types_preferred": [
+        "sharp_dialogue",
+        "status_update",
+        "in_medias_res"
+      ],
+      "participants_soft_cap": 7
+    },
+    "register_notes": [
+      "학년 서열이 분명하다: 후배는 선배에게 해요체와 ‘선배’ 호칭, 같은 학년끼리는 반말과 이름.",
+      "교수에게는 ‘교수님’. 교수는 학생에게 반말이나 하게체를 쓴다. 조교는 해요체.",
+      "귀족 학생은 평민·몰락 가문 학생을 성이나 가문명으로 낮춰 부른다. 관계가 변하면 호칭이 바뀌고, 그 변화가 곧 관계 이정표다.",
+      "공작가·황실 인물 앞에서는 학생끼리도 존대가 섞인다. 사석에서 반말로 바뀌는 순간이 친밀도의 한 걸음이다."
+    ],
+    "default_relationship_registers": [
+      {
+        "relationship_class": "elder",
+        "register": {
+          "formality": 3,
+          "deference": 3,
+          "familiarity": 1,
+          "directness": 2,
+          "contractions": "neutral",
+          "address_terms": [
+            "선배"
+          ],
+          "titles": [
+            "학생회장"
+          ]
+        }
+      },
+      {
+        "relationship_class": "peer",
+        "register": {
+          "formality": 1,
+          "deference": 0,
+          "familiarity": 3,
+          "directness": 4,
+          "contractions": "free",
+          "address_terms": [],
+          "titles": []
+        }
+      },
+      {
+        "relationship_class": "master",
+        "register": {
+          "formality": 4,
+          "deference": 4,
+          "familiarity": 0,
+          "directness": 1,
+          "contractions": "avoid",
+          "address_terms": [
+            "교수님"
+          ],
+          "titles": [
+            "교수",
+            "학장"
+          ]
+        }
+      }
+    ],
+    "taboos": [
+      "아크 도중 이야기 속 이유 없이 시험 규칙이 바뀐다",
+      "반 전체가 똑같이 놀라는 반응 컷의 반복",
+      "한 번도 깔아 두지 않은 힘으로 이긴다",
+      "히로인이 이유 없이 첫눈에 반한다",
+      "주인공이 한 일을 아무도 모르고 아무 보상도 없는 채 몇 화가 흐른다",
+      "일본 학원물식 행사(체육대회·문화제·클럽 활동) 위주의 전개"
+    ],
+    "judge_notes": [
+      "군중 장면에서는 계약의 참여자만 말한다. 나머지는 배경이다.",
+      "순위·점수 변화는 읽기 쉽고 앞선 순위표와 일치해야 한다.",
+      "주인공의 행동에는 반드시 보상(순위·인정·오해·관계 변화) 중 하나가 따른다."
+    ],
+    "lint_thresholds": {
+      "ST-EXP-02": {
+        "warn": 7,
+        "fail": 11
+      }
+    },
+    "rubric": [
+      {
+        "dimension": "무대와 판돈의 선명함",
+        "weight": 0.35,
+        "anchors": {
+          "1": "시험·대련의 규칙과 판돈이 흐릿하다.",
+          "3": "규칙은 있지만 판돈이 약하다.",
+          "5": "규칙·판돈·서열이 한눈에 보이고 결과가 서열을 바꾼다."
+        }
+      },
+      {
+        "dimension": "사이다와 주변 반응",
+        "weight": 0.35,
+        "anchors": {
+          "1": "이겨도 반응이 없다.",
+          "3": "반응이 있지만 뻔하다.",
+          "5": "인물마다 다른 반응과 오해가 사이다를 키운다."
+        }
+      },
+      {
+        "dimension": "관계와 호칭의 변화",
+        "weight": 0.3,
+        "anchors": {
+          "1": "관계가 제자리다.",
+          "3": "변화가 말로만 설명된다.",
+          "5": "호칭·말높이·행동의 변화로 관계가 한 칸 움직인다."
+        }
+      }
+    ],
+    "style_exemplars": [
+      {
+        "id": "academy-misread-genius",
+        "functions": [
+          "status_window",
+          "comedy_beat",
+          "cliffhanger"
+        ],
+        "pov": "first",
+        "provenance": "studio_synthetic",
+        "note": "순위표로 여는 도입, 옆자리 반응 컷, 착각 연출(속마음 한 줄로 진실을 독자에게만), 약속으로 끊는 절단.",
+        "text": "[1학년 실기 평가 — 중간 순위]\n1위 로엔 발티스 98\n2위 세레나 아르덴 95\n……\n47위 카일 브렌트 61\n\n“61점?”\n\n옆자리 녀석이 코웃음을 쳤다.\n\n“역시 브렌트네. 재수강 각이다.”\n\n대꾸하지 않았다. 61점이면 딱 좋았다. 눈에 띄지 않을 만큼 낮고, 퇴학당하지 않을 만큼 높다.\n\n‘계획대로야.’\n\n그때 연무장 반대편에서 누가 걸어왔다. 은발. 푸른 눈. 교복 위에 걸친 기사단 망토.\n\n세레나 아르덴이었다.\n\n주변이 술렁였다. 공작가 영애가 1학년 연무장까지 내려오는 일은 없었다.\n\n“카일 브렌트.”\n\n“……예.”\n\n“마지막 과제. 과녁 다섯 개 중에 네 개만 맞혔지.”\n\n“운이 없었습니다.”\n\n“아니.”\n\n세레나가 턱으로 다섯 번째 과녁을 가리켰다. 정중앙에서 한 뼘 비껴난 자리에 화살이 박혀 있었다.\n\n“그 자리, 과녁 뒤 결계 핵이야. 네 발 쏘는 동안 결계가 흔들렸고, 다섯 번째로 그걸 꿰뚫었어.”\n\n옆자리 녀석의 입이 떡 벌어졌다. 나도 벌어질 뻔했다.\n\n‘……그거, 그냥 빗나간 건데.’\n\n“일부러 점수를 버렸군.”\n\n세레나의 눈이 가늘어졌다.\n\n“재밌네. 내일 아침 여섯 시, 3연무장.”"
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "시작값(ADR-0056)."
+  }
+}

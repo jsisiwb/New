@@ -1,0 +1,38 @@
+{
+  "family": "targeted_reviser",
+  "version": "4.0.1",
+  "role": "targeted_reviser",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.1.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "editor_full",
+  "model_class": "P",
+  "input_variables": [
+    "dimension",
+    "issues",
+    "span_text",
+    "context_before",
+    "context_after",
+    "must_preserve",
+    "register_digests",
+    "length_budget_words"
+  ],
+  "output_schema": "patch.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 9000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.1 — live-run fixes (ADR-0056 §11): the output-shape note asks for the exact original_quote instead of code-point offsets (the workflow anchors it; no span rewrites the whole window), shows changed_claims as strings and preserved_facts_ack as the supplied fact ids, drops the workflow-owned regression and dimension fields, and states the length budget in 어절.",
+  "regression_cases": [
+    "targeted_reviser.fixture.smoke"
+  ],
+  "content_hash": "sha256:67a8d1a0121375d5a9e0102447df038ce64fc33ac38176ebcdd6fcde8fa16f52"
+}

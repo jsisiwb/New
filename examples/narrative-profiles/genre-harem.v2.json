@@ -1,0 +1,161 @@
+{
+  "id": "genre/harem",
+  "kind": "genre",
+  "version": 2,
+  "name": "하렘물 오버레이 v2 (한국 남성향 하렘, 히로인별 서사·질투 코미디·집착)",
+  "genre": {
+    "genre_id": "harem",
+    "reader_fantasy": "각자 사연과 매력이 뚜렷한 히로인들이 사건을 함께 겪으며 하나씩 주인공에게 마음을 연다. 처음엔 주인공을 무시하거나 오해하던 히로인이 그의 진짜 모습을 알아보는 순간, 질투로 티격태격하는 코미디, 주인공만 바라보는 집착과 헌신이 쾌감이다. 주인공은 우유부단하지 않고, 히로인은 끝까지 주인공만 본다.",
+    "vocabulary": {
+      "preferred_terms": [
+        "히로인",
+        "호감",
+        "고백",
+        "질투",
+        "데이트",
+        "약혼",
+        "공녀",
+        "황녀",
+        "성녀",
+        "영애",
+        "소꿉친구",
+        "메이드",
+        "전속 기사"
+      ],
+      "discouraged_terms": [
+        "공략 대상",
+        "호감도 퍼센트"
+      ],
+      "terminology_defaults": []
+    },
+    "devices": [
+      {
+        "id": "heroine_entrance",
+        "description": "히로인 첫 등장 컷: 외모 한두 가지 + 말투가 드러나는 첫 대사 + 주인공(또는 원작 지식)이 아는 그녀의 비밀 한 줄. 첫 만남은 호감이 아니라 충돌·오해·무시로 시작해도 된다.",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "jealousy_comedy",
+        "description": "두 히로인이 주인공을 두고 신경전을 벌이는 짧은 코미디 비트. 웃음으로 처리하고 진짜 폭력·악의로 번지지 않는다.",
+        "max_per_chapter": 1
+      },
+      {
+        "id": "devotion_beat",
+        "description": "히로인의 호감이 행동으로 드러나는 순간(도시락, 대신 맞아 주기, 몰래 챙기기, 집착 섞인 한마디). 말로 ‘좋아한다’고 설명하지 않는다.",
+        "max_per_chapter": 2
+      },
+      {
+        "id": "misread_affection",
+        "description": "주인공은 모르는데 히로인은 확신하는(또는 그 반대) 호감 착각. 독자만 양쪽을 다 안다.",
+        "max_per_chapter": 1
+      }
+    ],
+    "cadence": {
+      "progression_event_every_chapters": 4,
+      "satisfaction_every_chapters": 3,
+      "max_frustration_streak": 2,
+      "relationship_milestone_every_chapters": 4
+    },
+    "structure_overrides": {
+      "heroines_on_page_soft_cap": 3,
+      "main_heroines_total_max": 5
+    },
+    "register_notes": [
+      "히로인마다 말투가 달라야 한다: 어미(하십시오체·해요체·반말), 말버릇, 주인공을 부르는 호칭이 모두 다르다.",
+      "호칭 변화(성→이름, ‘~님’→이름, 존대→반말)는 관계 이정표이고, 한 번 바뀐 호칭은 이유 없이 되돌리지 않는다.",
+      "주인공은 히로인 앞에서도 자기 말투를 지킨다. 비굴하거나 느끼한 대사를 쓰지 않는다."
+    ],
+    "default_relationship_registers": [
+      {
+        "relationship_class": "lover",
+        "register": {
+          "formality": 1,
+          "deference": 1,
+          "familiarity": 4,
+          "directness": 3,
+          "contractions": "free",
+          "address_terms": [],
+          "titles": []
+        }
+      },
+      {
+        "relationship_class": "royalty",
+        "register": {
+          "formality": 4,
+          "deference": 4,
+          "familiarity": 0,
+          "directness": 1,
+          "contractions": "avoid",
+          "address_terms": [
+            "전하"
+          ],
+          "titles": [
+            "황녀",
+            "공녀"
+          ]
+        }
+      }
+    ],
+    "taboos": [
+      "NTR, 히로인이 다른 남자와 연애·스킨십하는 전개(과거 연인 포함)",
+      "주인공이 우유부단하게 히로인 사이를 오가며 상처만 주는 전개",
+      "메인 히로인 여섯 명 이상, 개별 사연 없는 히로인 추가",
+      "히로인이 이유 없이 첫눈에 반하거나, 모든 히로인이 같은 성격",
+      "히로인을 소품처럼 대하는 성희롱성 서술",
+      "원작 주인공에게 히로인을 빼앗기는 전개"
+    ],
+    "judge_notes": [
+      "한 회차에 무대 위 히로인은 세 명 이하. 등장한 히로인은 각자 한 번 이상 자기 말투로 말한다.",
+      "호감의 진전은 사건과 행동으로 쌓인다. 서술로 ‘마음이 기울었다’고 설명하면 감점.",
+      "질투 장면은 코미디로 끝나고, 주인공의 태도가 분명하다."
+    ],
+    "lint_thresholds": {},
+    "rubric": [
+      {
+        "dimension": "히로인의 개성과 말투",
+        "weight": 0.35,
+        "anchors": {
+          "1": "히로인들이 같은 말투와 성격이다.",
+          "3": "구분은 되지만 평면적이다.",
+          "5": "말투·행동·사연이 뚜렷해 대사만 봐도 누구인지 안다."
+        }
+      },
+      {
+        "dimension": "호감 진전의 설득력",
+        "weight": 0.35,
+        "anchors": {
+          "1": "이유 없이 반하거나 제자리다.",
+          "3": "진전은 있지만 설명으로 처리된다.",
+          "5": "사건·행동·호칭 변화로 한 칸씩 쌓인다."
+        }
+      },
+      {
+        "dimension": "하렘 코미디와 긴장",
+        "weight": 0.3,
+        "anchors": {
+          "1": "히로인 사이 상호작용이 없다.",
+          "3": "신경전이 뻔하다.",
+          "5": "질투·착각 코미디가 웃기고 다음 화의 기대를 만든다."
+        }
+      }
+    ],
+    "style_exemplars": [
+      {
+        "id": "harem-lunchbox",
+        "functions": [
+          "banter",
+          "comedy_beat",
+          "cliffhanger"
+        ],
+        "pov": "first",
+        "provenance": "studio_synthetic",
+        "note": "츤데레식 헌신을 행동으로 보여 주는 대사, 원작과의 어긋남을 짚는 속마음 한 줄, 두 번째 히로인의 등장으로 끊는 질투 코미디 절단.",
+        "text": "“이거.”\n\n세리아가 도시락을 책상에 툭 내려놓았다. 뚜껑에 삐뚤빼뚤한 글씨가 적혀 있었다. ‘남은 거.’\n\n“남은 거라며.”\n\n“남은 거야.”\n\n“근데 왜 계란말이가 하트 모양이야?”\n\n“……칼이 미끄러졌어.”\n\n세 개 연속으로 하트가 되도록 미끄러지는 칼은 처음 봤다.\n\n“고마워. 잘 먹을게.”\n\n“착각하지 마. 어제 네가 내 왼발 고쳐 줬으니까 갚는 거야. 그 이상은 없어.”\n\n그렇게 말하는 세리아의 귀가 새빨갰다.\n\n‘원작에서 얘는 원작 주인공한테도 도시락 같은 거 안 싸 줬는데.’\n\n뭔가 단단히 꼬이고 있었다.\n\n“어머.”\n\n뒤에서 서늘한 목소리가 들렸다. 돌아보지 않아도 알았다. 교실 온도가 3도쯤 내려갔으니까.\n\n“에단 님 점심은 제가 챙기기로 했는데요.”\n\n성녀 후보 엘리제가 바구니를 든 채 웃고 있었다.\n\n웃는데, 눈이 안 웃었다."
+      }
+    ]
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "시작값(ADR-0056). 한국어 원고 전용 레이어."
+  }
+}

@@ -3,6 +3,115 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Checkpoint K2 — Korean webnovel craft engine + live Notion run — 2026-09-23
+
+Branch `hoplite/epidamnos-dyrrhachion-8a8e00dd` (base `2e1f764`). ADR-0056 records the decisions.
+
+**Built:**
+
+- `YEONJAE_PROVIDER_MODE=notion`: the operator's Notion AI bridge (same `/v1/complete` protocol, pooled
+  workspaces). Empty completions are `retryable_provider`; every class has fallback routes
+  (`YEONJAE_NOTION_FALLBACK_MODELS` widens them). Readiness and dependency status recognise the mode.
+- Korean craft layers `tradition/kr-webnovel@3`, `lang/ko@3`, `genre/academy@3`, `genre/regression@3` and the
+  Korean-only `genre/harem@2` (intake genre `harem`), with studio-authored `style_exemplars` rendered into
+  writer/editor blocks only and the language layer's 번역투/AI-상투구 notes rendered as "쓰지 않는 문장".
+  Korean projects compose from the newest Korean layers at novel start.
+- `lintKoreanWebnovel` (`@yeonjae/prose`): the same diction lists plus mobile-serial rhythm metrics; Korean
+  scorecards carry `lint:ko_style` issues and the judges receive the digest.
+- Prose-only `scene_writer@4.0.0` (text mode; chatter stripped; malformed JSON fails closed; envelope built
+  by the workflow) with `scene_total`/`scene_role`; Korean runs may take up to `revision.max_rounds`
+  regression-checked revision rounds; Korean prompts no longer receive English filler (`(none)`, the
+  chapter-1 "opens the series" note).
+- v4.0.0 for all 25 prompt families (`tools/ko_prompts/v4_*.py`); the contrast baseline is re-frozen
+  against the v4 judges (2,000 entries byte-identical, pins → `@4.0.0`).
+- v4.1.0 for the chapter and scene planners, the writer, the four judges and both checkers (ADR-0056 §13):
+  one opening rule, a 절단 that changes the situation, 개연성 rules, enum-shaped judge notes. Korean drafts
+  and patch text pair ASCII quotation marks into “ ” ‘ ’. The contrast baseline is re-frozen against the
+  v4.1.0 judges (2,000 entries byte-identical, pins → `@4.1.0`).
+- v4.2.0 for the chapter planner, scene planner and writer (ADR-0056 §14): the writer aims at the length
+  target without counting its own draft and resolves conflicting inputs by one order of precedence;
+  planners fit ledger and verbal-habit lines to the chapter's timeline and keep must_happen consistent
+  with the contract's risk notes. The Notion adapter's default deadline outlasts the bridge's failover
+  (1,260 s).
+
+**Verification (local, Postgres 16):** full `vitest` run after the arc-plan/contract fixes: 123/123 files,
+1,836 tests green. After the reviser fix: the revision, registry and CLI unit suites and the
+chapter-production, Korean e2e, longform-replay, recovery and comparison integration suites (81 tests) green;
+`pnpm lint` and `format:check` clean; `check:types-fresh` fresh (33 schemas); planning validator `ALL OK`.
+After the judge-output fix (ADR-0056 §12): the judge-normalization unit suite (14) and the
+chapter-production, Korean e2e, longform-replay and revision suites (62 tests) green, English replays
+byte-identical.
+After v4.1.0 and the quotation-mark fixes (ADR-0056 §12–13): the workflows, prompts, CLI and eval suites
+(34 files, 599 tests) green; contrast regression `PASSED` on the re-frozen baseline; planning validator
+`ALL OK`.
+
+**Live run (`YEONJAE_PROVIDER_MODE=notion`, pooled `notion-ai`) — 「엑스트라로 세계를 구하는 방법」, 200화, ko,
+academy + possession + harem.** Intake written in Korean (premise, 12 tropes, six forbidden developments
+including NTR and indecision, four mandatory scenes, 15세, 5,500자 per 화).
+
+- Story Spec: 79 items (all user items preserved; two model-inferred assumptions: 첫 대형 사이다 within the
+  first 25 화, 사이다 every three 화). Two concepts; the operator (this session) approved concept 2 — a
+  72-hour survival countdown, a visible 원작 개입률 meter whose 100% erases the world as an unfinished
+  manuscript, and a central 검은 손 mystery that carries 200 화.
+- Bible (all stages schema-valid through the bridge): 10 characters — four heroines with non-overlapping
+  archetypes and 말투 (하십시오체 공녀, 해요체 성녀 후보, 반말 검술 특대생, 무표정 마탑 천재), each with a
+  원작 비극, a reveal chapter and 호칭-change windows; the original protagonist as a foil, not a villain;
+  a 갑질 noble as the first 사이다 target; a comic roommate; a grandmaster mentor; a disguised-professor
+  antagonist. World: 17 numeric rules (순위표 rewards/penalties, 특대생, 결투 판돈, rank-based dormitories,
+  던전 실습 마석 economy, semester calendar, 개입률 +10% → new variable). Progression: 오러 tiers with
+  검기/검강/검역, a 신체 등급 cap, a stolen hidden piece with cooldowns and 개입률 costs, 18 milestones over
+  200 화. Blueprint: four 50-화 seasons tiling 1–200, a dense 초반 25화 funnel, 32 promises (10 types) with
+  due windows from 2–3화 to 191–200화, staggered heroine routes, eight concrete endgame requirements.
+- Provider behaviour: calls take 4–7 minutes; the character designer and the story architect each
+  succeeded only on a fallback route after retryable bridge failures, which is what the Notion routing's
+  fallback routes are for.
+- Found by monitoring and fixed: the first arc plan covered all 50 chapters of season 1 in one call and
+  stalled on the bridge; long seasons are now planned as ~10-chapter arcs (ADR-0056 §9) and chapter 1 was
+  restarted from a snapshot of the completed bible.
+- Found by monitoring and fixed: the arc planner's canon state embedded the complete bible design as a
+  43k-character JSON dump and the bridge kept failing the call; the same complete content is now rendered
+  as labelled text (27k characters, ADR-0052's complete-design invariant test still passes).
+- Found by monitoring and fixed: the first live arc plan wrote `repetition_check` as a sentence because the
+  v3/v4 shape note showed a string; the workflow keeps prose checks in their `notes`, and `arc_planner@4.0.1`
+  shows the schema object. The contract envelope now fills `version`.
+- Found by auditing every v4 shape note against its schema before the first live revision: the
+  `targeted_reviser` note taught `changed_claims` pairs, a boolean `regression` and prose fact
+  acknowledgements, and the workflow expected chapter code-point offsets the reviser (shown only its window)
+  cannot count. Patches are now anchored by their exact quote (ADR-0056 §11) and `targeted_reviser@4.0.1`
+  asks for the quote instead of offsets.
+- Found by wire-level diagnosis and fixed: every chapter-1 scene call came back HTTP 200 with an empty chat
+  reply, whatever the output format or wording — the bridge's agent answered "write this scene" by writing
+  a Notion page. Every request now travels inside a fixed stateless-completion frame (ADR-0056 §8); both
+  pooled workspaces then returned the scenes.
+- Chapter 1: three scenes drafted through the bridge (1,639 / 1,809 / 1,818자; assembled 5,270자 against
+  5,500 ± 12%), seven evaluators answered (1–6 minutes each), then the scorecard failed schema validation
+  because the judges' shapes were copied into it (ADR-0056 §12). With the fix, the checkpointed judge
+  outputs replayed into a valid scorecard — 0 blocking, 9 major; structure 53 (a "눈을 떴다" opening, the
+  death flag first at paragraph 54, a 절단 on a roommate's everyday question), prose 88, genre 64, voice 70,
+  and a continuity major (a 2인실 against the rank-based dormitory rule) — and the first live revision round
+  started.
+- Found by monitoring and fixed: that round's reviser quoted the whole 5,270자 chapter as its
+  `original_quote` with every “ ” retyped as ASCII, and the patch failed `PATCH_UNANCHORED`; the shared
+  quote locator now folds quotation marks (ADR-0056 §12) and anchors that exact reply.
+- Reviewed and changed (v4.1.0): the gate deficits (structure 53 < 78, genre 64 < 72, voice 70 < 76) came
+  from the v4.0.0 plan — the planner counted "낯선 침대에서 눈을 떠" as in medias res, put the death flag in
+  scene 2 and planned a 절단 on "왜 그렇게 창백해?" — and the scene plan itself carried a first-meeting
+  greeting by name and an invented word (세면도실); every v4.0.0 judge issue had kind `other`, so the
+  regression check could not tell one from another. A prose patch cannot close that, so chapter 1 is
+  regenerated from the post-bible snapshot with v4.1.0 instead of spending the remaining rounds.
+- Found by monitoring and fixed: the regenerated chapter's first scene opened, as v4.1.0 planned, on a
+  status window (`[이안 하르트]` …), and the writer-output check read the leading `[` as a JSON answer and
+  failed `SCENE_DRAFT_INVALID`. A `[` now opens structured output only when the text is JSON or its first
+  line is not a closed bracket label; the checkpointed scene replayed without a new call.
+- Found by monitoring and fixed: the regenerated chapter drafted scenes 1–2 (1,883자 in 577 s; 1,936자 at
+  1,150 s after one workspace timed out) and then ran out of routes on scene 3: five attempts hit the
+  bridge's 600 s per-workspace cap and one hit a transport fault, so the run stopped with
+  `MODEL_CALL_FAILED`. Neither workspace was rate-limited. In a probe of that exact request, only the
+  variants without the writer's ±12% self-check finished on their first workspace (317 s, 468 s), so
+  v4.2.0 drops it (ADR-0056 §14). The brief's contradictions (forest north vs the scenes' east; "이제
+  이틀" under an unchanged 72-hour display) came from the contract quoting a running gag verbatim against
+  its own risk note. Chapter 1 is being regenerated from the post-bible snapshot with v4.2.0.
+
 ## Checkpoint K1 — defect pass, Korean architecture, fully Korean prompts — 2026-09-22
 
 Branch `hoplite/gortyn-c23fe3a9` (base `4a86abe`). Steps 1–3 of the Korean-webnovel quality programme;

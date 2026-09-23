@@ -1,0 +1,41 @@
+{
+  "family": "scene_writer",
+  "version": "4.0.0",
+  "role": "scene_writer",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.0.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "writer_full",
+  "model_class": "P",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plan",
+    "scene_no",
+    "scene_total",
+    "scene_role",
+    "previous_text",
+    "canon_state",
+    "knowledge_lists",
+    "register_digests",
+    "open_promises",
+    "length_target_words"
+  ],
+  "output_schema": "scene-draft.schema.json",
+  "output_mode": "text",
+  "params": {
+    "temperature": 0.85,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.0.0 — Korean webnovel craft engine (ADR-0056): instructions rebuilt around the daily 5,000-자 mobile episode (초반 25화 funnel, one core event per 화, 사이다 cadence, 절단), 캐빨 cast and heroine-route design, and the language layer's 번역투/AI 상투구 lists; variable surfaces and output shapes unchanged from 3.0.0.",
+  "regression_cases": [
+    "scene_writer.fixture.smoke"
+  ],
+  "content_hash": "sha256:433b3aae8ee73c1e72ba77941aa3b48a9003bf9121e286bf143a099272479247"
+}

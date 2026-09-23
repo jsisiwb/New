@@ -1,0 +1,39 @@
+{
+  "family": "chapter_planner",
+  "version": "4.2.0",
+  "role": "chapter_planner",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.2.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "arc_plan",
+    "chapter_number",
+    "previous_chapter_summary",
+    "canon_state",
+    "knowledge_state",
+    "open_promises",
+    "active_constraints",
+    "length_target_words"
+  ],
+  "output_schema": "chapter-contract.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.4,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.2.0 — regenerated live chapter (ADR-0056 §14): the writer aims at the length target without counting its own draft (the ±12% self-check kept Notion AI past the bridge's 600 s cap) and resolves conflicting inputs by one order of precedence; planners fit ledger and verbal-habit lines to the chapter's timeline and keep must_happen and the hook consistent with the contract's own risk notes.",
+  "regression_cases": [
+    "chapter_planner.full_planned_bible",
+    "chapter_planner.ending_continuity"
+  ],
+  "content_hash": "sha256:085d3b9405496f44c64c368613070b1dfaca794822b065183fc3bd86465f5c00"
+}

@@ -61,6 +61,20 @@ Rules:
 - **Few-shot**: analytic roles use 1–2 compact schema examples (synthetic, English); prose roles rely on the
   identity block's exemplars only (avoid double-anchoring).
 
+### 2.8 Korean webnovel craft surface (v4, ADR-0056)
+
+- The v4.0.0 families (`tools/ko_prompts/v4_*.py`, seeded by `tools/seed-prompt-families-ko-v3.py 4.0.0`)
+  frame every Korean call in the serial market: a daily 5,000~5,500자 episode read on a phone, the 초반 25화
+  funnel, one core event per 화, 사이다 within three 화, 고구마 at most two, the 절단, 캐빨 cast and
+  heroine-route design, a 떡밥 ledger with due windows, and Korean episode engines instead of Western
+  three-act/hero's-journey planning. Variable surfaces and output shapes are the v3.0.0 ones.
+- **Prose-only writer.** `scene_writer@4.0.0` is `output_mode: text`: the model returns the manuscript
+  itself and the workflow strips assistant chatter and builds the `scene-draft` envelope (paragraphs
+  recomputed, no speaker/claim annotations). It also receives `scene_total` and `scene_role` so only the
+  last scene closes on the contract's 절단.
+- Judges receive the deterministic Korean style lint digest as `prose_lint_report` evidence; the
+  structure judge receives dialogue share, long-paragraph share and the reflective-ending flag.
+
 ## 3. Structured output strategy
 
 - Provider-native JSON schema mode where available; else "JSON only" instruction + robust parser.

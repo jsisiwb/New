@@ -132,7 +132,8 @@
         },
         "devices": { "type": "array", "items": { "$ref": "#/$defs/device" } },
         "lint_thresholds": { "$ref": "#/$defs/thresholds" },
-        "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" }, "description": "Structure Judge rubric (dimension B)" }
+        "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" }, "description": "Structure Judge rubric (dimension B)" },
+        "style_exemplars": { "$ref": "#/$defs/styleExemplars" }
       }
     },
 
@@ -180,7 +181,8 @@
         "taboos": { "type": "array", "items": { "type": "string" } },
         "judge_notes": { "type": "array", "items": { "type": "string" } },
         "lint_thresholds": { "$ref": "#/$defs/thresholds" },
-        "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" }, "description": "Genre Judge rubric (dimension C)" }
+        "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" }, "description": "Genre Judge rubric (dimension C)" },
+        "style_exemplars": { "$ref": "#/$defs/styleExemplars" }
       }
     },
 
@@ -366,6 +368,24 @@
     "exemplarFunction": {
       "type": "string",
       "enum": ["hook", "action", "banter", "status_window", "emotional_beat", "cliffhanger", "exposition_in_action", "comedy_beat"]
+    },
+    "styleExemplars": {
+      "type": "array",
+      "maxItems": 3,
+      "description": "Studio-authored synthetic voice anchors (ADR-0025, ADR-0056): original passages that show register, paragraph rhythm and beat density. Rendered only into writer/editor identity blocks as rhythm references; their names, events and sentences are never reused.",
+      "items": {
+        "type": "object",
+        "required": ["id", "functions", "provenance", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+          "functions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/exemplarFunction" } },
+          "pov": { "type": "string", "enum": ["first", "third_limited"] },
+          "provenance": { "type": "string", "enum": ["studio_synthetic"] },
+          "note": { "type": "string" },
+          "text": { "type": "string", "minLength": 50, "maxLength": 2400 }
+        }
+      }
     },
     "device": {
       "type": "object",
