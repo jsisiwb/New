@@ -64,6 +64,7 @@
 
 | [0056](0056-korean-webnovel-craft-engine.md) | Korean webnovel craft engine: v3 craft layers with studio exemplars, one source for forbidden diction driving a deterministic style lint, a prose-only scene writer with explicit episode position, v4 prompt families, multi-round Korean revision and the Notion bridge provider mode |
 | [0057](0057-schema-generated-output-shapes.md) | Output shapes come from schemas: answer schemas for every JSON role, CI validation of every active prompt's shape, schema-generated examples, native structured output as a route capability, counted output normalizers and safe model-written patterns |
+| [0058](0058-korean-lexical-retrieval.md) | Korean lexical retrieval: pg_trgm with particle-stripped stems and registry alias expansion, manuscript language stored on Korean rows, two-syllable Hangul names tagged; English FTS unchanged |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
