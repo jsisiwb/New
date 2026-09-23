@@ -94,6 +94,10 @@ including NTR and indecision, four mandatory scenes, 15세, 5,500자 per 화).
   greeting by name and an invented word (세면도실); every v4.0.0 judge issue had kind `other`, so the
   regression check could not tell one from another. A prose patch cannot close that, so chapter 1 is
   regenerated from the post-bible snapshot with v4.1.0 instead of spending the remaining rounds.
+- Found by monitoring and fixed: the regenerated chapter's first scene opened, as v4.1.0 planned, on a
+  status window (`[이안 하르트]` …), and the writer-output check read the leading `[` as a JSON answer and
+  failed `SCENE_DRAFT_INVALID`. A `[` now opens structured output only when the text is JSON or its first
+  line is not a closed bracket label; the checkpointed scene replayed without a new call.
 
 ## Checkpoint K1 — defect pass, Korean architecture, fully Korean prompts — 2026-09-22
 

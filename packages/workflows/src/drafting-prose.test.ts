@@ -40,6 +40,16 @@ describe('prose-only scene writer output (ADR-0056)', () => {
     }
   });
 
+  it('keeps a scene that opens on a status window as prose (live v4.1.0 scene 1)', () => {
+    const scene =
+      '[이안 하르트]\n\n[생존 카운트: 72시간]\n\n반투명한 글자가 거울 속 소년의 얼굴 위에 떠 있었다.';
+    expect(proseEnvelope(scene, 1, 'ko').text).toBe(scene);
+    expect(proseEnvelope('[1일차]\n\n아침이었다.', 1, 'ko').text).toBe('[1일차]\n\n아침이었다.');
+    // JSON arrays are structured output, never manuscript, whether complete or not.
+    for (const bad of ['[{"text": "비켜."}]', '[\n  {"text": "비켜', '[]'])
+      expect(() => proseEnvelope(bad, 1, 'ko')).toThrow(/SCENE_DRAFT_INVALID|prose writer/);
+  });
+
   it('pairs ASCII quotation marks into the Korean manuscript marks, line by line', () => {
     expect(koQuoteMarks('"어, 이안!"\n\n\'사흘.\'\n\n“이미 둥근.”')).toBe(
       '“어, 이안!”\n\n‘사흘.’\n\n“이미 둥근.”',

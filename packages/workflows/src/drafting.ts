@@ -459,7 +459,7 @@ export function proseEnvelope(
   claims: never[];
 } {
   let text = stripProseChatter(raw);
-  if (/^[{[]/.test(text)) {
+  if (looksStructured(text)) {
     // A structured answer is either a complete envelope carrying the prose, or a fault (truncated or
     // malformed JSON). A fault fails closed: JSON-looking text must never be stored as manuscript.
     let parsed: unknown;
@@ -491,6 +491,22 @@ export function proseEnvelope(
     speaker_annotations: [],
     claims: [],
   };
+}
+
+/**
+ * `{` always opens structured output. `[` does only when the text is JSON or its first line is not a closed
+ * bracket label: a Korean scene may open on a status window (`[이안 하르트]`, `[생존 카운트: 72시간]`), and
+ * the first live v4.1.0 scene did, while a truncated array (`[1, 2`) still fails closed.
+ */
+function looksStructured(text: string): boolean {
+  if (text.startsWith('{')) return true;
+  if (!text.startsWith('[')) return false;
+  try {
+    JSON.parse(text);
+    return true;
+  } catch {
+    return !/^\[[^\]\n]+\]/.test(text);
+  }
 }
 
 export function validateSceneDraft(raw: unknown, expectedSceneNo: number): SceneDraft {
