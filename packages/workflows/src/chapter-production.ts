@@ -1046,6 +1046,13 @@ export interface ExportResult {
   readonly format: 'markdown' | 'text';
   readonly text: string;
   readonly content_hash: string;
+  /** Present for Korean projects only, whose headings read `N화` (audit §5.12); English results are unchanged. */
+  readonly language?: 'ko' | undefined;
+}
+
+/** A chapter heading in the manuscript language: `Chapter N`, or `N화` for a Korean serial. */
+export function chapterHeading(n: number, lang: 'en' | 'ko' = 'en'): string {
+  return lang === 'ko' ? `${n}화` : `Chapter ${n}`;
 }
 
 /** Accepted manuscripts only (through `acceptedChapter`); working/approved/quarantined text never exports. */
@@ -1059,6 +1066,15 @@ export async function exportAccepted(
   },
 ): Promise<ExportResult> {
   const format = input.format ?? 'markdown';
+  const lang =
+    (
+      await pool.query<{ output_language: string | null }>(
+        'SELECT output_language FROM projects WHERE id = $1',
+        [input.projectId],
+      )
+    ).rows[0]?.output_language === 'ko'
+      ? 'ko'
+      : 'en';
   const numbers =
     input.chapters ??
     (
@@ -1092,8 +1108,8 @@ export async function exportAccepted(
     });
     parts.push(
       format === 'markdown'
-        ? `## Chapter ${n}\n\n${v.text.trim()}\n`
-        : `Chapter ${n}\n\n${v.text.trim()}\n`,
+        ? `## ${chapterHeading(n, lang)}\n\n${v.text.trim()}\n`
+        : `${chapterHeading(n, lang)}\n\n${v.text.trim()}\n`,
     );
   }
   const head = input.title
@@ -1108,6 +1124,7 @@ export async function exportAccepted(
     format,
     text,
     content_hash: `sha256:${createHash('sha256').update(text, 'utf8').digest('hex')}`,
+    ...(lang === 'ko' ? { language: 'ko' as const } : {}),
   };
 }
 

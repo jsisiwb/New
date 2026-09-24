@@ -21,6 +21,7 @@ import { simulatedModelScript as script } from './simulated-model.js';
 import { approveConcept, resumeNovelRun, startNovel } from './novel.js';
 import { NovelRunner } from './novel-runner.js';
 import { ArtifactLlmOutputStore } from './runtime.js';
+import { exportAccepted } from './chapter-production.js';
 import { angleSeeds, worldRulesTerm } from './story-plan.js';
 import { buildRunReport, renderRunReport } from './run-report.js';
 import { relintAccepted } from './relint.js';
@@ -162,6 +163,17 @@ run('Korean novel run: intake → bible → chapters, prompts in Korean (simulat
     const termNames = terms.rows.map((t) => t.display_name);
     expect(termNames).toContain(worldRulesTerm('ko').name);
     expect(termNames).not.toContain('World rules');
+
+    // Audit §5.12: a Korean export's headings read N화.
+    const exported = await exportAccepted(pool, {
+      projectId,
+      format: 'markdown',
+      title: '재의 장부',
+    });
+    expect(exported.language).toBe('ko');
+    expect(exported.text).toMatch(/^# 재의 장부\n\n## 1화\n\n/);
+    expect(exported.text).toContain('\n## 2화\n\n');
+    expect(exported.text).not.toContain('Chapter');
   }, 300_000);
 });
 

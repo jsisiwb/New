@@ -19,7 +19,7 @@
  */
 import { createHash } from 'node:crypto';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
-import { exportAccepted, type ExportResult } from '@yeonjae/workflows';
+import { chapterHeading, exportAccepted, type ExportResult } from '@yeonjae/workflows';
 import type { Client, Pool } from '@yeonjae/db';
 import { ApiError } from './problem.js';
 
@@ -116,7 +116,8 @@ export function renderTxt(
 ): string {
   const lines: string[] = [input.title.normalize('NFC'), ''];
   for (const chapter of result.chapters) {
-    if (input.typography.includeChapterHeadings) lines.push(`Chapter ${chapter.chapter_no}`, '');
+    if (input.typography.includeChapterHeadings)
+      lines.push(chapterHeading(chapter.chapter_no, result.language ?? 'en'), '');
     for (const paragraph of paragraphsOf(chapterTextOf(result, chapter.chapter_no))) {
       lines.push(
         input.typography.paragraphStyle === 'indent_first_line' ? `    ${paragraph}` : paragraph,
@@ -136,16 +137,33 @@ export function renderTxt(
  * a version the accepted-only gate had refused.
  */
 function chapterTextOf(result: ExportResult, chapterNo: number): string {
-  const marker = result.format === 'markdown' ? `## Chapter ${chapterNo}` : `Chapter ${chapterNo}`;
-  const start = result.text.indexOf(marker);
+  const markerOf = (n: number) => {
+    const heading = chapterHeading(n, result.language ?? 'en');
+    return result.format === 'markdown' ? `## ${heading}` : heading;
+  };
+  // Korean headings (`N화`) also occur inside prose, so a Korean marker counts only on a line of its own;
+  // English keeps its original lookup.
+  const find = (marker: string, from: number): number => {
+    if (result.language !== 'ko') return result.text.indexOf(marker, from);
+    for (
+      let i = result.text.indexOf(marker, from);
+      i >= 0;
+      i = result.text.indexOf(marker, i + 1)
+    ) {
+      const lineStart = i === 0 || result.text[i - 1] === '\n';
+      const end = i + marker.length;
+      if (lineStart && (end === result.text.length || result.text[end] === '\n')) return i;
+    }
+    return -1;
+  };
+  const marker = markerOf(chapterNo);
+  const start = find(marker, 0);
   if (start < 0) return '';
   const after = start + marker.length;
   const nextIndex = result.chapters
     .map((c) => c.chapter_no)
     .filter((n) => n > chapterNo)
-    .map((n) =>
-      result.text.indexOf(result.format === 'markdown' ? `## Chapter ${n}` : `Chapter ${n}`, after),
-    )
+    .map((n) => find(markerOf(n), after))
     .filter((i) => i > 0)
     .sort((a, b) => a - b)[0];
   return result.text.slice(after, nextIndex ?? result.text.length).trim();
@@ -166,7 +184,10 @@ export async function renderDocx(
   for (const chapter of result.chapters) {
     if (input.typography.includeChapterHeadings)
       children.push(
-        new Paragraph({ text: `Chapter ${chapter.chapter_no}`, heading: HeadingLevel.HEADING_1 }),
+        new Paragraph({
+          text: chapterHeading(chapter.chapter_no, result.language ?? 'en'),
+          heading: HeadingLevel.HEADING_1,
+        }),
       );
     for (const paragraph of paragraphsOf(chapterTextOf(result, chapter.chapter_no)))
       children.push(

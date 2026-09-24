@@ -3,6 +3,21 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 5c — Korean export headings — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings`.
+ADR-0069 records the decisions; the Step 0 improvement audit (§5.12) the finding.
+
+**Built:** `chapterHeading(n, lang)`; `exportAccepted` heads Korean chapters `N화` and marks the result
+`language: 'ko'`; the API's TXT and DOCX renderers use the same heading and split a Korean export only on a
+heading line.
+
+**Measured:** the Korean simulated run exports `# 재의 장부`, `## 1화`, `## 2화` with no `Chapter`; a Korean TXT
+render keeps a body line that mentions `2화` inside chapter 1; the English export suite is unchanged.
+
+**Not done:** Korean document locale metadata (the export still accepts only English locales), `characters`
+in the export manifest.
+
 ## Workstream 6b — the scene plan as labelled Korean text — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text`.
