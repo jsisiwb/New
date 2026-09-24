@@ -32,6 +32,17 @@ export interface ProductionPolicy {
      * Max allowed per-dimension score drop between versions
      */
     regression_tolerance_points?: number;
+    /**
+     * ADR-0064. stop (the default when absent): a patch that fails the ADR-0014 regression check stops the chapter as PATCH_REGRESSED. discard_and_continue: the patched version is quarantined, the chapter returns to the version before the patch and its scorecard, and the next round may revise again within the round limit
+     */
+    on_regression?: 'stop' | 'discard_and_continue';
+    /**
+     * ADR-0064: revision rounds per manuscript language, replacing max_rounds for that language. Absent: English takes one representative round and Korean up to max_rounds (ADR-0056)
+     */
+    rounds_by_language?: {
+      en?: number;
+      ko?: number;
+    };
   };
   /**
    * Evaluation orchestration (ADR-0060). A policy without this block keeps the ADR-0056 behaviour: evaluators run one after another, only the seven core evaluators run, a gated dimension reads the judge's own 0-100 judge_score and every evaluator re-runs after a patch.

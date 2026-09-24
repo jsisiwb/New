@@ -23,6 +23,7 @@ import {
   getProject,
   l1SummaryFor,
   listJobSteps,
+  quarantineVersion,
   timelinesOf,
   updateJob,
   upsertPromptVersions,
@@ -128,6 +129,15 @@ export interface ChapterProductionDeps {
   readonly bindings?: Record<string, string> | undefined;
 }
 
+/** A patch that failed its regression check and was quarantined under discard_and_continue (ADR-0064). */
+export interface DiscardedPatch {
+  readonly round: number;
+  readonly dimension: string;
+  readonly version_id: string;
+  readonly regression_artifact_id: string;
+  readonly failures: readonly string[];
+}
+
 export interface ChapterProductionResult {
   readonly workflow_id: string;
   readonly job_id: string;
@@ -186,6 +196,8 @@ export interface ChapterProductionResult {
               targeted_resolved: boolean;
             }
           | undefined;
+        /** ADR-0064: patches that failed their regression check and were quarantined (discard_and_continue). */
+        discarded?: readonly DiscardedPatch[] | undefined;
       }
     | undefined;
   readonly accepted:
@@ -523,7 +535,12 @@ export async function produceChapter(
     scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
     guard('evaluate');
     let revision: ChapterProductionResult['revision'];
-    const maxRounds = ctx.policy.revision.max_rounds;
+    // ADR-0064: rounds per manuscript language come from the policy when it says so; without that knob English
+    // keeps one representative round and Korean takes up to max_rounds (ADR-0056).
+    const manuscriptLang = ctx.identity.outputLanguage.language === 'ko' ? 'ko' : 'en';
+    const roundsByLanguage = ctx.policy.revision.rounds_by_language;
+    const maxRounds = roundsByLanguage?.[manuscriptLang] ?? ctx.policy.revision.max_rounds;
+    const discarded: DiscardedPatch[] = [];
     // ADR-0060: patches applied since every evaluator last ran on the whole chapter.
     let patchesSinceFull = 0;
     while (!evaluation.approvable && round < maxRounds) {
@@ -531,6 +548,8 @@ export async function produceChapter(
       const dimension = pickRevisionDimension(targets);
       if (!dimension) break;
       round++;
+      const parent = current;
+      const beforeEvaluation = evaluation;
       const beforeScorecard = evaluation.scorecard;
       const targetedIssueIds = targets.filter((i) => i.dimension === dimension).map((i) => i.id);
       const revised = await reviseVersion(ctx, {
@@ -600,6 +619,34 @@ export async function produceChapter(
           targeted_resolved: report.targeted.resolved,
         },
       };
+      const singleRound = !roundsByLanguage && manuscriptLang !== 'ko';
+      // ADR-0064: the regressed patch is quarantined and the chapter goes back to the version before it, with
+      // that version's scorecard; the next round may revise again. The regression report stays as evidence.
+      if (!report.passed && ctx.policy.revision.on_regression === 'discard_and_continue') {
+        const rejected = current;
+        await runStep(
+          ctx,
+          'discard_patch',
+          async () => {
+            await quarantineVersion(ctx.pool, rejected.id, `patch_regressed:r${String(round)}`);
+            return { version_id: rejected.id };
+          },
+          `r${String(round)}`,
+        );
+        discarded.push({
+          round,
+          dimension,
+          version_id: rejected.id,
+          regression_artifact_id: regressionRef.artifact_id,
+          failures: report.failures,
+        });
+        current = parent;
+        evaluation = beforeEvaluation;
+        patchesSinceFull = Math.max(0, patchesSinceFull - 1);
+        revision = { ...revision, discarded: [...discarded] };
+        if (singleRound) break;
+        continue;
+      }
       // A failed regression stops the run before the approval lock, so it can never reach canon acceptance.
       if (!report.passed)
         throw new WorkflowError(
@@ -625,9 +672,10 @@ export async function produceChapter(
       // replay byte-identically). A Korean craft-engine run (ADR-0056) may take further rounds, each on
       // the dimension with the most open blocking/major issues and each regression-checked, up to the
       // pinned policy's max_rounds.
-      if (ctx.identity.outputLanguage.language !== 'ko') break;
+      if (singleRound) break;
     }
     revision ??= { rounds: 0 };
+    if (discarded.length) revision = { ...revision, discarded };
 
     // ---- approval lock (blocks on any remaining blocking/major issue or failed gate)
     await approveVersion(ctx, {

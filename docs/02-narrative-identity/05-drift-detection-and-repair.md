@@ -86,6 +86,11 @@ After applying patches to create version v+1:
    new blocking/major issue; otherwise revert the offending patch and try an alternate repair once, then
    escalate.
 
+Under a policy with `revision.on_regression: discard_and_continue` (ADR-0064) the revert is literal: the
+patched version is quarantined, the chapter returns to the version before it with that version's scorecard,
+and the next round (within `revision.rounds_by_language` or `max_rounds`) is the alternate repair. Without the
+knob a failed regression stops the chapter as `PATCH_REGRESSED`.
+
 Under the pinned policy's `evaluation.reevaluation: targeted` (ADR-0060) the model evaluators follow the same
 rule: the targeted dimension's evaluator always re-runs; continuity and knowledge re-run when the patch
 declared changed claims or rewrote a scene; the contract checker re-runs when claims changed or a criterion

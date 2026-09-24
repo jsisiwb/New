@@ -36,7 +36,9 @@
         "max_scene_rewrites": {"type": "integer", "minimum": 0},
         "per_span_attempts": {"type": "integer", "minimum": 1, "description": "Attempts on one span before escalating scope"},
         "smoke_after_patches": {"type": "integer", "minimum": 1, "description": "Cumulative patches after which both judges re-run on the whole chapter"},
-        "regression_tolerance_points": {"type": "number", "minimum": 0, "description": "Max allowed per-dimension score drop between versions"}
+        "regression_tolerance_points": {"type": "number", "minimum": 0, "description": "Max allowed per-dimension score drop between versions"},
+        "on_regression": {"type": "string", "enum": ["stop", "discard_and_continue"], "description": "ADR-0064. stop (the default when absent): a patch that fails the ADR-0014 regression check stops the chapter as PATCH_REGRESSED. discard_and_continue: the patched version is quarantined, the chapter returns to the version before the patch and its scorecard, and the next round may revise again within the round limit"},
+        "rounds_by_language": {"type": "object", "additionalProperties": false, "description": "ADR-0064: revision rounds per manuscript language, replacing max_rounds for that language. Absent: English takes one representative round and Korean up to max_rounds (ADR-0056)", "properties": {"en": {"type": "integer", "minimum": 0}, "ko": {"type": "integer", "minimum": 0}}}
       }
     },
     "evaluation": {
