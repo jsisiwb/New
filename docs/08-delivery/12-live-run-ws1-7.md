@@ -218,3 +218,25 @@ The remaining majors are genuine: a weekday contradiction, a contract instructio
 dialogue under the Korean lint's floor for a first-person opening. The pattern of Phase A repeats: the patched
 rounds fix what they target and are quarantined for what they bring. The reviser was sent the union of the
 targeted spans, and it rewrote whole scenes. ADR-0077 (multi-patch rounds, `standard.v10`) follows from this.
+
+### 8.3 `standard.v10` (18:07–18:24 UTC)
+
+A fresh project on the same intake, pinned to `policy/standard@10` (multi-patch rounds, ADR-0077).
+
+| | |
+| --- | --- |
+| Start → concepts | 1 min 34 s |
+| Bible | 6 cast, 3 locations, 3 organizations, 11 propositions, 8 promises, 4 seasons (`contract_location_fallback` 1) |
+| Length | chapter 1 assembled at 4,799자 against 5,300 (−9.5 %, inside the 12 % warn band) |
+| Rounds | three, each one cluster: the targeted voice findings sat in one window; one sub-patch applied per round, none dropped |
+| Blocking/major by round | r0 4/4, r1 1/6, r2 2/4, r3 3/4 — r1 cut the blockings from 4 to 1 |
+| Regression | r1 `new_blocking_or_major_issue` + `protection_failed`; r2 and r3 **only** `protection_failed`, on continuity, knowledge and voice (all failing on r0 already) and on the translation-like and register majors r0 already carried |
+| Stop | `needs_attention: APPROVAL_BLOCKED` on r0 — 4 blocking, 4 major; prose 78/78, structure 96.8/78, genre 100/72, voice 60.7/76 ✗ |
+| r0 blockings | knowledge-leak ×2: the regressor narrator names a secret he knows from his first life (reveal due in chapter 5) — defect A-4; continuity: canon lists the antagonist as an F-rank hunter, while chapter 1 takes place before anyone has awakened (the bible's rank belongs to a later time); voice: the antagonist begs for his life, which his voice card says he never does |
+| Calls | 35, none failed; 121,708 in / 20,862 out |
+| Cost | 0¢ recorded; bridge billing-period credits 63.98 % / 71.96 % → 65.02 % / 74.02 % |
+
+The regression reports of every live run show the same thing. Phase A, v8 and v10 quarantined every patched
+round with `protection_failed`, and the failing protections include sections that failed on the parent and
+majors the parent already carried. Defect V-1: the protections were measured absolutely. ADR-0078
+(`standard.v11`) measures them against the parent.

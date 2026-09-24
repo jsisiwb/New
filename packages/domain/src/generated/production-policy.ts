@@ -48,6 +48,10 @@ export interface ProductionPolicy {
      */
     polish_pass?: boolean;
     /**
+     * ADR-0078 (V-1): what a patch's regression protections are measured against. absolute (the default when absent): every protected section must pass and no translation-like, register or westernization major may remain on the revised version, whatever the parent carried. parent: a protected section fails only when it passed on the parent and fails on the revision, and a kind guard fails only when the revision carries more open blocking/major issues of those kinds than the parent. The targeted-improvement, tolerance, dropped-dimension and new-issue-kind checks are the same in both.
+     */
+    regression_baseline?: 'absolute' | 'parent';
+    /**
      * ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.
      */
     multi_patch?: {
