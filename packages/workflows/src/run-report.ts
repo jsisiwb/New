@@ -58,6 +58,8 @@ export interface ChapterReport {
   readonly accepted_version_id: string | null;
   /** 자 of the accepted text (characters with spaces, without line breaks). */
   readonly characters: number | undefined;
+  /** 자 without spaces (ADR-0073, K3): Korean platforms count both ways. */
+  readonly characters_no_spaces?: number | undefined;
   readonly versions: number;
   readonly quarantined: readonly { readonly version_no: number; readonly reason: string }[];
   readonly plan_check: Readonly<Record<string, number>>;
@@ -317,6 +319,12 @@ export async function buildRunReport(
       accepted_version_id: c.accepted_version_id,
       characters:
         acceptedText === undefined ? undefined : measure(toNfcText(acceptedText)).characters,
+      ...(acceptedText === undefined
+        ? {}
+        : {
+            characters_no_spaces: Array.from(toNfcText(acceptedText).text.replace(/\s/gu, ''))
+              .length,
+          }),
       versions: versions.rows.filter((v) => v.chapter_id === c.id).length,
       quarantined: quarantined.rows
         .filter((q) => q.chapter_id === c.id)
@@ -392,15 +400,17 @@ export function renderRunReport(r: RunReport): string {
   }
   out.push('');
   out.push('## Chapters', '');
-  out.push('| 화 | status | 자 | versions | rounds | final gate | quarantined | plan check |');
-  out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  out.push(
+    '| 화 | status | 자 | 자 (공백 제외) | versions | rounds | final gate | quarantined | plan check |',
+  );
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const c of r.chapters) {
     const final = c.rounds[c.rounds.length - 1];
     const pc = Object.entries(c.plan_check)
       .map(([k, v]) => `${k}×${String(v)}`)
       .join(', ');
     out.push(
-      `| ${String(c.number)} | ${c.status} | ${c.characters === undefined ? '—' : String(c.characters)} | ${String(c.versions)} | ${String(c.rounds.length)} | ${final?.gate_outcome ?? '—'} | ${String(c.quarantined.length)} | ${pc || '—'} |`,
+      `| ${String(c.number)} | ${c.status} | ${c.characters === undefined ? '—' : String(c.characters)} | ${c.characters_no_spaces === undefined ? '—' : String(c.characters_no_spaces)} | ${String(c.versions)} | ${String(c.rounds.length)} | ${final?.gate_outcome ?? '—'} | ${String(c.quarantined.length)} | ${pc || '—'} |`,
     );
   }
   for (const c of r.chapters) {

@@ -745,7 +745,10 @@ run(
       expect(writer?.succeeded).toBe(writer?.calls);
       expect(report.totals.calls).toBe(report.roles.reduce((n, r) => n + r.calls, 0));
       const md = renderRunReport(report);
-      expect(md).toMatch(/\| 1 \| accepted \| \d+ \|/);
+      expect(md).toMatch(/\| 1 \| accepted \| \d+ \| \d+ \|/);
+      // Both counts (ADR-0073, K3): with spaces, and without.
+      const first = report.chapters[0];
+      expect(first?.characters_no_spaces).toBeLessThan(first?.characters ?? 0);
       expect(md).toMatch(/\(quarantined\)/);
       expect(md).toMatch(/`scene_plans`: 2/);
 
