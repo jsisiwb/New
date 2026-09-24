@@ -152,4 +152,24 @@ describe('ADR-0062 rules: spelling, ending monotony, misspelled names', () => {
     expect(r.metrics.monologue_ratio).toBeGreaterThan(0);
     expect(r.metrics.dialogue_ratio).toBeGreaterThan(0);
   });
+
+  it('renders the new findings in Korean where judges and the reviser read them (ADR-0059 scan rule)', () => {
+    const r = lintKoreanWebnovel(
+      [
+        '처음 보는 천장이 낮설었다. 몇일이 지났는지 모른다. 금새 해가 졌다.',
+        '그는 문을 열었다. 복도를 걸었다. 창을 넘었다. 벽을 짚었다. 빵을 먹었다. 외투를 벗었다.',
+        '서지안은 칼을 들었다. 서지얀이 뒤를 돌아봤다.',
+      ].join('\n\n'),
+      { ...v4, personNames: ['서지안'] },
+    );
+    expect(r.findings.map((f) => f.rule_id)).toEqual(
+      expect.arrayContaining(['KO-SP-01', 'KO-SP-02', 'KO-SP-03', 'KO-END-02', 'KO-NAME-01']),
+    );
+    // Same rule as the Korean run's Latin-script scan: rule ids and schema enum values (the severity tag)
+    // are identifiers; nothing else is Latin.
+    const latin = [...koStyleDigest(r, 50).matchAll(/[A-Za-z][A-Za-z'’-]{2,}/g)]
+      .map((m) => m[0].replace(/[’'-]+$/, ''))
+      .filter((w) => !/^[A-Z]+(-[A-Z0-9]+)+$/.test(w) && !['blocking', 'major'].includes(w));
+    expect(latin).toEqual([]);
+  });
 });

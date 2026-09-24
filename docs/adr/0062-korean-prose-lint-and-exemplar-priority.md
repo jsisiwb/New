@@ -26,7 +26,9 @@ Measured on Korean identities composed from intake: writer blocks are 5,185–6,
 
 1. **Korean blocks are measured in 자.** `estimateTokensKo`, one token per 자 without line breaks
    (`korean_chars_v1`, the WS2b pack estimator), budgets every Korean identity block. English blocks keep the word
-   estimator and their bytes.
+   estimator and their bytes. There is one implementation with one id: `@yeonjae/prose` defines
+   `korean_chars_v1` next to the length model's `characters` (the same count), the identity compiler imports
+   it, and `@yeonjae/context` re-exports it for pack budgets and manifests.
 2. **Exemplars outrank setting.** The exemplars section moves from priority 50 to 86: above register,
    naming, terminology, avoid, genres and cadence, and below structure and the participants' voice cards.
    It exists only for Korean identities.

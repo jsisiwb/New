@@ -4,6 +4,7 @@
  * hashes on every machine.
  */
 import { createHash } from 'node:crypto';
+import { estimateTokensKo, KOREAN_TOKEN_ESTIMATOR_ID } from '@yeonjae/prose';
 
 export function sha256(text: string): string {
   return `sha256:${createHash('sha256').update(text, 'utf8').digest('hex')}`;
@@ -35,20 +36,10 @@ export const TOKEN_ESTIMATOR_ID = 'english_estimator_v1';
 
 /**
  * Korean token estimator (ADR-0059): one token per 자 — characters with spaces, without line breaks, the
- * platform's length unit. Calibrated on 4,091자 of Korean webnovel prose: o200k_base 0.70 tokens/자,
- * cl100k_base 1.08 tokens/자, while the English estimator undercounted the same text 2.2–3.3×.
+ * platform's length unit. It lives in `@yeonjae/prose` because the identity-block compiler measures Korean
+ * blocks with the same estimator (ADR-0062); the English estimator undercounted Korean 2.2–3.3×.
  */
-export const KOREAN_TOKEN_ESTIMATOR_ID = 'korean_chars_v1';
-
-export function countKoreanChars(text: string): number {
-  let n = 0;
-  for (const ch of text) if (ch !== '\n' && ch !== '\r') n++;
-  return n;
-}
-
-export function estimateTokensKo(text: string): number {
-  return countKoreanChars(text);
-}
+export { countKoreanChars, estimateTokensKo, KOREAN_TOKEN_ESTIMATOR_ID } from '@yeonjae/prose';
 
 /** The estimator for a pack's language; its id is recorded in the manifest. */
 export function estimatorFor(lang: 'en' | 'ko'): {

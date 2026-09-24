@@ -47,6 +47,24 @@ export function countSentences(text: string): number {
   return terminators + (endsWithTerminator ? 0 : 1);
 }
 
+/** 자: code points excluding line breaks, spaces included — `LengthModel.characters`, the platform's unit. */
+export function countKoreanChars(text: string): number {
+  let n = 0;
+  for (const ch of text) if (ch !== '\n' && ch !== '\r') n++;
+  return n;
+}
+
+/**
+ * The one Korean token estimator (ADR-0059, ADR-0062): one token per 자. Korean context packs, the Korean
+ * Active Constraint Set and Korean identity blocks are all measured with it, and manifests record its id.
+ * Calibrated on 4,091자 of Korean webnovel prose: o200k_base 0.70 tokens/자, cl100k_base 1.08 tokens/자.
+ */
+export const KOREAN_TOKEN_ESTIMATOR_ID = 'korean_chars_v1';
+
+export function estimateTokensKo(text: string): number {
+  return countKoreanChars(text);
+}
+
 export function measure(source: NfcText, opts: LengthOptions = {}): LengthModel {
   const tokensPerWord = opts.tokensPerWord ?? 1.3;
   const wpm = opts.wordsPerMinute ?? 240;
@@ -55,7 +73,7 @@ export function measure(source: NfcText, opts: LengthOptions = {}): LengthModel 
   const sentences = paragraphs.reduce((acc, p) => acc + countSentences(p.text), 0);
   return {
     words,
-    characters: source.codePoints.filter((cp) => cp !== '\n' && cp !== '\r').length,
+    characters: countKoreanChars(source.text),
     code_points: source.codePoints.length,
     paragraphs: paragraphs.length,
     sentences,

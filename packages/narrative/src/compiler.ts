@@ -4,6 +4,7 @@
  * always the first two sections and are never shed; every other section sheds in reverse priority when the
  * role budget is exceeded, and overflow of the unsheddable core is a compile error, never a truncation.
  */
+import { estimateTokensKo } from '@yeonjae/prose';
 import { type ComposedIdentity, sha256 } from './profiles.js';
 import {
   IDENTITY_TAIL_KO,
@@ -81,14 +82,6 @@ export const HEADER_PREFIX = '<<NARRATIVE_IDENTITY';
 
 export function estimateTokens(text: string): number {
   return Math.ceil(text.split(/\s+/).filter(Boolean).length * 1.3);
-}
-
-/**
- * Korean block estimator (ADR-0062): one token per 자 without line breaks — `korean_chars_v1`, the unit Korean
- * context packs are measured in (ADR-0059). Word counts undercounted Korean blocks two- to threefold.
- */
-export function estimateTokensKo(text: string): number {
-  return Array.from(text.replace(/\n/g, '')).length;
 }
 
 interface Section {
