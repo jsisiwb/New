@@ -6,7 +6,7 @@
  */
 import { elapsedDays, type StoryClock } from '@yeonjae/domain';
 import { countWords } from './hash.js';
-import { type ChapterContract } from './types.js';
+import { type ChapterContract, type ScenePlan } from './types.js';
 
 export type NameOf = (id: string) => string;
 
@@ -216,6 +216,17 @@ const PERSON_KO: Readonly<Record<string, string>> = {
 
 const WHEN_KO: Readonly<Record<string, string>> = { early: '초반', middle: '중반', late: '후반' };
 
+/**
+ * The topic particle a Korean word takes: 은 after a final consonant (받침), 는 otherwise. A word that does
+ * not end in a Hangul syllable keeps the neutral 은(는).
+ */
+export function topicParticleKo(word: string): string {
+  const last = word.trim().slice(-1);
+  const code = last.charCodeAt(0) - 0xac00;
+  if (code < 0 || code > 11171) return '은(는)';
+  return code % 28 === 0 ? '는' : '은';
+}
+
 export function clockLabelKo(c: StoryClock | null | undefined): string {
   if (!c) return '미정';
   const world = c.world_date ? ` (${c.world_date}${c.precision === 'approx' ? ' 무렵' : ''})` : '';
@@ -356,6 +367,111 @@ export function renderContractKo(c: ChapterContract, nameOf: NameOf): string {
   }
   lines.push(
     `수용 기준: ${c.acceptance_criteria.map((a) => `${a.id} (${a.kind}${a.threshold !== undefined ? ` ≥ ${a.threshold}` : ''})`).join(', ')}.`,
+  );
+  return lines.join('\n');
+}
+
+const BEAT_KO: Readonly<Record<string, string>> = {
+  action: '행동',
+  dialogue: '대화',
+  revelation: '정보 공개',
+  decision: '결정',
+  emotional: '감정',
+  comedic: '코믹',
+  progression: '성장',
+  transition: '전환',
+  status_text: '상태창',
+  cliffhanger: '절단',
+};
+
+const BEAT_TAG_KO: Readonly<Record<string, string>> = {
+  satisfaction: '사이다',
+  emotion: '감정',
+  information: '정보',
+  humor: '유머',
+  growth: '성장',
+  tension: '긴장',
+};
+
+const SHIFT_KO: Readonly<Record<string, string>> = {
+  anger: '분노',
+  intimacy_step: '친밀도 상승',
+  disguise: '위장',
+  mockery: '조롱',
+  public_formality: '공석의 격식',
+  age_reveal: '나이 공개',
+  emotional_outburst: '감정 폭발',
+};
+
+/**
+ * 장면 계획을 라벨 붙은 한국어 텍스트로 (ADR-0068): 계획일 뿐 일어난 일이 아니다. Names come from the
+ * registry; proposition ids stay ids (the writer's pack lists them). Every field of the plan is rendered, so
+ * the text carries what the JSON carried.
+ */
+export function renderScenePlanKo(s: ScenePlan, nameOf: NameOf): string {
+  const lines: string[] = [];
+  lines.push(`장면 ${s.scene_no} (PLANNED — 아직 일어나지 않았다)`);
+  lines.push(`목표: ${s.objective}`);
+  lines.push(`시점: ${nameOf(s.pov.character_id)} (${PERSON_KO[s.pov.person] ?? s.pov.person})`);
+  lines.push(`등장: ${s.participants.map(nameOf).join(', ') || '—'}`);
+  lines.push(`장소: ${nameOf(s.location_id)}`);
+  if (s.story_time)
+    lines.push(
+      `스토리 시간: ${clockLabelKo(s.story_time.start)} → ${clockLabelKo(s.story_time.end)}${
+        s.story_time.elapsed_hint ? ` (${s.story_time.elapsed_hint})` : ''
+      }`,
+    );
+  if (s.opening_beat_type) lines.push(`여는 방식: ${s.opening_beat_type}`);
+  if (s.ending_beat_type) lines.push(`닫는 방식: ${s.ending_beat_type}`);
+  if (s.entry_state) lines.push(`시작 상태: ${s.entry_state}`);
+  lines.push('비트:');
+  s.beats.forEach((b, i) => {
+    const extra = [
+      b.emotional_target ? `감정 목표: ${b.emotional_target}` : '',
+      b.tags?.length ? `효과: ${b.tags.map((t) => BEAT_TAG_KO[t] ?? t).join(', ')}` : '',
+      b.reveals_proposition_ids?.length
+        ? `드러낼 명제: ${b.reveals_proposition_ids.map((id) => `id ${id}`).join(', ')}`
+        : '',
+    ].filter(Boolean);
+    lines.push(
+      `${i + 1}. [${BEAT_KO[b.type] ?? b.type}] ${b.description}${extra.length ? ` (${extra.join('; ')})` : ''}`,
+    );
+  });
+  if (s.exit_state) lines.push(`끝 상태: ${s.exit_state}`);
+  if (s.state_deltas?.length) {
+    lines.push('계획된 상태 변화 (PLANNED — 아직 사실 아님):');
+    for (const d of s.state_deltas)
+      lines.push(
+        `- ${nameOf(d.entity_id)} · ${attributeLabel(d.attribute, d.key)}: ${valueLabel(d.from, undefined)} → ${valueLabel(d.to, undefined)}${
+          d.description ? ` — ${d.description}` : ''
+        }`,
+      );
+  }
+  if (s.dialogue_density_target !== undefined)
+    lines.push(`대사 비중 목표: 약 ${Math.round(s.dialogue_density_target * 100)}%`);
+  if (s.continuity_anchors?.length) {
+    lines.push('지켜야 할 확정 사실:');
+    for (const a of s.continuity_anchors) lines.push(`- ${a.statement}`);
+  }
+  if (s.must_not?.length) {
+    lines.push('이 장면에서 하지 않을 것:');
+    for (const m of s.must_not) lines.push(`- ${m}`);
+  }
+  if (s.speaker_pairs.length) {
+    lines.push('말높이 (화자 → 청자):');
+    for (const p of s.speaker_pairs) {
+      const shift = p.allowed_shift
+        ? ` — 허용된 전환: ${SHIFT_KO[p.allowed_shift.reason ?? ''] ?? p.allowed_shift.reason ?? '사유 미지정'}${
+            p.allowed_shift.to ? ` → ${registerLabelKo(p.allowed_shift.to)}` : ''
+          }`
+        : '';
+      lines.push(
+        `- ${nameOf(p.speaker_id)} → ${nameOf(p.addressee_id)}: ${registerLabelKo(p.register)}${shift}`,
+      );
+    }
+  }
+  lines.push(
+    `분량 목표: ${s.length_target.value}${s.length_target.unit === 'characters' ? '자' : ' 단어'}`,
   );
   return lines.join('\n');
 }

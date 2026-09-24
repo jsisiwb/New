@@ -32,6 +32,63 @@ export interface ProductionPolicy {
      * Max allowed per-dimension score drop between versions
      */
     regression_tolerance_points?: number;
+    /**
+     * ADR-0064. stop (the default when absent): a patch that fails the ADR-0014 regression check stops the chapter as PATCH_REGRESSED. discard_and_continue: the patched version is quarantined, the chapter returns to the version before the patch and its scorecard, and the next round may revise again within the round limit
+     */
+    on_regression?: 'stop' | 'discard_and_continue';
+    /**
+     * ADR-0064: revision rounds per manuscript language, replacing max_rounds for that language. Absent: English takes one representative round and Korean up to max_rounds (ADR-0056)
+     */
+    rounds_by_language?: {
+      en?: number;
+      ko?: number;
+    };
+  };
+  /**
+   * Evaluation orchestration (ADR-0060). A policy without this block keeps the ADR-0056 behaviour: evaluators run one after another, only the seven core evaluators run, a gated dimension reads the judge's own 0-100 judge_score and every evaluator re-runs after a patch.
+   */
+  evaluation?: {
+    /**
+     * Model evaluators of one manuscript version that may be in flight at once; results are assembled in a fixed order whatever the completion order
+     */
+    max_parallel_evaluators: number;
+    /**
+     * Evaluators beyond the core seven that run for every version; each writes its own scorecard section and gates through its blocking/major issues
+     */
+    optional_evaluators: ('promise_checker' | 'repetition_judge')[];
+    /**
+     * judge_score: a gated dimension reads the judge's 0-100 number. rubric_subscores: the dimension score is judge_weight x the judge's 1-5 rubric sub-scores mapped to 0-100, plus (1 - judge_weight) x the dimension's deterministic composite
+     */
+    score_model: 'judge_score' | 'rubric_subscores';
+    /**
+     * targeted: after a patch the deterministic checks and the targeted dimension's evaluator re-run, continuity and knowledge re-run when the patch changed claims, and every other evaluator re-runs only when one of its carried findings no longer anchors or revision.smoke_after_patches patches have accumulated since its last run
+     */
+    reevaluation: 'full' | 'targeted';
+    /**
+     * Points a deterministic finding takes off its dimension's lint composite (starting at 100, floored at 0) under rubric_subscores
+     */
+    lint_penalty_points: {
+      minor: number;
+      major: number;
+      blocking: number;
+    };
+    /**
+     * ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs.
+     */
+    ledger_checks?: boolean;
+  };
+  /**
+   * Pre-draft planning checks (ADR-0063). A policy without this block drafts every scene plan unchecked, as before.
+   */
+  planning?: {
+    /**
+     * Check the contract and scene plans against the state ledgers, first meetings and the story clock before drafting. A blocking finding (an on-page character the ledger records as dead, story time running backwards) stops the chapter as PLAN_INCONSISTENT before any draft is written; other findings are recorded with the plan.
+     */
+    plan_check: boolean;
+    /**
+     * How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON.
+     */
+    scene_plan_format?: 'json' | 'labelled';
   };
   candidates: {
     chapter_candidates: number;

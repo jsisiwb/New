@@ -1120,6 +1120,107 @@ run('context packs over the real canon (Postgres integration)', () => {
     expect(lookup.state).toBe('not_accepted');
   });
 
+  it('long-story memory (ADR-0061): an overdue promise, the story so far and first meetings reach the writer', async () => {
+    // Overdue since chapter 6 and sharing no participant with chapter 10: invisible before ADR-0061.
+    await createPromise(pool, {
+      workspaceId: ws,
+      projectId: project,
+      type: 'mystery',
+      statement: 'Who forged the gate permit in the Association archive?',
+      importance: 'major',
+      status: 'open',
+      dueMinChapter: 4,
+      dueMaxChapter: 6,
+      relatedEntityIds: [],
+    });
+    const writer = await build('scene_writer', { persist: false });
+    const text = writer.pack.renderedUser;
+    expect(text).toContain('Who forged the gate permit in the Association archive?');
+    expect(text).toMatch(/Who forged the gate permit[^\n]*OVERDUE by 4 chapters/);
+    // Chapter 3 is accepted and older than the previous chapter (9): it reaches the story-so-far digest.
+    const story = writer.pack.sections.find((s) => s.name === 'story_so_far')?.text ?? '';
+    expect(story).toMatch(/Chapters 3–3\nCh\.3: /);
+    // Mu-jin and Do-yoon first shared a canonical event in chapter 9 (the fog-beast injury).
+    const meetings = writer.pack.sections.find((s) => s.name === 'first_meetings')?.text ?? '';
+    expect(meetings).toMatch(
+      /(Park Mu-jin ↔ Kang Do-yoon|Kang Do-yoon ↔ Park Mu-jin): first appeared together in chapter 9\./,
+    );
+    expect(writer.pack.manifest.template_version).toMatch(/^1\.2\.0\+/);
+  });
+
+  it('long-story memory (ADR-0061) renders its three sections in Korean for a Korean pack (ADR-0059)', async () => {
+    // Same canon as above, read by a Korean pack: the system-written parts of each line are Korean; the
+    // English fixture content (names, the promise statement, summaries) is quoted as it is.
+    const koIdentity = {
+      ...identity,
+      outputLanguage: { ...identity.outputLanguage, language: 'ko' as const },
+    };
+    // korean_chars_v1 measures the English fixture text in 자 (about three times its token count), so the
+    // budgets are widened: this test is about rendering, not budgets.
+    const roomy = {
+      ...policy,
+      context: {
+        ...policy.context,
+        active_constraints_cap_tokens: 6000,
+        writer_input_budget_tokens: 96000,
+      },
+    };
+    const writer = await build('scene_writer', {
+      identity: koIdentity,
+      policy: roomy,
+      persist: false,
+    });
+    const section = (name: string) => writer.pack.sections.find((s) => s.name === name)?.text ?? '';
+    expect(section('promises')).toMatch(/Who forged the gate permit[^\n]*회수 기한 4화 초과/);
+    expect(section('story_so_far')).toMatch(
+      /^\[지난 줄거리 — [^\n]*\]\n\[SUMMARY · [^\]\n]+\] 3~3화\n3화: /,
+    );
+    expect(section('first_meetings')).toMatch(/^\[첫 만남 기록 — [^\n]*\]\n/);
+    expect(section('first_meetings')).toMatch(/: 9화에 처음 함께 나왔다\./);
+    const user = writer.pack.renderedUser;
+    for (const english of [
+      'OVERDUE by',
+      'Chapters 3',
+      'Ch.3:',
+      'first appeared together',
+      'STORY SO FAR',
+      'FIRST MEETINGS',
+    ])
+      expect(user).not.toContain(english);
+  });
+
+  it('state ledger (ADR-0063): cards, address terms and the clock from accepted canon, in the pack language', async () => {
+    const writer = await build('scene_writer', { persist: false });
+    const ledger = writer.pack.sections.find((s) => s.name === 'state_ledger')?.text ?? '';
+    expect(ledger).toMatch(/\| Park Mu-jin → Kang Do-yoon \| kid, Do-yoon, son \| plain \|/);
+    expect(ledger).toMatch(
+      /\| Park Mu-jin \| Poison Fog Dungeon, second floor \| Beast venom in the left calf \(serious\) \|/,
+    );
+    expect(ledger).toMatch(/\| Lee Seo-ha \|[^\n]*\| no canonical appearance yet \|/);
+    expect(ledger).toContain(
+      "This chapter starts at ch.10.0 (D+36); the previous chapter's last event: ch.9.46 (D+35).",
+    );
+    const koIdentity = {
+      ...identity,
+      outputLanguage: { ...identity.outputLanguage, language: 'ko' as const },
+    };
+    const roomy = {
+      ...policy,
+      context: {
+        ...policy.context,
+        active_constraints_cap_tokens: 6000,
+        writer_input_budget_tokens: 96000,
+      },
+    };
+    const ko = await build('scene_writer', { identity: koIdentity, policy: roomy, persist: false });
+    const koLedger = ko.pack.sections.find((s) => s.name === 'state_ledger')?.text ?? '';
+    expect(koLedger).toMatch(/^\[상태 장부 — /);
+    expect(koLedger).toContain('| 화자 → 상대 | 호칭 | 말높이 |');
+    expect(koLedger).toMatch(/\| Park Mu-jin → Kang Do-yoon \| kid, Do-yoon, son \| 반말 \|/);
+    expect(koLedger).toContain('이번 화 시작: 10화.0 (D+36); 직전 화 마지막 사건: 9화.46 (D+35).');
+    expect(koLedger).not.toMatch(/speaker|location|last seen|This chapter/);
+  });
+
   it('rollback de-accepts chapter 9 and removes its search documents and summary in the same transaction', async () => {
     // Chapter 10 is now unbuildable (k−1 no longer accepted); then re-accepting restores it.
     const before = await searchDocumentCount(pool, project);

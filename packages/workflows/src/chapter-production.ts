@@ -21,7 +21,9 @@ import {
   getJobByWorkflowId,
   getManuscriptVersion,
   getProject,
+  l1SummaryFor,
   listJobSteps,
+  quarantineVersion,
   timelinesOf,
   updateJob,
   upsertPromptVersions,
@@ -75,7 +77,9 @@ import {
   scheduleFromBlueprint,
   type SeriesBlueprint,
 } from './story-plan.js';
+import { planConsistency } from './ledger-checks.js';
 import {
+  runStep,
   saveArtifact,
   type HeldLease,
   type RunCancellation,
@@ -123,6 +127,15 @@ export interface ChapterProductionDeps {
   readonly registry?: PromptRegistry | undefined;
   readonly profiles?: ProfileStore | undefined;
   readonly bindings?: Record<string, string> | undefined;
+}
+
+/** A patch that failed its regression check and was quarantined under discard_and_continue (ADR-0064). */
+export interface DiscardedPatch {
+  readonly round: number;
+  readonly dimension: string;
+  readonly version_id: string;
+  readonly regression_artifact_id: string;
+  readonly failures: readonly string[];
 }
 
 export interface ChapterProductionResult {
@@ -183,6 +196,8 @@ export interface ChapterProductionResult {
               targeted_resolved: boolean;
             }
           | undefined;
+        /** ADR-0064: patches that failed their regression check and were quarantined (discard_and_continue). */
+        discarded?: readonly DiscardedPatch[] | undefined;
       }
     | undefined;
   readonly accepted:
@@ -483,10 +498,14 @@ export async function produceChapter(
     const usedPacks: StoredPack[] = [writerBuilt];
     const plan = await planScenes(ctx, { contract: contract.contract, pack: writerBuilt });
     guard('scene_plan');
+    // ADR-0063: the plan against the state ledgers before any draft, under a policy that opts in.
+    if (ctx.policy.planning?.plan_check) await checkPlan(ctx, contract.contract, plan.scenes);
+    const registryNames = new Map(input.bible.entities.map((e) => [e.id, e.display_name]));
     const drafted = await draftScenes(ctx, {
       contract: contract.contract,
       pack: writerBuilt,
       scenes: plan.scenes,
+      nameOf: (id) => registryNames.get(id) ?? id,
     });
     guard('scene_draft');
     const assembled = await assembleChapter(ctx, {
@@ -513,16 +532,26 @@ export async function produceChapter(
       canonVersion: bible.canonVersion,
       allowlist,
       round,
+      bible: input.bible,
     });
     scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
     guard('evaluate');
     let revision: ChapterProductionResult['revision'];
-    const maxRounds = ctx.policy.revision.max_rounds;
+    // ADR-0064: rounds per manuscript language come from the policy when it says so; without that knob English
+    // keeps one representative round and Korean takes up to max_rounds (ADR-0056).
+    const manuscriptLang = ctx.identity.outputLanguage.language === 'ko' ? 'ko' : 'en';
+    const roundsByLanguage = ctx.policy.revision.rounds_by_language;
+    const maxRounds = roundsByLanguage?.[manuscriptLang] ?? ctx.policy.revision.max_rounds;
+    const discarded: DiscardedPatch[] = [];
+    // ADR-0060: patches applied since every evaluator last ran on the whole chapter.
+    let patchesSinceFull = 0;
     while (!evaluation.approvable && round < maxRounds) {
       const targets = revisionTargets(evaluation.scorecard);
       const dimension = pickRevisionDimension(targets);
       if (!dimension) break;
       round++;
+      const parent = current;
+      const beforeEvaluation = evaluation;
       const beforeScorecard = evaluation.scorecard;
       const targetedIssueIds = targets.filter((i) => i.dimension === dimension).map((i) => i.id);
       const revised = await reviseVersion(ctx, {
@@ -536,8 +565,10 @@ export async function produceChapter(
       });
       versions.push(revised.version);
       revision = { rounds: round, dimension, patch_artifact_id: revised.patchArtifactId };
+      const parentText = current.text;
       current = revised.version;
       guard('revise');
+      patchesSinceFull++;
       evaluation = await evaluateVersion(ctx, {
         version: current,
         contract: contract.contract,
@@ -545,7 +576,16 @@ export async function produceChapter(
         canonVersion: bible.canonVersion,
         allowlist,
         round,
+        bible: input.bible,
+        carry: {
+          scorecard: beforeScorecard,
+          versionText: parentText,
+          targetedDimension: dimension,
+          changedClaims: revised.patch.changed_claims.length > 0 || revised.patch.scope === 'scene',
+          patchesSinceFull,
+        },
       });
+      if (evaluation.mode !== 'targeted') patchesSinceFull = 0;
       scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
 
       // ---- ADR-0014 patch regression: the patch must earn its place before it can reach approval.
@@ -581,6 +621,34 @@ export async function produceChapter(
           targeted_resolved: report.targeted.resolved,
         },
       };
+      const singleRound = !roundsByLanguage && manuscriptLang !== 'ko';
+      // ADR-0064: the regressed patch is quarantined and the chapter goes back to the version before it, with
+      // that version's scorecard; the next round may revise again. The regression report stays as evidence.
+      if (!report.passed && ctx.policy.revision.on_regression === 'discard_and_continue') {
+        const rejected = current;
+        await runStep(
+          ctx,
+          'discard_patch',
+          async () => {
+            await quarantineVersion(ctx.pool, rejected.id, `patch_regressed:r${String(round)}`);
+            return { version_id: rejected.id };
+          },
+          `r${String(round)}`,
+        );
+        discarded.push({
+          round,
+          dimension,
+          version_id: rejected.id,
+          regression_artifact_id: regressionRef.artifact_id,
+          failures: report.failures,
+        });
+        current = parent;
+        evaluation = beforeEvaluation;
+        patchesSinceFull = Math.max(0, patchesSinceFull - 1);
+        revision = { ...revision, discarded: [...discarded] };
+        if (singleRound) break;
+        continue;
+      }
       // A failed regression stops the run before the approval lock, so it can never reach canon acceptance.
       if (!report.passed)
         throw new WorkflowError(
@@ -606,9 +674,10 @@ export async function produceChapter(
       // replay byte-identically). A Korean craft-engine run (ADR-0056) may take further rounds, each on
       // the dimension with the most open blocking/major issues and each regression-checked, up to the
       // pinned policy's max_rounds.
-      if (ctx.identity.outputLanguage.language !== 'ko') break;
+      if (singleRound) break;
     }
     revision ??= { rounds: 0 };
+    if (discarded.length) revision = { ...revision, discarded };
 
     // ---- approval lock (blocks on any remaining blocking/major issue or failed gate)
     await approveVersion(ctx, {
@@ -728,7 +797,10 @@ export async function produceChapter(
     if (!(err instanceof WorkflowError) || !ctx.trace.some((t) => t.status === 'failed')) {
       // A quality gate — a blocked approval or a patch that failed its regression check — is an attention
       // state for a human, not an engineering failure.
-      const qualityGate = wf.code === 'APPROVAL_BLOCKED' || wf.code === 'PATCH_REGRESSED';
+      const qualityGate =
+        wf.code === 'APPROVAL_BLOCKED' ||
+        wf.code === 'PATCH_REGRESSED' ||
+        wf.code === 'PLAN_INCONSISTENT';
       await updateJob(ctx.pool, ctx.job.id, {
         status: qualityGate ? 'needs_attention' : 'failed',
         error: wf.toJSON(),
@@ -770,7 +842,64 @@ async function planFromBlueprint(
     const exits = prior.rows[0]?.payload.exit_state_assertions;
     if (exits?.length) previousArcExit = exits.join('; ');
   }
+  // ADR-0061: the next arc starts from what the accepted text established, not only from what the previous
+  // arc planned. The last accepted chapter's summary and ending travel with the planned exit, and the brief
+  // says which one wins.
+  const actual = await acceptedArcEnding(ctx, arc.from);
+  if (actual) {
+    const ko = ctx.identity.outputLanguage.language === 'ko';
+    const planned = previousArcExit;
+    previousArcExit = ko
+      ? `${planned ? `(계획) ${planned}. ` : ''}(승인된 원고, ${actual.chapterNo}화에서 실제로 끝난 상태 — 계획과 다르면 이쪽이 우선한다) ${actual.summary}${actual.hook ? ` 마지막 장면: “${actual.hook}”` : ''}`
+      : `${planned ? `(planned) ${planned}. ` : ''}(accepted text: how chapter ${actual.chapterNo} actually ended — this wins over the plan) ${actual.summary}${actual.hook ? ` Last scene: “${actual.hook}”` : ''}`;
+  }
   return planArcFromBlueprint(ctx, { blueprint, bible, arc, previousArcExit });
+}
+
+/** The accepted chapter just before an arc starts: its L1 summary and ending hook (never a draft). */
+async function acceptedArcEnding(
+  ctx: WorkflowContext,
+  arcFrom: number,
+): Promise<{ chapterNo: number; summary: string; hook: string | undefined } | undefined> {
+  if (arcFrom <= 1) return undefined;
+  const found = await acceptedChapter(ctx.pool, ctx.projectId, arcFrom - 1);
+  if (found.state !== 'accepted') return undefined;
+  const summary = await l1SummaryFor(ctx.pool, found.chapter.version.id);
+  if (!summary) return undefined;
+  return {
+    chapterNo: arcFrom - 1,
+    summary: summary.text,
+    hook: summary.ending_hook ?? undefined,
+  };
+}
+
+/**
+ * The pre-draft plan check (ADR-0063): a checkpointed step whose findings are an artifact of the plan. A
+ * blocking finding stops the chapter as PLAN_INCONSISTENT before any draft is written; resuming replays the
+ * recorded findings, so a re-run never silently drafts a plan that was refused.
+ */
+async function checkPlan(
+  ctx: WorkflowContext,
+  contract: ChapterContract,
+  scenes: readonly unknown[],
+): Promise<void> {
+  const result = await runStep(ctx, 'plan_check', async () => {
+    const { findings } = await planConsistency(ctx.pool, ctx.projectId, contract, scenes);
+    const art = await saveArtifact(ctx, {
+      step: 'plan_check',
+      kind: 'plan_check',
+      key: `plan_check:${String(contract.chapter_number)}`,
+      payload: { chapter_no: contract.chapter_number, findings },
+    });
+    return { artifact_id: art.artifact_id, findings };
+  });
+  const blocking = result.findings.filter((f) => f.blocking);
+  if (blocking.length)
+    throw new WorkflowError('PLAN_INCONSISTENT', blocking.map((f) => f.message).join(' '), {
+      step: 'plan_check',
+      data: { findings: result.findings, artifact_id: result.artifact_id },
+      recommendedActions: ['revalidate_contract'],
+    });
 }
 
 function specSummaryOf(spec: StorySpec, artifactId: string): ChapterProductionResult['spec'] {
@@ -917,6 +1046,13 @@ export interface ExportResult {
   readonly format: 'markdown' | 'text';
   readonly text: string;
   readonly content_hash: string;
+  /** Present for Korean projects only, whose headings read `N화` (audit §5.12); English results are unchanged. */
+  readonly language?: 'ko' | undefined;
+}
+
+/** A chapter heading in the manuscript language: `Chapter N`, or `N화` for a Korean serial. */
+export function chapterHeading(n: number, lang: 'en' | 'ko' = 'en'): string {
+  return lang === 'ko' ? `${n}화` : `Chapter ${n}`;
 }
 
 /** Accepted manuscripts only (through `acceptedChapter`); working/approved/quarantined text never exports. */
@@ -930,6 +1066,15 @@ export async function exportAccepted(
   },
 ): Promise<ExportResult> {
   const format = input.format ?? 'markdown';
+  const lang =
+    (
+      await pool.query<{ output_language: string | null }>(
+        'SELECT output_language FROM projects WHERE id = $1',
+        [input.projectId],
+      )
+    ).rows[0]?.output_language === 'ko'
+      ? 'ko'
+      : 'en';
   const numbers =
     input.chapters ??
     (
@@ -963,8 +1108,8 @@ export async function exportAccepted(
     });
     parts.push(
       format === 'markdown'
-        ? `## Chapter ${n}\n\n${v.text.trim()}\n`
-        : `Chapter ${n}\n\n${v.text.trim()}\n`,
+        ? `## ${chapterHeading(n, lang)}\n\n${v.text.trim()}\n`
+        : `${chapterHeading(n, lang)}\n\n${v.text.trim()}\n`,
     );
   }
   const head = input.title
@@ -979,6 +1124,7 @@ export async function exportAccepted(
     format,
     text,
     content_hash: `sha256:${createHash('sha256').update(text, 'utf8').digest('hex')}`,
+    ...(lang === 'ko' ? { language: 'ko' as const } : {}),
   };
 }
 

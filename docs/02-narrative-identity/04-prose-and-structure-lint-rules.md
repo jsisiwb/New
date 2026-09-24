@@ -127,6 +127,25 @@ code-point spans. Thresholds are starting values in `lang/ko@3` (ADR-0029: calib
 | `SP-*`, `LN-01` | format drift (screenplay, outline, labels, light-novel brackets) | the pattern's severity | hit |
 | `KO-END-01` | final paragraph closes on a summary/reflection (‘그렇게 하루가 저물었다’, ‘시작에 불과했다’ …) | major (structure) | last paragraph |
 | `EXEMPLAR-COPY` | a studio exemplar line of ≥ 14 characters appears verbatim | major | hit |
+| `KO-SP-*` 맞춤법 (ADR-0062) | each hit of a language-layer `spelling` pattern (‘낮설다’, ‘몇일’, ‘금새’ …); the note names the correction | minor per hit | hit |
+| `KO-END-02` (ADR-0062) | a run of narration sentences closing on the same two syllables | warn → minor, fail → major | paragraphs |
+| `KO-NAME-01` (ADR-0062) | a word one syllable (not the first) away from a registered character name | minor per distinct word; fail count → major | hit |
+| `KO-OVR-01..04` (ADR-0065) | per-1,000자 rate of ‘~것이다/것이었다’, ‘~ㄹ 수 있었다’, ‘~기 시작했다’, ‘~것이 느껴졌다’ | warn → minor, fail → major | paragraphs |
+| `KO-COMMA-RATE` (ADR-0065) | commas per 1,000자 in narration (quotes excluded) | warn → minor, fail → major | paragraphs |
+| `KO-SENT-LONG` (ADR-0065) | share of narration sentences over 60자 (mean and 90th percentile reported) | warn → minor, fail → major | paragraphs |
+| `KO-DLG-SHARE` (ADR-0065) | dialogue plus 속마음 (‘…’) share below the floor; replaces `KO-DLG-LOW` in `lang/ko@5` | warn → minor, fail → major | — |
+| `KO-END-03` (ADR-0065) | final paragraph matches the reflective-ending list; replaces `KO-END-01` in `lang/ko@5` | major (structure) | last paragraph |
+| `EXEMPLAR-NEAR` (ADR-0065) | share of a paragraph's 8-character shingles found in the studio exemplars | warn → minor, fail → major | paragraph |
+| `KO-NAME-02` (ADR-0065) | a word one or two compatibility jamo from a registered name, never a registered name, short form or alias; replaces `KO-NAME-01` in `lang/ko@5` | minor per distinct word; fail count → major | hit |
+| `KO-WIN-LINE` (ADR-0065) | a status window with more than one field on a line | minor | paragraph |
+
+KO-END-02 and KO-NAME-01 run only when the language layer carries their thresholds (`lang/ko@4` onward), so
+a project pinned to an earlier layer lints as it did. The report also carries `monologue_ratio`, the ‘…’
+(속마음) share, next to the dialogue share.
+
+The ADR-0065 rules run only when the language layer carries their thresholds (`lang/ko@5` onward); the digest
+then gains one line with the mean and 90th-percentile sentence length, the long-sentence share, the comma rate
+and the dialogue plus 속마음 share.
 
 Major findings gate approval and are revision targets; minor findings are evidence for the prose judge and
 the reviser. The digest (metrics line + strongest findings) is the prose judge's `prose_lint_report`.

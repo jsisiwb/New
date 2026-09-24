@@ -16,3 +16,6 @@ export * from './novel-runner.js';
 export * from './anchoring.js';
 export * from './identity-from-intake.js';
 export * from './simulated-model.js';
+export * from './series-audit.js';
+export * from './run-report.js';
+export * from './relint.js';

@@ -3,11 +3,13 @@
 useDefault = true
 
 [allowlist]
-description = "Fixture UUIDs and schema hashes are not secrets"
+description = "Fixture UUIDs, schema hashes and token-estimator ids are not secrets"
 regexes = [
   '''0191b2a0-0000-7000-8000-[0-9a-f]{12}''',
   '''sha256:[0-9a-f]{64}''',
   '''sha256:placeholder-[a-z0-9-]+''',
+  # Estimator ids recorded in pack manifests (`*_TOKEN_ESTIMATOR_ID = 'korean_chars_v1'` reads as an API key).
+  '''^(?:english_estimator|korean_chars)_v[0-9]+$''',
 ]
 paths = [
   '''pnpm-lock\.yaml''',

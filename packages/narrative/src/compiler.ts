@@ -4,6 +4,7 @@
  * always the first two sections and are never shed; every other section sheds in reverse priority when the
  * role budget is exceeded, and overflow of the unsheddable core is a compile error, never a truncation.
  */
+import { estimateTokensKo } from '@yeonjae/prose';
 import { type ComposedIdentity, sha256 } from './profiles.js';
 import {
   IDENTITY_TAIL_KO,
@@ -29,6 +30,7 @@ export type RoleVariant =
   | 'judge_rubric_prose'
   | 'judge_rubric_structure'
   | 'judge_rubric_genre'
+  | 'judge_rubric_voice'
   | 'summarizer_min';
 
 export interface ParticipantDigest {
@@ -308,6 +310,8 @@ const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
   judge_rubric_prose: ['prose_rubric', 'avoid', 'register', 'terminology', 'naming'],
   judge_rubric_structure: ['structure', 'cadence', 'structure_rubric', 'genres'],
   judge_rubric_genre: ['genres', 'genre_rubric', 'terminology'],
+  // ADR-0060: voice is judged against register rules, the participants' voice cards and naming.
+  judge_rubric_voice: ['register', 'participants', 'naming', 'avoid'],
   summarizer_min: ['naming', 'terminology'],
 };
 
@@ -374,7 +378,9 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     preferences: { name: 'preferences', text: R.preferences(id), priority: 40 },
     // Korean-only craft sections (ADR-0056); empty for English identities, so English blocks keep their bytes.
     avoid: { name: 'avoid', text: isKo ? renderAvoidKo(id) : '', priority: 72 },
-    exemplars: { name: 'exemplars', text: isKo ? renderExemplarsKo(id) : '', priority: 50 },
+    // ADR-0062: exemplars are the most direct lever against 번역투, so they outrank everything but the
+    // participants' voice cards; setting, preferences and cadence go first when a Korean block is tight.
+    exemplars: { name: 'exemplars', text: isKo ? renderExemplarsKo(id) : '', priority: 86 },
     restrictions: {
       name: 'restrictions',
       text: opts.contentRestrictions?.length ? bullet(opts.contentRestrictions) : '',
@@ -411,9 +417,10 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
         `## Output-Language Contract (English)\n${langContract}`,
         `## Narrative-Tradition Contract (Korean serialized webnovel)\n${tradContract}`,
       ];
+  const est = isKo ? estimateTokensKo : estimateTokens;
   const coreTokens =
-    estimateTokens(core.join('\n\n')) +
-    estimateTokens(
+    est(core.join('\n\n')) +
+    est(
       wanted
         .filter((s) => s.priority === Infinity)
         .map((s) => s.text)
@@ -427,9 +434,9 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
   const byPriority = [...wanted].sort(
     (a, b) => b.priority - a.priority || a.name.localeCompare(b.name),
   );
-  let total = estimateTokens(core.join('\n\n'));
+  let total = est(core.join('\n\n'));
   for (const s of byPriority) {
-    const t = estimateTokens(s.text) + 4;
+    const t = est(s.text) + 4;
     if (s.priority === Infinity || total + t <= opts.budgetTokens) {
       included.push(s);
       total += t;
@@ -487,7 +494,7 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
       ...ordered.map((s) => s.name),
     ],
     droppedSections: dropped,
-    estTokens: estimateTokens(body),
+    estTokens: est(body),
     identityTail: tail,
   };
 }

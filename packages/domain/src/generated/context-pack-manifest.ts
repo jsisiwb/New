@@ -114,6 +114,7 @@ export interface ContextPackManifest {
       | 'requirement'
       | 'scene_plan'
       | 'scene_text'
+      | 'state_ledger'
       | 'summary'
       | 'timeline'
       | 'untrusted'

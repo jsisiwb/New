@@ -2,7 +2,7 @@
  * CLI commands available in Checkpoint 1. Each command is a pure function over its inputs so it can be unit
  * tested without a TTY; main.ts only parses argv and prints. Later checkpoints add project/chapter commands.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   checkOutputLanguage,
@@ -84,6 +84,10 @@ import {
 } from '@yeonjae/context';
 import { loadPolicies as loadPolicyMap, type PolicyRef } from '@yeonjae/domain';
 import {
+  auditSeries,
+  buildRunReport,
+  relintAccepted,
+  renderRunReport,
   exportAccepted,
   ExportRefusedError,
   prepareExport,
@@ -262,11 +266,67 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         if (!title) return { ok: false, output: USAGE };
         // `--workspace=<id>` places the project in an existing workspace (the one `user:create` made), so
         // the web console's signed-in operator can see it; without it a fresh local workspace is created.
+        // `--policy=<ref>` pins a shipped Production Policy, e.g. policy/standard@2 (ADR-0060 evaluation).
+        const policy = flags.find((f) => f.startsWith('--policy='))?.slice('--policy='.length);
+        if (policy !== undefined && !loadPolicies().has(policy as PolicyRef))
+          return {
+            ok: false,
+            output: {
+              error: 'POLICY_UNKNOWN',
+              detail: `${policy}; known: ${[...loadPolicies().keys()].join(', ')}`,
+            },
+          };
         const ws =
           flags.find((f) => f.startsWith('--workspace='))?.slice('--workspace='.length) ??
           (await createWorkspace(pool, 'local'));
-        const p = await createProject(pool, { workspaceId: ws, title });
+        const p = await createProject(pool, {
+          workspaceId: ws,
+          title,
+          ...(policy !== undefined ? { policyVersion: policy } : {}),
+        });
         return { ok: true, output: { workspace_id: ws, ...p } };
+      }
+      case 'series:audit': {
+        // ADR-0061: deterministic whole-serial audit (overdue promises, absent characters, story-time
+        // regressions, repeated openings). Reads accepted canon only and blocks nothing.
+        const [projectId, ...flags] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        const absent = flags.find((f) => f.startsWith('--absent-after='));
+        return {
+          ok: true,
+          output: await auditSeries(pool, projectId, {
+            ...(absent
+              ? { absentAfterChapters: Number(absent.slice('--absent-after='.length)) }
+              : {}),
+          }),
+        };
+      }
+      case 'quality:run-report': {
+        // Audit §8.4/§10.5/§11: what a run persisted — scorecards per round, gates, lint by rule, plan
+        // checks, quarantined versions, model calls by role. Reads only; safe beside a live run.
+        const [projectId, ...flags] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        const log = flags
+          .find((f) => f.startsWith('--metrics-log='))
+          ?.slice('--metrics-log='.length);
+        const report = await buildRunReport(pool, projectId, {
+          ...(log ? { normalizations: lastNormalizations(log) } : {}),
+        });
+        return { ok: true, output: flags.includes('--json') ? report : renderRunReport(report) };
+      }
+      case 'quality:lint-ko': {
+        // The Korean lint over accepted chapters, optionally under another language layer (calibration aid).
+        const [projectId, ...flags] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        const layer = flags.find((f) => f.startsWith('--layer='))?.slice('--layer='.length);
+        const chapter = flags.find((f) => f.startsWith('--chapter='))?.slice('--chapter='.length);
+        return {
+          ok: true,
+          output: await relintAccepted(pool, projectId, {
+            ...(layer ? { layer } : {}),
+            ...(chapter ? { chapter: Number(chapter) } : {}),
+          }),
+        };
       }
       case 'entity:create': {
         const [projectId, type, displayName] = rest;
@@ -1408,6 +1468,9 @@ export const DB_COMMANDS = new Set([
   ...NOVEL_COMMANDS,
   'db:migrate',
   'project:create',
+  'series:audit',
+  'quality:run-report',
+  'quality:lint-ko',
   'entity:create',
   'manuscript:import',
   'manuscript:approve',
@@ -1572,7 +1635,18 @@ export const USAGE = `yeonjae <command> [args]
 
 Database commands (DATABASE_URL required):
   db:migrate                                   apply forward-only migrations
-  project:create <title> [--workspace=<id>]    create a project (+ main timeline) in a workspace (new one unless given)
+  project:create <title> [--workspace=<id>] [--policy=<ref>]
+                                               create a project (+ main timeline) in a workspace (new one unless given);
+                                               --policy pins a shipped policy, e.g. policy/standard@2
+  series:audit <project> [--absent-after=<n>]  whole-serial audit: overdue promises, absent characters,
+                                               story-time regressions, repeated openings (accepted canon only)
+  quality:run-report <project> [--metrics-log=<file>] [--json]
+                                               a run as persisted: per-chapter scorecards (gates, dimensions,
+                                               lint by rule), plan checks, quarantined versions, model calls by
+                                               role (attempts, latency, tokens); Markdown unless --json
+  quality:lint-ko <project> [--layer=<ref>] [--chapter=N]
+                                               the Korean lint over accepted chapters, optionally under another
+                                               language layer (e.g. lang/ko@5); findings by rule and metrics
   entity:create <project> <type> <name>        add a bible entity
   manuscript:import <project> <chapter#> <file> store an immutable working version (NFC, measured)
   manuscript:approve <version>                 approval-lock a working version (gate outcome)
@@ -1676,4 +1750,19 @@ export function run(argv: readonly string[]): CommandResult {
     default:
       return { ok: false, output: USAGE };
   }
+}
+
+/**
+ * The newest cumulative normalizer snapshot from a `novel:run --metrics-log` file (one JSON object per
+ * line); an absent or empty log reports none.
+ */
+export function lastNormalizations(path: string): Record<string, number> {
+  if (!existsSync(path)) return {};
+  const lines = readFileSync(path, 'utf8')
+    .split('\n')
+    .filter((l) => l.trim());
+  const last = lines[lines.length - 1];
+  if (!last) return {};
+  const parsed = JSON.parse(last) as { normalizations?: Record<string, number> };
+  return parsed.normalizations ?? {};
 }

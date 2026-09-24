@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { toNfcText } from './nfc.js';
-import { countSentences, countWords, judgeLength, measure, targetCount } from './length.js';
+import {
+  countKoreanChars,
+  countSentences,
+  countWords,
+  estimateTokensKo,
+  judgeLength,
+  KOREAN_TOKEN_ESTIMATOR_ID,
+  measure,
+  targetCount,
+} from './length.js';
 
 const FIXTURE = fileURLToPath(
   new URL('../../../examples/fixture/manuscripts/ch09.accepted.txt', import.meta.url),
@@ -67,6 +76,14 @@ describe('length model (ADR-0034)', () => {
     expect(m.words).toBe(9); // 어절 count: space-separated Korean words
     expect(targetCount(m, 'characters')).toBe(m.characters);
     expect(targetCount(m, 'words')).toBe(m.words);
+  });
+
+  it('estimates Korean tokens as one per 자, the same count as the length model (ADR-0059, ADR-0062)', () => {
+    const nfc = toNfcText('김도윤은 잠에서 깨었다.\r\n\r\n“몇 시지?”\n대답은 없었다.');
+    expect(KOREAN_TOKEN_ESTIMATOR_ID).toBe('korean_chars_v1');
+    expect(countKoreanChars(nfc.text)).toBe(measure(nfc).characters);
+    expect(estimateTokensKo(nfc.text)).toBe(measure(nfc).characters);
+    expect(estimateTokensKo('가 나\r\n다')).toBe(4);
   });
 
   it('judges a Korean character target within tolerance', () => {

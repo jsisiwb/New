@@ -166,6 +166,53 @@ that scene is shorter than `previous_tail_extend_to_scene_below_words`, starting
 states as of `story_time.start`), (f) elapsed story time between k−1 end and k start from the contract. If chapter k−1 is not accepted, chapter k cannot start (FR-7.13). For k=1, (b)
 is replaced by the concept's chapter-one hook plan.
 
+### 4.1 Long-story memory (ADR-0061)
+
+Chapter k−1 is not the only memory. Beyond it:
+
+- **Story so far** (`story_so_far`, T2; writer, chapter planner, continuity checker). The L1 summaries of
+  every accepted chapter before k−1, in blocks of ten chapters, one item per block. The newest block ranks
+  first, so a tight budget sheds the oldest. The digest is deterministic: accepted summaries only, never a
+  model call and never a draft.
+- **First meetings** (`first_meetings`, T1; same templates). For each pair of on-page participants, this
+  gives the accepted chapter in which both first took part in a canonical event, or states that they
+  never have. Pairs related from before the story are marked as related. A pair that has not met must not
+  know each other's names before an introduction.
+- **Overdue promises.** An open promise past the end of its due window is always in the promise section,
+  whoever is on page. Its line states the number of chapters it is overdue, and it ranks as most urgent.
+- **Arc chaining.** The brief for the next arc carries the previous arc's planned exit together with how
+  the last accepted chapter actually ended (its L1 summary and ending hook). The accepted text wins where
+  they differ.
+- **Series audit.** `series:audit` is a deterministic whole-serial report, and it blocks nothing. It
+  lists overdue promises, characters absent from canonical events past a threshold, canonical story time
+  that moves backwards between chapters, and openings that read like the previous chapter's opening.
+
+### 4.2 State ledgers (ADR-0063)
+
+The **state ledger** (`state_ledger`, T1; writer, chapter planner, continuity checker) is a set of compact tables
+projected from accepted canon and accepted text at the chapter's start. It adds no store: facts are committed
+atomically at acceptance and read at the pinned canon version, so the same inputs give the same tables.
+
+- **Character state cards** for the on-page characters: location, condition, rank/level/stats, skills and
+  titles, possessions, affiliation, goal and emotion where canon carries them, dead or alive, and the last
+  chapter with a canonical appearance.
+- **Story clock and countdowns**: where this chapter starts and where the previous chapter's last canonical
+  event ended; the latest accepted mention of each countdown (`D-N`, `…까지 N일 남았다`), with the days left at
+  this chapter's start when the elapsed story days are known.
+- **호칭/말높이 matrix** per directed pair of on-page speakers: registered address terms and the expected 말높이.
+- **Status-window format**: the bracket style and field labels fixed by the first accepted status window.
+
+Under a policy with `evaluation.ledger_checks`, each draft is checked against the ledgers (countdowns,
+status-window format, registered address terms), and under `planning.plan_check` the contract and scene plans
+are checked before drafting; a dead character on page or story time running backwards stops the chapter as
+`PLAN_INCONSISTENT`.
+
+Under `planning.scene_plan_format: labelled` (ADR-0068) a Korean writer receives its scene plan as labelled
+Korean text — objective, POV, participants and location by name, story time, beats with their effect tags,
+entry and exit state, planned state changes, dialogue share, continuity anchors, what not to do, speaker pairs
+with their 말높이 and the length target in 자 — instead of the plan object as JSON. English writers always
+receive JSON.
+
 ## 5. Caching and deduplication
 
 - Section-level cache keyed by content hash (identity block, Active Constraint Set, bible slice, L4

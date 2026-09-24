@@ -11,6 +11,7 @@ import { type Client, type Pool, rethrowCanon, withTransaction } from './client.
 import { type StoryClock } from '@yeonjae/domain';
 import { toNfcText } from '@yeonjae/prose';
 import { createHash } from 'node:crypto';
+import { containsPattern, koreanQueryTerms } from './korean-query.js';
 import { type FactRow, type KnowledgeRow, type ManuscriptVersionRow } from './repo.js';
 
 type Queryable = Pool | Client;
@@ -129,8 +130,8 @@ export async function upsertL1Summary(
     .digest('hex')}`;
   const r = await db
     .query<SummaryRow>(
-      `INSERT INTO summaries (workspace_id, project_id, tier, scope_kind, chapter_from, chapter_to, manuscript_version_id, text, ending_hook, canon_version, prompt_version_id, content_hash)
-       VALUES ($1, $2, 'L1', 'chapter', $3, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO summaries (workspace_id, project_id, tier, scope_kind, chapter_from, chapter_to, manuscript_version_id, text, ending_hook, canon_version, prompt_version_id, content_hash, language)
+       VALUES ($1, $2, 'L1', 'chapter', $3, $3, $4, $5, $6, $7, $8, $9, (SELECT output_language FROM projects WHERE id = $2))
        ON CONFLICT (manuscript_version_id) WHERE tier = 'L1'
        DO UPDATE SET text = EXCLUDED.text, ending_hook = EXCLUDED.ending_hook, canon_version = EXCLUDED.canon_version,
                      prompt_version_id = EXCLUDED.prompt_version_id, content_hash = EXCLUDED.content_hash
@@ -206,6 +207,11 @@ export interface LexicalQuery {
   /** English query text; words are OR-ed for recall (`mode: 'any'`, default) or AND-ed (`mode: 'all'`). */
   readonly query: string;
   readonly mode?: 'any' | 'all' | undefined;
+  /**
+   * The project's manuscript language. `ko` searches Korean documents by particle-stripped stems over the
+   * trigram index, with registry aliases expanded (ADR-0058); `en` (default) uses English full-text search.
+   */
+  readonly language?: 'en' | 'ko' | undefined;
   readonly timelineId?: string | undefined;
   readonly entityIds?: readonly string[] | undefined;
   readonly chapterMax?: number | undefined;
@@ -218,6 +224,7 @@ export interface LexicalQuery {
  * chapter upper bound (never read the future), kinds. Ordering is total: rank desc, chapter asc, id asc.
  */
 export async function lexicalSearch(db: Queryable, q: LexicalQuery): Promise<SearchHit[]> {
+  if (q.language === 'ko') return koreanLexicalSearch(db, q);
   const words = q.query
     .split(/\s+/)
     .map((w) => w.replace(/["'’“”()]/g, ''))
@@ -247,6 +254,71 @@ export async function lexicalSearch(db: Queryable, q: LexicalQuery): Promise<Sea
     `SELECT d.id, d.kind, d.ref_kind, d.ref_id, d.ref_key, d.chapter_no, d.clock_ord, d.timeline_id, d.entity_ids, d.importance,
             d.text, d.manuscript_version_id, d.canon_version_added,
             ts_rank_cd(d.tsv, websearch_to_tsquery('english', $2))::float8 AS rank
+       FROM search_documents d
+      WHERE ${where.join(' AND ')}
+      ORDER BY rank DESC, d.chapter_no ASC NULLS LAST, d.id ASC
+      LIMIT $${params.length}`,
+    params,
+  );
+  return r.rows;
+}
+
+/** Weight of a registry surface reached through an alias of a query term (the term itself weighs 1). */
+const ALIAS_WEIGHT = 0.8;
+const MAX_KOREAN_TERMS = 16;
+
+/**
+ * Korean search (ADR-0058): each query word is reduced to its stem (one particle or ending removed), stems
+ * that name a registry entity bring the entity's other surfaces (display name, short forms, aliases), and a
+ * document matches when it contains any term. Rank = weighted term hits, then word similarity, then chapter
+ * and id, so the order is total and replays are stable. Backed by the Korean-only trigram index.
+ */
+async function koreanLexicalSearch(db: Queryable, q: LexicalQuery): Promise<SearchHit[]> {
+  const stems = koreanQueryTerms(q.query);
+  if (stems.length === 0) return [];
+  const weights = new Map<string, number>(stems.map((s) => [s, 1]));
+  const registry = await db.query<{ surfaces: string[] }>(
+    `SELECT ARRAY[e.display_name] || e.short_forms || e.aliases AS surfaces
+       FROM entities e
+      WHERE e.project_id = $1 AND e.status = 'active'
+        AND (ARRAY[e.display_name] || e.short_forms || e.aliases) && $2::text[]
+      ORDER BY e.id`,
+    [q.projectId, stems],
+  );
+  for (const row of registry.rows)
+    for (const s of row.surfaces)
+      if (s.length >= 2 && !weights.has(s) && weights.size < MAX_KOREAN_TERMS)
+        weights.set(s, ALIAS_WEIGHT);
+  const terms = [...weights.keys()];
+  const params: unknown[] = [
+    q.projectId,
+    terms,
+    terms.map(containsPattern),
+    terms.map((t) => weights.get(t) ?? 1),
+  ];
+  const where: string[] = ['d.project_id = $1', `d.language = 'ko'`, 'd.text LIKE ANY($3::text[])'];
+  if (q.timelineId) {
+    params.push(q.timelineId);
+    where.push(`(d.timeline_id = $${params.length} OR d.timeline_id IS NULL)`);
+  }
+  if (q.entityIds && q.entityIds.length > 0) {
+    params.push([...q.entityIds]);
+    where.push(`d.entity_ids && $${params.length}::uuid[]`);
+  }
+  if (q.chapterMax !== undefined) {
+    params.push(q.chapterMax);
+    where.push(`(d.chapter_no IS NULL OR d.chapter_no <= $${params.length})`);
+  }
+  if (q.kinds && q.kinds.length > 0) {
+    params.push([...q.kinds]);
+    where.push(`d.kind = ANY($${params.length}::text[])`);
+  }
+  params.push(q.limit ?? 40);
+  const r = await db.query<SearchHit>(
+    `SELECT d.id, d.kind, d.ref_kind, d.ref_id, d.ref_key, d.chapter_no, d.clock_ord, d.timeline_id, d.entity_ids, d.importance,
+            d.text, d.manuscript_version_id, d.canon_version_added,
+            (SELECT sum(u.w * (CASE WHEN d.text LIKE u.p THEN 1 ELSE 0 END) + 0.001 * word_similarity(u.t, d.text))
+               FROM unnest($2::text[], $3::text[], $4::float8[]) AS u(t, p, w))::float8 AS rank
        FROM search_documents d
       WHERE ${where.join(' AND ')}
       ORDER BY rank DESC, d.chapter_no ASC NULLS LAST, d.id ASC
@@ -536,11 +608,186 @@ export async function promisesForChapter(
         AND (p.id = ANY($4::uuid[])
              OR (p.status IN ('open','advanced')
                  AND (p.related_entity_ids && $3::uuid[]
-                      OR (p.due_min_chapter IS NOT NULL AND p.due_min_chapter <= $2::int + $5::int AND coalesce(p.due_max_chapter, 2147483647) >= $2::int - $5::int))))
+                      OR (p.due_min_chapter IS NOT NULL AND p.due_min_chapter <= $2::int + $5::int AND coalesce(p.due_max_chapter, 2147483647) >= $2::int - $5::int)
+                      -- ADR-0061: an overdue open promise is always visible, whoever is on page.
+                      OR (p.due_max_chapter IS NOT NULL AND p.due_max_chapter < $2::int))))
       ORDER BY p.id`,
     [q.projectId, q.chapterNo, [...q.entityIds], [...q.explicitIds], q.window],
   );
   return r.rows;
+}
+
+/** One accepted chapter's L1 summary, for the story-so-far digest (ADR-0061). */
+export interface AcceptedSummaryRow {
+  readonly chapter_no: number;
+  readonly summary_id: string;
+  readonly text: string;
+}
+
+/**
+ * The L1 summaries of every accepted chapter before `beforeChapter`, oldest first. Only the accepted
+ * version of each chapter is read; a chapter without an accepted version is simply absent.
+ */
+export async function acceptedSummariesBefore(
+  db: Queryable,
+  projectId: string,
+  beforeChapter: number,
+): Promise<AcceptedSummaryRow[]> {
+  const r = await db.query<AcceptedSummaryRow>(
+    `SELECT c.number AS chapter_no, s.id AS summary_id, s.text
+       FROM chapters c
+       JOIN manuscript_versions mv ON mv.id = c.accepted_version_id AND mv.status = 'accepted'
+       JOIN summaries s ON s.manuscript_version_id = mv.id AND s.tier = 'L1'
+      WHERE c.project_id = $1 AND c.status = 'accepted' AND c.number < $2
+      ORDER BY c.number`,
+    [projectId, beforeChapter],
+  );
+  return r.rows;
+}
+
+/** An accepted chapter's text, for the story-clock and status-window ledgers (ADR-0063). */
+export interface AcceptedTextRow {
+  readonly chapter_no: number;
+  readonly text: string;
+}
+
+/** A bracketed `label: value` line: the start of a status window. */
+const STATUS_WINDOW_LINE = '(^|\n)[ \t]*[\\[【<「〈『][^\n]{0,40}[:：]';
+
+/**
+ * Accepted texts before `beforeChapter` for the ledgers: the latest `recent` chapters (countdowns, windows) and
+ * the first accepted chapter that carries a bracketed status window (the serial's window format). Accepted
+ * versions only; a chapter without an accepted version is absent.
+ */
+export async function acceptedTextsForLedgers(
+  db: Queryable,
+  projectId: string,
+  beforeChapter: number,
+  recent = 30,
+): Promise<{ recent: AcceptedTextRow[]; firstWindow: AcceptedTextRow | undefined }> {
+  const base = `SELECT c.number AS chapter_no, mv.text
+       FROM chapters c
+       JOIN manuscript_versions mv ON mv.id = c.accepted_version_id AND mv.status = 'accepted'
+      WHERE c.project_id = $1 AND c.status = 'accepted' AND c.number < $2`;
+  const r = await db.query<AcceptedTextRow>(`${base} ORDER BY c.number DESC LIMIT $3`, [
+    projectId,
+    beforeChapter,
+    recent,
+  ]);
+  const w = await db.query<AcceptedTextRow>(`${base} AND mv.text ~ $3 ORDER BY c.number LIMIT 1`, [
+    projectId,
+    beforeChapter,
+    STATUS_WINDOW_LINE,
+  ]);
+  return { recent: [...r.rows].reverse(), firstWindow: w.rows[0] };
+}
+
+/** The last accepted chapter before `beforeChapter` in which each entity took part in a canonical event. */
+export async function lastAppearances(
+  db: Queryable,
+  q: {
+    projectId: string;
+    timelineId: string;
+    asOfVersion: number;
+    entityIds: readonly string[];
+    beforeChapter: number;
+  },
+): Promise<Map<string, number>> {
+  if (q.entityIds.length === 0) return new Map();
+  const r = await db.query<{ entity_id: string; chapter_no: number }>(
+    `SELECT ep.entity_id, max(c.number)::int AS chapter_no
+       FROM event_participants ep
+       JOIN events e ON e.id = ep.event_id
+       JOIN chapters c ON c.id = e.source_chapter_id
+      WHERE e.project_id = $1 AND e.timeline_id = $2 AND e.frame = 'canonical'
+        AND e.asserted_at_version <= $3 AND (e.retracted_at_version IS NULL OR e.retracted_at_version > $3)
+        AND ep.entity_id = ANY($4::uuid[]) AND c.number < $5
+      GROUP BY ep.entity_id`,
+    [q.projectId, q.timelineId, q.asOfVersion, [...q.entityIds], q.beforeChapter],
+  );
+  return new Map(r.rows.map((row) => [row.entity_id, row.chapter_no]));
+}
+
+/** The story clock at which a chapter's last canonical event ends (its end, else its start). */
+export async function latestCanonicalClock(
+  db: Queryable,
+  q: { projectId: string; timelineId: string; asOfVersion: number; chapterNo: number },
+): Promise<StoryClock | undefined> {
+  const r = await db.query<{ clock_start: StoryClock; clock_end: StoryClock | null }>(
+    `SELECT e.clock_start, e.clock_end
+       FROM events e
+       JOIN chapters c ON c.id = e.source_chapter_id
+      WHERE e.project_id = $1 AND e.timeline_id = $2 AND c.number = $3 AND e.frame = 'canonical'
+        AND e.asserted_at_version <= $4 AND (e.retracted_at_version IS NULL OR e.retracted_at_version > $4)
+      ORDER BY e.clock_ord DESC, e.id DESC
+      LIMIT 1`,
+    [q.projectId, q.timelineId, q.chapterNo, q.asOfVersion],
+  );
+  const row = r.rows[0];
+  return row ? (row.clock_end ?? row.clock_start) : undefined;
+}
+
+/** The first accepted chapter in which two characters appear in the same canonical event (ADR-0061). */
+export interface FirstMeetingRow {
+  readonly a: string;
+  readonly b: string;
+  readonly chapter_no: number | null;
+  readonly event_id: string | null;
+  /** The pair has a canon relationship on the timeline (they may know each other from before chapter 1). */
+  readonly related: boolean;
+}
+
+/**
+ * For every pair of `entityIds`, the earliest chapter (and event) in which both take part in a canonical,
+ * unretracted event asserted at or before `asOfVersion` on `timelineId`. A pair that never met has
+ * `chapter_no` null — the writer must not let them greet each other by name before an introduction.
+ */
+export async function firstMeetings(
+  db: Queryable,
+  q: {
+    projectId: string;
+    timelineId: string;
+    entityIds: readonly string[];
+    asOfVersion: number;
+  },
+): Promise<FirstMeetingRow[]> {
+  const ids = [...new Set(q.entityIds)].sort();
+  if (ids.length < 2) return [];
+  const r = await db.query<{ a: string; b: string; chapter_no: number; event_id: string }>(
+    `SELECT DISTINCT ON (a.entity_id, b.entity_id)
+            a.entity_id AS a, b.entity_id AS b, c.number AS chapter_no, e.id AS event_id
+       FROM events e
+       JOIN chapters c ON c.id = e.source_chapter_id
+       JOIN event_participants a ON a.event_id = e.id AND a.entity_id = ANY($3::uuid[])
+       JOIN event_participants b ON b.event_id = e.id AND b.entity_id = ANY($3::uuid[]) AND b.entity_id > a.entity_id
+      WHERE e.project_id = $1 AND e.timeline_id = $2 AND e.frame = 'canonical'
+        AND e.asserted_at_version <= $4 AND (e.retracted_at_version IS NULL OR e.retracted_at_version > $4)
+      ORDER BY a.entity_id, b.entity_id, c.number, e.clock_ord, e.id`,
+    [q.projectId, q.timelineId, ids, q.asOfVersion],
+  );
+  const met = new Map(r.rows.map((row) => [`${row.a}|${row.b}`, row]));
+  const rel = await db.query<{ a: string; b: string }>(
+    `SELECT DISTINCT least(from_entity_id, to_entity_id) AS a, greatest(from_entity_id, to_entity_id) AS b
+       FROM relationship_states
+      WHERE project_id = $1 AND timeline_id = $2
+        AND from_entity_id = ANY($3::uuid[]) AND to_entity_id = ANY($3::uuid[])
+        AND asserted_at_version <= $4 AND (retracted_at_version IS NULL OR retracted_at_version > $4)`,
+    [q.projectId, q.timelineId, ids, q.asOfVersion],
+  );
+  const related = new Set(rel.rows.map((row) => `${row.a}|${row.b}`));
+  const out: FirstMeetingRow[] = [];
+  for (const [i, a] of ids.entries())
+    for (const b of ids.slice(i + 1)) {
+      const row = met.get(`${a}|${b}`);
+      out.push({
+        a,
+        b,
+        chapter_no: row?.chapter_no ?? null,
+        event_id: row?.event_id ?? null,
+        related: related.has(`${a}|${b}`),
+      });
+    }
+  return out;
 }
 
 export interface EventRow {

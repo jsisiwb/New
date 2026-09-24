@@ -11,7 +11,7 @@
  * `novel:start` composes the project's Narrative Identity from the intake when none is pinned, so a project
  * created with `project:create` is usable without an extra step; `--identity` pins a repository profile.
  */
-import { readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import {
   addMember,
   createUser,
@@ -24,7 +24,7 @@ import {
   SharedBudget,
   type Pool,
 } from '@yeonjae/db';
-import { uuidFromKey } from '@yeonjae/domain';
+import { normalizationCounts, uuidFromKey } from '@yeonjae/domain';
 import { Gateway, MemoryBudget, resolveProvidersFromEnv } from '@yeonjae/gateway';
 import {
   advanceNovelRun,
@@ -194,12 +194,24 @@ export async function runNovelCommand(
           };
         }
         const runner = new NovelRunner({ pool, makeDeps: make, runnerId: `cli:${process.pid}` });
+        // Normalizer counters are process-wide and in memory (ADR-0057); a long live run appends a cumulative
+        // snapshot after every tick so a crash or a resume in a new process loses none of them.
+        const metricsLog = flag(args, 'metrics-log');
+        let tick = 0;
         // Drive until nothing is claimable: the run rests (completed, paused, needs_attention, failed).
         while (await runner.tick()) {
-          /* keep claiming while work remains */
+          tick += 1;
+          if (metricsLog)
+            appendFileSync(
+              metricsLog,
+              `${JSON.stringify({ at: new Date().toISOString(), pid: process.pid, tick, normalizations: normalizationCounts() })}\n`,
+            );
         }
         const run = await getNovelRun(pool, projectId);
-        return { ok: run?.status !== 'failed', output: await statusView(pool, projectId) };
+        return {
+          ok: run?.status !== 'failed',
+          output: { ...(await statusView(pool, projectId)), normalizations: normalizationCounts() },
+        };
       }
       case 'novel:status':
         return { ok: true, output: await statusView(pool, projectId) };
@@ -272,7 +284,9 @@ Novel lifecycle (DATABASE_URL + YEONJAE_PROVIDER_MODE required; live mode needs 
                                                interpret the intake and propose story directions (spends R-class calls)
   novel:approve <project> <concept-id> [--one-chapter-at-a-time] [--stop-after=N]
                                                approve a direction; queues full-bible planning then production
-  novel:run <project> [--once]                 drive the run: build the bible, then write chapters until it rests
+  novel:run <project> [--once] [--metrics-log=<file>]
+                                               drive the run: build the bible, then write chapters until it rests;
+                                               --metrics-log appends cumulative normalizer counters after each step
   novel:status <project>                       run state, chapter progress, recent events
   novel:pause <project> | novel:resume <project> [--stop-after=N] | novel:cancel <project>
 `;

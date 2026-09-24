@@ -30,7 +30,7 @@ describe('identityProfileFromIntake manuscript language (ADR-0054)', () => {
       { ...BASE, manuscript_language: 'ko' },
       store,
     );
-    expect(profile.lineage?.output_language).toBe('lang/ko@3');
+    expect(profile.lineage?.output_language).toBe('lang/ko@5');
     expect(profile.lineage?.tradition).toBe('tradition/kr-webnovel@3');
     expect(profile.lineage?.genres).toEqual(['genre/academy@3']);
     expect(profile.output_language?.language).toBe('ko');
@@ -68,6 +68,7 @@ describe('Korean identity block (ADR-0055)', () => {
     'judge_rubric_prose',
     'judge_rubric_structure',
     'judge_rubric_genre',
+    'judge_rubric_voice',
     'summarizer_min',
   ] as const)('renders the %s block in Korean with no English instructions', (role) => {
     const block = compileBlock(identity, { role, budgetTokens: 6000 });
@@ -124,6 +125,20 @@ describe('Korean webnovel craft layers (ADR-0056)', () => {
     expect(planner.text).not.toMatch(/문체 견본/);
     const judge = compileBlock(identity, { role: 'judge_rubric_prose', budgetTokens: 6000 });
     expect(judge.sections).toContain('avoid');
+  });
+
+  it('measures a Korean block in 자 and keeps the exemplars when lower sections must go (ADR-0062)', () => {
+    const full = compileBlock(identity, { role: 'writer_full', budgetTokens: 20000 });
+    expect(full.droppedSections).toEqual([]);
+    expect(full.estTokens).toBe(Array.from(full.text.replace(/\n/g, '')).length);
+    const tight = compileBlock(identity, {
+      role: 'writer_full',
+      budgetTokens: full.estTokens - 300,
+    });
+    expect(tight.sections).toContain('exemplars');
+    expect(tight.droppedSections.length).toBeGreaterThan(0);
+    for (const d of tight.droppedSections)
+      expect(['setting', 'preferences', 'cadence', 'genres']).toContain(d);
   });
 
   it('sheds the exemplars before the core rules under a tight budget', () => {

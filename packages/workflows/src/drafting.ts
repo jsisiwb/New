@@ -4,7 +4,12 @@
  * every call), and deterministic assembly into one immutable working manuscript version.
  */
 import { createHash } from 'node:crypto';
-import { buildPack, PgLexicalRetriever, type ContextPack } from '@yeonjae/context';
+import {
+  buildPack,
+  PgLexicalRetriever,
+  renderScenePlanKo,
+  type ContextPack,
+} from '@yeonjae/context';
 import {
   createManuscriptVersion,
   manuscriptVersionsOf,
@@ -12,7 +17,7 @@ import {
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
 import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
-import { codePointLength, segmentParagraphs, toNfcText } from '@yeonjae/prose';
+import { codePointLength, measure, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
 import { normalizeScenePlans } from './plan-normalize.js';
 import { normalizeSceneDraft } from './anchoring.js';
@@ -62,6 +67,11 @@ export interface StoredPack {
   readonly narrativeIdentityRef: ContextPack['narrativeIdentityRef'];
   readonly renderedSystem: string;
   readonly renderedUser: string;
+  /**
+   * Rendered sections by name (ADR-0060), so an evaluator can read one section instead of the variable it
+   * shares with others. Absent on packs checkpointed before ADR-0060.
+   */
+  readonly sections?: readonly { readonly name: string; readonly text: string }[] | undefined;
 }
 
 export function storedPack(pack: ContextPack): StoredPack {
@@ -75,7 +85,20 @@ export function storedPack(pack: ContextPack): StoredPack {
     narrativeIdentityRef: pack.narrativeIdentityRef,
     renderedSystem: pack.renderedSystem,
     renderedUser: pack.renderedUser,
+    sections: pack.sections.map((s) => ({ name: s.name, text: s.text })),
   };
+}
+
+/**
+ * The text of the named sections of a stored pack, in pack order; `undefined` when the pack predates
+ * section storage, `''` when it has none of them.
+ */
+export function packSections(pack: StoredPack, names: readonly string[]): string | undefined {
+  if (!pack.sections) return undefined;
+  return pack.sections
+    .filter((s) => names.includes(s.name))
+    .map((s) => s.text)
+    .join('\n\n');
 }
 
 export interface BuiltPack {
@@ -106,7 +129,10 @@ export async function buildRolePack(
       promptSetId: ctx.pins.promptSetId,
       chapterText: input.chapterText,
       jobId: ctx.job.id,
-      lexical: input.lexical === false ? undefined : new PgLexicalRetriever(ctx.pool),
+      lexical:
+        input.lexical === false
+          ? undefined
+          : new PgLexicalRetriever(ctx.pool, ctx.identity.outputLanguage.language ?? 'en'),
       persist: true,
     });
     return { pack, ref: packRef(pack, stored), stored: storedPack(pack) };
@@ -290,15 +316,37 @@ export interface SceneDraftRef {
   readonly content_hash: string;
   readonly llm_call_id: string;
   readonly words: number;
+  /**
+   * 자: characters with spaces, without line breaks — the Korean platform unit (ADR-0059). Absent on
+   * checkpoints written before ADR-0059.
+   */
+  readonly characters?: number;
+  /** The manuscript-language check's confidence, whatever the language. */
+  readonly language_confidence: number | undefined;
+  /** @deprecated Kept for checkpoints written before ADR-0059; read `language_confidence`. */
   readonly english_confidence: number | undefined;
 }
 
 /** Sequential drafting: scene k sees the verbatim text of scenes 1..k−1 (job-scoped, never a stored draft). */
 export async function draftScenes(
   ctx: WorkflowContext,
-  input: { contract: ChapterContract; pack: StoredPack; scenes: readonly ScenePlan[] },
+  input: {
+    contract: ChapterContract;
+    pack: StoredPack;
+    scenes: readonly ScenePlan[];
+    /** Registry names; with them a Korean writer under `scene_plan_format: labelled` reads the plan as text. */
+    nameOf?: ((id: string) => string) | undefined;
+  },
 ): Promise<{ drafts: SceneDraftRef[]; texts: string[] }> {
   const ch = input.contract.chapter_number;
+  // ADR-0068: labelled Korean text instead of the plan object, only where the pinned policy says so.
+  const nameOf = input.nameOf;
+  const renderPlan = (scene: ScenePlan) =>
+    ctx.policy.planning?.scene_plan_format === 'labelled' &&
+    ctx.identity.outputLanguage.language === 'ko' &&
+    nameOf
+      ? renderScenePlanKo(scene, nameOf)
+      : JSON.stringify(scene);
   const texts: string[] = [];
   const drafts: SceneDraftRef[] = [];
   for (const scene of input.scenes) {
@@ -317,7 +365,7 @@ export async function draftScenes(
           family: 'scene_writer',
           activityId: `scene_draft:${ch}:${scene.scene_no}`,
           variables: {
-            scene_plan: JSON.stringify(scene),
+            scene_plan: renderPlan(scene),
             scene_no: String(scene.scene_no),
             previous_text: previous,
             length_target_words: String(scene.length_target.value),
@@ -360,6 +408,10 @@ export async function draftScenes(
           content_hash: ref.content_hash,
           llm_call_id: call.llmCallId,
           words: toNfcText(draft.text).text.split(/\s+/).filter(Boolean).length,
+          characters: measure(toNfcText(draft.text)).characters,
+          language_confidence: call.outputLanguageCheck?.performed
+            ? call.outputLanguageCheck.englishConfidence
+            : undefined,
           english_confidence: call.outputLanguageCheck?.performed
             ? call.outputLanguageCheck.englishConfidence
             : undefined,

@@ -3,6 +3,385 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase A — first live Korean run after Workstreams 1–5 — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings--ws12-readme--phase-a`.
+`docs/08-delivery/12-live-run-ws1-7.md` records the run; ADR-0070 the decisions.
+
+**Built:**
+
+- `startNovel` builds its plan context inside its failure handler: a context that cannot be built (an unknown
+  pinned policy, a stale policy hash) fails the run instead of leaving it `suggesting`.
+- `.env.example`: leave `YEONJAE_NOTION_TIMEOUT_MS` empty; the adapter default outlasts the bridge's failover.
+
+**Measured (live, Notion bridge, `policy/standard@2`, `lang/ko@4`):** the Story Spec and two concepts took
+1 h 20 min of wall clock — eight attempts over four calls, five of them aborted by the environment's 600 s
+client deadline (concept 2 lost all three routes; with the adapter default it succeeded first time in
+439 s); the operator approved concept 1; the bible's `character_designer` stage failed three times with
+HTTP 502 from the bridge (48 min) and its retry had not returned when the record was written. No chapter
+was drafted.
+
+**Not done:** chapters 1–5 and everything measured on them (judge sub-scores, gates, lint, revision rounds,
+evaluator latency, an excerpt); A4 and A5 stay open with their evidence criteria (ADR-0070); no live run on
+`standard.v3`–`v5`.
+
+## Workstream 12a — README refresh — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings--ws12-readme`.
+The Step 0 improvement audit (§12.1) the finding.
+
+**Changed:** the README no longer carries implementation status (Checkpoint 7, corpus, cancellation and
+"no live-provider calls / no HTTP client" paragraphs, stale `jsisiwb/New` links); it points to this file
+(ADR-0043). It names the implementation layout (`apps/`, `packages/`), Korean intake fields, the provider
+modes, `quality:run-report`, and describes the manuscript language as the project's (ADR-0054) instead of
+English-only.
+
+**Not done:** the rest of audit §12 (docs index and operator runbook refresh).
+
+## Workstream 5c — Korean export headings — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings`.
+ADR-0069 records the decisions; the Step 0 improvement audit (§5.12) the finding.
+
+**Built:** `chapterHeading(n, lang)`; `exportAccepted` heads Korean chapters `N화` and marks the result
+`language: 'ko'`; the API's TXT and DOCX renderers use the same heading and split a Korean export only on a
+heading line.
+
+**Measured:** the Korean simulated run exports `# 재의 장부`, `## 1화`, `## 2화` with no `Chapter`; a Korean TXT
+render keeps a body line that mentions `2화` inside chapter 1; the English export suite is unchanged.
+
+**Not done:** Korean document locale metadata (the export still accepts only English locales), `characters`
+in the export manifest.
+
+## Workstream 6b — the scene plan as labelled Korean text — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text`.
+ADR-0068 records the decisions; the Step 0 improvement audit (§6.10) the finding.
+
+**Built:**
+
+- `@yeonjae/context` `renderScenePlanKo`: every scene-plan field as labelled Korean text under a PLANNED header,
+  with participants, POV and location by registry name, Korean beat labels and effect tags, speaker pairs
+  with their 말높이, the length target in 자.
+- `planning.scene_plan_format` (`json` | `labelled`, optional) in the policy schema; `draftScenes` renders the
+  plan for a Korean writer when the pinned policy says `labelled`; `standard.v5` = `standard.v4` +
+  `scene_plan_format: labelled`.
+
+**Measured (simulated model):** Korean `standard.v5` run — both chapters accepted; every writer request carries
+a labelled plan (header, objective, numbered beats, length in 자, named participants) and none of the JSON
+keys; 0 Latin-script leaks over every call. Earlier pins keep JSON (their runs are unchanged).
+
+**Not done:** a live run on `standard.v5`; the scene-count and arc-window policy knobs (audit §6.8, §6.9).
+
+## Run report and Korean re-lint — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report`.
+ADR-0067 records the decisions; the Step 0 improvement audit (§8.4, §10.5, §11) the findings.
+
+**Built:**
+
+- `buildRunReport` / `renderRunReport` and `quality:run-report <project> [--metrics-log=<file>] [--json]`:
+  per chapter every evaluated version's gate outcome, gated dimensions (score, threshold, rubric score, lint
+  composite), severity counts, issue sources and Korean lint findings by rule; plan-check findings;
+  quarantined versions; per role calls, attempts, failed attempts, p50/p90/max latency of succeeded attempts,
+  tokens and cost; the wall clock from the run's creation; the newest normalizer snapshot of a
+  `novel:run --metrics-log` file.
+- `relintAccepted` and `quality:lint-ko <project> [--layer=<ref>] [--chapter=N]`: the Korean lint over accepted
+  chapters with the project's names and exemplars, under the pinned or another language layer.
+
+**Measured:** Korean `standard.v4` run (simulated model): the report lists both accepted chapters with their
+자, chapter 1's quarantined regressed patch among its evaluated versions, the four gated dimensions in every
+round and every role's calls; the re-lint reports v5 measurements under the pinned `lang/ko@5` and none
+under `lang/ko@4`. Against the live Phase A database, while the bible stage was running: four calls (eight
+attempts, five failed), with per-role latency.
+
+**Not done:** the other utilities of audit §11, cost/time projection at intake (§10.2), an A/B harness
+(§8.3).
+
+## Workstream 6a — concept seeds and the world-rules term in Korean — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds`. ADR-0066 records
+the decisions; the Step 0 improvement audit (§6.1) the finding.
+
+**Built:**
+
+- `angleSeeds(lang)`: four Korean concept angle seeds with the English seeds' intents, and a Korean fallback
+  past the fourth; the English seeds keep their bytes.
+- `worldRulesTerm(lang)`: bible assembly names the world-rules term `세계 규칙` (Korean description) in Korean
+  projects and `World rules` in English ones.
+
+**Measured (simulated model):** Korean run — every `concept_generator` request carries a Korean seed with no
+Latin letters, and the bible's term entities include `세계 규칙` and not `World rules`. Before this change the
+Latin-script scan passed with the English seeds in every Korean concept prompt, because the simulated model
+echoes its seed and model words are exempt; the new assertions check the seeds and the term directly.
+
+**Not done:** the scene plan still reaches the writer as JSON (audit §6.10); the other planning inputs of
+audit §6 (intake fields, genre taboos as spec items, contract approval, per-chapter direction, the
+고구마/사이다 ledger, scene-count and arc-window policy knobs).
+
+## Workstream 5b — Korean lint v5 — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint`. ADR-0065 records the decisions; the Step 0 improvement audit (§5.5, §7.6) the findings.
+
+**Built:**
+
+- `lang/ko@5`: thresholds (starting values) for `KO-OVR-01..04` (것이다, ~ㄹ 수 있었다, ~기 시작했다, ~것이
+  느껴졌다 rates), `KO-COMMA-RATE`, `KO-SENT-LONG`, `KO-DLG-SHARE` (dialogue + 속마음, replacing `KO-DLG-LOW`),
+  `KO-END-03` (reflective-ending list, replacing `KO-END-01`), `EXEMPLAR-NEAR` (8-character shingles),
+  `KO-NAME-02` (compatibility-jamo distance, replacing `KO-NAME-01`) and `KO-WIN-LINE`. Each runs only when the
+  layer carries its threshold; new projects compose `lang/ko@5`.
+- `@yeonjae/prose` `lintV5`, merged into `lintKoreanWebnovel`; v5 measurements (`metrics.v5`) and one extra
+  digest line exist only for v5 layers.
+
+**Measured (deterministic):** a synthetic translated-prose passage (studio test strings, audit §7.6) fails
+`KO-OVR-01..04`, `KO-COMMA-RATE` and `KO-END-03` under `lang/ko@5` with at least four major findings, and
+triggers none of the v5 rules under `lang/ko@4`, whose digest keeps its bytes; 서지누 is one jamo from 서진우
+while the short form 진우 is never flagged; the Korean simulated runs pass on `lang/ko@5` with 0 Latin-script
+leaks.
+
+**Not done:** genre-aware Latin allowances, an offline spelling/spacing checker (§5.6), naming fit (§5.8), POV
+as a project choice (§5.13), per-role sampling in the policy (§5.15); the thresholds are uncalibrated.
+
+## Workstream 7a — revision continues past a regressed patch — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision`. ADR-0064 records the decisions; the
+Step 0 improvement audit (§7.3, §7.4) the findings.
+
+**Built:**
+
+- `revision.on_regression: discard_and_continue`: a patch that fails the ADR-0014 regression check is
+  quarantined in a checkpointed `discard_patch` step, the chapter returns to the version before it with its
+  scorecard, and the next round may revise again; the result lists the discarded patches.
+- `revision.rounds_by_language`: revision rounds per manuscript language from the policy (absent: English one
+  round, Korean up to `max_rounds`, as before).
+- `standard.v4` = `standard.v3` + `on_regression: discard_and_continue` + `rounds_by_language: {en: 1, ko: 3}`.
+- Migration 0022: `quarantine_versions` gets its own `language IN ('en','ko')` check. Before it,
+  `canon.quarantine_version` failed for every Korean version (the copied ADR-0026 check), found by the first
+  Korean run that discarded a patch.
+
+**Measured (simulated model):** Korean `standard.v4` run — chapter 1's round-1 patch regressed and was
+quarantined (`patch_regressed:r1`), the round-2 patch passed, chapter 1 was accepted on a version that does not
+descend from the discarded patch, chapter 2 followed; 0 Latin-script leaks.
+
+**Not done:** audit §7.1, 7.2, 7.5, 7.7, 7.8, 7.9 and 7.10 (ADR-0064, Consequences).
+
+## Workstream 4b — state ledgers and the pre-draft plan check — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers`. ADR-0063 records the decisions; the Step 0
+improvement audit (§4.3, §4.4) the findings.
+
+**Built:**
+
+- `@yeonjae/prose`: `extractCountdowns` / `checkCountdowns` (`D-N`, `…까지 열흘 남았다`; `N일 뒤` is not a
+  countdown), `parseStatusWindows` / `statusWindowFormat` / `checkStatusWindows`, `checkAddressRegister`.
+- `@yeonjae/db`: `acceptedTextsForLedgers` (accepted versions only), `lastAppearances`,
+  `latestCanonicalClock`.
+- `@yeonjae/context`: `loadLedgers` / `renderLedgers` and a `state_ledger` T1 section (new manifest item kind)
+  in `pack.scene_writer`, `pack.chapter_planner` and `pack.continuity_checker`, now `1.2.0`: state cards,
+  story clock and countdowns, 호칭/말높이 matrix, status-window format, in Korean for Korean packs.
+- `@yeonjae/workflows`: `draftLedgerFindings` in `evaluateVersion` under `evaluation.ledger_checks`
+  (CLOCK-COUNT-01/02, FMT-WINDOW-01/02, REG-ADDR-01 as scorecard issues); a checkpointed `plan_check` step under
+  `planning.plan_check` (PLAN-DEAD-01 and PLAN-CLOCK-01 stop the chapter as `PLAN_INCONSISTENT`, an attention
+  state; PLAN-COUNT-01 and PLAN-MEET-01 are recorded).
+- `standard.v3` = `standard.v2` + `evaluation.ledger_checks` + `planning.plan_check` (schema: optional
+  `evaluation.ledger_checks`, optional `planning` block). New projects keep their default policy.
+
+**Measured (deterministic suites, no live provider):**
+
+- Fixture canon at chapter 10 (English pack): four state cards (Mu-jin's location and venom injury,
+  Do-yoon's rank and sealed mana stones, last appearances), four directed address rows with expected speech
+  levels, and the clock line `ch.10.0 (D+36)` after `ch.9.46 (D+35)`; the Korean pack renders the same
+  ledger in Korean.
+- Korean chapters accepted through the real acceptance path: the ledger keeps chapter 2's `게이트까지 이레 남`
+  (7) and ignores a working chapter's `하루`; the status-window format comes from chapter 1.
+- Korean `standard.v3` run (simulated model): one plan-check artifact per chapter, no blocking finding, the
+  Korean ledger in every writer prompt, 0 Latin-script leaks over every call.
+
+**Not done:** re-planning with the findings (needs a scene-planner version with a feedback slot), a
+place/direction ledger (canon holds no structured directions), goal/emotion extraction, and a live run on
+`standard.v3`.
+
+## Workstream 5 — prose quality for Korean manuscripts — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws2b--ws3--ws4--ws5`, ported from sigma41web/New#7 (branch
+`hoplite/mende-33d541c8--ws5-prose-quality`, stacked on Workstream 4). ADR-0062 records the decisions, and
+the Step 0 improvement audit (§5, PR #1) records the findings.
+
+**Built:**
+
+- The identity compiler measures Korean blocks with `estimateTokensKo` (one token per 자).
+- Port onto Workstream 2b: the two Korean estimators (WS2b's in `@yeonjae/context`, this workstream's in
+  `@yeonjae/narrative`) are one: `korean_chars_v1` in `@yeonjae/prose`, the same count as the length
+  model's `characters`; the identity compiler imports it and `@yeonjae/context` re-exports it. No profile
+  contains a carriage return, the only input the two copies counted differently, so no block changes size.
+- Port onto Workstream 2b: a lint test applies the Latin-script scan's word rule to the lint digest with
+  every new rule firing (KO-SP-01..03, KO-END-02, KO-NAME-01): only rule ids and severity tags are Latin.
+- Exemplars now have priority 86, up from 50.
+- Korean writer and editor packs give the block 35% of the pack budget; English blocks are unchanged.
+- The Korean language layer v4 adds 22 `spelling` patterns and thresholds for KO-END-02 (ending monotony)
+  and KO-NAME-01 (misspelled character names). Both rules run only for layers that carry their
+  thresholds.
+- The lint reports `monologue_ratio`.
+- Evaluation passes the bible's character names to the lint.
+
+**Measured:** Korean writer blocks composed from intake:
+
+| Genre | Size | Dropped at 8,400 (35% of 24,000) | Exemplars kept |
+| --- | --- | --- | --- |
+| hunter-gate | 5,185자 | nothing | yes |
+| regression | 6,235자 | nothing | yes |
+| academy | 6,653자 | nothing | yes |
+
+At the old 6,000 cap the same blocks would have dropped cadence and setting, or genres. The English
+estimator had counted them as about a third of their size.
+
+**Not done:** user style samples (Workstream 6), a polish pass, best-of-N candidates, continuation and
+trim, Korean export headings, and prompt-rule restructuring (Workstream 9).
+
+## Workstream 4 — long-story memory — 2026-09-23
+
+Branch `hoplite/kamarina-b0515922--ws2b--ws3--ws4`, ported from sigma41web/New#6 (branch
+`hoplite/mende-33d541c8--ws4-long-memory`, stacked on Workstream 3). ADR-0061 records the decisions; the
+Step 0 improvement audit (§4, PR #1) records the findings.
+
+**Built:**
+
+- `promisesForChapter` always returns overdue open promises. Their pack line reads `OVERDUE by N chapters`
+  (`회수 기한 N화 초과`), and they rank as most urgent.
+- New pack sections `story_so_far` (T2) and `first_meetings` (T1) in `pack.scene_writer`,
+  `pack.chapter_planner` and `pack.continuity_checker`, all three now `1.1.0`.
+  - `story_so_far` gives the accepted L1 summaries before k−1 in ten-chapter blocks, newest first.
+  - `first_meetings` gives, for each on-page pair, the first chapter they shared a canonical event, or that
+    they have not met, or that they are related from before the story.
+  - The data comes from two new db reads: `acceptedSummariesBefore` and `firstMeetings`.
+- The next arc's brief carries the last accepted chapter's summary and ending next to the planned exit, and
+  the accepted text wins.
+- `auditSeries` and `series:audit` form a deterministic whole-serial report. It lists overdue promises,
+  characters absent for more than 20 chapters, canonical story-time regressions and repeated openings.
+
+**Measured:**
+
+- 120-chapter replay: all 120 chapters were accepted with no replay misses.
+  - Chapter 120's writer pack carries all 12 story-so-far blocks (chapters 1–118) and its first-meeting
+    line within budget.
+  - The series audit ran twice and gave identical reports: 0 overdue promises, 4 characters absent for more
+    than 20 chapters, 0 story-time regressions, and 119 repeated openings. The repeated openings are real:
+    the synthetic fixture opens every chapter with the same template sentence.
+- Context integration test: an overdue promise that shares no participant with chapter 10 now reaches the
+  writer. Chapter 3 is in the digest. The chapter-9 first meeting of Mu-jin and Do-yoon is rendered.
+- Port onto Workstream 2b: the same canon read by a Korean pack renders all three new surfaces in Korean
+  (`회수 기한 4화 초과`, `3~3화` / `3화:`, `9화에 처음 함께 나왔다`) under Korean section titles, with none of
+  the English template phrases.
+
+**Not done:**
+
+- Model-written L2–L4 summaries.
+- The retcon flow (edit an accepted chapter, re-extract, list dependent chapters).
+- Deterministic planning-time enforcement of overdue promises; the promise checker and the audit report
+  them instead.
+- The Korean arc-chaining brief (`(승인된 원고, N화에서 실제로 끝난 상태 …)`) is not exercised by a Korean
+  test: the two-chapter Korean run never crosses an arc boundary, so the Latin-script scan does not reach it.
+
+## Workstream 3 — evaluation v2 — 2026-09-23
+
+Branch `hoplite/kamarina-b0515922--ws2b--ws3`, ported onto Workstream 2b from sigma41web/New#5 (branch
+`hoplite/mende-33d541c8--ws3-evaluators`, stacked on Workstream 1 `c21c7df`). ADR-0060 records the
+decisions; the Step 0 improvement audit (§3, PR #1) records the findings.
+
+**Built:**
+
+- Prompt families @4.4.0. `continuity_checker` reads the locked facts in their own slot, and the timeline
+  once. `knowledge_leak_checker` reads stances, guards and reader secrets separately. `voice_judge` runs on
+  its own `judge_rubric_voice` block with voice cards, designed address terms and a dialogue register
+  report. `genre_judge` reads a terminology and status-window report. The new families are
+  `promise_checker` and `repetition_judge`; their answer schemas are in `model-output.schema.json`, and
+  every 4.4.0 output shape is schema-generated.
+- Checker packs keep their rendered sections by name (`StoredPack.sections`).
+- `@yeonjae/prose` gains `checkDialogueRegister` (합쇼체/해요체/반말 per utterance; polite-and-반말 mixing
+  inside one quotation) and `repetitionReport` (reuse against earlier accepted chapters, opening and
+  ending similarity, repeated sentence openings).
+- The Production Policy has an `evaluation` block, and `standard.v2` is standard.v1 plus that block.
+  `evaluateVersion` runs evaluators in parallel with findings in a fixed order, runs the optional
+  evaluators, composes gated scores from rubric sub-scores and deterministic composites, and carries
+  findings through a targeted re-evaluation after a patch.
+- `project:create --policy=` pins a shipped policy. New projects still default to `standard.v1`.
+- Port onto Workstream 2b: the Korean run's Latin-script scan (ADR-0059) also covers every model call of
+  the `standard.v2` run, so the 4.4.0 evaluators, `promise_checker`, `repetition_judge` and the targeted
+  re-evaluation are scanned too (0 leaks).
+
+**Measured:**
+
+- Korean end-to-end run on `standard.v2` (simulated model). Promise and repetition evaluators ran for
+  both chapters, and evaluator calls overlapped, up to 4 in flight.
+- Chapter 1's forced 번역투 finding led to one revision round. After the patch only `prose_judge` ran
+  again; the other eight sections were carried with `carried_from`, and the prose score rose from the
+  37.5 rubric judgment to the 87.5 one. The patch regression check passed, and both chapters were
+  accepted.
+- `standard.v1` runs, including the English replays, the 120-chapter replay and the contrast set, are
+  unchanged. The contrast baseline was re-pinned to `genre_judge@4.4.0` / `voice_judge@4.4.0`: all 2,000
+  entries are identical, with 700/700 agreement.
+
+**Not done:**
+
+- There is no live-model run.
+- Rubric weights are equal over each judge's output keys, and the thresholds and penalty points are
+  uncalibrated (Workstream 8).
+- New projects do not default to `standard.v2` yet.
+- The web console cannot choose a policy.
+
+## Workstream 2b — Korean token estimation and pack localization — 2026-09-23
+
+Branch `hoplite/kamarina-b0515922--ws2b`, ported onto Workstream 2a from sigma41web/New#4 (branch
+`hoplite/mende-33d541c8--ws2b-korean-estimator-localization`, base `d357099`). ADR-0059 records the
+decisions; the Step 0 improvement audit (§2.4–2.6, PR #1) the findings.
+
+**Built:**
+
+- `korean_chars_v1` (one token per 자) measures Korean packs and the Korean Active Constraint Set; the
+  manifest records the estimator; English packs keep `english_estimator_v1`. Pack-less Korean calls
+  estimate one token per character instead of four characters per token.
+- Korean renderings for event lines, committed-delta lines (`N화에서 확정 (정사 vX)`), the continuity anchor,
+  knowledge extras (잘못 믿는 내용, 확신도, 알려 준 인물), the timeline section and the soft-preference suffixes.
+- Scene drafts record `characters` (자) and `language_confidence`.
+- `novel-ko.integration.test.ts` scans the system and user prompt of every model call of the Korean run
+  and fails on any Latin-script word that is not a schema identifier or provenance tag.
+
+**Measured:** Korean webnovel prose (4,091자): `o200k_base` 0.70 tokens/자, `cl100k_base` 1.08 tokens/자; the
+English estimator predicted 2.2–3.3× too few tokens. Korean end-to-end run (simulated model): writer packs
+12,105 and 14,116 of 24,000 tokens under `korean_chars_v1`, checker packs 6,003 and 7,990 of 20,000,
+extractor packs 4,945 and 5,096 of 18,000; nothing shed. The Latin-script scan found and this change fixed
+English section titles in every identity-less Korean pack (checker, extractor), the extractor's pre-pass
+note and a generic 은(는) in knowledge guards.
+
+**Not done:** the identity-block compiler still budgets with word counts (moving it would shed Korean
+exemplars at today's identity budget; it lands with Workstream 5.1); the previous-chapter tail and the
+reviser's span budget stay in 어절.
+
+## Workstream 2a — Korean lexical retrieval — 2026-09-23
+
+Branch `hoplite/kamarina-b0515922`, ported onto Workstream 1 from sigma41web/New#3 (branch
+`hoplite/mende-33d541c8--ws2-korean-retrieval`, base `d357099`). ADR-0058 records the decisions; the Step 0
+improvement audit (§2.1–2.3, §2.7, PR #1) the findings.
+
+**Built:**
+
+- Migration 0021: `pg_trgm`; a trigger that stores each search document's language from its manuscript
+  version or project; a partial trigram GIN index on Korean documents; `canon.entities_mentioned` tags
+  two-syllable Hangul names; backfills for projects whose pinned identity is Korean.
+- Korean rows are stored as Korean: the identity step sets `projects.output_language`; manuscript versions
+  and L1 summaries take the project's language (before this, every Korean row kept the `'en'` default).
+- `lexicalSearch({ language: 'ko' })`: particle-stripped stems (`koreanQueryTerms`), registry alias
+  expansion, weighted hits + word similarity, total order. `PgLexicalRetriever` takes the project language
+  (`postgres_trgm_korean`); the query plan keeps two-syllable Hangul words.
+- Korean retrieval fixture: an original 8-chapter serial, 26 queries, asserted in CI through the real
+  acceptance-indexing path.
+
+**Measured (PostgreSQL 16.14, no live provider):** recall@5 on the fixture — English FTS over the Korean
+documents 0.77 (20/26), Korean path 1.00 (26/26).
+
+**Not done:** a real multilingual embedding provider (WS2.7) — no credentials to measure one, and the
+fixture saturates at recall@5 = 1.00, so hybrid mode stays off for Korean.
+
 ## Workstream 1 — structured-output reliability — 2026-09-23
 
 Branch `hoplite/mende-33d541c8--ws1-structured-output` (base `d357099`). ADR-0057 records the decisions;

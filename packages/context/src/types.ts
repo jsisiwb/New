@@ -14,6 +14,7 @@ export type Provenance = NonNullable<ManifestItem['provenance']>;
 export type SourceRef = NonNullable<ManifestItem['source']>;
 export type Compression = NonNullable<ManifestItem['compression']>;
 export type ChapterContract = Generated.ChapterContractSchema.ChapterContract;
+export type ScenePlan = Generated.ScenePlanSchema.ScenePlan;
 export type Requirement = Generated.StorySpecSchema.Requirement;
 export type StorySpec = Generated.StorySpecSchema.StorySpec;
 
@@ -80,6 +81,11 @@ export interface AssemblyInput {
   readonly contract: ChapterContract;
   readonly clockStart: StoryClock;
   readonly items: readonly Item[];
+  /**
+   * The project's manuscript language. Section titles and the token estimator follow it even for packs
+   * that carry no identity block (checker, extractor), so a Korean pack is Korean throughout (ADR-0059).
+   */
+  readonly language?: 'en' | 'ko' | undefined;
   readonly narrativeBlock:
     | {
         readonly text: string;
