@@ -109,3 +109,66 @@ Both read only (ADR-0067); the second needs accepted chapters.
 - **A4 and A5** (ADR-0070): decided "not yet", with the evidence each needs.
 - **A live run on `standard.v3`–`v5`** (state ledgers, discard-and-continue, labelled scene plans): the
   project is pinned to `standard@2` by design; those policies have simulated evidence only.
+
+## 7. Phase A, second attempt — `standard.v6` through chapter 1 (2026-09-24, 14:36–15:35 UTC)
+
+Every manuscript sentence quoted here was written by the pipeline; the operator (this session) wrote the
+intake (`ops/live-runs/phase-a-intake.json`: regression + hunter-gate, a one-line premise, 200화 × 5,300자,
+15세, one restriction) and approved the first of the two concepts.
+
+### 7.1 Setup
+
+| Item | Value |
+| --- | --- |
+| Database | disposable `yeonjae_live_b`, PostgreSQL 16.14, migrations 0001–0022 |
+| Code | the Phase P branch (ADR-0072), then the A-1 fix (ADR-0074) for the resume |
+| Policy | `policy/standard@6` (provider retry with backoff, batched cast, labelled scene plans, ledgers, discard-and-continue) |
+| Identity | composed at novel start: `lang/ko@5`, `tradition/kr-webnovel@3`, `genre/regression@3` + `genre/hunter-gate@2` |
+| Provider | `YEONJAE_PROVIDER_MODE=notion`; model id from `YEONJAE_MODEL_NOTION` (only that variable was set; rule 2); client deadline as configured by the operator (not changed) |
+
+### 7.2 Timeline
+
+| UTC | Event |
+| --- | --- |
+| 14:36:42 | `novel:start` |
+| 14:40:02 | Story Spec and two concepts done (3 min 20 s; one concept attempt retried after a 7.3 s backoff) |
+| 14:53:50 | concept 1 approved (`--stop-after=5`); `novel:run --status-file` |
+| 14:55:45 | cast in three batches done (one batch attempt retried after an 11.5 s backoff) |
+| 15:01:07 | world, progression and blueprint done: bible complete in 7 min 17 s (8 characters, 3 locations, 3 organizations, 16 propositions, 10 promises, 4 seasons) |
+| 15:03:50 | chapter 1 failed `SCENE_PLAN_INVALID` — the contract named no location (defect A-1) |
+| 15:27:01 | fix deployed; `novel:resume` replayed every checkpoint (no repeated paid call) and planned the scenes |
+| 15:35:31 | chapter 1 `needs_attention: APPROVAL_BLOCKED` after three revision rounds (defects A-2, A-3) |
+
+### 7.3 Chapter 1
+
+| Measure | Value |
+| --- | --- |
+| Length | 5,621자 with spaces, 4,330 without (target 5,300 ± 12%: 4,664–5,936) — within target; 99 paragraphs |
+| Rounds | r0 + three revision rounds; every patched version failed its regression check and was quarantined (discard-and-continue) |
+| Gate (r0) | prose 38.3/78 ✗ (rubric 62.5, lint composite 2), structure 87/78, genre 95/72, voice 95.7/76; 2 blocking, 10 major, 17 minor |
+| Best patched round (r1) | prose 81.8/78 (rubric 75, lint 92) but 3 blocking → quarantined |
+| Korean lint (r0) | `KO-NAME-02`×6 (major, all false positives — A-2), `KO-DLG-SHARE`×1, `KO-PARA-LONG`×1 |
+| Judge / checker findings (r0) | contract checker: the regression fact arrives at ¶7–9, not in the first three sentences (AC-1); continuity: a text message sent while the sender was pinned down; promise checker: the possession-novel term “원작에서” in a regression serial; prose judge: 번역투 “짐승의 그것처럼”; knowledge-leak checker (2 blocking): the narrator's own regression (A-3) and the regressor's future knowledge of a side character's secret (A-4) |
+| Normalizers | `contract_location_fallback` 1, `scene_plans` 1, `patch_quote_anchor` 1, `judge_quote_anchor` 45; the others 0 |
+| Calls | 36 over the run (bible 9, chapter 27); per role p50: scene writer 61 s, reviser 69 s, prose judge 30 s, continuity checker 55 s, chapter planner 70 s |
+| Tokens | chapter 1: ~113k in / ~17k out; whole run: 139,655 in / 30,238 out |
+| Cost | 0¢ recorded (the bridge reports no price); bridge billing-period credits moved from 60.26 % / 64.73 % to 61.76 % / 67.51 % on the two workspaces (≈ 4.3 points for the run) |
+| Wall clock | intake to chapter 1's stop: 58 min 49 s, including the 23-min stop for A-1 |
+
+Excerpt (the first three lines of the pipeline's chapter 1, unedited):
+
+> 심장이 갈기갈기 찢겨 나가는 감각.
+> 단말마조차 뱉지 못한 채 억눌렸던 숨이 단번에 터져 나왔다.
+> “후읍!”
+
+### 7.4 Defects (ADR-0074)
+
+| # | Evidence | Status |
+| --- | --- | --- |
+| A-1 | contract `locations: []` → `SCENE_PLAN_INVALID` on every scene | fixed: registered fallback location from the contract's text, recorded as a continuity risk; the run resumed |
+| A-2 | 6 `KO-NAME-02` majors on ordinary words (독식해, 차가운, 수하, 쓰기, 지구, 곰탱) matched against aliases, short forms and two-syllable names; lint composite 2 | fixed for new projects: `KO-NAME-04` in `lang/ko@6` (`standard.v7`); `lang/ko@5` is pinned and unchanged |
+| A-3 | the narrator's own regression listed as a reader secret (blocking) | fixed for new projects: `evaluation.pov_secrets_reader_visible` (`standard.v7`) |
+| A-4 | the regressor's future knowledge of a secret due at 15화, used by the planned chapter-one hook | open: the knowledge model has no notion of future knowledge |
+
+The v6 project stays at chapter 1 on its pinned layer and is kept as this record; the continuation runs a
+fresh project on `standard.v7`.

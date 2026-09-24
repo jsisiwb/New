@@ -3,6 +3,26 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase A — live Korean run on `standard.v6` through chapter 1 — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--phase-a-live` (stacked on Phase P). ADR-0074 records the defects;
+`docs/08-delivery/12-live-run-ws1-7.md` §7 the run.
+
+**Built:** a contract that names no location gets the registered location its own text mentions (else the
+first), with a continuity risk and the `contract_location_fallback` counter; scene planning applies the same
+fallback to contracts locked before the fix (defect A-1).
+
+**Measured (live, Notion bridge):** intake → spec → concepts in 3 min 20 s; bible in 7 min 17 s; chapter 1
+drafted at 5,621자 (target 5,300 ± 12%) and evaluated; after three revision rounds it stopped
+`needs_attention: APPROVAL_BLOCKED` — prose 38.3/78 with six `KO-NAME-02` false positives (A-2) and two
+knowledge-leak blockings on the narrator's own regression (A-3) and the regressor's future knowledge (A-4).
+36 calls, 139,655 / 30,238 tokens, 0¢ recorded, ≈ 4.3 points of the bridge's billing-period credits.
+Unit: `plan-normalize.test.ts` 5/5 (fallback location).
+
+**Not done:** chapters 2–5 on this project (its pinned `lang/ko@5` keeps the A-2 false positives); A-2 and A-3
+are fixed on the opt-in Korean-prose path (next change); A-4 needs a knowledge-model design; A4/A5 decisions
+wait for accepted live chapters on that path.
+
 ## Phase P — provider readiness — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92--provider-readiness` (stacked on Phase R). ADR-0072 records the decisions.
