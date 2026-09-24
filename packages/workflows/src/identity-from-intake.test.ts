@@ -30,7 +30,7 @@ describe('identityProfileFromIntake manuscript language (ADR-0054)', () => {
       { ...BASE, manuscript_language: 'ko' },
       store,
     );
-    expect(profile.lineage?.output_language).toBe('lang/ko@4');
+    expect(profile.lineage?.output_language).toBe('lang/ko@5');
     expect(profile.lineage?.tradition).toBe('tradition/kr-webnovel@3');
     expect(profile.lineage?.genres).toEqual(['genre/academy@3']);
     expect(profile.output_language?.language).toBe('ko');

@@ -3,6 +3,29 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 5b — Korean lint v5 — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint`. ADR-0065 records the decisions; the Step 0 improvement audit (§5.5, §7.6) the findings.
+
+**Built:**
+
+- `lang/ko@5`: thresholds (starting values) for `KO-OVR-01..04` (것이다, ~ㄹ 수 있었다, ~기 시작했다, ~것이
+  느껴졌다 rates), `KO-COMMA-RATE`, `KO-SENT-LONG`, `KO-DLG-SHARE` (dialogue + 속마음, replacing `KO-DLG-LOW`),
+  `KO-END-03` (reflective-ending list, replacing `KO-END-01`), `EXEMPLAR-NEAR` (8-character shingles),
+  `KO-NAME-02` (compatibility-jamo distance, replacing `KO-NAME-01`) and `KO-WIN-LINE`. Each runs only when the
+  layer carries its threshold; new projects compose `lang/ko@5`.
+- `@yeonjae/prose` `lintV5`, merged into `lintKoreanWebnovel`; v5 measurements (`metrics.v5`) and one extra
+  digest line exist only for v5 layers.
+
+**Measured (deterministic):** a synthetic translated-prose passage (studio test strings, audit §7.6) fails
+`KO-OVR-01..04`, `KO-COMMA-RATE` and `KO-END-03` under `lang/ko@5` with at least four major findings, and
+triggers none of the v5 rules under `lang/ko@4`, whose digest keeps its bytes; 서지누 is one jamo from 서진우
+while the short form 진우 is never flagged; the Korean simulated runs pass on `lang/ko@5` with 0 Latin-script
+leaks.
+
+**Not done:** genre-aware Latin allowances, an offline spelling/spacing checker (§5.6), naming fit (§5.8), POV
+as a project choice (§5.13), per-role sampling in the policy (§5.15); the thresholds are uncalibrated.
+
 ## Workstream 7a — revision continues past a regressed patch — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision`. ADR-0064 records the decisions; the
