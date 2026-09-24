@@ -65,8 +65,29 @@ export async function migrate(
   return { applied, skipped };
 }
 
-/** Drop everything the migrations created (tests and local resets only). */
+/**
+ * Databases a reset may drop (ADR-0080): test databases by name (`…test…`), restore-drill and
+ * multiprocess-harness databases by their generated names, or any database when
+ * `YEONJAE_ALLOW_DB_RESET=1`. A permanent novel database fails closed: a test run pointed at it by an
+ * inherited `DATABASE_URL` stops before anything is dropped.
+ */
+export function resetAllowed(databaseName: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.YEONJAE_ALLOW_DB_RESET === '1') return true;
+  return (
+    /test/i.test(databaseName) ||
+    databaseName.startsWith('yeonjae_drill_') ||
+    /^yeonjae_[a-z0-9]+_[a-z0-9]{4,8}$/.test(databaseName)
+  );
+}
+
+/** Drop everything the migrations created (tests and local resets only; see `resetAllowed`). */
 export async function resetDatabase(pool: Pool): Promise<void> {
+  const { rows } = await pool.query<{ db: string }>('SELECT current_database() AS db');
+  const name = rows[0]?.db ?? '';
+  if (!resetAllowed(name))
+    throw new Error(
+      `RESET_REFUSED: database "${name}" is not a test database; set YEONJAE_ALLOW_DB_RESET=1 to reset it deliberately`,
+    );
   await pool.query(
     'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS canon CASCADE;',
   );

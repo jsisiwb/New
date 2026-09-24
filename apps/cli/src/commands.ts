@@ -106,13 +106,18 @@ import {
 } from '@yeonjae/workflows';
 import {
   checkRouting,
+  deepProbe,
   Gateway,
   MemoryBudget,
+  notionModelFromEnv,
   probeRouting,
+  readBridgeCredits,
+  renderBridgeCredits,
   renderRoutingCheck,
   ReplayProvider,
   requirementsFromPrompts,
   resolveProvidersFromEnv,
+  type DeepProbeResult,
   type RoutingTable,
 } from '@yeonjae/gateway';
 import { PgAuditStore } from '@yeonjae/db';
@@ -290,9 +295,38 @@ export async function runProviderCheck(
   const reg = PromptRegistry.fromDirectory();
   const prompts = Object.values(reg.activeSet().mapping).map((id) => reg.get(id));
   const check = checkRouting(resolved.mode, resolved.routing, requirementsFromPrompts(prompts));
+  // ADR-0080: which variable named the bridge model, and whether the two accepted names disagree.
+  const modelSource = resolved.mode === 'notion' ? notionModelFromEnv(env) : undefined;
+  const findings = [
+    ...check.findings,
+    ...(modelSource?.conflict
+      ? [
+          {
+            model_class: 'all' as const,
+            code: 'MODEL_ID_CONFLICT',
+            severity: 'warning' as const,
+            message:
+              'YEONJAE_NOTION_MODEL and YEONJAE_MODEL_NOTION are both set and differ; YEONJAE_NOTION_MODEL wins',
+          },
+        ]
+      : []),
+  ];
   const probe = args.includes('--probe')
     ? await probeRouting(resolved.providers(), resolved.routing)
     : undefined;
+  // ADR-0080: `--deep` measures the model behind the P route (identity, JSON shape, long output).
+  let deep: DeepProbeResult | undefined;
+  if (args.includes('--probe') && args.includes('--deep')) {
+    const route = [...resolved.routing.P].sort((a, b) => a.priority - b.priority)[0];
+    const provider = route ? resolved.providers().get(route.provider) : undefined;
+    if (route && provider) deep = await deepProbe(provider, route);
+  }
+  const credits =
+    resolved.mode === 'notion' && args.includes('--credits')
+      ? await readBridgeCredits(env).catch((err: unknown) => ({
+          error: err instanceof Error ? err.message : String(err),
+        }))
+      : undefined;
   const ok = check.ok && (probe?.every((p) => p.ok) ?? true);
   if (args.includes('--json'))
     return {
@@ -300,9 +334,12 @@ export async function runProviderCheck(
       output: {
         mode: check.mode,
         ok: check.ok,
-        findings: check.findings,
+        findings,
+        ...(modelSource ? { model_id_source: modelSource.source } : {}),
         classes: check.classes.map(({ primary: _primary, ...c }) => c),
         ...(probe ? { probe } : {}),
+        ...(deep ? { deep } : {}),
+        ...(credits ? { credits } : {}),
       },
     };
   const probeText = probe
@@ -315,7 +352,46 @@ export async function runProviderCheck(
         ),
       ].join('\n')
     : '';
-  return { ok, output: `${renderRoutingCheck(check)}${probeText}` };
+  const deepText = deep
+    ? [
+        '',
+        'deep probe (P route):',
+        `- identity: reply names ${deep.identity.family} (${String(deep.identity.latency_ms)} ms${deep.identity.failure_class ? `, ${deep.identity.failure_class}` : ''})`,
+        `- json: ${deep.json.clean ? 'clean' : deep.json.fenced ? 'fenced' : 'wrapped'}; recovery ${deep.json.recovered_by}; bridge json field ${deep.json.bridge_parsed_field ? 'yes' : 'no'} (${String(deep.json.latency_ms)} ms${deep.json.failure_class ? `, ${deep.json.failure_class}` : ''})`,
+        `- long: ${deep.long.returned_items === null ? 'unparsed' : `${String(deep.long.returned_items)}/${String(deep.long.requested_items)} items`}, ${String(deep.long.output_chars)} chars, finish ${deep.long.finish_reason ?? '?'}${deep.long.truncated_json ? ', TRUNCATED' : ''} (${String(deep.long.latency_ms)} ms${deep.long.failure_class ? `, ${deep.long.failure_class}` : ''})`,
+        `- refusals ${String(deep.refusals)}; usage reported ${deep.usage_reported ? 'yes' : 'no'}`,
+      ].join('\n')
+    : '';
+  const sourceText = modelSource ? `\nmodel id from: ${modelSource.source}` : '';
+  const creditText = credits
+    ? `\n\nbridge credits:\n${'error' in credits ? `unavailable (${credits.error})` : renderBridgeCredits(credits)}`
+    : '';
+  const conflictText = modelSource?.conflict
+    ? '\nwarning: YEONJAE_NOTION_MODEL and YEONJAE_MODEL_NOTION differ; YEONJAE_NOTION_MODEL wins'
+    : '';
+  return {
+    ok,
+    output: `${renderRoutingCheck(check)}${sourceText}${conflictText}${probeText}${deepText}${creditText}`,
+  };
+}
+
+/** `bridge:credits [--json]` (ADR-0080): the Notion bridge's per-workspace credit readings, numbers only. */
+export async function runBridgeCredits(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<CommandResult> {
+  try {
+    const credits = await readBridgeCredits(env);
+    return { ok: true, output: args.includes('--json') ? credits : renderBridgeCredits(credits) };
+  } catch (err) {
+    return {
+      ok: false,
+      output: {
+        error: 'BRIDGE_UNAVAILABLE',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+    };
+  }
 }
 
 export interface AsyncCommandResult extends CommandResult {

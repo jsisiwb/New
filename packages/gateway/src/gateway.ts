@@ -10,6 +10,7 @@ import {
   METRIC,
   METRIC_HELP,
   type Metrics,
+  recordNormalization,
   safeLabelValue,
   uuidv7,
   validatorFor,
@@ -28,9 +29,15 @@ import {
   type RemoteCancellationStatus,
   type TimerFns,
 } from './cancellation.js';
-import { classifyProviderFailure, isRetryable, type FailureClass } from './failures.js';
+import {
+  classifyProviderFailure,
+  isRetryable,
+  ProviderFailure,
+  type FailureClass,
+} from './failures.js';
 import { guardRequest, type GuardContext } from './guard.js';
 import { DEFAULT_PARAMS } from './mock-provider.js';
+import { looksLikeRefusal, looksTruncatedJson } from './refusal.js';
 import {
   GatewayError,
   type FinishReason,
@@ -168,6 +175,12 @@ export interface AuditRecord {
         readonly latency_ms: number;
         /** Wait before the next attempt under the request's retry policy (ADR-0072); absent: none. */
         readonly backoff_ms?: number | undefined;
+        /** Why a declined attempt counted as a refusal (ADR-0080): `content_filter` or `refusal_text`. */
+        readonly refusal_reason?: string | undefined;
+        /** Gateway-level JSON recoveries applied to this attempt's answer (ADR-0080). */
+        readonly normalizers?: readonly string[] | undefined;
+        /** A `SCHEMA_INVALID` answer that was cut off (open brackets at the end), ADR-0080. */
+        readonly truncated_json?: boolean | undefined;
       }[]
     | undefined;
   /** Prompt and output text are never logged in plaintext; only hashes and sizes live on the record. */
@@ -327,6 +340,31 @@ function isEmptyReply(res: ProviderResponse): boolean {
     res.json === undefined &&
     res.finishReason !== 'content_filter'
   );
+}
+
+/**
+ * The audit `error_class` of a thrown provider failure (ADR-0080): an empty reply, a 5xx, a throttle, a
+ * safety block and a transport fault are told apart even where they share a retry class.
+ */
+export function errorClassOf(err: unknown, failureClass: FailureClass): string {
+  const reason = err instanceof ProviderFailure ? err.detail.reason : undefined;
+  if (failureClass === 'refused' || reason === 'safety_block') return 'REFUSED';
+  switch (reason) {
+    case 'empty_reply':
+      return 'EMPTY_REPLY';
+    case 'http_5xx':
+      return 'HTTP_5XX';
+    case 'http_429':
+      return 'THROTTLED';
+    case 'http_4xx':
+      return 'HTTP_4XX';
+    case 'transport':
+    case 'deadline':
+    case 'malformed_body':
+      return 'TRANSPORT';
+    default:
+      return 'PROVIDER_FAILED';
+  }
 }
 
 export class Gateway {
@@ -538,6 +576,8 @@ export class Gateway {
 
     let attempt = 0;
     let repairAttempts = 0;
+    /** Declined attempts so far (ADR-0080); bounded by the policy's `refusal.max_retries`. */
+    let refusals = 0;
     let fallbackFrom: string | undefined;
     let lastError: { class: string; message: string } | undefined;
     let languageFailures = 0;
@@ -797,9 +837,21 @@ export class Gateway {
           const failureClass = classifyProviderFailure(err);
           lastFailureClass = failureClass;
           lastError = {
-            class: 'PROVIDER_FAILED',
+            class: failureClass === 'refused' ? 'MODEL_REFUSED' : 'PROVIDER_FAILED',
             message: err instanceof Error ? err.message : String(err),
           };
+          if (failureClass === 'refused')
+            this.count(METRIC.refusals, {
+              provider: route.provider,
+              model_class: req.modelClass,
+              reason: 'safety_block',
+            });
+          // A declined request is retried on the same route only under the policy's refusal rule.
+          const refusalRetry =
+            failureClass === 'refused' &&
+            retry?.refusal !== undefined &&
+            refusals < retry.refusal.max_retries;
+          if (failureClass === 'refused') refusals++;
           const backoffMs = isRetryable(failureClass) ? nextRouteAfterRetryable() : 0;
           attemptRecords.push({
             attempt,
@@ -807,17 +859,22 @@ export class Gateway {
             provider: route.provider,
             outcome: 'failed',
             failure_class: failureClass,
-            error_class: 'PROVIDER_FAILED',
+            error_class: errorClassOf(err, failureClass),
             cost_cents: 0,
             usage: { input: 0, output: 0, cached: 0 },
             latency_ms: 0,
             ...(retry ? { backoff_ms: backoffMs } : {}),
+            ...(failureClass === 'refused' ? { refusal_reason: 'safety_block' } : {}),
           });
           this.count(METRIC.providerAttempts, {
             provider: route.provider,
             model_class: req.modelClass,
             status: 'failed',
           });
+          if (refusalRetry) {
+            pendingBackoffMs = backoffDelayMs(retry, refusals, this.opts.random);
+            continue;
+          }
           if (!isRetryable(failureClass)) break;
           // Only a retryable class reaches here, which is exactly when a further attempt is
           // authorized -- so this is the honest place to count a retry and a route fallback.
@@ -840,9 +897,15 @@ export class Gateway {
         }
         const attemptCost = costCents(route, res.usage);
         actualCost += attemptCost;
+        const attemptNormalizers: string[] = [];
 
-        const noteAttempt = (outcome: 'succeeded' | 'failed', errorClass?: string): void => {
+        const noteAttempt = (
+          outcome: 'succeeded' | 'failed',
+          errorClass?: string,
+          extra: { readonly truncated_json?: boolean } = {},
+        ): void => {
           attemptRecords.push({
+            ...extra,
             attempt,
             model_id: route.modelId,
             provider: route.provider,
@@ -851,7 +914,52 @@ export class Gateway {
             cost_cents: attemptCost,
             usage: res.usage,
             latency_ms: res.latencyMs,
+            ...(attemptNormalizers.length > 0 ? { normalizers: [...attemptNormalizers] } : {}),
           });
+        };
+
+        /**
+         * A declined request (ADR-0080). Always counted; under the policy's refusal rule the attempt is
+         * recorded as `refused` and the SAME request is sent again on the same route, up to
+         * `max_retries` times, then the call fails `MODEL_REFUSED`. Returns whether to try again, or
+         * `undefined` when no rule applies and the call proceeds as it did before the rule existed.
+         */
+        const onRefusal = (reason: 'content_filter' | 'refusal_text'): boolean | undefined => {
+          this.count(METRIC.refusals, {
+            provider: route.provider,
+            model_class: req.modelClass,
+            reason,
+          });
+          const rule = retry?.refusal;
+          if (!rule) return undefined;
+          refusals++;
+          lastFailureClass = 'refused';
+          lastError = {
+            class: 'MODEL_REFUSED',
+            message: `provider declined the request (${reason})`,
+          };
+          const again = refusals <= rule.max_retries;
+          const backoffMs = again ? backoffDelayMs(retry, refusals, this.opts.random) : 0;
+          attemptRecords.push({
+            attempt,
+            model_id: route.modelId,
+            provider: route.provider,
+            outcome: 'failed',
+            failure_class: 'refused',
+            error_class: 'REFUSED',
+            cost_cents: attemptCost,
+            usage: res.usage,
+            latency_ms: res.latencyMs,
+            refusal_reason: reason,
+            ...(again ? { backoff_ms: backoffMs } : {}),
+          });
+          this.count(METRIC.providerAttempts, {
+            provider: route.provider,
+            model_class: req.modelClass,
+            status: 'failed',
+          });
+          if (again) pendingBackoffMs = backoffMs;
+          return again;
         };
 
         // 2b. an empty reply is a provider fault under a retry policy that says so (ADR-0072)
@@ -886,6 +994,13 @@ export class Gateway {
           continue;
         }
 
+        // 2c. a content filter / safety finish is a declined request (ADR-0080)
+        if (res.finishReason === 'content_filter') {
+          const again = onRefusal('content_filter');
+          if (again === true) continue;
+          if (again === false) break;
+        }
+
         // 3. truncation
         if (res.finishReason === 'length') {
           lastError = { class: 'TRUNCATED', message: 'provider stopped at max_tokens' };
@@ -903,11 +1018,26 @@ export class Gateway {
           (req.outputMode === undefined && Boolean(req.outputSchemaRef));
         if (validator || wantsJson) {
           if (json === undefined && res.text !== undefined) {
+            const fenced = res.text.includes('```');
             try {
               json = JSON.parse(stripFences(res.text));
+              if (fenced) {
+                attemptNormalizers.push('json_fence_stripped');
+                recordNormalization('json_fence_stripped');
+              }
             } catch {
               json = extractJsonObject(res.text);
+              if (json !== undefined) {
+                attemptNormalizers.push('json_object_extracted');
+                recordNormalization('json_object_extracted');
+              }
             }
+          }
+          // A refusal instead of JSON is a declined request, not a malformed answer (ADR-0080).
+          if (json === undefined && retry?.refusal?.detect_text && looksLikeRefusal(res.text)) {
+            const again = onRefusal('refusal_text');
+            if (again === true) continue;
+            if (again === false) break;
           }
           if (json === undefined) {
             schemaValid = false;
@@ -919,7 +1049,12 @@ export class Gateway {
             repairAttempts++;
             this.count(METRIC.repairs, { reason: 'schema_invalid' });
             lastError = { class: 'SCHEMA_INVALID', message: 'structured output did not validate' };
-            noteAttempt('failed', 'SCHEMA_INVALID');
+            // A cut-off answer is flagged apart from a malformed one; class and repair path are the same.
+            noteAttempt(
+              'failed',
+              'SCHEMA_INVALID',
+              json === undefined && looksTruncatedJson(res.text) ? { truncated_json: true } : {},
+            );
             if (repairAttempts <= 2) continue; // bounded repair = regenerate on the same route
             routeIdx++;
             continue;
@@ -931,6 +1066,12 @@ export class Gateway {
         let languageCheck: GatewayResponse['outputLanguageCheck'] = { performed: false };
         if (req.manuscriptProducing) {
           const prose = extractProse(json, res.text);
+          // A short refusal where prose belongs is a declined request, not a draft (ADR-0080).
+          if (retry?.refusal?.detect_text && looksLikeRefusal(prose)) {
+            const again = onRefusal('refusal_text');
+            if (again === true) continue;
+            if (again === false) break;
+          }
           const language = req.narrativeIdentityRef?.outputLanguage ?? 'en';
           const check = checkOutputLanguage(toNfcText(prose), {
             minConfidence: this.opts.minEnglishConfidence ?? 0.99,

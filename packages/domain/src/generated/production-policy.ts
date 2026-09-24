@@ -136,6 +136,13 @@ export interface ProductionPolicy {
     multiplier: number;
     jitter: 'full' | 'none';
     retry_empty_reply: boolean;
+    /**
+     * A declined request (ADR-0080): a content_filter or safety finish, a safety block in an error body, or (detect_text) a short reply that is a refusal instead of the requested output. The same request is sent again on the same route at most max_retries times, then the call fails MODEL_REFUSED. The request is never softened. Absent: refusals are counted and recorded and the call proceeds as before.
+     */
+    refusal?: {
+      max_retries: number;
+      detect_text: boolean;
+    };
   };
   candidates: {
     chapter_candidates: number;

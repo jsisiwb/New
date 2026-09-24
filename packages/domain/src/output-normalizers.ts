@@ -22,6 +22,9 @@ export const OUTPUT_NORMALIZERS = [
   'judge_dimension_scores',
   'judge_repair',
   'judge_quote_anchor',
+  // Gateway-level JSON recovery (ADR-0080): a fenced answer, or JSON inside chatty text.
+  'json_fence_stripped',
+  'json_object_extracted',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

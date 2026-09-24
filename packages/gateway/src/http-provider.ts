@@ -27,7 +27,7 @@
 import { CancellationError } from './cancellation.js';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import { ProviderFailure, type FailureClass } from './failures.js';
+import { ProviderFailure, SAFETY_MARKERS, type FailureClass } from './failures.js';
 import {
   type FinishReason,
   type Provider,
@@ -68,6 +68,20 @@ interface WireResponse {
 }
 
 const FINISH_REASONS: readonly FinishReason[] = ['stop', 'length', 'content_filter', 'error'];
+
+/**
+ * A wire finish reason outside the four known values, mapped by meaning (ADR-0080). Gemini-backed bridges
+ * report `MAX_TOKENS`, `SAFETY`, `PROHIBITED_CONTENT` or `RECITATION`; collapsing them to `stop` made a
+ * truncated answer or a safety block look like a finished one.
+ */
+export function mapFinishReason(raw: unknown): FinishReason {
+  if (FINISH_REASONS.includes(raw as FinishReason)) return raw as FinishReason;
+  if (typeof raw !== 'string') return 'stop';
+  if (/^(max_?tokens|max_output_tokens|token_limit|length)$/i.test(raw)) return 'length';
+  if (/(safety|blocked|prohibited|recitation|spii|blocklist|content_?filter)/i.test(raw))
+    return 'content_filter';
+  return 'stop';
+}
 
 /**
  * Map an HTTP status onto the gateway's failure classes.
@@ -192,14 +206,24 @@ export class HttpProvider implements Provider {
       const response = await this.rawPost(url, payload, controller.signal, maxBytes);
 
       if (!response.ok) {
+        // A declined request (a safety block in the error body) is its own class; the status alone
+        // cannot tell it from a malformed request (ADR-0080).
+        const declined = response.status < 500 && SAFETY_MARKERS.test(response.text.slice(0, 4096));
         throw new ProviderFailure(
-          classifyHttpStatus(response.status),
+          declined ? 'refused' : classifyHttpStatus(response.status),
           `provider ${this.name} returned HTTP ${String(response.status)}`,
           {
             status: response.status,
             // A 5xx may have been processed before it failed, which the gateway needs in order to
             // decide whether a retry could duplicate work.
             ...(response.status >= 500 ? { possiblyCompleted: true } : {}),
+            reason: declined
+              ? 'safety_block'
+              : response.status >= 500
+                ? 'http_5xx'
+                : response.status === 429
+                  ? 'http_429'
+                  : 'http_4xx',
           },
         );
       }
@@ -214,6 +238,7 @@ export class HttpProvider implements Provider {
         throw new ProviderFailure(
           'retryable_transport',
           `provider ${this.name} returned a body that is not JSON`,
+          { reason: 'malformed_body' },
         );
       }
 
@@ -224,9 +249,7 @@ export class HttpProvider implements Provider {
           `provider ${this.name} returned a non-string completion`,
         );
       }
-      const finish = FINISH_REASONS.includes(parsed.finishReason as FinishReason)
-        ? (parsed.finishReason as FinishReason)
-        : 'stop';
+      const finish = mapFinishReason(parsed.finishReason);
       const usage = parseUsage(parsed.usage);
 
       return {
@@ -260,12 +283,13 @@ export class HttpProvider implements Provider {
         throw new ProviderFailure(
           'retryable_transport',
           `provider ${this.name} exceeded ${String(timeoutMs)} ms`,
-          { possiblyCompleted: true },
+          { possiblyCompleted: true, reason: 'deadline' },
         );
       }
       throw new ProviderFailure(
         'retryable_transport',
         `provider ${this.name} transport error: ${(err as Error).message}`,
+        { reason: 'transport' },
       );
     } finally {
       clearTimeout(timer);

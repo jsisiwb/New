@@ -99,7 +99,17 @@
         "max_delay_ms": {"type": "integer", "minimum": 0},
         "multiplier": {"type": "number", "minimum": 1},
         "jitter": {"type": "string", "enum": ["full", "none"]},
-        "retry_empty_reply": {"type": "boolean"}
+        "retry_empty_reply": {"type": "boolean"},
+        "refusal": {
+          "type": "object",
+          "description": "A declined request (ADR-0080): a content_filter or safety finish, a safety block in an error body, or (detect_text) a short reply that is a refusal instead of the requested output. The same request is sent again on the same route at most max_retries times, then the call fails MODEL_REFUSED. The request is never softened. Absent: refusals are counted and recorded and the call proceeds as before.",
+          "required": ["max_retries", "detect_text"],
+          "additionalProperties": false,
+          "properties": {
+            "max_retries": {"type": "integer", "minimum": 0, "maximum": 3},
+            "detect_text": {"type": "boolean"}
+          }
+        }
       }
     },
     "candidates": {
