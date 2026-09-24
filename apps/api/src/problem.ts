@@ -75,6 +75,7 @@ const TITLES: Record<ProblemCode, string> = {
   ARC_PLAN_INVALID: 'Arc plan is invalid',
   CONTRACT_INVALID: 'Chapter contract is invalid',
   SCENE_PLAN_INVALID: 'Scene plan is invalid',
+  PLAN_INCONSISTENT: 'Plan contradicts the state ledgers',
   SCENE_DRAFT_INVALID: 'Scene draft is invalid',
   PREVIOUS_CHAPTER_NOT_ACCEPTED: 'Previous chapter is not accepted',
   PACK_FAILED: 'Context pack could not be built',
@@ -131,6 +132,7 @@ const STATUS: Partial<Record<ProblemCode, number>> = {
    */
   CANCELLED: 409,
   APPROVAL_BLOCKED: 409,
+  PLAN_INCONSISTENT: 409,
   PREVIOUS_CHAPTER_NOT_ACCEPTED: 409,
   CHAPTER_NOT_ACCEPTED: 409,
   NOT_EXTRACTABLE: 409,

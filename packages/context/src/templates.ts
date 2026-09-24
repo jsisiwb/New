@@ -176,7 +176,7 @@ const T0_CORE = (variable: string): SectionSpec[] => [
 
 const SCENE_WRITER: PackTemplate = {
   name: 'pack.scene_writer',
-  version: '1.1.0',
+  version: '1.2.0',
   roles: ['scene_writer', 'scene_rewriter'],
   identityVariant: 'writer_full',
   budgetKey: 'writer_input_budget_tokens',
@@ -264,6 +264,16 @@ const SCENE_WRITER: PackTemplate = {
       variable: 'register_digests',
     },
     {
+      name: 'state_ledger',
+      title:
+        'STATE LEDGER — character state cards, story clock and countdowns, address terms, status-window format (accepted canon)',
+      position: 'user',
+      tier: 'T1',
+      kinds: ['state_ledger'],
+      mandatory: false,
+      variable: 'register_digests',
+    },
+    {
       name: 'promises',
       title: 'PROMISES — open, due, and touched by this chapter',
       position: 'user',
@@ -325,7 +335,7 @@ const SCENE_WRITER: PackTemplate = {
 
 const CHAPTER_PLANNER: PackTemplate = {
   name: 'pack.chapter_planner',
-  version: '1.1.0',
+  version: '1.2.0',
   roles: ['chapter_planner', 'plan_continuity_checker'],
   identityVariant: 'planner_compact',
   budgetKey: 'input_budget_tokens',
@@ -404,6 +414,16 @@ const CHAPTER_PLANNER: PackTemplate = {
       variable: 'canon_state',
     },
     {
+      name: 'state_ledger',
+      title:
+        'STATE LEDGER — character state cards, story clock and countdowns, address terms, status-window format (accepted canon)',
+      position: 'user',
+      tier: 'T1',
+      kinds: ['state_ledger'],
+      mandatory: false,
+      variable: 'canon_state',
+    },
+    {
       name: 'promises',
       title: 'OPEN PROMISES',
       position: 'user',
@@ -447,7 +467,7 @@ const CHAPTER_PLANNER: PackTemplate = {
 
 const CONTINUITY_CHECKER: PackTemplate = {
   name: 'pack.continuity_checker',
-  version: '1.1.0',
+  version: '1.2.0',
   roles: ['continuity_checker', 'contract_compliance_judge'],
   identityVariant: null,
   budgetKey: 'input_budget_tokens',
@@ -505,6 +525,16 @@ const CONTINUITY_CHECKER: PackTemplate = {
       position: 'user',
       tier: 'T1',
       kinds: ['relationship_state'],
+      mandatory: false,
+      variable: 'canon_state',
+    },
+    {
+      name: 'state_ledger',
+      title:
+        'STATE LEDGER — character state cards, story clock and countdowns, address terms, status-window format (accepted canon)',
+      position: 'user',
+      tier: 'T1',
+      kinds: ['state_ledger'],
       mandatory: false,
       variable: 'canon_state',
     },
@@ -730,6 +760,8 @@ export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
   'KNOWLEDGE — stances per participant': '지식 — 참여자별 입장',
   'KNOWLEDGE — who knows what': '지식 — 누가 무엇을 아는가',
   'LOCKED FACTS — never contradict': '잠긴 사실 — 절대 모순되지 않게',
+  'STATE LEDGER — character state cards, story clock and countdowns, address terms, status-window format (accepted canon)':
+    '상태 장부 — 인물 상태 카드, 이야기 시간과 카운트다운, 호칭, 상태창 형식 (정사 기준)',
   'FIRST MEETINGS — when each pair of participants first appeared together (canon)':
     '첫 만남 기록 — 등장인물 두 사람이 처음 함께 나온 회차 (정사)',
   'STORY SO FAR — accepted chapters before the previous one, ten chapters per block (L1 digest)':

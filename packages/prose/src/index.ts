@@ -11,3 +11,6 @@ export * from './ko-style.js';
 export * from './safe-regex.js';
 export * from './dialogue-register.js';
 export * from './repetition.js';
+export * from './story-clock.js';
+export * from './status-window.js';
+export * from './address-register.js';

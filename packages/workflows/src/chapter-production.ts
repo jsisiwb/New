@@ -76,7 +76,9 @@ import {
   scheduleFromBlueprint,
   type SeriesBlueprint,
 } from './story-plan.js';
+import { planConsistency } from './ledger-checks.js';
 import {
+  runStep,
   saveArtifact,
   type HeldLease,
   type RunCancellation,
@@ -484,6 +486,8 @@ export async function produceChapter(
     const usedPacks: StoredPack[] = [writerBuilt];
     const plan = await planScenes(ctx, { contract: contract.contract, pack: writerBuilt });
     guard('scene_plan');
+    // ADR-0063: the plan against the state ledgers before any draft, under a policy that opts in.
+    if (ctx.policy.planning?.plan_check) await checkPlan(ctx, contract.contract, plan.scenes);
     const drafted = await draftScenes(ctx, {
       contract: contract.contract,
       pack: writerBuilt,
@@ -743,7 +747,10 @@ export async function produceChapter(
     if (!(err instanceof WorkflowError) || !ctx.trace.some((t) => t.status === 'failed')) {
       // A quality gate — a blocked approval or a patch that failed its regression check — is an attention
       // state for a human, not an engineering failure.
-      const qualityGate = wf.code === 'APPROVAL_BLOCKED' || wf.code === 'PATCH_REGRESSED';
+      const qualityGate =
+        wf.code === 'APPROVAL_BLOCKED' ||
+        wf.code === 'PATCH_REGRESSED' ||
+        wf.code === 'PLAN_INCONSISTENT';
       await updateJob(ctx.pool, ctx.job.id, {
         status: qualityGate ? 'needs_attention' : 'failed',
         error: wf.toJSON(),
@@ -814,6 +821,35 @@ async function acceptedArcEnding(
     summary: summary.text,
     hook: summary.ending_hook ?? undefined,
   };
+}
+
+/**
+ * The pre-draft plan check (ADR-0063): a checkpointed step whose findings are an artifact of the plan. A
+ * blocking finding stops the chapter as PLAN_INCONSISTENT before any draft is written; resuming replays the
+ * recorded findings, so a re-run never silently drafts a plan that was refused.
+ */
+async function checkPlan(
+  ctx: WorkflowContext,
+  contract: ChapterContract,
+  scenes: readonly unknown[],
+): Promise<void> {
+  const result = await runStep(ctx, 'plan_check', async () => {
+    const { findings } = await planConsistency(ctx.pool, ctx.projectId, contract, scenes);
+    const art = await saveArtifact(ctx, {
+      step: 'plan_check',
+      kind: 'plan_check',
+      key: `plan_check:${String(contract.chapter_number)}`,
+      payload: { chapter_no: contract.chapter_number, findings },
+    });
+    return { artifact_id: art.artifact_id, findings };
+  });
+  const blocking = result.findings.filter((f) => f.blocking);
+  if (blocking.length)
+    throw new WorkflowError('PLAN_INCONSISTENT', blocking.map((f) => f.message).join(' '), {
+      step: 'plan_check',
+      data: { findings: result.findings, artifact_id: result.artifact_id },
+      recommendedActions: ['revalidate_contract'],
+    });
 }
 
 function specSummaryOf(spec: StorySpec, artifactId: string): ChapterProductionResult['spec'] {

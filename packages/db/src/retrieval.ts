@@ -645,6 +645,88 @@ export async function acceptedSummariesBefore(
   return r.rows;
 }
 
+/** An accepted chapter's text, for the story-clock and status-window ledgers (ADR-0063). */
+export interface AcceptedTextRow {
+  readonly chapter_no: number;
+  readonly text: string;
+}
+
+/** A bracketed `label: value` line: the start of a status window. */
+const STATUS_WINDOW_LINE = '(^|\n)[ \t]*[\\[【<「〈『][^\n]{0,40}[:：]';
+
+/**
+ * Accepted texts before `beforeChapter` for the ledgers: the latest `recent` chapters (countdowns, windows) and
+ * the first accepted chapter that carries a bracketed status window (the serial's window format). Accepted
+ * versions only; a chapter without an accepted version is absent.
+ */
+export async function acceptedTextsForLedgers(
+  db: Queryable,
+  projectId: string,
+  beforeChapter: number,
+  recent = 30,
+): Promise<{ recent: AcceptedTextRow[]; firstWindow: AcceptedTextRow | undefined }> {
+  const base = `SELECT c.number AS chapter_no, mv.text
+       FROM chapters c
+       JOIN manuscript_versions mv ON mv.id = c.accepted_version_id AND mv.status = 'accepted'
+      WHERE c.project_id = $1 AND c.status = 'accepted' AND c.number < $2`;
+  const r = await db.query<AcceptedTextRow>(`${base} ORDER BY c.number DESC LIMIT $3`, [
+    projectId,
+    beforeChapter,
+    recent,
+  ]);
+  const w = await db.query<AcceptedTextRow>(`${base} AND mv.text ~ $3 ORDER BY c.number LIMIT 1`, [
+    projectId,
+    beforeChapter,
+    STATUS_WINDOW_LINE,
+  ]);
+  return { recent: [...r.rows].reverse(), firstWindow: w.rows[0] };
+}
+
+/** The last accepted chapter before `beforeChapter` in which each entity took part in a canonical event. */
+export async function lastAppearances(
+  db: Queryable,
+  q: {
+    projectId: string;
+    timelineId: string;
+    asOfVersion: number;
+    entityIds: readonly string[];
+    beforeChapter: number;
+  },
+): Promise<Map<string, number>> {
+  if (q.entityIds.length === 0) return new Map();
+  const r = await db.query<{ entity_id: string; chapter_no: number }>(
+    `SELECT ep.entity_id, max(c.number)::int AS chapter_no
+       FROM event_participants ep
+       JOIN events e ON e.id = ep.event_id
+       JOIN chapters c ON c.id = e.source_chapter_id
+      WHERE e.project_id = $1 AND e.timeline_id = $2 AND e.frame = 'canonical'
+        AND e.asserted_at_version <= $3 AND (e.retracted_at_version IS NULL OR e.retracted_at_version > $3)
+        AND ep.entity_id = ANY($4::uuid[]) AND c.number < $5
+      GROUP BY ep.entity_id`,
+    [q.projectId, q.timelineId, q.asOfVersion, [...q.entityIds], q.beforeChapter],
+  );
+  return new Map(r.rows.map((row) => [row.entity_id, row.chapter_no]));
+}
+
+/** The story clock at which a chapter's last canonical event ends (its end, else its start). */
+export async function latestCanonicalClock(
+  db: Queryable,
+  q: { projectId: string; timelineId: string; asOfVersion: number; chapterNo: number },
+): Promise<StoryClock | undefined> {
+  const r = await db.query<{ clock_start: StoryClock; clock_end: StoryClock | null }>(
+    `SELECT e.clock_start, e.clock_end
+       FROM events e
+       JOIN chapters c ON c.id = e.source_chapter_id
+      WHERE e.project_id = $1 AND e.timeline_id = $2 AND c.number = $3 AND e.frame = 'canonical'
+        AND e.asserted_at_version <= $4 AND (e.retracted_at_version IS NULL OR e.retracted_at_version > $4)
+      ORDER BY e.clock_ord DESC, e.id DESC
+      LIMIT 1`,
+    [q.projectId, q.timelineId, q.chapterNo, q.asOfVersion],
+  );
+  const row = r.rows[0];
+  return row ? (row.clock_end ?? row.clock_start) : undefined;
+}
+
 /** The first accepted chapter in which two characters appear in the same canonical event (ADR-0061). */
 export interface FirstMeetingRow {
   readonly a: string;

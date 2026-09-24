@@ -13,6 +13,8 @@ export type WorkflowErrorCode =
   | 'ARC_PLAN_INVALID'
   | 'CONTRACT_INVALID'
   | 'SCENE_PLAN_INVALID'
+  // ADR-0063: the pre-draft plan check found a contradiction with the ledgers; an attention state.
+  | 'PLAN_INCONSISTENT'
   | 'SCENE_DRAFT_INVALID'
   | 'PREVIOUS_CHAPTER_NOT_ACCEPTED'
   | 'PACK_FAILED'
