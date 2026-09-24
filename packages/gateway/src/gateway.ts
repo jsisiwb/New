@@ -51,6 +51,12 @@ export interface RouteEntry {
   readonly priceOutPerMTokCents: number;
   readonly maxContextTokens: number;
   readonly supportsJsonSchema: boolean;
+  /**
+   * Provider-native structured output this route accepts (ADR-0057). `json_schema` sends the request's
+   * `responseSchema` as the provider's JSON-schema response format. Absent means the route receives no
+   * schema, which keeps every mode that lacks the feature (Notion bridge, replay, synthetic) unchanged.
+   */
+  readonly nativeStructuredOutput?: 'json_schema' | undefined;
 }
 
 export type RoutingTable = Readonly<Record<ModelClass, readonly RouteEntry[]>>;
@@ -647,6 +653,15 @@ export class Gateway {
                 // Adapters that support a native JSON mode switch it on when the call declares a schema.
                 ...(req.outputSchemaRef || req.outputMode === 'json'
                   ? { outputSchema: { $ref: req.outputSchemaRef ?? 'json' } }
+                  : {}),
+                ...(route.nativeStructuredOutput === 'json_schema' && req.responseSchema
+                  ? {
+                      responseFormat: {
+                        kind: 'json_schema' as const,
+                        name: req.responseSchema.name,
+                        schema: req.responseSchema.schema,
+                      },
+                    }
                   : {}),
                 trace: {
                   role: req.role,

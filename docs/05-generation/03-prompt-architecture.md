@@ -75,11 +75,27 @@ Rules:
 - Judges receive the deterministic Korean style lint digest as `prose_lint_report` evidence; the
   structure judge receives dialogue share, long-paragraph share and the reflective-ending flag.
 
+### 2.9 Output shapes come from schemas (ADR-0057)
+
+- Every JSON family's answer is described in `schemas/` — the document schema minus the fields the
+  workflow fills, or a `$defs` entry of `model-output.schema.json` for roles whose document the workflow
+  assembles (judges, checkers, scene planner, summarizer). `@yeonjae/prompts` `OUTPUT_SHAPES` is the map.
+- The one-line example under `[출력 스키마 — 이 JSON 필드를 반환한다 …]` must validate against that answer
+  schema; `a|b` alternatives and enum values named in note lines must be schema values; the prompt names
+  every workflow-filled field. `packages/prompts/src/output-shapes.test.ts` enforces this for every
+  active version.
+- New versions generate the block with `tools/ko_prompts/shapes.py` (`renderShape`): required fields,
+  schema enums, ranges and per-type payload fields come from the schema; only role guidance (Korean
+  placeholder text, a narrowed enum subset) comes from the author.
+
 ## 3. Structured output strategy
 
-- Provider-native JSON schema mode where available; else "JSON only" instruction + robust parser.
-- Validation with the registered JSON Schema; on failure: `json_repairer` (cheap model, sees the invalid
-  output + schema + error) ×2 → regenerate ×1 → fail step with diagnostics.
+- Provider-native JSON schema mode where a route declares it (`nativeStructuredOutput: 'json_schema'`,
+  ADR-0057; live OpenAI-compatible routes with `YEONJAE_LIVE_STRUCTURED_OUTPUT=json_schema`); else "JSON
+  only" instruction + `json_object` mode where available + robust parser.
+- Validation with the registered JSON Schema; on failure the gateway regenerates on the same route ×2, then
+  moves to the next route, then fails the step with diagnostics. A separate `json_repairer` role is not
+  implemented.
 - Prose in `text` fields (`language: "en"`) with escaping handled by the SDK; large prose outputs may use a
   two-part format (JSON header + delimited text block) if a provider's JSON mode degrades English prose
   quality — the gateway normalizes both into the same envelope (`scene-draft.schema.json`).

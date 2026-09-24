@@ -18,6 +18,7 @@
   "knowledge-state.schema.json": "2ab0f2f892b0f2769b44d15269ba093138780481e724939c6fef31f8da44bf59",
   "lint-report.schema.json": "52d08b8848eac72241f5023332367ca0c5ff8dafb2722c8b5192abcbc816dd9b",
   "llm-call-record.schema.json": "177b9d5e8c5dd45a8385f1aad803823888f30b9555a94cd2b6f9da2117081a0f",
+  "model-output.schema.json": "d1465455b5b77491f65dd3a7c435a349034ec3a105f2f27e86ebe0011a25253f",
   "narrative-identity.schema.json": "aacb4d279fcaf5f07cd64b80166ca753b7af30d4eac99b8fc2bda69246d73f4f",
   "patch.schema.json": "b1e95036b8817a8b3347bbcb02c5ac9a8785117c2869efd25db5272c4162a39b",
   "production-policy.schema.json": "0d4143b6decaffee197e853459c771c42caf1213935fd6fed73c78011a7dff67",

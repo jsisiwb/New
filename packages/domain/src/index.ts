@@ -5,5 +5,6 @@ export * from './lifecycle.js';
 export * from './policy.js';
 export * as Generated from './generated/index.js';
 export * from './metrics.js';
+export * from './output-normalizers.js';
 export * from './credential-rotation.js';
 export * from './lifecycle-drain.js';

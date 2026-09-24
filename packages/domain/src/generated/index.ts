@@ -19,6 +19,7 @@ export * as JobSchema from './job.js';
 export * as KnowledgeStateSchema from './knowledge-state.js';
 export * as LintReportSchema from './lint-report.js';
 export * as LlmCallRecordSchema from './llm-call-record.js';
+export * as ModelOutputSchema from './model-output.js';
 export * as NarrativeIdentitySchema from './narrative-identity.js';
 export * as PatchSchema from './patch.js';
 export * as ProductionPolicySchema from './production-policy.js';

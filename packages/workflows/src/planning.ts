@@ -16,7 +16,7 @@ import {
   JobControlCommitBlockedError,
   chapterByNumber,
 } from '@yeonjae/db';
-import { type Generated, validatorFor } from '@yeonjae/domain';
+import { type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
 import { compileActiveConstraintSet } from '@yeonjae/context';
 import { compileBlock } from '@yeonjae/narrative';
 import { type LengthTarget } from '@yeonjae/prose';
@@ -556,6 +556,7 @@ export async function generateContract(
         if (retry.length < issues.length) {
           candidate = normalized;
           issues = retry;
+          recordNormalization('contract_output');
         }
       }
       if (issues.length > 0)

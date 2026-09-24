@@ -11,6 +11,7 @@
  * source of truth for them), and annotations whose spans fall outside the text are dropped rather than
  * failing the draft.
  */
+import { recordNormalization } from '@yeonjae/domain';
 import {
   codePointLength,
   segmentParagraphs,
@@ -45,9 +46,9 @@ export function locateQuote(
   const hay = toNfcText(folded);
   if (codePointLength(hay.text) !== codePointLength(text.text)) return undefined;
   const f = locateIn(hay, q, near);
-  return f
-    ? { start: f.start, end: f.end, quote: sliceCodePoints(text, f.start, f.end) }
-    : undefined;
+  if (!f) return undefined;
+  recordNormalization('quote_marks_folded');
+  return { start: f.start, end: f.end, quote: sliceCodePoints(text, f.start, f.end) };
 }
 
 /** Typographic quotation marks → ASCII, one code point for one. */

@@ -11,7 +11,7 @@ import {
   setChapterStatus,
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
-import { asUuid, type Generated, validatorFor } from '@yeonjae/domain';
+import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
 import { codePointLength, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
 import { normalizeScenePlans } from './plan-normalize.js';
@@ -237,7 +237,10 @@ export async function planScenes(
       // already validates (recorded fixtures) keeps its exact bytes.
       if (raw.length > 0 && (issues.length > 0 || lengthsOff())) {
         const retry = check(normalizeScenePlans(raw, { contract: input.contract }));
-        if (retry.issues.length === 0) ({ scenes, issues } = retry);
+        if (retry.issues.length === 0) {
+          ({ scenes, issues } = retry);
+          recordNormalization('scene_plans');
+        }
       }
       if (issues.length === 0) {
         // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
@@ -522,7 +525,9 @@ export function validateOrNormalizeSceneDraft(raw: unknown, expectedSceneNo: num
       ...(raw as { text: string }),
       scene_no: expectedSceneNo,
     });
-    return validateSceneDraftStrict(normalized, expectedSceneNo);
+    const valid = validateSceneDraftStrict(normalized, expectedSceneNo);
+    recordNormalization('scene_draft');
+    return valid;
   }
 }
 
