@@ -22,3 +22,4 @@ export * from './relint.js';
 export * from './run-heartbeat.js';
 export * from './cast-batches.js';
 export * from './arc-summary.js';
+export * from './ops-tools.js';

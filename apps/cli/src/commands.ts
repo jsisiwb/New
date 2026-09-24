@@ -86,7 +86,13 @@ import { loadPolicies as loadPolicyMap, type PolicyRef } from '@yeonjae/domain';
 import {
   auditSeries,
   buildRunReport,
+  callRows,
+  inspectPack,
+  projectCost,
+  promptSizes,
   relintAccepted,
+  renderPackInspection,
+  storyState,
   readHeartbeatFile,
   renderRunReport,
   simulatedProvider,
@@ -382,6 +388,50 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
           ...(heartbeat ? { heartbeat } : {}),
         });
         return { ok: true, output: flags.includes('--json') ? report : renderRunReport(report) };
+      }
+      case 'pack:inspect': {
+        // ADR-0079: rebuild a chapter's pack from its stored contract; every section against the budget.
+        const [projectId, chapterNo, role, ...flags] = rest;
+        if (!projectId || !chapterNo || !role) return { ok: false, output: USAGE };
+        const budget = flags.find((f) => f.startsWith('--budget='))?.slice('--budget='.length);
+        const report = await inspectPack(pool, {
+          projectId,
+          chapterNo: Number(chapterNo),
+          role,
+          ...(budget ? { budget: Number(budget) } : {}),
+        });
+        return {
+          ok: report.overflow === undefined,
+          output: flags.includes('--json') ? report : renderPackInspection(report),
+        };
+      }
+      case 'story:state': {
+        const [projectId] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        return { ok: true, output: await storyState(pool, projectId) };
+      }
+      case 'cost:project': {
+        const [projectId, ...flags] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        const n = flags.find((f) => f.startsWith('--chapters='))?.slice('--chapters='.length);
+        return {
+          ok: true,
+          output: projectCost(await callRows(pool, projectId), n ? Number(n) : 200),
+        };
+      }
+      case 'contract:show': {
+        const [projectId, chapterNo] = rest;
+        if (!projectId || !chapterNo) return { ok: false, output: USAGE };
+        const r = await pool.query<{ key: string; payload: unknown }>(
+          `SELECT key, payload FROM workflow_artifacts
+            WHERE project_id = $1 AND kind = 'chapter_contract' AND key LIKE $2
+            ORDER BY created_at DESC, id DESC LIMIT 1`,
+          [projectId, `${chapterNo}:v%`],
+        );
+        const row = r.rows[0];
+        return row
+          ? { ok: true, output: { key: row.key, contract: row.payload } }
+          : { ok: false, output: `chapter ${chapterNo} has no stored contract` };
       }
       case 'quality:lint-ko': {
         // The Korean lint over accepted chapters, optionally under another language layer (calibration aid).
@@ -1540,6 +1590,10 @@ export const DB_COMMANDS = new Set([
   'series:audit',
   'quality:run-report',
   'quality:lint-ko',
+  'pack:inspect',
+  'story:state',
+  'cost:project',
+  'contract:show',
   'entity:create',
   'manuscript:import',
   'manuscript:approve',
@@ -1701,6 +1755,7 @@ export const USAGE = `yeonjae <command> [args]
   identity:compile <composed-ref> <role> [budget]
                                        compile the Narrative Identity Block (both contracts first) for a role variant
   prompts:list                         list immutable prompt versions and the active prompt set
+  prompts:size [--json]                static size of every active prompt, largest first (ADR-0079)
 
 Database commands (DATABASE_URL required):
   db:migrate                                   apply forward-only migrations
@@ -1717,6 +1772,12 @@ Database commands (DATABASE_URL required):
   quality:lint-ko <project> [--layer=<ref>] [--chapter=N]
                                                the Korean lint over accepted chapters, optionally under another
                                                language layer (e.g. lang/ko@5); findings by rule and metrics
+  pack:inspect <project> <chapter#> <role> [--budget=N] [--json]
+                                               rebuild the chapter's pack from its stored contract; tokens per
+                                               section against the pinned budget, and whether it fits (ADR-0079)
+  story:state <project>                        run status, accepted chapters, last ending, arc summaries, promises
+  cost:project <project> [--chapters=200]      calls, tokens and model time per chapter from the audit, projected
+  contract:show <project> <chapter#>           the chapter's latest stored contract
   entity:create <project> <type> <name>        add a bible entity
   manuscript:import <project> <chapter#> <file> store an immutable working version (NFC, measured)
   manuscript:approve <version>                 approval-lock a working version (gate outcome)
@@ -1812,6 +1873,21 @@ export function run(argv: readonly string[]): CommandResult {
     }
     case 'prompts:list':
       return cmdPromptsList();
+    case 'prompts:size': {
+      // ADR-0079: static size of every active prompt, largest first.
+      const sizes = promptSizes(PromptRegistry.fromDirectory());
+      return {
+        ok: true,
+        output: rest.includes('--json')
+          ? sizes
+          : sizes
+              .map(
+                (x) =>
+                  `${x.family.padEnd(24)} ${x.version.padEnd(7)} ${String(x.est_tokens).padStart(6)} tokens (${x.estimator})`,
+              )
+              .join('\n'),
+      };
+    }
     case 'constraints:compile': {
       const [chapterNo, specFile, cap] = rest;
       if (!chapterNo || !specFile) return { ok: false, output: USAGE };
