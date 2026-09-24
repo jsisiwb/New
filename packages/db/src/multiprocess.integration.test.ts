@@ -16,7 +16,9 @@ import { rateLimitCounters, scopeKeyFor } from './rate-limits.js';
 import {
   ChildContext,
   createIsolatedDatabase,
+  PARENT_APPLICATION_NAME,
   processAlive,
+  withApplicationName,
   type IsolatedDatabase,
 } from './multiprocess-harness.js';
 import { databaseUrl } from './testkit.js';
@@ -40,7 +42,10 @@ run('multi-process coordination', () => {
   const children: ChildContext[] = [];
 
   const spawnChild = (id: string, env: Record<string, string>): ChildContext => {
-    const child = new ChildContext(id, CHILD, { DATABASE_URL: db.url, ...env });
+    const child = new ChildContext(id, CHILD, {
+      DATABASE_URL: withApplicationName(db.url, `yeonjae-mp-child:${id}`),
+      ...env,
+    });
     children.push(child);
     evidence.contexts.add(id);
     if (child.pid !== undefined) evidence.pids.add(child.pid);
@@ -322,13 +327,31 @@ run('multi-process coordination', () => {
     const exit = await child.waitForExit();
     expect(exit.code).toBe(0);
     expect(processAlive(child.pid)).toBe(false);
-    // The child closed its pool: no backend of its own is left on this database.
-    const backends = await pool.query<{ n: string }>(
-      `SELECT count(*)::text AS n FROM pg_stat_activity
-        WHERE datname = current_database() AND pid <> pg_backend_pid()
-          AND application_name NOT LIKE 'vitest%'`,
-    );
-    expect(Number(backends.rows[0]?.n ?? '0')).toBe(0);
+    /**
+     * No backend other than the parent's own pool is left on this database.
+     *
+     * A server backend exits AFTER its client: a child that sent Terminate (this case) or was SIGKILLed
+     * (the previous case) is gone before Postgres has removed its `pg_stat_activity` row. Counting once,
+     * right after the exit, failed intermittently on a correct child (R1, ADR-0071), and it also counted
+     * the parent's own idle pool connections. The wait below observes the server finishing that teardown;
+     * a leaked connection never disappears and fails at the deadline.
+     */
+    const leftovers = async (): Promise<number> => {
+      const r = await pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM pg_stat_activity
+          WHERE datname = current_database() AND backend_type = 'client backend'
+            AND application_name <> $1`,
+        [PARENT_APPLICATION_NAME],
+      );
+      return Number(r.rows[0]?.n ?? '0');
+    };
+    const deadline = Date.now() + 15_000;
+    let remaining = await leftovers();
+    while (remaining > 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 25));
+      remaining = await leftovers();
+    }
+    expect(remaining).toBe(0);
     evidence.scenarios.push('no-leaked-process-or-connection');
   }, 60_000);
 });

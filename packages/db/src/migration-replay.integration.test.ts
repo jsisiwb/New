@@ -11,7 +11,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { APP_ROLE, createPool, migrate, migrationsDir, resetDatabase, type Pool } from './index.js';
+import {
+  APP_ROLE,
+  createPool,
+  migrate,
+  migrationChangesPrivileges,
+  migrationsDir,
+  resetDatabase,
+  type Pool,
+} from './index.js';
 import { databaseUrl } from './testkit.js';
 
 const run = databaseUrl() ? describe : describe.skip;
@@ -119,9 +127,9 @@ run('migration chain replay, content-hash protection and clean-install convergen
       expect(upgrade.applied).toEqual([newest]);
       const upgraded = await securityFingerprint(pool);
       const newestSql = readFileSync(join(dir, newest), 'utf8');
-      // Statements only: a comment that mentions a grant (0022 says the table keeps its grants) is not one.
-      const statements = newestSql.replace(/\/\*[\s\S]*?\*\//g, '').replace(/--[^\n]*/g, '');
-      const privilegeRelevant = /\b(GRANT|REVOKE|ALTER DEFAULT PRIVILEGES)\b/i.test(statements);
+      // Lexed statements, not a regex over the file: a comment or a string that mentions a grant (0022
+      // says the table keeps its grants) is not a privilege statement (R3, ADR-0071).
+      const privilegeRelevant = migrationChangesPrivileges(newestSql);
       // A privilege migration must actually change the security state, or it is a no-op.
       if (privilegeRelevant) expect(upgraded).not.toBe(priorFingerprint);
 
