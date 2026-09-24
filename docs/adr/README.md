@@ -76,6 +76,7 @@
 | [0067](0067-run-report-and-korean-relint.md) | Read-only `quality:run-report` (per-chapter scorecards, gates, lint by rule, plan checks, quarantined versions, model calls by role, wall clock, normalizer snapshot) and `quality:lint-ko` (the Korean lint over accepted chapters under the pinned or another language layer) |
 | [0068](0068-korean-scene-plan-as-labelled-text.md) | A Korean writer reads its scene plan as labelled Korean text with registry names under `planning.scene_plan_format: labelled` (`standard.v5`); earlier pins and English writers keep JSON |
 | [0069](0069-korean-export-headings.md) | Korean exports head chapters `N화` (Markdown, text, TXT and DOCX); a Korean heading marker counts only on its own line when chapters are split; English exports unchanged |
+| [0070](0070-phase-a-live-run-decisions.md) | Phase A live run: leave the Notion client deadline at the adapter default (it must outlast the bridge's failover); the default policy and the Korean lint thresholds do not move until live chapters exist; a novel start fails its run when its plan context cannot be built |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

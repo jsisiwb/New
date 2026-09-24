@@ -3,6 +3,28 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase A — first live Korean run after Workstreams 1–5 — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings--ws12-readme--phase-a`.
+`docs/08-delivery/12-live-run-ws1-7.md` records the run; ADR-0070 the decisions.
+
+**Built:**
+
+- `startNovel` builds its plan context inside its failure handler: a context that cannot be built (an unknown
+  pinned policy, a stale policy hash) fails the run instead of leaving it `suggesting`.
+- `.env.example`: leave `YEONJAE_NOTION_TIMEOUT_MS` empty; the adapter default outlasts the bridge's failover.
+
+**Measured (live, Notion bridge, `policy/standard@2`, `lang/ko@4`):** the Story Spec and two concepts took
+1 h 20 min of wall clock — eight attempts over four calls, five of them aborted by the environment's 600 s
+client deadline (concept 2 lost all three routes; with the adapter default it succeeded first time in
+439 s); the operator approved concept 1; the bible's `character_designer` stage failed three times with
+HTTP 502 from the bridge (48 min) and its retry had not returned when the record was written. No chapter
+was drafted.
+
+**Not done:** chapters 1–5 and everything measured on them (judge sub-scores, gates, lint, revision rounds,
+evaluator latency, an excerpt); A4 and A5 stay open with their evidence criteria (ADR-0070); no live run on
+`standard.v3`–`v5`.
+
 ## Workstream 12a — README refresh — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings--ws12-readme`.
