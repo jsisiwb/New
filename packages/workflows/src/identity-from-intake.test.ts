@@ -147,3 +147,95 @@ describe('Korean webnovel craft layers (ADR-0056)', () => {
     expect(block.sections).toContain('structure');
   });
 });
+
+describe('opt-in language layer, point of view, style sample and contrast pairs (ADR-0073)', () => {
+  const koStore = ProfileStore.fromDirectory();
+  const intake: StoryIntake = {
+    ...BASE,
+    manuscript_language: 'ko',
+    genre: { primary: 'regression' },
+    main_character: { name: '차강진', role: 'protagonist', description: '회귀자' },
+    pov: 'first',
+    // Synthetic test strings (two short sentences each), not manuscript prose.
+    style_sample: '문이 열렸다. 나는 숨을 삼켰다.',
+    contrast_pairs: [
+      { translated: '그는 그녀에게 그것에 대해 말했다.', webnovel: '말했다. 짧게.' },
+      { translated: '그것은 그의 것이었다.', webnovel: '내 거다.' },
+      { translated: '그녀는 미소를 지었다.', webnovel: '웃었다.' },
+      { translated: '그는 문을 통해 들어왔다.', webnovel: '문으로 들어왔다.' },
+    ],
+  };
+
+  it('keeps new projects on lang/ko@5 unless the policy names a newer layer', () => {
+    expect(identityProfileFromIntake('p-default', intake, koStore).lineage?.output_language).toBe(
+      'lang/ko@5',
+    );
+    expect(
+      identityProfileFromIntake('p-v7', intake, koStore, { languageLayer: 'lang/ko@6' }).lineage
+        ?.output_language,
+    ).toBe('lang/ko@6');
+    // A layer of the other language, or an unknown one, is ignored.
+    expect(
+      identityProfileFromIntake('p-bad', intake, koStore, { languageLayer: 'lang/en@1' }).lineage
+        ?.output_language,
+    ).toBe('lang/ko@5');
+  });
+
+  const profile = identityProfileFromIntake('p-pov', intake, koStore, {
+    languageLayer: 'lang/ko@6',
+  });
+  koStore.add(profile);
+  const identity = composeIdentity(koStore, 'project/p-pov@1', 'version-1');
+
+  it('carries the intake’s point of view, style sample and pairs in the preferences', () => {
+    expect(profile.preferences?.pov).toBe('first');
+    expect(profile.preferences?.style_sample?.text).toBe('문이 열렸다. 나는 숨을 삼켰다.');
+    expect(profile.preferences?.contrast_pairs).toHaveLength(4);
+  });
+
+  it('puts the point of view, the operator’s sample first and a rotating window of pairs in writer blocks', () => {
+    const ch1 = compileBlock(identity, {
+      role: 'writer_full',
+      budgetTokens: 12000,
+      rotation: 1,
+    }).text;
+    const ch2 = compileBlock(identity, {
+      role: 'writer_full',
+      budgetTokens: 12000,
+      rotation: 2,
+    }).text;
+    expect(ch1).toContain('## 시점 (절대)');
+    expect(ch1).toContain('1인칭');
+    expect(ch1).toContain('〔작가 문체 견본 — 최우선〕');
+    expect(ch1.indexOf('〔작가 문체 견본')).toBeLessThan(ch1.indexOf('〔견본 1'));
+    expect(ch1).toContain('번역체: 그는 그녀에게 그것에 대해 말했다.');
+    // Four pairs, three per chapter: chapter 1 shows pairs 1–3, chapter 2 pairs 4, 1, 2.
+    expect(ch1).toContain('번역체: 그녀는 미소를 지었다.');
+    expect(ch2).not.toContain('번역체: 그녀는 미소를 지었다.');
+    expect(ch2).toContain('번역체: 그는 문을 통해 들어왔다.');
+    // The voice judge is told the point of view; planners are not given the pairs.
+    expect(
+      compileBlock(identity, { role: 'judge_rubric_voice', budgetTokens: 6000 }).text,
+    ).toContain('## 시점 (절대)');
+    expect(
+      compileBlock(identity, { role: 'planner_compact', budgetTokens: 6000 }).text,
+    ).not.toContain('대조 예문');
+  });
+
+  it('leaves blocks of identities without these preferences byte for byte as before', () => {
+    const plain = identityProfileFromIntake(
+      'p-plain',
+      { ...intake, pov: undefined, style_sample: undefined, contrast_pairs: undefined },
+      koStore,
+    );
+    koStore.add(plain);
+    const text = compileBlock(composeIdentity(koStore, 'project/p-plain@1', 'v'), {
+      role: 'writer_full',
+      budgetTokens: 12000,
+      rotation: 5,
+    }).text;
+    expect(text).not.toContain('시점 (절대)');
+    expect(text).not.toContain('작가 문체 견본');
+    expect(text).not.toContain('대조 예문');
+  });
+});

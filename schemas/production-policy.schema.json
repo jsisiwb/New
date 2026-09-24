@@ -38,7 +38,19 @@
         "smoke_after_patches": {"type": "integer", "minimum": 1, "description": "Cumulative patches after which both judges re-run on the whole chapter"},
         "regression_tolerance_points": {"type": "number", "minimum": 0, "description": "Max allowed per-dimension score drop between versions"},
         "on_regression": {"type": "string", "enum": ["stop", "discard_and_continue"], "description": "ADR-0064. stop (the default when absent): a patch that fails the ADR-0014 regression check stops the chapter as PATCH_REGRESSED. discard_and_continue: the patched version is quarantined, the chapter returns to the version before the patch and its scorecard, and the next round may revise again within the round limit"},
-        "rounds_by_language": {"type": "object", "additionalProperties": false, "description": "ADR-0064: revision rounds per manuscript language, replacing max_rounds for that language. Absent: English takes one representative round and Korean up to max_rounds (ADR-0056)", "properties": {"en": {"type": "integer", "minimum": 0}, "ko": {"type": "integer", "minimum": 0}}}
+        "rounds_by_language": {"type": "object", "additionalProperties": false, "description": "ADR-0064: revision rounds per manuscript language, replacing max_rounds for that language. Absent: English takes one representative round and Korean up to max_rounds (ADR-0056)", "properties": {"en": {"type": "integer", "minimum": 0}, "ko": {"type": "integer", "minimum": 0}}},
+        "polish_pass": {"type": "boolean", "description": "ADR-0073 (K1): after a Korean chapter passes its gates, one editor round on the Korean lint's 번역투, sentence-ending, dialogue-share and paragraph findings; the polished version is kept only if it still passes and the lint finds fewer of them, else it is quarantined (polish_rejected). Absent or false: no polish round"},
+        "regression_baseline": {"type": "string", "enum": ["absolute", "parent"], "description": "ADR-0078 (V-1): what a patch's regression protections are measured against. absolute (the default when absent): every protected section must pass and no translation-like, register or westernization major may remain on the revised version, whatever the parent carried. parent: a protected section fails only when it passed on the parent and fails on the revision, and a kind guard fails only when the revision carries more open blocking/major issues of those kinds than the parent. The targeted-improvement, tolerance, dropped-dimension and new-issue-kind checks are the same in both."},
+        "multi_patch": {
+          "type": "object",
+          "description": "ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.",
+          "required": ["max_patches", "merge_gap_chars"],
+          "additionalProperties": false,
+          "properties": {
+            "max_patches": {"type": "integer", "minimum": 1},
+            "merge_gap_chars": {"type": "integer", "minimum": 0}
+          }
+        }
       }
     },
     "evaluation": {
@@ -52,7 +64,8 @@
         "score_model": {"type": "string", "enum": ["judge_score", "rubric_subscores"], "description": "judge_score: a gated dimension reads the judge's 0-100 number. rubric_subscores: the dimension score is judge_weight x the judge's 1-5 rubric sub-scores mapped to 0-100, plus (1 - judge_weight) x the dimension's deterministic composite"},
         "reevaluation": {"type": "string", "enum": ["full", "targeted"], "description": "targeted: after a patch the deterministic checks and the targeted dimension's evaluator re-run, continuity and knowledge re-run when the patch changed claims, and every other evaluator re-runs only when one of its carried findings no longer anchors or revision.smoke_after_patches patches have accumulated since its last run"},
         "lint_penalty_points": {"type": "object", "required": ["minor", "major", "blocking"], "additionalProperties": false, "description": "Points a deterministic finding takes off its dimension's lint composite (starting at 100, floored at 0) under rubric_subscores", "properties": {"minor": {"type": "number", "minimum": 0, "maximum": 100}, "major": {"type": "number", "minimum": 0, "maximum": 100}, "blocking": {"type": "number", "minimum": 0, "maximum": 100}}},
-        "ledger_checks": {"type": "boolean", "description": "ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs."}
+        "ledger_checks": {"type": "boolean", "description": "ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs."},
+        "pov_secrets_reader_visible": {"type": "boolean", "description": "ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed."}
       }
     },
     "planning": {
@@ -62,7 +75,31 @@
       "additionalProperties": false,
       "properties": {
         "plan_check": {"type": "boolean", "description": "Check the contract and scene plans against the state ledgers, first meetings and the story clock before drafting. A blocking finding (an on-page character the ledger records as dead, story time running backwards) stops the chapter as PLAN_INCONSISTENT before any draft is written; other findings are recorded with the plan."},
-        "scene_plan_format": {"type": "string", "enum": ["json", "labelled"], "description": "How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON."}
+        "scene_plan_format": {"type": "string", "enum": ["json", "labelled"], "description": "How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON."},
+        "design_batches": {"type": "boolean", "description": "Generate the bible's cast in three checkpointed batches — protagonist, core cast, supporting cast — instead of one large character_designer call (ADR-0072). Each batch is its own checkpoint, so a rerun resumes after the last completed batch; later batches receive the names already designed and add the protagonist's registers toward the new characters. Absent or false: one call, as before."},
+        "rhythm_directives": {"type": "boolean", "description": "Serial-rhythm directives for the chapter planner (ADR-0073): from the accepted contracts, a chapter is told to carry a 사이다 beat when the last two had none (사이다 within three 화; at most two 고구마 chapters in a row), the first 25 화 carry the funnel's denser cadence, and the 절단 must change the situation. The directives join the planner's hard constraints and a plan check records each (PLAN-RHYTHM-01..03). Absent or false: no directive."}
+      }
+    },
+    "identity": {
+      "type": "object",
+      "description": "Identity choices a policy makes for projects composed under it (ADR-0073). Absent: a Korean project composes the newest Korean language layer up to lang/ko@5, as before.",
+      "additionalProperties": false,
+      "properties": {
+        "language_layer": {"type": "string", "pattern": "^lang/(en|ko)@[0-9]+$", "description": "The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches."}
+      }
+    },
+    "provider_retry": {
+      "type": "object",
+      "description": "Retry and backoff for retryable provider failures (ADR-0072): HTTP 429 and 5xx (502/503/504 included), transport faults and, when retry_empty_reply is true, an empty completion. After each such failure the gateway waits base_delay_ms × multiplier^(n−1), capped at max_delay_ms (with full jitter a uniform share of it), moves to the class's next route and wraps to the first, up to max_attempts provider attempts per call. Every attempt and its backoff is recorded on the call's audit row. Absent: the next route at once, at most four attempts, as before.",
+      "required": ["max_attempts", "base_delay_ms", "max_delay_ms", "multiplier", "jitter", "retry_empty_reply"],
+      "additionalProperties": false,
+      "properties": {
+        "max_attempts": {"type": "integer", "minimum": 1, "maximum": 8},
+        "base_delay_ms": {"type": "integer", "minimum": 0},
+        "max_delay_ms": {"type": "integer", "minimum": 0},
+        "multiplier": {"type": "number", "minimum": 1},
+        "jitter": {"type": "string", "enum": ["full", "none"]},
+        "retry_empty_reply": {"type": "boolean"}
       }
     },
     "candidates": {
@@ -138,6 +175,17 @@
         "active_constraints_cap_tokens": {"type": "integer", "minimum": 100},
         "writer_input_budget_tokens": {"type": "integer", "minimum": 1000},
         "l1_summary_max_words": {"type": "integer", "minimum": 20},
+        "story_memory": {
+          "type": "object",
+          "description": "ADR-0076: hierarchical story memory. With arc_summaries, when a chapter's arc starts, every earlier scheduled arc whose chapters are all accepted gets one arc summary (L2) from its accepted L1 summaries (the arc_summarizer role, at most l2_max_chars), and the story-so-far section gives the writer, the chapter planner and the continuity checker the L1 summaries of the last recent_chapters accepted chapters in blocks of ten and one L2 item for each older arc. Absent: the story so far is every L1 summary in blocks of ten (ADR-0061).",
+          "required": ["arc_summaries", "recent_chapters", "l2_max_chars"],
+          "additionalProperties": false,
+          "properties": {
+            "arc_summaries": {"type": "boolean"},
+            "recent_chapters": {"type": "integer", "minimum": 10},
+            "l2_max_chars": {"type": "integer", "minimum": 200}
+          }
+        },
         "input_budget_tokens": {
           "type": "object",
           "description": "Input token budget per pack template other than the writer (which uses writer_input_budget_tokens); keys are template names such as pack.chapter_planner",
@@ -174,7 +222,19 @@
       "additionalProperties": false,
       "properties": {
         "warn_tolerance_ratio": {"type": "number", "minimum": 0, "maximum": 0.5},
-        "fail_tolerance_ratio": {"type": "number", "minimum": 0, "maximum": 0.5}
+        "fail_tolerance_ratio": {"type": "number", "minimum": 0, "maximum": 0.5},
+        "scene_calibration": {
+          "type": "object",
+          "description": "ADR-0075 (K3): the length a scene writer is asked for. The scene plan keeps its target; the writer is asked for request_ratio × the target, and with redistribute the targets of the remaining scenes are rescaled by the chapter's remaining budget (the planned total minus what the earlier scenes measured), clamped to [min_ratio, max_ratio]. Evaluation still measures the chapter against the contract's target. Absent: the writer is asked for the plan's target.",
+          "required": ["request_ratio", "redistribute", "min_ratio", "max_ratio"],
+          "additionalProperties": false,
+          "properties": {
+            "request_ratio": {"type": "number", "exclusiveMinimum": 0, "maximum": 1.5},
+            "redistribute": {"type": "boolean"},
+            "min_ratio": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+            "max_ratio": {"type": "number", "minimum": 1, "maximum": 3}
+          }
+        }
       }
     },
     "override_matrix": {

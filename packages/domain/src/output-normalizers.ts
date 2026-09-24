@@ -11,6 +11,7 @@ import { METRIC, METRIC_HELP, Metrics } from './metrics.js';
  */
 export const OUTPUT_NORMALIZERS = [
   'contract_output',
+  'contract_location_fallback',
   'scene_plans',
   'scene_draft',
   'evidence_anchor',

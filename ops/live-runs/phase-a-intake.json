@@ -1,0 +1,17 @@
+{
+  "title_working": "회귀자의 열흘",
+  "premise": "멸망한 세계의 마지막 생존 헌터가 첫 게이트가 열리기 열흘 전으로 회귀한다.",
+  "premise_language": "ko",
+  "manuscript_language": "ko",
+  "genre": {
+    "primary": "regression",
+    "secondary": ["hunter-gate"]
+  },
+  "target_audience": {
+    "rating": "15"
+  },
+  "target_chapters": 200,
+  "target_characters_per_chapter": 5300,
+  "content_restrictions": ["노골적인 성적 묘사 금지"],
+  "operating_mode": "autopilot"
+}

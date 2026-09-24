@@ -69,6 +69,20 @@ describe('normalizePatchFields', () => {
     expect(out.preserved_facts_ack).toEqual([ID]);
   });
 
+  it('infers a missing or invalid scope from the replacement text (live standard.v8, ADR-0076)', () => {
+    // Synthetic test strings (two short sentences at most), not manuscript prose.
+    const scope = (new_text: string, s?: unknown) =>
+      normalizePatchFields({ new_text, ...(s === undefined ? {} : { scope: s }) }).scope;
+    expect(scope('문이 열렸다.\n\n그가 들어왔다.')).toBe('scene');
+    expect(scope('문이 열렸다.\n그가 들어왔다.')).toBe('paragraph');
+    expect(scope('문이 열렸다. 그가 들어왔다.')).toBe('paragraph');
+    expect(scope('문이 열렸다.')).toBe('sentence');
+    expect(scope('문이 열렸다.', 'chapter')).toBe('sentence');
+    expect(scope('문이 열렸다.\n\n그가 들어왔다.', 'dialogue')).toBe('dialogue');
+    // No replacement text: nothing to infer from.
+    expect('scope' in normalizePatchFields({ changed_claims: [] })).toBe(false);
+  });
+
   it('leaves schema-shaped fields untouched', () => {
     const valid = {
       changed_claims: ['a'],

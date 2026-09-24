@@ -21,7 +21,8 @@ import { compileActiveConstraintSet } from '@yeonjae/context';
 import { compileBlock } from '@yeonjae/narrative';
 import { type LengthTarget } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
-import { normalizeContractOutput } from './plan-normalize.js';
+import { chooseFallbackLocation, normalizeContractOutput } from './plan-normalize.js';
+import { checkRhythm, renderRhythmDirectives, type RhythmContract } from './rhythm.js';
 import {
   bind,
   existingArtifact,
@@ -458,6 +459,10 @@ export async function generateContract(
         [`acs.${input.chapterNo}.hash`]: acsHard.contentHash,
         [`acs.${input.chapterNo}.tokens`]: String(acsHard.tokenCount),
       });
+      // ADR-0073: serial-rhythm directives from the accepted contracts before this chapter.
+      const rhythm = ctx.policy.planning?.rhythm_directives
+        ? await acceptedRhythmContracts(ctx, input.chapterNo)
+        : undefined;
       const call = await modelCall<ChapterContract>(ctx, {
         step: 'chapter_contract',
         family: 'chapter_planner',
@@ -485,7 +490,9 @@ export async function generateContract(
             : lang === 'ko'
               ? '(약속은 계약 검증 때 워크플로가 고정한다)'
               : '(promises are pinned by the workflow at contract validation)',
-          active_constraints: acsHard.hardText,
+          active_constraints: rhythm
+            ? `${acsHard.hardText}\n\n${renderRhythmDirectives(input.chapterNo, rhythm, lang)}`
+            : acsHard.hardText,
           length_target_words: String(input.lengthTarget.value),
         },
         block,
@@ -565,6 +572,43 @@ export async function generateContract(
           data: { chapter_no: input.chapterNo, issues },
           recommendedActions: ['regenerate', 'revalidate_contract'],
         });
+      // Live defect A-1 (ADR-0074): a contract that names no registered location made every scene plan
+      // invalid, because each scene must stand in one of the contract's locations. Only that case —
+      // which previously always failed the chapter — gets a location, chosen from the contract's own text
+      // and recorded as a continuity risk; a contract that names a location keeps its exact bytes.
+      if (candidate.locations.length === 0) {
+        const registered = await ctx.pool.query<{
+          id: string;
+          display_name: string;
+          aliases: string[];
+          short_forms: string[];
+        }>(
+          `SELECT id, display_name, aliases, short_forms FROM entities
+            WHERE project_id = $1 AND type = 'location' AND status = 'active' ORDER BY created_at, id`,
+          [ctx.projectId],
+        );
+        const fallback = chooseFallbackLocation(registered.rows, JSON.stringify(candidate));
+        if (fallback) {
+          const note =
+            lang === 'ko'
+              ? fallback.matched
+                ? `계약에 장소가 없어 계약 본문이 언급한 등록 장소 ‘${fallback.name}’를 장면의 장소로 쓴다.`
+                : `계약에 장소가 없고 본문도 등록 장소를 언급하지 않아 첫 등록 장소 ‘${fallback.name}’를 임시로 쓴다. 실제 장소는 장면 서술이 정한다.`
+              : fallback.matched
+                ? `The contract named no location; scenes use the registered location its text mentions, ‘${fallback.name}’.`
+                : `The contract named no location and its text mentions none; scenes provisionally use the first registered location, ‘${fallback.name}’.`;
+          candidate = {
+            ...candidate,
+            locations: [fallback.id],
+            continuity_risks: [...candidate.continuity_risks, { description: note }],
+          };
+          recordNormalization('contract_location_fallback');
+        }
+      }
+      // ADR-0073: a project whose intake chose a point of view holds every contract to it.
+      const projectPov = ctx.identity.preferences?.pov;
+      if (projectPov && candidate.pov.person !== projectPov)
+        candidate = { ...candidate, pov: { ...candidate.pov, person: projectPov } };
       const locked: ChapterContract = {
         ...candidate,
         status: 'locked',
@@ -576,6 +620,13 @@ export async function generateContract(
           validated_at_canon_version: project.canon_version,
         },
       };
+      if (rhythm)
+        await saveArtifact(ctx, {
+          step: 'chapter_contract',
+          kind: 'rhythm_check',
+          key: String(input.chapterNo),
+          payload: { chapter_no: input.chapterNo, findings: checkRhythm(locked, rhythm) },
+        });
       const chapterId = await ensureChapter(ctx, input.chapterNo);
       await ctx.pool.query('UPDATE chapters SET title = coalesce(title, $2) WHERE id = $1', [
         chapterId,
@@ -764,4 +815,22 @@ export function renderPromiseLines(b: StoryBible, lang: 'en' | 'ko' = 'en'): str
       )
       .join('\n') || (ko ? '(없음)' : '(none)')
   );
+}
+
+/** Contracts of the two accepted chapters before `chapterNo`, for the rhythm directives (ADR-0073). */
+async function acceptedRhythmContracts(
+  ctx: WorkflowContext,
+  chapterNo: number,
+): Promise<RhythmContract[]> {
+  const r = await ctx.pool.query<{ payload: RhythmContract }>(
+    `SELECT DISTINCT ON (c.number) a.payload
+       FROM workflow_artifacts a
+       JOIN chapters c ON c.project_id = a.project_id
+        AND c.number = (a.payload->>'chapter_number')::int
+      WHERE a.project_id = $1 AND a.kind = 'chapter_contract' AND c.status = 'accepted'
+        AND c.number = ANY($2::int[])
+      ORDER BY c.number, a.created_at DESC`,
+    [ctx.projectId, [chapterNo - 1, chapterNo - 2]],
+  );
+  return r.rows.map((row) => row.payload);
 }

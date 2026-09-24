@@ -7,8 +7,16 @@
  * requirement, so the first Korean chapter contract failed with CONSTRAINT_UNRENDERABLE.
  */
 import { afterAll, beforeAll, expect, it, describe } from 'vitest';
-import { createProject, createWorkspace, getNovelRun, PgAuditStore, type Pool } from '@yeonjae/db';
-import { loadSchemas } from '@yeonjae/domain';
+import {
+  acceptedArcSummariesBefore,
+  createProject,
+  createWorkspace,
+  getNovelRun,
+  insertArcSummaryOnce,
+  PgAuditStore,
+  type Pool,
+} from '@yeonjae/db';
+import { loadPolicies, loadSchemas, requirePolicy } from '@yeonjae/domain';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import {
   Gateway,
@@ -26,6 +34,9 @@ import { angleSeeds, worldRulesTerm } from './story-plan.js';
 import { buildRunReport, renderRunReport } from './run-report.js';
 import { relintAccepted } from './relint.js';
 import { REPLAY_ROUTING } from './testkit.js';
+import { calibrateSceneTarget } from './length-calibration.js';
+import { type ScenePlan } from './drafting.js';
+import { measure, toNfcText } from '@yeonjae/prose';
 
 const run = databaseUrl() ? describe : describe.skip;
 
@@ -745,7 +756,10 @@ run(
       expect(writer?.succeeded).toBe(writer?.calls);
       expect(report.totals.calls).toBe(report.roles.reduce((n, r) => n + r.calls, 0));
       const md = renderRunReport(report);
-      expect(md).toMatch(/\| 1 \| accepted \| \d+ \|/);
+      expect(md).toMatch(/\| 1 \| accepted \| \d+ \| \d+ \|/);
+      // Both counts (ADR-0073, K3): with spaces, and without.
+      const first = report.chapters[0];
+      expect(first?.characters_no_spaces).toBeLessThan(first?.characters ?? 0);
       expect(md).toMatch(/\(quarantined\)/);
       expect(md).toMatch(/`scene_plans`: 2/);
 
@@ -851,4 +865,723 @@ run(
       expect([...new Set(leaks)]).toEqual([]);
     }, 300_000);
   },
+);
+
+run(
+  'Korean novel run under standard.v6: the cast in three checkpointed batches, retries in the policy (ADR-0072)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    /**
+     * The simulated designer returns its whole cast for any brief, so each batch keeps its share: the
+     * protagonist, then one character plus the protagonist's register-only entry, then the rest.
+     */
+    const byBatch = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'character_designer' || !('json' in out)) return out;
+      const cast = out.json as { characters: { display_name: string; role?: string }[] };
+      const hero = cast.characters.find((c) => c.role === 'protagonist') ?? cast.characters[0];
+      const rest = cast.characters.filter((c) => c !== hero);
+      if (req.user.includes('주인공 한 명만')) return { json: { ...cast, characters: [hero] } };
+      if (req.user.includes('핵심 인물'))
+        return {
+          json: {
+            characters: [
+              ...rest.slice(0, 1),
+              {
+                display_name: hero?.display_name,
+                registers: [
+                  { toward: rest[0]?.display_name, type: 'equal', address_terms: ['선배'] },
+                ],
+              },
+            ],
+            propositions: [],
+          },
+        };
+      return { json: { characters: rest.slice(1), propositions: [] } };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = byBatch(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v6-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@6',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('designs the cast in three checkpointed batches and merges them', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v6-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const designer = seen.filter((r) => r.trace?.role === 'character_designer');
+      expect(designer).toHaveLength(3);
+      expect(designer[0]?.user).toContain('주인공 한 명만');
+      expect(designer[1]?.user).toContain('이미 설계된 인물: 서지안(주인공)');
+      expect(designer[2]?.user).toContain('조연 2~4명');
+
+      // One merged cast artifact; the supplied names all exist as characters.
+      const characters = await pool.query<{ display_name: string }>(
+        "SELECT display_name FROM entities WHERE project_id = $1 AND type = 'character'",
+        [projectId],
+      );
+      const names = characters.rows.map((c) => c.display_name);
+      for (const n of ['서지안', '백태호', '문해린']) expect(names).toContain(n);
+      const batches = await pool.query<{ key: string }>(
+        "SELECT key FROM workflow_artifacts WHERE project_id = $1 AND kind = 'cast_batch' ORDER BY key",
+        [projectId],
+      );
+      expect(batches.rows).toHaveLength(3);
+      // Each batch is its own completed checkpoint, so a rerun replays it instead of calling again.
+      const steps = await pool.query<{ step: string }>(
+        `SELECT js.step FROM job_steps js JOIN jobs j ON j.id = js.job_id
+          WHERE j.project_id = $1 AND js.status = 'completed' AND js.step LIKE 'cast%' ORDER BY js.step`,
+        [projectId],
+      );
+      expect(steps.rows.map((r) => r.step)).toEqual([
+        'cast',
+        'cast_core',
+        'cast_protagonist',
+        'cast_supporting',
+      ]);
+
+      // Every model call carried the policy's retry block; the audit rows record attempts.
+      const calls = await pool.query<{ n: string }>(
+        'SELECT count(*)::text AS n FROM llm_calls WHERE project_id = $1',
+        [projectId],
+      );
+      expect(Number(calls.rows[0]?.n ?? '0')).toBeGreaterThan(0);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
+
+/**
+ * The simulated script for policies with batched cast design and a polish round: the cast batches split the
+ * base script's cast, and the polish round's editor makes a one-word sentence edit.
+ */
+const batchedScript = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+  // The polish round's editor (the base script has no reviser): a one-word sentence edit.
+  if (req.trace?.role === 'targeted_reviser') {
+    const span = /\[수정할 구간\]\n([\s\S]*?)\n\n\[뒷 맥락\]/.exec(req.user)?.[1] ?? '';
+    const sentence = /^[^.!?…]+[.!?…]/.exec(span.trim())?.[0] ?? span.trim();
+    return {
+      json: {
+        scope: 'sentence',
+        span: { original_quote: sentence },
+        new_text: `문득 ${sentence}`,
+        changed_claims: [],
+        preserved_facts_ack: [],
+        speaker_annotations: [],
+      },
+    };
+  }
+  if (req.trace?.role !== 'character_designer' || !('json' in out)) return out;
+  const cast = out.json as { characters: { display_name: string; role?: string }[] };
+  const hero = cast.characters.find((c) => c.role === 'protagonist') ?? cast.characters[0];
+  const rest = cast.characters.filter((c) => c !== hero);
+  if (req.user.includes('주인공 한 명만')) return { json: { ...cast, characters: [hero] } };
+  if (req.user.includes('핵심 인물'))
+    return { json: { characters: rest.slice(0, 1), propositions: [] } };
+  return { json: { characters: rest.slice(1), propositions: [] } };
+};
+
+run(
+  'Korean novel run under standard.v7: lang/ko@6, point of view, style sample, contrast pairs, rhythm (ADR-0073)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = batchedScript(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    // Synthetic test strings (two short sentences at most), not manuscript prose.
+    const intake = {
+      ...INTAKE,
+      // The simulated writer narrates in the third person; KO-POV-01 would (rightly) block a first-person
+      // project on it.
+      pov: 'third_limited',
+      style_sample: '문이 열렸다. 나는 숨을 삼켰다.',
+      contrast_pairs: [
+        { translated: '그는 그녀에게 그것에 대해 말했다.', webnovel: '말했다. 짧게.' },
+        { translated: '그녀는 미소를 지었다.', webnovel: '웃었다.' },
+      ],
+    };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v7-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@7',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('composes lang/ko@6 and carries the POV, sample, pairs and rhythm into the prompts', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v7-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const report = await buildRunReport(pool, projectId);
+      expect(report.lineage.output_language).toBe('lang/ko@6');
+
+      const writer = seen.filter((r) => r.trace?.role === 'scene_writer');
+      expect(writer.length).toBeGreaterThan(1);
+      for (const r of writer) {
+        expect(r.system).toContain('## 시점 (절대)');
+        expect(r.system).toContain('〔작가 문체 견본 — 최우선〕');
+        expect(r.system).toContain('대조 예문');
+      }
+      const planner = seen.filter((r) => r.trace?.role === 'chapter_planner');
+      for (const r of planner) expect(r.user).toContain('[연재 리듬 지시');
+      const voice = seen.filter((r) => r.trace?.role === 'voice_judge');
+      for (const r of voice) expect(r.system).toContain('## 시점 (절대)');
+
+      const contracts = await pool.query<{ person: string }>(
+        `SELECT payload->'pov'->>'person' AS person FROM workflow_artifacts
+          WHERE project_id = $1 AND kind = 'chapter_contract'`,
+        [projectId],
+      );
+      expect(contracts.rows.length).toBeGreaterThan(0);
+      expect(new Set(contracts.rows.map((r) => r.person))).toEqual(new Set(['third_limited']));
+      const rhythm = await pool.query<{ key: string }>(
+        "SELECT key FROM workflow_artifacts WHERE project_id = $1 AND kind = 'rhythm_check' ORDER BY key",
+        [projectId],
+      );
+      expect(rhythm.rows.map((r) => r.key)).toEqual(['1', '2']);
+      // The polish round ran where the lint had findings, and its outcome is recorded either way.
+      const polish = await pool.query<{ payload: { kept: boolean; lint_before: number } }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'polish_report'",
+        [projectId],
+      );
+      for (const p of polish.rows) expect(p.payload.lint_before).toBeGreaterThan(0);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v8: Korean pack budgets and scene length calibration (ADR-0075)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = batchedScript(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    // The simulated writer narrates in the third person (KO-POV-01 would block a first-person project).
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v8-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@8',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('asks each scene writer for the calibrated length; plans and packs keep the targets', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v8-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const cal = requirePolicy('policy/standard@8', loadPolicies()).length.scene_calibration;
+      if (!cal) throw new Error('standard.v8 has no scene_calibration');
+      const plans = await pool.query<{ key: string; payload: { scenes: ScenePlan[] } }>(
+        "SELECT key, payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scene_plan'",
+        [projectId],
+      );
+      const drafts = new Map(
+        (
+          await pool.query<{ key: string; text: string }>(
+            `SELECT key, payload->>'text' AS text FROM workflow_artifacts
+            WHERE project_id = $1 AND kind = 'scene_draft'`,
+            [projectId],
+          )
+        ).rows.map((r) => [r.key, r.text]),
+      );
+      const firstAsk = new Map<string, string>();
+      for (const r of seen) {
+        const id = r.trace?.activityId ?? '';
+        if (
+          r.trace?.role === 'scene_writer' &&
+          /^scene_draft:\d+:\d+$/.test(id) &&
+          !firstAsk.has(id)
+        )
+          firstAsk.set(id, r.user);
+      }
+      let checked = 0;
+      for (const plan of plans.rows) {
+        const ch = plan.key.split(':')[0] ?? '';
+        const targets = plan.payload.scenes.map((s) => s.length_target.value);
+        // The stored plan keeps the planner's targets (700자 per simulated scene), not the requested length.
+        expect(new Set(targets)).toEqual(new Set([700]));
+        const measured: number[] = [];
+        for (const [i, s] of plan.payload.scenes.entries()) {
+          const expected = calibrateSceneTarget(targets, i, measured, cal).requested;
+          if (i === 0) expect(expected).toBe(560);
+          expect(firstAsk.get(`scene_draft:${ch}:${s.scene_no}`)).toContain(
+            `목표 ${expected}자(공백 포함)`,
+          );
+          const text = drafts.get(`${ch}:${s.scene_no}`) ?? '';
+          measured.push(measure(toNfcText(text)).characters);
+          checked++;
+        }
+      }
+      expect(checked).toBeGreaterThan(2);
+
+      // Under the v8 budgets no Korean pack here needs a degradation-ladder step (the run has no vector or
+      // lexical retriever, so `degraded` itself is set for that reason).
+      const packs = await pool.query<{ template: string; steps: unknown[] }>(
+        `SELECT template, manifest->'degradation'->'ladder_steps' AS steps FROM context_packs
+        WHERE project_id = $1`,
+        [projectId],
+      );
+      expect(packs.rows.length).toBeGreaterThan(0);
+      expect(packs.rows.filter((p) => p.steps.length > 0)).toEqual([]);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v9: arc summaries for hierarchical story memory (ADR-0076)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // Two one-chapter seasons, so chapter 2 opens a new arc and the first arc gets its summary.
+    const twoArcs = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      const o = batchedScript(req, out);
+      if (req.trace?.role !== 'story_architect' || !('json' in o)) return o;
+      const bp = o.json as { seasons: Record<string, unknown>[] };
+      const s = bp.seasons[0] ?? {};
+      return {
+        json: {
+          ...bp,
+          seasons: [
+            { ...s, ordinal: 1, chapter_range_est: { from: 1, to: 1 } },
+            { ...s, ordinal: 2, chapter_range_est: { from: 2, to: 2 } },
+          ],
+        },
+      };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = twoArcs(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v9-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@9',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('summarizes a finished arc from its accepted L1 summaries and briefs the next arc with it', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v9-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const summarizer = seen.filter((r) => r.trace?.role === 'arc_summarizer');
+      expect(summarizer).toHaveLength(1);
+      expect(summarizer[0]?.trace?.activityId).toBe('arc_summary:1-1');
+      expect(summarizer[0]?.user).toMatch(/\[회차 요약[^\n]*\]\n1화: /);
+
+      const l2 = await acceptedArcSummariesBefore(pool, projectId, 3);
+      expect(l2.map((r) => [r.chapter_from, r.chapter_to])).toEqual([[1, 1]]);
+      expect(l2[0]?.text.startsWith('아크 요약: ')).toBe(true);
+      // Not readable before the arc it covers has ended.
+      expect(await acceptedArcSummariesBefore(pool, projectId, 1)).toEqual([]);
+      const art = await pool.query<{ payload: { summary_id: string; truncated: boolean } }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'arc_summary' AND key = '1-1'",
+        [projectId],
+      );
+      expect(art.rows[0]?.payload.summary_id).toBe(l2[0]?.summary_id);
+      expect(art.rows[0]?.payload.truncated).toBe(false);
+      // The first stored summary of a range wins.
+      const again = await insertArcSummaryOnce(pool, {
+        workspaceId,
+        projectId,
+        chapterFrom: 1,
+        chapterTo: 1,
+        text: '다른 요약.',
+        canonVersion: 0,
+      });
+      expect(again).toMatchObject({ created: false, summary_id: l2[0]?.summary_id });
+
+      // The second arc's planner reads the first arc's summary in its brief.
+      const planners = seen.filter((r) => r.trace?.role === 'arc_planner');
+      expect(planners).toHaveLength(2);
+      expect(planners[0]?.user).not.toContain('(지난 아크 요약');
+      expect(planners[1]?.user).toContain('(지난 아크 요약, 승인된 원고 기준)');
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
+
+function multiPatchRun(title: string, breakSecondPatch: boolean) {
+  run(title, () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // Round 0's prose judge flags the first sentence of the first and of the last paragraph: two spans far
+    // apart, so the revision round asks for two patches.
+    const twoIssues = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      const o = batchedScript(req, out);
+      if (
+        req.trace?.role !== 'prose_judge' ||
+        !req.trace.activityId.endsWith(':r0') ||
+        !('json' in o)
+      )
+        return o;
+      const text = /\[회차 원문[^\n]*\]\n([\s\S]*)/.exec(req.user)?.[1] ?? '';
+      const paras = [...text.matchAll(/^\[p\d+\] (.+)$/gm)].map((m) => m[1] ?? '');
+      const first = (p: string) => /^[^.!?…]+[.!?…]/.exec(p.trim())?.[0] ?? p.trim();
+      const quotes = [first(paras[0] ?? ''), first(paras[paras.length - 1] ?? '')];
+      return {
+        json: {
+          ...(o.json as Record<string, unknown>),
+          issues: quotes.map((quote) => ({
+            kind: 'translation_like_english',
+            claim: '번역투 문장이다.',
+            severity: 'major',
+            confidence: 0.9,
+            quote,
+          })),
+        },
+      };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out =
+        breakSecondPatch &&
+        req.trace?.role === 'targeted_reviser' &&
+        req.trace.activityId.endsWith(':p2')
+          ? {
+              json: {
+                scope: 'sentence',
+                span: { original_quote: '원고에 없는 문장이다.' },
+                new_text: '다른 문장이다.',
+                changed_claims: [],
+                preserved_facts_ack: [],
+                speaker_annotations: [],
+              },
+            }
+          : twoIssues(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v10-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@10',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('asks for one patch per span cluster and applies them as one revision', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v10-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const revisers = seen
+        .filter((r) => r.trace?.role === 'targeted_reviser')
+        .map((r) => r.trace?.activityId ?? '');
+      for (const ch of [1, 2]) {
+        expect(revisers).toContain(`revise:${ch}:prose:r1:p1`);
+        expect(revisers).toContain(`revise:${ch}:prose:r1:p2`);
+      }
+      const sets = await pool.query<{
+        payload: {
+          clusters: number;
+          applied: { start: number; end: number }[];
+          dropped: unknown[];
+        };
+      }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'patch_set' AND key LIKE '%:r1'",
+        [projectId],
+      );
+      expect(sets.rows).toHaveLength(2);
+      for (const { payload } of sets.rows) {
+        expect(payload.clusters).toBe(2);
+        // A sub-patch that does not anchor is recorded and dropped; the other one still applies.
+        expect(payload.applied).toHaveLength(breakSecondPatch ? 1 : 2);
+        expect(payload.dropped).toHaveLength(breakSecondPatch ? 1 : 0);
+      }
+      // Each envelope patch reproduces its revision from the parent version.
+      const patches = await pool.query<{
+        payload: {
+          from_version_id: string;
+          to_version_id: string;
+          span: { start: number; end: number };
+          new_text: string;
+        };
+      }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'patch' AND key LIKE '%:r1'",
+        [projectId],
+      );
+      expect(patches.rows).toHaveLength(2);
+      for (const { payload: p } of patches.rows) {
+        const texts = await pool.query<{ id: string; text: string }>(
+          'SELECT id, text FROM manuscript_versions WHERE id = ANY($1)',
+          [[p.from_version_id, p.to_version_id]],
+        );
+        const byId = new Map(texts.rows.map((r) => [r.id, r.text]));
+        const parent = Array.from(byId.get(p.from_version_id) ?? '');
+        expect(
+          parent.slice(0, p.span.start).join('') + p.new_text + parent.slice(p.span.end).join(''),
+        ).toBe(byId.get(p.to_version_id));
+      }
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  });
+}
+
+multiPatchRun('Korean novel run under standard.v10: multi-patch revision rounds (ADR-0077)', false);
+multiPatchRun(
+  'Korean novel run under standard.v10: an unanchored sub-patch is dropped, the rest applied (ADR-0077)',
+  true,
 );

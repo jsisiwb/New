@@ -7,6 +7,7 @@
  */
 import { getNovelRun, pinnedIdentityDocument, type Pool } from '@yeonjae/db';
 import { measure, toNfcText } from '@yeonjae/prose';
+import { type Heartbeat } from './run-heartbeat.js';
 
 export interface RoleStats {
   readonly role: string;
@@ -57,6 +58,8 @@ export interface ChapterReport {
   readonly accepted_version_id: string | null;
   /** 자 of the accepted text (characters with spaces, without line breaks). */
   readonly characters: number | undefined;
+  /** 자 without spaces (ADR-0073, K3): Korean platforms count both ways. */
+  readonly characters_no_spaces?: number | undefined;
   readonly versions: number;
   readonly quarantined: readonly { readonly version_no: number; readonly reason: string }[];
   readonly plan_check: Readonly<Record<string, number>>;
@@ -96,6 +99,8 @@ export interface RunReport {
   readonly roles: readonly RoleStats[];
   readonly chapters: readonly ChapterReport[];
   readonly normalizations?: Readonly<Record<string, number>> | undefined;
+  /** The runner's newest status-file beat (ADR-0072), when the operator passed one. */
+  readonly heartbeat?: Heartbeat | undefined;
 }
 
 interface CallRow {
@@ -224,7 +229,10 @@ export function roundOf(
 export async function buildRunReport(
   pool: Pool,
   projectId: string,
-  opts: { readonly normalizations?: Readonly<Record<string, number>> | undefined } = {},
+  opts: {
+    readonly normalizations?: Readonly<Record<string, number>> | undefined;
+    readonly heartbeat?: Heartbeat | undefined;
+  } = {},
 ): Promise<RunReport> {
   const project = await pool.query<{
     production_policy_version: string;
@@ -311,6 +319,12 @@ export async function buildRunReport(
       accepted_version_id: c.accepted_version_id,
       characters:
         acceptedText === undefined ? undefined : measure(toNfcText(acceptedText)).characters,
+      ...(acceptedText === undefined
+        ? {}
+        : {
+            characters_no_spaces: Array.from(toNfcText(acceptedText).text.replace(/\s/gu, ''))
+              .length,
+          }),
       versions: versions.rows.filter((v) => v.chapter_id === c.id).length,
       quarantined: quarantined.rows
         .filter((q) => q.chapter_id === c.id)
@@ -357,6 +371,7 @@ export async function buildRunReport(
     roles,
     chapters: chapterReports,
     ...(opts.normalizations ? { normalizations: opts.normalizations } : {}),
+    ...(opts.heartbeat ? { heartbeat: opts.heartbeat } : {}),
   };
 }
 
@@ -376,18 +391,26 @@ export function renderRunReport(r: RunReport): string {
   out.push(
     `- Model calls: ${String(r.totals.calls)} (${String(r.totals.attempts)} attempts, ${String(r.totals.failed_attempts)} failed); tokens in/out ${String(r.totals.tokens.input)}/${String(r.totals.tokens.output)}; cost ${String(r.totals.cost_cents)}¢`,
     `- Wall clock: ${r.wall_clock.started_at ?? '—'} → ${r.wall_clock.last_call_at ?? '—'} (${String(r.wall_clock.seconds)} s)`,
-    '',
   );
+  if (r.heartbeat) {
+    const h = r.heartbeat;
+    out.push(
+      `- Heartbeat: ${h.beat_at} (pid ${String(h.pid)}); idle ${h.idle_seconds === undefined ? '—' : `${String(h.idle_seconds)} s`} of ${String(h.stuck_after_seconds)} s; ${h.stuck ? `STUCK — ${h.reason ?? ''}` : 'live'}${h.running_step ? `; in flight: ${h.running_step.step} since ${h.running_step.since}` : ''}${h.last_call ? `; last call ${h.last_call.role} ${h.last_call.status} at ${h.last_call.at}` : ''}`,
+    );
+  }
+  out.push('');
   out.push('## Chapters', '');
-  out.push('| 화 | status | 자 | versions | rounds | final gate | quarantined | plan check |');
-  out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  out.push(
+    '| 화 | status | 자 | 자 (공백 제외) | versions | rounds | final gate | quarantined | plan check |',
+  );
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const c of r.chapters) {
     const final = c.rounds[c.rounds.length - 1];
     const pc = Object.entries(c.plan_check)
       .map(([k, v]) => `${k}×${String(v)}`)
       .join(', ');
     out.push(
-      `| ${String(c.number)} | ${c.status} | ${c.characters === undefined ? '—' : String(c.characters)} | ${String(c.versions)} | ${String(c.rounds.length)} | ${final?.gate_outcome ?? '—'} | ${String(c.quarantined.length)} | ${pc || '—'} |`,
+      `| ${String(c.number)} | ${c.status} | ${c.characters === undefined ? '—' : String(c.characters)} | ${c.characters_no_spaces === undefined ? '—' : String(c.characters_no_spaces)} | ${String(c.versions)} | ${String(c.rounds.length)} | ${final?.gate_outcome ?? '—'} | ${String(c.quarantined.length)} | ${pc || '—'} |`,
     );
   }
   for (const c of r.chapters) {

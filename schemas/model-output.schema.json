@@ -215,6 +215,14 @@
         "scenes": { "type": "array", "minItems": 1, "items": { "$ref": "scene-plan.schema.json" } }
       }
     },
+    "arc_summarizer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary_l2"],
+      "properties": {
+        "summary_l2": { "type": "string", "minLength": 1 }
+      }
+    },
     "factual_summarizer": {
       "type": "object",
       "additionalProperties": false,

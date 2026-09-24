@@ -280,6 +280,26 @@ export type NarrativeIdentityProfile = {
       min_score?: number;
       allow_user_exemplars?: boolean;
     };
+    /**
+     * The project's point of view from the intake (ADR-0073).
+     */
+    pov?: 'first' | 'third_limited' | 'third_omniscient';
+    /**
+     * The operator's style sample (ADR-0073): the top-priority exemplar; never copied.
+     */
+    style_sample?: {
+      text: string;
+      note?: string;
+    };
+    /**
+     * Operator-supplied translated → webnovel sentence pairs (ADR-0073), shown a rotating few per chapter.
+     *
+     * @maxItems 24
+     */
+    contrast_pairs?: {
+      translated: string;
+      webnovel: string;
+    }[];
   };
   /**
    * Calibration status for the numeric thresholds in this version (ADR-0029)

@@ -23,6 +23,7 @@ import { locateQuote } from './anchoring.js';
 import { contentHashOf, koQuoteMarks } from './drafting.js';
 import { type Issue } from './evaluation.js';
 import { WorkflowError } from './errors.js';
+import { type AppliedPatch, clusterIssueSpans, mergePatches, widestScope } from './multi-patch.js';
 import { compileFor } from './planning.js';
 import { bind, modelCall, runStep, saveArtifact, type WorkflowContext } from './runtime.js';
 
@@ -85,13 +86,30 @@ export function anchorPatchSpan(
     : undefined;
 }
 
+const PATCH_SCOPES: readonly string[] = ['sentence', 'paragraph', 'dialogue', 'scene', 'seam'];
+
 /**
  * Live-model near-misses of the patch fields, rewritten only where the raw value cannot validate: claim
  * pairs become `before → after` lines, a boolean `regression` (the workflow's report, not the model's) is
  * dropped, and prose written where fact ids belong is dropped so the acknowledgement check still decides.
+ * A patch with replacement text but no valid `scope` (live `standard.v8`, ADR-0076) gets the scope its text
+ * shows: several paragraphs are a scene rewrite — which re-runs the claim checkers — one line with several
+ * sentences a paragraph, else a sentence.
  */
 export function normalizePatchFields(raw: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...raw };
+  if (
+    typeof raw.new_text === 'string' &&
+    !(typeof raw.scope === 'string' && PATCH_SCOPES.includes(raw.scope))
+  ) {
+    const t = raw.new_text.trim();
+    const sentences = t.match(/[.!?…。]["'”’」』]?(?=\s|$)/g)?.length ?? 0;
+    out.scope = /\n\s*\n/.test(t)
+      ? 'scene'
+      : t.includes('\n') || sentences > 1
+        ? 'paragraph'
+        : 'sentence';
+  }
   const claims = raw.changed_claims;
   if (typeof claims === 'string') out.changed_claims = claims.trim() ? [claims] : [];
   else if (Array.isArray(claims))
@@ -380,6 +398,269 @@ export async function reviseVersion(
         patchArtifactId: ref.artifact_id,
         dimension: input.dimension,
         issueIds: targeted.map((i) => i.id),
+      };
+    },
+    `${input.version.id}:r${input.round}`,
+  );
+}
+
+export type RevisionInput = Parameters<typeof reviseVersion>[1];
+
+/** A reviser call that could not be turned into a usable patch under `revision.multi_patch`. */
+export interface DroppedPatch {
+  readonly cluster: number;
+  readonly start: number;
+  readonly end: number;
+  readonly issue_ids: readonly string[];
+  readonly reason: string;
+}
+
+/**
+ * One revision round under `revision.multi_patch` (ADR-0077): one reviser call per cluster of the targeted
+ * issues' spans, each shown only its own window; every usable patch is merged into ONE revision, recorded as
+ * one envelope patch (first start to last end) plus a `patch_set` artifact with the sub-patches and the
+ * dropped calls. A sub-patch must anchor inside its own window; one that does not anchor, validate,
+ * acknowledge its must-preserve facts or pass the language check is dropped, and the round fails only when
+ * none is usable.
+ */
+export async function reviseVersionMulti(
+  ctx: WorkflowContext,
+  input: RevisionInput,
+): Promise<RevisionResult> {
+  const cfg = ctx.policy.revision.multi_patch;
+  if (!cfg) return reviseVersion(ctx, input);
+  const maxRounds = ctx.policy.revision.max_rounds;
+  if (input.round > maxRounds)
+    throw new WorkflowError(
+      'REVISION_LIMIT',
+      `revision round ${input.round} exceeds policy.revision.max_rounds = ${maxRounds} (${ctx.pins.productionPolicyVersion})`,
+      { step: 'revise', recommendedActions: ['regenerate', 'edit_manually'] },
+    );
+  return runStep(
+    ctx,
+    'revise',
+    async () => {
+      const targeted = input.issues.filter(
+        (i) =>
+          i.dimension === input.dimension && (i.severity === 'blocking' || i.severity === 'major'),
+      );
+      if (targeted.length === 0)
+        throw new WorkflowError(
+          'INTERNAL',
+          `no blocking/major issues on dimension ${input.dimension}`,
+          { step: 'revise' },
+        );
+      const nfc = toNfcText(input.version.text);
+      const total = codePointLength(nfc.text);
+      const limit = Math.min(cfg.max_patches, ctx.policy.revision.max_patches_per_round);
+      const clusters = clusterIssueSpans(targeted, total, cfg.merge_gap_chars).slice(0, limit);
+      const language: 'en' | 'ko' = ctx.identity.outputLanguage.language ?? 'en';
+      await bind(ctx, {
+        [`patch.${input.chapterNo}.r${input.round}`]: patchId(ctx, input.version.id, input.round),
+        [`version.${input.chapterNo}.current`]: input.version.id,
+        ...Object.fromEntries(targeted.map((i, n) => [`issue.${input.dimension}.${n}`, i.id])),
+      });
+      const usable: (AppliedPatch & { patch: Patch; issueIds: string[] })[] = [];
+      const dropped: DroppedPatch[] = [];
+      for (const [k, cluster] of clusters.entries()) {
+        const drop = (reason: string) =>
+          dropped.push({
+            cluster: k,
+            start: cluster.start,
+            end: cluster.end,
+            issue_ids: cluster.issues.map((i) => i.id),
+            reason,
+          });
+        const spanText = sliceCodePoints(nfc, cluster.start, cluster.end);
+        const mustPreserve = [
+          ...new Set(cluster.issues.flatMap((i) => i.repair?.must_preserve_fact_ids ?? [])),
+        ];
+        const call = await modelCall<Partial<Patch>>(ctx, {
+          step: 'revise',
+          family: 'targeted_reviser',
+          activityId: `revise:${input.chapterNo}:${input.dimension}:r${input.round}:p${k + 1}`,
+          variables: {
+            dimension: input.dimension,
+            issues: JSON.stringify(
+              cluster.issues.map((i) => ({
+                id: i.id,
+                kind: i.kind,
+                severity: i.severity,
+                claim: i.claim,
+                repair: i.repair,
+              })),
+            ),
+            span_text: spanText,
+            context_before: sliceCodePoints(nfc, Math.max(0, cluster.start - 600), cluster.start),
+            context_after: sliceCodePoints(nfc, cluster.end, Math.min(total, cluster.end + 600)),
+            must_preserve: mustPreserve.length
+              ? mustPreserve.join('\n')
+              : language === 'ko'
+                ? '(없음)'
+                : '(none)',
+            register_digests: input.registerDigests,
+            length_budget_words: String(spanText.split(/\s+/).filter(Boolean).length),
+          },
+          block: compileFor(ctx, 'editor_full'),
+        });
+        const output: unknown = call.output;
+        const fields = normalizePatchFields(
+          output && typeof output === 'object' ? (output as Record<string, unknown>) : {},
+        );
+        if (JSON.stringify(fields) !== JSON.stringify(output)) recordNormalization('patch_fields');
+        const raw =
+          language === 'ko' && typeof fields.new_text === 'string'
+            ? { ...fields, new_text: koQuoteMarks(fields.new_text) }
+            : fields;
+        const window = { start: cluster.start, end: cluster.end };
+        const anchored = anchorPatchSpan(nfc, window, raw.span);
+        if (!anchored || anchored.end < 0) {
+          drop('patch original_quote does not occur in the parent text');
+          continue;
+        }
+        if (anchored.start < window.start || anchored.end > window.end) {
+          drop(`patch anchors at ${anchored.start}–${anchored.end}, outside its window`);
+          continue;
+        }
+        const rawSpan = raw.span as { start?: unknown; end?: unknown } | undefined;
+        if (rawSpan && (rawSpan.start !== anchored.start || rawSpan.end !== anchored.end))
+          recordNormalization('patch_quote_anchor');
+        const candidate: Patch = {
+          ...(raw as unknown as Patch),
+          span: anchored,
+          dimension: input.dimension,
+          id: patchId(ctx, input.version.id, input.round),
+          from_version_id: input.version.id,
+          issue_ids: cluster.issues.map((i) => i.id),
+          reviser_call_id: call.llmCallId,
+        };
+        const v = validatorFor<Patch>('patch.schema.json')(candidate);
+        if (!v.ok) {
+          drop(
+            `patch does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+          );
+          continue;
+        }
+        const patch = v.value;
+        const original = sliceCodePoints(nfc, patch.span.start, patch.span.end);
+        if (
+          patch.span.original_quote !== undefined &&
+          toNfcText(patch.span.original_quote).text !== original
+        ) {
+          drop('patch original_quote does not equal the parent text at the span');
+          continue;
+        }
+        const missing = mustPreserve.filter((id) => !patch.preserved_facts_ack.includes(id));
+        if (missing.length) {
+          drop(`patch does not acknowledge must-preserve fact ${missing.join(', ')}`);
+          continue;
+        }
+        const newText = toNfcText(patch.new_text).text;
+        const lang = checkOutputLanguage(toNfcText(newText), {
+          minConfidence: ctx.policy.output_language.min_english_confidence,
+          language,
+        });
+        if (!lang.passed) {
+          drop(`patch text is not ${language === 'ko' ? 'Korean' : 'English'}`);
+          continue;
+        }
+        if (newText === original) {
+          drop('patch changes nothing');
+          continue;
+        }
+        usable.push({
+          start: patch.span.start,
+          end: patch.span.end,
+          newText,
+          patch,
+          issueIds: cluster.issues.map((i) => i.id),
+        });
+      }
+      if (usable.length === 0)
+        throw new WorkflowError(
+          'PATCH_UNANCHORED',
+          `no usable patch among ${clusters.length} cluster(s): ${dropped.map((d) => d.reason).join(' | ')}`,
+          { step: 'revise', recommendedActions: ['regenerate'] },
+        );
+      const merged = mergePatches(nfc.text, usable);
+      const revised = toNfcText(merged.revised).text;
+      const hash = contentHashOf(revised);
+      const existing = (await manuscriptVersionsOf(ctx.pool, input.chapterId)).find(
+        (x) =>
+          x.origin === 'revision' &&
+          x.content_hash === hash &&
+          x.parent_version_id === input.version.id,
+      );
+      let version: ManuscriptVersionRow;
+      if (existing) {
+        const row = await ctx.pool.query<ManuscriptVersionRow>(
+          'SELECT * FROM manuscript_versions WHERE id = $1',
+          [existing.id],
+        );
+        const found = row.rows[0];
+        if (!found)
+          throw new WorkflowError('INTERNAL', 'revised version vanished', { step: 'revise' });
+        version = found;
+      } else {
+        await setChapterStatus(ctx.pool, input.chapterId, 'revising');
+        version = await createManuscriptVersion(ctx.pool, {
+          workspaceId: ctx.workspaceId,
+          projectId: ctx.projectId,
+          chapterId: input.chapterId,
+          origin: 'revision',
+          text: revised,
+          parentVersionId: input.version.id,
+          createdByJobId: ctx.job.id,
+        });
+      }
+      await bind(ctx, { [`version.${input.chapterNo}.round${input.round}`]: version.id });
+      const issueIds = usable.flatMap((u) => u.issueIds);
+      const first = usable[0]?.patch;
+      const envelope: Patch = {
+        id: patchId(ctx, input.version.id, input.round),
+        from_version_id: input.version.id,
+        to_version_id: version.id,
+        scope: widestScope(usable.map((u) => u.patch.scope)) as Patch['scope'],
+        span: { start: merged.envelope.start, end: merged.envelope.end },
+        new_text: merged.middle,
+        changed_claims: [...new Set(usable.flatMap((u) => u.patch.changed_claims))],
+        preserved_facts_ack: [...new Set(usable.flatMap((u) => u.patch.preserved_facts_ack))],
+        issue_ids: issueIds,
+        dimension: input.dimension,
+        ...(first?.reviser_call_id ? { reviser_call_id: first.reviser_call_id } : {}),
+      };
+      const ref = await saveArtifact(ctx, {
+        step: 'revise',
+        kind: 'patch',
+        key: `${input.version.id}:r${input.round}`,
+        schema: 'patch.schema.json',
+        payload: envelope,
+      });
+      await saveArtifact(ctx, {
+        step: 'revise',
+        kind: 'patch_set',
+        key: `${input.version.id}:r${input.round}`,
+        payload: {
+          clusters: clusters.length,
+          applied: usable.map((u) => ({
+            start: u.start,
+            end: u.end,
+            scope: u.patch.scope,
+            issue_ids: u.issueIds,
+            reviser_call_id: u.patch.reviser_call_id,
+          })),
+          dropped,
+          untargeted_issue_ids: targeted
+            .filter((i) => !clusters.some((c) => c.issues.includes(i)))
+            .map((i) => i.id),
+        },
+      });
+      return {
+        version,
+        patch: envelope,
+        patchArtifactId: ref.artifact_id,
+        dimension: input.dimension,
+        issueIds,
       };
     },
     `${input.version.id}:r${input.round}`,

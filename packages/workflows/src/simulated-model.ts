@@ -670,6 +670,18 @@ function scriptByRole(req: ProviderRequest) {
         state_changes: [],
         knowledge_changes: [],
       });
+    case 'arc_summarizer': {
+      // Deterministic: the arc's own L1 lines, joined (a synthetic stand-in, not a model summary).
+      const lines = (/\[회차 요약[^\n]*\]\n([\s\S]*?)\n\n/.exec(prompt)?.[1] ?? '')
+        .split('\n')
+        .filter(Boolean);
+      return json({
+        summary_l2:
+          lines.length > 0
+            ? `아크 요약: ${lines.map((l) => l.replace(/^\d+화: /, '')).join(' ')}`
+            : 'Arc summary: the ledger stays hidden.',
+      });
+    }
     case 'assumption_explainer':
       return json({ explanations: [] });
     default:

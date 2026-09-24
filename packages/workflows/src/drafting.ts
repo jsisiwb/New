@@ -17,9 +17,16 @@ import {
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
 import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
-import { codePointLength, measure, segmentParagraphs, toNfcText } from '@yeonjae/prose';
+import {
+  codePointLength,
+  measure,
+  segmentParagraphs,
+  targetCount,
+  toNfcText,
+} from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
-import { normalizeScenePlans } from './plan-normalize.js';
+import { calibrateSceneTarget } from './length-calibration.js';
+import { chooseFallbackLocation, normalizeScenePlans } from './plan-normalize.js';
 import { normalizeSceneDraft } from './anchoring.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
 import {
@@ -210,6 +217,27 @@ export function packCallInput(pack: StoredPack) {
   };
 }
 
+async function withFallbackLocation(
+  ctx: WorkflowContext,
+  contract: ChapterContract,
+): Promise<ChapterContract> {
+  if (contract.locations.length > 0) return contract;
+  const registered = await ctx.pool.query<{
+    id: string;
+    display_name: string;
+    aliases: string[];
+    short_forms: string[];
+  }>(
+    `SELECT id, display_name, aliases, short_forms FROM entities
+      WHERE project_id = $1 AND type = 'location' AND status = 'active' ORDER BY created_at, id`,
+    [ctx.projectId],
+  );
+  const fallback = chooseFallbackLocation(registered.rows, JSON.stringify(contract));
+  if (!fallback) return contract;
+  recordNormalization('contract_location_fallback');
+  return { ...contract, locations: [fallback.id] };
+}
+
 export async function planScenes(
   ctx: WorkflowContext,
   input: { contract: ChapterContract; pack: StoredPack },
@@ -219,6 +247,10 @@ export async function planScenes(
     ctx,
     'scene_plan',
     async () => {
+      // Live defect A-1 (ADR-0074): a contract locked before the contract-time fallback existed may name
+      // no location; the scene plan then grounds its scenes in the registered location the contract's text
+      // mentions (else the first one) instead of failing every scene.
+      const contract = await withFallbackLocation(ctx, input.contract);
       const call = await modelCall<{ scenes?: unknown }>(ctx, {
         step: 'scene_plan',
         family: 'scene_planner',
@@ -256,40 +288,44 @@ export async function planScenes(
       let { scenes, issues } = check(raw);
       const lengthsOff = () => {
         const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
-        return Math.abs(total / input.contract.length_target.value - 1) > tol;
+        const tol = contract.length_target.tolerance_ratio ?? 0.12;
+        return Math.abs(total / contract.length_target.value - 1) > tol;
       };
       // A live plan with near-miss shapes or unsummed lengths is grounded in the contract; a plan that
       // already validates (recorded fixtures) keeps its exact bytes.
       if (raw.length > 0 && (issues.length > 0 || lengthsOff())) {
-        const retry = check(normalizeScenePlans(raw, { contract: input.contract }));
+        const retry = check(normalizeScenePlans(raw, { contract }));
         if (retry.issues.length === 0) {
           ({ scenes, issues } = retry);
           recordNormalization('scene_plans');
         }
       }
+      // ADR-0073: a project with a chosen point of view writes every scene in it.
+      const projectPov = ctx.identity.preferences?.pov;
+      if (projectPov && issues.length === 0)
+        scenes = scenes.map((s) =>
+          s.pov.person === projectPov ? s : { ...s, pov: { ...s.pov, person: projectPov } },
+        );
       if (issues.length === 0) {
         // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
         if (scenes.length < 1 || scenes.length > 5)
-          issues.push(
-            `contract wants ${input.contract.scene_count} scenes, plan has ${scenes.length}`,
-          );
+          issues.push(`contract wants ${contract.scene_count} scenes, plan has ${scenes.length}`);
         scenes.forEach((s, i) => {
           if (s.scene_no !== i + 1) issues.push(`scene ${i + 1} is numbered ${s.scene_no}`);
-          if (!input.contract.participants.some((p) => p.character_id === s.pov.character_id))
+          if (!contract.participants.some((p) => p.character_id === s.pov.character_id))
             issues.push(`scene ${s.scene_no} POV is not a contract participant`);
           for (const p of s.participants)
-            if (!input.contract.participants.some((c) => c.character_id === p))
+            if (!contract.participants.some((c) => c.character_id === p))
               issues.push(`scene ${s.scene_no} participant ${p} is not in the contract`);
-          if (!input.contract.locations.includes(s.location_id))
+          if (!contract.locations.includes(s.location_id))
             issues.push(`scene ${s.scene_no} location is not in the contract`);
         });
         const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const target = input.contract.length_target.value;
-        const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
+        const target = contract.length_target.value;
+        const tol = contract.length_target.tolerance_ratio ?? 0.12;
         if (Math.abs(total / target - 1) > tol)
           issues.push(
-            `scene length targets sum to ${total}, chapter target is ${target} ${input.contract.length_target.unit} (±${tol * 100}%)`,
+            `scene length targets sum to ${total}, chapter target is ${target} ${contract.length_target.unit} (±${tol * 100}%)`,
           );
       }
       if (issues.length > 0)
@@ -301,8 +337,8 @@ export async function planScenes(
       const ref = await saveArtifact(ctx, {
         step: 'scene_plan',
         kind: 'scene_plan',
-        key: `${ch}:v${input.contract.version}`,
-        payload: { chapter_no: ch, contract_id: input.contract.id, scenes },
+        key: `${ch}:v${contract.version}`,
+        payload: { chapter_no: ch, contract_id: contract.id, scenes },
       });
       return { scenes, artifactId: ref.artifact_id };
     },
@@ -321,6 +357,11 @@ export interface SceneDraftRef {
    * checkpoints written before ADR-0059.
    */
   readonly characters?: number;
+  /**
+   * ADR-0075 (K3): the length the writer was asked for under `length.scene_calibration`, in the plan's unit.
+   * Absent when the policy does not calibrate (the writer was asked for the plan's target).
+   */
+  readonly requested_length?: number;
   /** The manuscript-language check's confidence, whatever the language. */
   readonly language_confidence: number | undefined;
   /** @deprecated Kept for checkpoints written before ADR-0059; read `language_confidence`. */
@@ -349,7 +390,24 @@ export async function draftScenes(
       : JSON.stringify(scene);
   const texts: string[] = [];
   const drafts: SceneDraftRef[] = [];
-  for (const scene of input.scenes) {
+  const calibration = ctx.policy.length.scene_calibration;
+  const targets = input.scenes.map((s) => s.length_target.value);
+  for (const [index, planned] of input.scenes.entries()) {
+    // ADR-0075: only what the writer is asked for changes; the stored plan and the gate keep the target.
+    const requested = calibration
+      ? calibrateSceneTarget(
+          targets,
+          index,
+          texts.map((t, i) =>
+            targetCount(measure(toNfcText(t)), input.scenes[i]?.length_target.unit ?? 'words'),
+          ),
+          calibration,
+        ).requested
+      : undefined;
+    const scene: ScenePlan =
+      requested === undefined
+        ? planned
+        : { ...planned, length_target: { ...planned.length_target, value: requested } };
     const previous = texts.length
       ? texts.join('\n\n')
       : (input.pack.variables.previous_text ??
@@ -409,6 +467,7 @@ export async function draftScenes(
           llm_call_id: call.llmCallId,
           words: toNfcText(draft.text).text.split(/\s+/).filter(Boolean).length,
           characters: measure(toNfcText(draft.text)).characters,
+          ...(requested !== undefined ? { requested_length: requested } : {}),
           language_confidence: call.outputLanguageCheck?.performed
             ? call.outputLanguageCheck.englishConfidence
             : undefined,

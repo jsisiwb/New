@@ -43,11 +43,23 @@ const GENRE_PROFILES: Readonly<Record<string, string>> = {
  * so a project never drifts when a newer layer is added later.
  */
 function latestKoreanRef(store: ProfileStore, id: string): string | undefined {
+  const cap = AUTO_LAYER_CAP[id] ?? Infinity;
   const versions = store
     .list()
-    .filter((p) => p.id === id && p.version >= 2)
+    .filter((p) => p.id === id && p.version >= 2 && p.version <= cap)
     .map((p) => p.version);
   return versions.length > 0 ? `${id}@${String(Math.max(...versions))}` : undefined;
+}
+
+/**
+ * The newest version a project composes without asking (ADR-0073). Later versions add rules that change
+ * what a new project is gated by, so they are opt-in: a policy names them (`identity.language_layer`).
+ */
+const AUTO_LAYER_CAP: Readonly<Record<string, number>> = { 'lang/ko': 5 };
+
+export interface IdentityCompositionOptions {
+  /** `policy.identity.language_layer` of the project's pinned policy, when it names one. */
+  readonly languageLayer?: string | undefined;
 }
 
 export function composedRefFor(projectId: string): string {
@@ -59,6 +71,7 @@ export function identityProfileFromIntake(
   projectId: string,
   intake: StoryIntake,
   store: ProfileStore,
+  opts: IdentityCompositionOptions = {},
 ): NarrativeProfile {
   const known = new Set(store.list().map((p) => `${p.id}@${p.version}`));
   // ADR-0054: manuscript language is per-project. `manuscript_language` in the intake chooses the
@@ -66,7 +79,16 @@ export function identityProfileFromIntake(
   // ADR-0055: a Korean project composes from the Korean-authored layers (@2), so every rule the model
   // reads is Korean and none of the English-manuscript policies (romanization, English terms) apply.
   const isKo = intake.manuscript_language === 'ko';
-  const langRef = isKo ? (latestKoreanRef(store, 'lang/ko') ?? 'lang/ko@2') : 'lang/en@1';
+  const requested = opts.languageLayer;
+  const requestedFits =
+    requested !== undefined &&
+    known.has(requested) &&
+    requested.startsWith(isKo ? 'lang/ko@' : 'lang/en@');
+  const langRef = requestedFits
+    ? requested
+    : isKo
+      ? (latestKoreanRef(store, 'lang/ko') ?? 'lang/ko@2')
+      : 'lang/en@1';
   const tradRef = isKo
     ? (latestKoreanRef(store, 'tradition/kr-webnovel') ?? 'tradition/kr-webnovel@2')
     : 'tradition/kr-webnovel@1';
@@ -125,6 +147,13 @@ export function identityProfileFromIntake(
     preferences: {
       ...(textual.length > 0 ? { textual } : {}),
       forbidden_expressions: [],
+      // ADR-0073: point of view, the operator's style sample and contrast pairs travel with the identity,
+      // so every role that reads the identity reads them; intakes without them compose as before.
+      ...(intake.pov ? { pov: intake.pov } : {}),
+      ...(intake.style_sample?.trim()
+        ? { style_sample: { text: intake.style_sample.trim() } }
+        : {}),
+      ...(intake.contrast_pairs?.length ? { contrast_pairs: intake.contrast_pairs } : {}),
     },
     calibration: { status: 'uncalibrated', notes: 'Composed from the intake at novel start.' },
   };
@@ -152,6 +181,7 @@ export async function ensureProjectIdentity(
     projectId: string;
     intake: StoryIntake;
     store?: ProfileStore | undefined;
+    languageLayer?: string | undefined;
   },
 ): Promise<{ store: ProfileStore; ref: string; versionId: string; created: boolean }> {
   const store = input.store ?? ProfileStore.fromDirectory();
@@ -174,7 +204,9 @@ export async function ensureProjectIdentity(
     kind: 'narrative_identity',
   });
   if (!doc) {
-    const profile = identityProfileFromIntake(input.projectId, input.intake, store);
+    const profile = identityProfileFromIntake(input.projectId, input.intake, store, {
+      languageLayer: input.languageLayer,
+    });
     const appended = await appendIdentityDocument(pool, {
       workspaceId: input.workspaceId,
       projectId: input.projectId,

@@ -45,7 +45,8 @@ Calls: N + C(N,2)×2 (+1). N=2 → 4 calls.
 Sequential specialists, each producing schema-validated JSON, each receiving the spec + concept + previous
 outputs (as data, not chat):
 ```
-character_designer (protagonist + core cast; identities, goals, flaws, arcs, secrets)
+character_designer (protagonist + core cast; identities, goals, flaws, arcs, secrets; under
+   planning.design_batches three checkpointed batches — protagonist, core cast, supporting cast — ADR-0072)
  → register_profile_designer (per character: dialogue register toward counterparts — formality,
    deference, familiarity, address terms/titles in English, contraction usage, verbal habits; validated
    against genre register norms)
@@ -130,6 +131,17 @@ accepted chapter (amortized).
      promise status, dependency edges, PlanningHorizonWorkflow signal)
 [10] release lease; job complete with cost summary
 ```
+
+**Arc summaries (ADR-0076).** Before an arc is planned, under `context.story_memory.arc_summaries`, each
+earlier arc whose chapters are all accepted gets one L2 summary from its accepted L1 summaries
+(`arc_summarizer`, class C, once per arc); the story-so-far section and the next arc planner read it.
+
+**Requested scene length (ADR-0075).** Under a policy with `length.scene_calibration` the scene writer in [2]
+is asked for `request_ratio` × the scene's target, and with `redistribute` the targets of the scenes still to
+be drafted are rescaled by the chapter's remaining budget — the planned total minus what the earlier scenes
+measured — within `[min_ratio, max_ratio]`. The scene plan, the length check in [4] and the run report keep
+the contract's target; the draft checkpoint records the requested length. A policy without the block asks for
+the plan's target.
 
 ### 4.1 Call budget (Standard tier, 3-scene ~2,500-word chapter, no candidates)
 

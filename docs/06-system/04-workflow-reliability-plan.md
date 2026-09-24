@@ -20,6 +20,8 @@
 | Provider outage | connection errors, 5xx bursts | retry ×3 w/ backoff (1s→30s, jitter); circuit breaker per provider (open after 5 failures/60s) → route to fallback model of same class; audit records actual model; if no fallback → pause job (`waiting_provider`) and alert |
 | Timeout | activity timeout | retry with `max_tokens` −20% once; then fallback model; then `needs_attention` |
 | Rate limit (429) | status | token-bucket per provider; backoff honoring `Retry-After`; concurrency reduce; route to alternate |
+| Retryable fault under a policy with `provider_retry` (ADR-0072) | 429, 5xx (502/503/504), transport, empty reply | the gateway waits `base × multiplier^(n−1)` (cap, full jitter) after each retryable fault, moves to the class's next route and wraps, up to `max_attempts` (starting value 6, `standard.v6`); each attempt's `backoff_ms` is on the audit row; a 4xx is never retried |
+| Stuck unattended run (ADR-0072) | `novel:run --status-file` heartbeat: no call, step or event past the threshold | the run is failed with `RUN_STUCK` and the reason; `quality:run-report --status-file` shows the last beat |
 | Invalid structured output | schema validation | `json_repairer` ×2 → regenerate ×1 → step failure → `needs_attention` |
 | Truncated output | `finish_reason=length` / `EP-TRUNC-01` | continuation protocol ×1 → regenerate scene with reduced target ×1 → fail |
 | Duplicate job | workflow ID policy / lease | reject start with `LEASE_HELD`; UI shows existing job |

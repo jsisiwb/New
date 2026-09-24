@@ -194,6 +194,8 @@ export function runDeterministicChecks(
   allowlist: readonly string[],
   /** Character names for the misspelled-name check (ADR-0062); empty when the bible is not at hand. */
   personNames: readonly string[] = [],
+  /** Full display names only, for the lang/ko@6 name rules (ADR-0074, defect A-2). */
+  displayNames: readonly string[] = [],
 ): DeterministicChecks {
   const nfc = toNfcText(version.text);
   const issues: Issue[] = [];
@@ -231,9 +233,12 @@ export function runDeterministicChecks(
       translationMarkers: ol.translation_markers,
       forbiddenPatterns: ol.forbidden_patterns,
       thresholds: ol.lint_thresholds,
+      calquePhrases: ol.calque_phrases,
+      pov: ctx.identity.preferences?.pov,
       allowlist,
       exemplarTexts: exemplarsOf(ctx.identity).map((e) => e.text),
       personNames,
+      displayNames,
     });
     for (const f of koStyle.findings)
       issues.push(
@@ -501,7 +506,17 @@ export async function evaluateVersion(
       const personNames = (input.bible?.entities ?? [])
         .filter((e) => e.type === 'character')
         .flatMap((e) => [e.display_name, ...(e.short_forms ?? []), ...(e.aliases ?? [])]);
-      const det = runDeterministicChecks(ctx, v, input.contract, input.allowlist, personNames);
+      const displayNames = (input.bible?.entities ?? [])
+        .filter((e) => e.type === 'character')
+        .map((e) => e.display_name);
+      const det = runDeterministicChecks(
+        ctx,
+        v,
+        input.contract,
+        input.allowlist,
+        personNames,
+        displayNames,
+      );
       const nfc = toNfcText(v.text);
       const paragraphs = segmentParagraphs(nfc);
       const anchor = { text: nfc, paragraphs };
@@ -656,7 +671,13 @@ export async function evaluateVersion(
                 knowledge_stances: orNone(packSection(['knowledge'])),
                 knowledge_guard_list: orNone(packSection(['knowledge_guards'])),
                 reader_secrets: orNone(
-                  readerSecrets(input.contract.chapter_number, input.bible, lang),
+                  readerSecrets(input.contract.chapter_number, input.bible, lang, {
+                    // ADR-0074 (defect A-3): under a policy that says so, the POV character's own secrets
+                    // are the narrator's knowledge and so the reader's, not a leak.
+                    ...(ctx.policy.evaluation?.pov_secrets_reader_visible
+                      ? { povEntityId: povPlanId(ctx, input.contract.pov.character_id) }
+                      : {}),
+                  }),
                 ),
               },
               pack: packIn,
@@ -1163,4 +1184,9 @@ export function revisionTargets(scorecard: Scorecard): Issue[] {
   return scorecard.issues.filter(
     (i) => (i.severity === 'blocking' || i.severity === 'major') && i.status === 'open',
   );
+}
+
+/** The bible (plan) id bound to a canon entity id, for matching bible propositions (ADR-0074). */
+function povPlanId(ctx: WorkflowContext, canonId: string): string {
+  return Object.entries(ctx.bindings).find(([, v]) => v === canonId)?.[0] ?? canonId;
 }

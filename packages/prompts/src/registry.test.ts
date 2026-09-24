@@ -30,15 +30,22 @@ const REQUIRED_FAMILIES = [
   // ADR-0060
   'promise_checker',
   'repetition_judge',
+  // ADR-0076
+  'arc_summarizer',
 ];
-const TOTAL_PROMPT_VERSIONS = 303;
+const TOTAL_PROMPT_VERSIONS = 304;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
-const ADDED_AFTER_V4: ReadonlySet<string> = new Set(['promise_checker', 'repetition_judge']);
+const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
+  'promise_checker',
+  'repetition_judge',
+  'arc_summarizer',
+]);
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';
 /** Families with a later live-run fix on top of ACTIVE_VERSION (ADR-0056). */
 const ACTIVE_OVERRIDES: Readonly<Record<string, string>> = {
   arc_planner: '4.0.1',
+  arc_summarizer: '4.5.0',
   canon_extractor: '4.3.0',
   story_architect: '4.3.0',
   targeted_reviser: '4.0.1',
@@ -343,7 +350,7 @@ describe('prompt registry (ADR-0016)', () => {
 
   it('builds a pinned prompt set from the active versions', () => {
     const set = reg.activeSet();
-    expect(Object.keys(set.mapping)).toHaveLength(27);
+    expect(Object.keys(set.mapping)).toHaveLength(28);
     for (const fam of Object.keys(set.mapping)) {
       expect(set.mapping[fam], fam).toBe(`${fam}@${ACTIVE_OVERRIDES[fam] ?? ACTIVE_VERSION}`);
     }

@@ -43,6 +43,21 @@ export interface ProductionPolicy {
       en?: number;
       ko?: number;
     };
+    /**
+     * ADR-0073 (K1): after a Korean chapter passes its gates, one editor round on the Korean lint's 번역투, sentence-ending, dialogue-share and paragraph findings; the polished version is kept only if it still passes and the lint finds fewer of them, else it is quarantined (polish_rejected). Absent or false: no polish round
+     */
+    polish_pass?: boolean;
+    /**
+     * ADR-0078 (V-1): what a patch's regression protections are measured against. absolute (the default when absent): every protected section must pass and no translation-like, register or westernization major may remain on the revised version, whatever the parent carried. parent: a protected section fails only when it passed on the parent and fails on the revision, and a kind guard fails only when the revision carries more open blocking/major issues of those kinds than the parent. The targeted-improvement, tolerance, dropped-dimension and new-issue-kind checks are the same in both.
+     */
+    regression_baseline?: 'absolute' | 'parent';
+    /**
+     * ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.
+     */
+    multi_patch?: {
+      max_patches: number;
+      merge_gap_chars: number;
+    };
   };
   /**
    * Evaluation orchestration (ADR-0060). A policy without this block keeps the ADR-0056 behaviour: evaluators run one after another, only the seven core evaluators run, a gated dimension reads the judge's own 0-100 judge_score and every evaluator re-runs after a patch.
@@ -76,6 +91,10 @@ export interface ProductionPolicy {
      * ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs.
      */
     ledger_checks?: boolean;
+    /**
+     * ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed.
+     */
+    pov_secrets_reader_visible?: boolean;
   };
   /**
    * Pre-draft planning checks (ADR-0063). A policy without this block drafts every scene plan unchecked, as before.
@@ -89,6 +108,34 @@ export interface ProductionPolicy {
      * How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON.
      */
     scene_plan_format?: 'json' | 'labelled';
+    /**
+     * Generate the bible's cast in three checkpointed batches — protagonist, core cast, supporting cast — instead of one large character_designer call (ADR-0072). Each batch is its own checkpoint, so a rerun resumes after the last completed batch; later batches receive the names already designed and add the protagonist's registers toward the new characters. Absent or false: one call, as before.
+     */
+    design_batches?: boolean;
+    /**
+     * Serial-rhythm directives for the chapter planner (ADR-0073): from the accepted contracts, a chapter is told to carry a 사이다 beat when the last two had none (사이다 within three 화; at most two 고구마 chapters in a row), the first 25 화 carry the funnel's denser cadence, and the 절단 must change the situation. The directives join the planner's hard constraints and a plan check records each (PLAN-RHYTHM-01..03). Absent or false: no directive.
+     */
+    rhythm_directives?: boolean;
+  };
+  /**
+   * Identity choices a policy makes for projects composed under it (ADR-0073). Absent: a Korean project composes the newest Korean language layer up to lang/ko@5, as before.
+   */
+  identity?: {
+    /**
+     * The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches.
+     */
+    language_layer?: string;
+  };
+  /**
+   * Retry and backoff for retryable provider failures (ADR-0072): HTTP 429 and 5xx (502/503/504 included), transport faults and, when retry_empty_reply is true, an empty completion. After each such failure the gateway waits base_delay_ms × multiplier^(n−1), capped at max_delay_ms (with full jitter a uniform share of it), moves to the class's next route and wraps to the first, up to max_attempts provider attempts per call. Every attempt and its backoff is recorded on the call's audit row. Absent: the next route at once, at most four attempts, as before.
+   */
+  provider_retry?: {
+    max_attempts: number;
+    base_delay_ms: number;
+    max_delay_ms: number;
+    multiplier: number;
+    jitter: 'full' | 'none';
+    retry_empty_reply: boolean;
   };
   candidates: {
     chapter_candidates: number;
@@ -157,6 +204,14 @@ export interface ProductionPolicy {
     writer_input_budget_tokens?: number;
     l1_summary_max_words?: number;
     /**
+     * ADR-0076: hierarchical story memory. With arc_summaries, when a chapter's arc starts, every earlier scheduled arc whose chapters are all accepted gets one arc summary (L2) from its accepted L1 summaries (the arc_summarizer role, at most l2_max_chars), and the story-so-far section gives the writer, the chapter planner and the continuity checker the L1 summaries of the last recent_chapters accepted chapters in blocks of ten and one L2 item for each older arc. Absent: the story so far is every L1 summary in blocks of ten (ADR-0061).
+     */
+    story_memory?: {
+      arc_summaries: boolean;
+      recent_chapters: number;
+      l2_max_chars: number;
+    };
+    /**
      * Input token budget per pack template other than the writer (which uses writer_input_budget_tokens); keys are template names such as pack.chapter_planner
      */
     input_budget_tokens?: {
@@ -190,6 +245,15 @@ export interface ProductionPolicy {
   length: {
     warn_tolerance_ratio: number;
     fail_tolerance_ratio: number;
+    /**
+     * ADR-0075 (K3): the length a scene writer is asked for. The scene plan keeps its target; the writer is asked for request_ratio × the target, and with redistribute the targets of the remaining scenes are rescaled by the chapter's remaining budget (the planned total minus what the earlier scenes measured), clamped to [min_ratio, max_ratio]. Evaluation still measures the chapter against the contract's target. Absent: the writer is asked for the plan's target.
+     */
+    scene_calibration?: {
+      request_ratio: number;
+      redistribute: boolean;
+      min_ratio: number;
+      max_ratio: number;
+    };
   };
   /**
    * issue kind → override class (ADR-0042). Kinds not listed default to `reviewer` for major and `advisory` for minor/note.
