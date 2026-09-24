@@ -3,6 +3,88 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Next session — handoff (2026-09-24)
+
+**Where the roadmap stands.** One continuous run produced a chain of eight stacked PRs. The agent cannot merge
+(`gh pr merge` is refused), so each PR is open and its body states the order.
+
+| Order | PR | Phase | Branch | Key content |
+| --- | --- | --- | --- | --- |
+| 1 | #1 | R — hygiene | `hoplite/stagiros-7cb92f92` | deterministic suites, `policy:rehash --check`, lexed migrations (ADR-0071) |
+| 2 | #2 | P — provider readiness | `…--provider-readiness` | retry/backoff, batched cast, heartbeat, `provider:check`; `standard.v6` (ADR-0072) |
+| 3 | #3 | A — first live run | `…--phase-a-live` | defect A-1 fixed, A-2..A-4 recorded (ADR-0074) |
+| 4 | #4 | K — prose quality for Korean manuscripts | `…--korean-prose` | `lang/ko@6`, POV, style sample, contrast pairs, rhythm, polish; `standard.v7`; Korean budgets + scene length calibration `standard.v8` (ADR-0073, 0075) |
+| 5 | #5 | L — long-story context | `…--long-context` | arc summaries (L2), 200-화 simulation, 60-query retrieval fixture, patch-scope fix; `standard.v9` (ADR-0076) |
+| 6 | #6 | V — revision | `…--revision-eval` | multi-patch rounds `standard.v10`; regression against the parent `standard.v11` (ADR-0077, 0078) |
+| 7 | #7 | O/W — tooling | `…--operator-tools` | `pack:inspect`, `story:state`, `cost:project`, `contract:show`, `prompts:size` (ADR-0079) |
+| 8 | #8 | D — docs (B blocked) | `…--docs` | README, `docs/HOW-A-KOREAN-NOVEL-IS-MADE.md`, `.env.example`, this block |
+
+Merge bottom-up, #1 → #8, each with **"Create a merge commit"**, against `hoplite/ainos-1ac771f8`.
+
+**Verification.**
+
+- GitHub Actions has **never run** in this repository: 0 workflow runs on any branch, both workflows
+  `active`. Every result here comes from local runs against PostgreSQL 16 in isolated worktrees and databases.
+- Full `pnpm check` at #6's head `43f1608`: EXIT 0 after 2,794 s, covering check:types-fresh, typecheck,
+  lint, format, 158 test files, replay-120, chaos, restore drill, security, costs, build:web and
+  validate:planning/contrast.
+- Full `pnpm check` at #8's head: see #8's PR comment.
+
+**Live runs through the Notion bridge.** Model id from `YEONJAE_MODEL_NOTION`; per-class routing does not apply
+in notion mode, and the judges share the writer's model (known limitation). All runs use the same intake
+(`ops/live-runs/phase-a-v7-intake.json`, config only); chapter 1 of a fresh project each time.
+
+| Policy | Chapter 1 length (target 5,300자) | Stop | Gate at the stop | What it taught |
+| --- | --- | --- | --- | --- |
+| `standard@6` (§7) | 5,621 | `APPROVAL_BLOCKED` | prose 38.3 ✗; 2 blocking, 10 major | A-1 (fixed), A-2 name-lint false positives, A-3 narrator's own secret, A-4 future knowledge |
+| `standard@7` (§8.1) | 6,717 (+27 %) | `failed: PACK_FAILED` | — | K-1 Korean pack budgets, K-2 length overshoot → `standard@8` |
+| `standard@8` (§8.2) | 5,349 (+0.9 %) | `APPROVAL_BLOCKED` after 3 rounds | prose 66.1 ✗ (patched rounds 93.1/85.6/81.2, all quarantined); 0 blocking, 7 major | L-1 patch without scope (fixed); union-span scene rewrites → `standard@10` |
+| `standard@10` (§8.3) | 4,799 (−9.5 %) | `APPROVAL_BLOCKED` after 3 rounds | voice 60.7 ✗; 4 blocking, 4 major | V-1 regression measured absolutely → `standard@11`; A-4 again (2 blockings) |
+| `standard@11` (§8.4) | 5,331 (+0.6 %) | `APPROVAL_BLOCKED` after 3 rounds | structure 77.3 ✗ (0.7 short); 3 blocking, 6 major | rounds split into 2 clusters; regressions now genuine (no V-1); stops on content: possession vocabulary in a regression serial (G-1), early reveal (A-4), weak 절단, dialogue share |
+
+**Spend.** 0¢ recorded: the bridge reports no price. Bridge billing-period credits moved from 60.26 % / 64.73 %
+(14:36 UTC, before Phase A) to 66.07 % / 76.68 % (19:09 UTC) on the two workspaces, with no budget set
+(`YEONJAE_BUDGET_CENTS` unset). Per run: v6 ≈ 4.3 points, v7 ≈ 0.5 / 1.6, v8 ≈ 1.7 / 2.9, v10 ≈ 1.0 / 2.1,
+v11 ≈ 1.1 / 2.7; the whole session ≈ 5.8 / 12.0 points.
+
+**Open defects and blocked items.**
+
+- **A-4 (open).** A regressor's future knowledge of another character's secret conflicts with the bible's
+  reader-reveal schedule. The v10 run hit two blockings on it. It needs a design decision: plan
+  reveal-safe hooks (the chapter planner reads the reveal schedule), or allow narrator hints before the
+  reveal chapter.
+- **G-1 (open).** Genre vocabulary: a regression serial's narrator uses possession-novel terms (원작, 원작 주인공),
+  flagged as blocking in v11 and by the promise checker in Phase A. It needs a genre-term lint for the declared
+  device or a writer-side rule.
+- **Bible time frame.** A character's rank was recorded for a later time than chapter 1 (v10 continuity
+  blocking). The bible's planned states need a "from chapter" frame.
+- **A5 (operator decision).** Korean lint thresholds. `KO-DLG-SHARE` (dialogue and inner speech ≥ 25 %)
+  flagged a major on first-person regression openings in v8 (14 %) and v10 (13 %). The threshold is unchanged
+  pending the operator's call.
+- **BLOCKED — needs operator material:**
+  - K7/K6: a style sample and contrast pairs (the studio may not author them);
+  - B: a Korean gold set and blinded A/B ratings;
+  - A5: the blinded reviewer packet needs accepted live chapters (none yet).
+- **Not done:**
+  - K2 best-of-N; K3 trim/continuation call (replaced by the request calibration);
+  - V2 reader-panel evaluator; V3 cross-judge score normalization;
+  - L3 season summaries; writer voice cards from accepted utterances;
+  - I: contract editing, Korean chapter titles;
+  - W: prompt pruning (needs A/B evidence);
+  - rendered prompts of recorded calls (inputs are not stored).
+
+**Operator actions.**
+
+1. Merge #1 → #8 in order with "Create a merge commit".
+2. Enable GitHub Actions (Settings → Actions → General), then re-run CI on the merged default branch.
+3. Supply a Korean style sample and contrast pairs (intake `style_sample`, `contrast_pairs`), and a gold set
+   if benchmarking is wanted.
+4. Decide A-4 and A5 (above).
+
+**Next session starts here.** Fix A-4 on the planning side (reveal schedule into the contract planner), give
+the bible's planned states a time frame, then run `standard@11` live for three chapters. Use `pack:inspect`,
+`story:state` and `cost:project` to watch it. When chapters are accepted, produce the blinded reviewer packet.
+
 ## Phase D — documentation; Phase B — blocked — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92--docs` (stacked on the operator tools).

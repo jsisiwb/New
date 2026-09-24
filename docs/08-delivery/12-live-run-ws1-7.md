@@ -240,3 +240,34 @@ The regression reports of every live run show the same thing. Phase A, v8 and v1
 round with `protection_failed`, and the failing protections include sections that failed on the parent and
 majors the parent already carried. Defect V-1: the protections were measured absolutely. ADR-0078
 (`standard.v11`) measures them against the parent.
+
+### 8.4 `standard.v11` (18:47–19:07 UTC)
+
+A fresh project on the same intake, pinned to `policy/standard@11` (multi-patch rounds, regression measured
+against the parent — ADR-0077, ADR-0078).
+
+| | |
+| --- | --- |
+| Start → concepts | 2 min 17 s |
+| Bible | 7 cast, 3 locations, 3 organizations, 12 propositions, 26 promises, 4 seasons |
+| Length | chapter 1 assembled at **5,331자** against 5,300 (+0.6 %) |
+| Rounds | three; each round split into **two clusters**, both sub-patches applied, none dropped (`patch_quote_anchor` 3) |
+| Blocking/major by round | r0 3/6, r1 2/5, r2 2/5 |
+| Regression | every round failed on its own merits: `targeted_not_improved` and a new blocking/major kind (`knowledge_ignorance`, `world_rule_violation`, `inventory_impossible`). Among the protections only `no_new_blocking_major` failed; no protection failed for what r0 already failed (the V-1 behaviour is gone) |
+| Stop | `needs_attention: APPROVAL_BLOCKED` on r0 — 3 blocking, 6 major; prose 84.9/78, structure **77.3/78** ✗, genre 90/72, voice 100/76 |
+| r0 blockings | continuity ×2: the narrator uses possession-novel vocabulary (원작의 문장, 원작 주인공) in a regression serial — the Phase A promise-checker finding again; knowledge leak: a secret due in chapter 3 said aloud in chapter 1 (A-4 family) |
+| r0 majors | `KO-DLG-SHARE` 14 %; two AI stock phrases (정적이 내려앉았다, 서늘한 미소); a 하루 마무리 ending instead of a 절단; the regressor acting on knowledge his first life never gave him |
+| Calls | 39, none failed; 141,228 in / 23,932 out |
+| Cost | 0¢ recorded; bridge billing-period credits 65.02 % / 74.02 % (18:42) → 66.07 % / 76.68 % |
+
+What changed across the five live runs: the pack now builds (v8), the length is on target (v8 +0.9 %, v10
+−9.5 %, v11 +0.6 %), rounds are split per cluster (v11), and the regression check now judges a patch by what it
+did (v11). What still stops chapter 1 is content:
+
+- a genre-vocabulary drift (possession terms in a regression serial);
+- reveals ahead of the bible's schedule (A-4);
+- the 절단 ending;
+- dialogue share under the Korean lint's floor.
+
+None of these is a pipeline fault any longer, but the revision rounds do not repair them without adding new
+majors.
