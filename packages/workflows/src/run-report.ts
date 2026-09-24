@@ -7,6 +7,7 @@
  */
 import { getNovelRun, pinnedIdentityDocument, type Pool } from '@yeonjae/db';
 import { measure, toNfcText } from '@yeonjae/prose';
+import { type Heartbeat } from './run-heartbeat.js';
 
 export interface RoleStats {
   readonly role: string;
@@ -96,6 +97,8 @@ export interface RunReport {
   readonly roles: readonly RoleStats[];
   readonly chapters: readonly ChapterReport[];
   readonly normalizations?: Readonly<Record<string, number>> | undefined;
+  /** The runner's newest status-file beat (ADR-0072), when the operator passed one. */
+  readonly heartbeat?: Heartbeat | undefined;
 }
 
 interface CallRow {
@@ -224,7 +227,10 @@ export function roundOf(
 export async function buildRunReport(
   pool: Pool,
   projectId: string,
-  opts: { readonly normalizations?: Readonly<Record<string, number>> | undefined } = {},
+  opts: {
+    readonly normalizations?: Readonly<Record<string, number>> | undefined;
+    readonly heartbeat?: Heartbeat | undefined;
+  } = {},
 ): Promise<RunReport> {
   const project = await pool.query<{
     production_policy_version: string;
@@ -357,6 +363,7 @@ export async function buildRunReport(
     roles,
     chapters: chapterReports,
     ...(opts.normalizations ? { normalizations: opts.normalizations } : {}),
+    ...(opts.heartbeat ? { heartbeat: opts.heartbeat } : {}),
   };
 }
 
@@ -376,8 +383,14 @@ export function renderRunReport(r: RunReport): string {
   out.push(
     `- Model calls: ${String(r.totals.calls)} (${String(r.totals.attempts)} attempts, ${String(r.totals.failed_attempts)} failed); tokens in/out ${String(r.totals.tokens.input)}/${String(r.totals.tokens.output)}; cost ${String(r.totals.cost_cents)}¢`,
     `- Wall clock: ${r.wall_clock.started_at ?? '—'} → ${r.wall_clock.last_call_at ?? '—'} (${String(r.wall_clock.seconds)} s)`,
-    '',
   );
+  if (r.heartbeat) {
+    const h = r.heartbeat;
+    out.push(
+      `- Heartbeat: ${h.beat_at} (pid ${String(h.pid)}); idle ${h.idle_seconds === undefined ? '—' : `${String(h.idle_seconds)} s`} of ${String(h.stuck_after_seconds)} s; ${h.stuck ? `STUCK — ${h.reason ?? ''}` : 'live'}${h.running_step ? `; in flight: ${h.running_step.step} since ${h.running_step.since}` : ''}${h.last_call ? `; last call ${h.last_call.role} ${h.last_call.status} at ${h.last_call.at}` : ''}`,
+    );
+  }
+  out.push('');
   out.push('## Chapters', '');
   out.push('| 화 | status | 자 | versions | rounds | final gate | quarantined | plan check |');
   out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');

@@ -13,3 +13,4 @@ export * from './notion-provider.js';
 export * from './live-providers.js';
 export * from './live-config.js';
 export * from './provider-mode.js';
+export * from './capabilities.js';

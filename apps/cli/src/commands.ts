@@ -87,7 +87,9 @@ import {
   auditSeries,
   buildRunReport,
   relintAccepted,
+  readHeartbeatFile,
   renderRunReport,
+  simulatedProvider,
   exportAccepted,
   ExportRefusedError,
   prepareExport,
@@ -96,7 +98,17 @@ import {
   workflowStatus,
   type ChapterProductionInput,
 } from '@yeonjae/workflows';
-import { Gateway, MemoryBudget, ReplayProvider, type RoutingTable } from '@yeonjae/gateway';
+import {
+  checkRouting,
+  Gateway,
+  MemoryBudget,
+  probeRouting,
+  renderRoutingCheck,
+  ReplayProvider,
+  requirementsFromPrompts,
+  resolveProvidersFromEnv,
+  type RoutingTable,
+} from '@yeonjae/gateway';
 import { PgAuditStore } from '@yeonjae/db';
 import { ArtifactLlmOutputStore } from '@yeonjae/workflows';
 import { WorkflowError } from '@yeonjae/workflows';
@@ -248,6 +260,58 @@ export function cmdSchemas(): CommandResult {
   return { ok: true, output: [...schemas.keys()] };
 }
 
+/**
+ * `provider:check [--probe] [--json]` (ADR-0072): the per-class capability matrix of the configured provider
+ * mode against what the active prompts need. `--probe` sends one tiny request per class. Model ids are not
+ * printed (in notion mode they are operator configuration), and no credential is ever read into output.
+ */
+export async function runProviderCheck(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<CommandResult> {
+  let resolved: ReturnType<typeof resolveProvidersFromEnv>;
+  try {
+    resolved = resolveProvidersFromEnv(env, { simulated: simulatedProvider });
+  } catch (err) {
+    return {
+      ok: false,
+      output: {
+        error: 'PROVIDER_CONFIG',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+    };
+  }
+  const reg = PromptRegistry.fromDirectory();
+  const prompts = Object.values(reg.activeSet().mapping).map((id) => reg.get(id));
+  const check = checkRouting(resolved.mode, resolved.routing, requirementsFromPrompts(prompts));
+  const probe = args.includes('--probe')
+    ? await probeRouting(resolved.providers(), resolved.routing)
+    : undefined;
+  const ok = check.ok && (probe?.every((p) => p.ok) ?? true);
+  if (args.includes('--json'))
+    return {
+      ok,
+      output: {
+        mode: check.mode,
+        ok: check.ok,
+        findings: check.findings,
+        classes: check.classes.map(({ primary: _primary, ...c }) => c),
+        ...(probe ? { probe } : {}),
+      },
+    };
+  const probeText = probe
+    ? [
+        '',
+        'probe:',
+        ...probe.map(
+          (p) =>
+            `- ${p.model_class} via ${p.provider}: ${p.ok ? 'ok' : `failed (${p.failure_class ?? 'unknown'})`} in ${String(p.latency_ms)} ms`,
+        ),
+      ].join('\n')
+    : '';
+  return { ok, output: `${renderRoutingCheck(check)}${probeText}` };
+}
+
 export interface AsyncCommandResult extends CommandResult {
   readonly ok: boolean;
 }
@@ -309,8 +373,13 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         const log = flags
           .find((f) => f.startsWith('--metrics-log='))
           ?.slice('--metrics-log='.length);
+        const statusFile = flags
+          .find((f) => f.startsWith('--status-file='))
+          ?.slice('--status-file='.length);
+        const heartbeat = statusFile ? readHeartbeatFile(statusFile) : undefined;
         const report = await buildRunReport(pool, projectId, {
           ...(log ? { normalizations: lastNormalizations(log) } : {}),
+          ...(heartbeat ? { heartbeat } : {}),
         });
         return { ok: true, output: flags.includes('--json') ? report : renderRunReport(report) };
       }
@@ -1640,7 +1709,8 @@ Database commands (DATABASE_URL required):
                                                --policy pins a shipped policy, e.g. policy/standard@2
   series:audit <project> [--absent-after=<n>]  whole-serial audit: overdue promises, absent characters,
                                                story-time regressions, repeated openings (accepted canon only)
-  quality:run-report <project> [--metrics-log=<file>] [--json]
+  quality:run-report <project> [--metrics-log=<file>] [--status-file=<file>] [--json]
+  provider:check [--probe] [--json]            per-class capability matrix of the configured provider mode (ADR-0072)
                                                a run as persisted: per-chapter scorecards (gates, dimensions,
                                                lint by rule), plan checks, quarantined versions, model calls by
                                                role (attempts, latency, tokens); Markdown unless --json
