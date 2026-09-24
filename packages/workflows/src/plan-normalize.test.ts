@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { validatorFor } from '@yeonjae/domain';
-import { normalizeContractOutput, normalizeScenePlans } from './plan-normalize.js';
+import {
+  chooseFallbackLocation,
+  normalizeContractOutput,
+  normalizeScenePlans,
+} from './plan-normalize.js';
 import { type ChapterContract } from './planning.js';
 
 const MC = '0190b3a0-0000-7000-8000-000000000001';
@@ -149,5 +153,35 @@ describe('live planner output normalization', () => {
       0,
     );
     expect(total).toBe(5500);
+  });
+});
+
+describe('a contract that names no location (live defect A-1, ADR-0074)', () => {
+  const registered = [
+    {
+      id: 'loc-mountain',
+      display_name: '북한산 국립공원 구기탐방지원센터',
+      aliases: [],
+      short_forms: [],
+    },
+    { id: 'loc-station', display_name: '강남역 2번 출구', aliases: ['강남역'], short_forms: [] },
+  ];
+
+  it('picks the registered location the contract text mentions, by name, alias or first word', () => {
+    expect(chooseFallbackLocation(registered, '강진은 강남역에서 첫 게이트를 기다린다.')).toEqual({
+      id: 'loc-station',
+      name: '강남역 2번 출구',
+      matched: true,
+    });
+    expect(chooseFallbackLocation(registered, '북한산으로 향한다.')?.id).toBe('loc-mountain');
+  });
+
+  it('falls back to the first registered location, unmatched, and to nothing without a registry', () => {
+    expect(chooseFallbackLocation(registered, '원룸에서 눈을 뜬다.')).toEqual({
+      id: 'loc-mountain',
+      name: '북한산 국립공원 구기탐방지원센터',
+      matched: false,
+    });
+    expect(chooseFallbackLocation([], '어디든')).toBeUndefined();
   });
 });

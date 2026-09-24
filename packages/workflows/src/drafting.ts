@@ -19,7 +19,7 @@ import {
 import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
 import { codePointLength, measure, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
-import { normalizeScenePlans } from './plan-normalize.js';
+import { chooseFallbackLocation, normalizeScenePlans } from './plan-normalize.js';
 import { normalizeSceneDraft } from './anchoring.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
 import {
@@ -210,6 +210,27 @@ export function packCallInput(pack: StoredPack) {
   };
 }
 
+async function withFallbackLocation(
+  ctx: WorkflowContext,
+  contract: ChapterContract,
+): Promise<ChapterContract> {
+  if (contract.locations.length > 0) return contract;
+  const registered = await ctx.pool.query<{
+    id: string;
+    display_name: string;
+    aliases: string[];
+    short_forms: string[];
+  }>(
+    `SELECT id, display_name, aliases, short_forms FROM entities
+      WHERE project_id = $1 AND type = 'location' AND status = 'active' ORDER BY created_at, id`,
+    [ctx.projectId],
+  );
+  const fallback = chooseFallbackLocation(registered.rows, JSON.stringify(contract));
+  if (!fallback) return contract;
+  recordNormalization('contract_location_fallback');
+  return { ...contract, locations: [fallback.id] };
+}
+
 export async function planScenes(
   ctx: WorkflowContext,
   input: { contract: ChapterContract; pack: StoredPack },
@@ -219,6 +240,10 @@ export async function planScenes(
     ctx,
     'scene_plan',
     async () => {
+      // Live defect A-1 (ADR-0074): a contract locked before the contract-time fallback existed may name
+      // no location; the scene plan then grounds its scenes in the registered location the contract's text
+      // mentions (else the first one) instead of failing every scene.
+      const contract = await withFallbackLocation(ctx, input.contract);
       const call = await modelCall<{ scenes?: unknown }>(ctx, {
         step: 'scene_plan',
         family: 'scene_planner',
@@ -256,13 +281,13 @@ export async function planScenes(
       let { scenes, issues } = check(raw);
       const lengthsOff = () => {
         const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
-        return Math.abs(total / input.contract.length_target.value - 1) > tol;
+        const tol = contract.length_target.tolerance_ratio ?? 0.12;
+        return Math.abs(total / contract.length_target.value - 1) > tol;
       };
       // A live plan with near-miss shapes or unsummed lengths is grounded in the contract; a plan that
       // already validates (recorded fixtures) keeps its exact bytes.
       if (raw.length > 0 && (issues.length > 0 || lengthsOff())) {
-        const retry = check(normalizeScenePlans(raw, { contract: input.contract }));
+        const retry = check(normalizeScenePlans(raw, { contract }));
         if (retry.issues.length === 0) {
           ({ scenes, issues } = retry);
           recordNormalization('scene_plans');
@@ -271,25 +296,23 @@ export async function planScenes(
       if (issues.length === 0) {
         // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
         if (scenes.length < 1 || scenes.length > 5)
-          issues.push(
-            `contract wants ${input.contract.scene_count} scenes, plan has ${scenes.length}`,
-          );
+          issues.push(`contract wants ${contract.scene_count} scenes, plan has ${scenes.length}`);
         scenes.forEach((s, i) => {
           if (s.scene_no !== i + 1) issues.push(`scene ${i + 1} is numbered ${s.scene_no}`);
-          if (!input.contract.participants.some((p) => p.character_id === s.pov.character_id))
+          if (!contract.participants.some((p) => p.character_id === s.pov.character_id))
             issues.push(`scene ${s.scene_no} POV is not a contract participant`);
           for (const p of s.participants)
-            if (!input.contract.participants.some((c) => c.character_id === p))
+            if (!contract.participants.some((c) => c.character_id === p))
               issues.push(`scene ${s.scene_no} participant ${p} is not in the contract`);
-          if (!input.contract.locations.includes(s.location_id))
+          if (!contract.locations.includes(s.location_id))
             issues.push(`scene ${s.scene_no} location is not in the contract`);
         });
         const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const target = input.contract.length_target.value;
-        const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
+        const target = contract.length_target.value;
+        const tol = contract.length_target.tolerance_ratio ?? 0.12;
         if (Math.abs(total / target - 1) > tol)
           issues.push(
-            `scene length targets sum to ${total}, chapter target is ${target} ${input.contract.length_target.unit} (±${tol * 100}%)`,
+            `scene length targets sum to ${total}, chapter target is ${target} ${contract.length_target.unit} (±${tol * 100}%)`,
           );
       }
       if (issues.length > 0)
@@ -301,8 +324,8 @@ export async function planScenes(
       const ref = await saveArtifact(ctx, {
         step: 'scene_plan',
         kind: 'scene_plan',
-        key: `${ch}:v${input.contract.version}`,
-        payload: { chapter_no: ch, contract_id: input.contract.id, scenes },
+        key: `${ch}:v${contract.version}`,
+        payload: { chapter_no: ch, contract_id: contract.id, scenes },
       });
       return { scenes, artifactId: ref.artifact_id };
     },

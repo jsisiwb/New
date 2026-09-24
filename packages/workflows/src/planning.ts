@@ -21,7 +21,7 @@ import { compileActiveConstraintSet } from '@yeonjae/context';
 import { compileBlock } from '@yeonjae/narrative';
 import { type LengthTarget } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
-import { normalizeContractOutput } from './plan-normalize.js';
+import { chooseFallbackLocation, normalizeContractOutput } from './plan-normalize.js';
 import {
   bind,
   existingArtifact,
@@ -565,6 +565,39 @@ export async function generateContract(
           data: { chapter_no: input.chapterNo, issues },
           recommendedActions: ['regenerate', 'revalidate_contract'],
         });
+      // Live defect A-1 (ADR-0074): a contract that names no registered location made every scene plan
+      // invalid, because each scene must stand in one of the contract's locations. Only that case —
+      // which previously always failed the chapter — gets a location, chosen from the contract's own text
+      // and recorded as a continuity risk; a contract that names a location keeps its exact bytes.
+      if (candidate.locations.length === 0) {
+        const registered = await ctx.pool.query<{
+          id: string;
+          display_name: string;
+          aliases: string[];
+          short_forms: string[];
+        }>(
+          `SELECT id, display_name, aliases, short_forms FROM entities
+            WHERE project_id = $1 AND type = 'location' AND status = 'active' ORDER BY created_at, id`,
+          [ctx.projectId],
+        );
+        const fallback = chooseFallbackLocation(registered.rows, JSON.stringify(candidate));
+        if (fallback) {
+          const note =
+            lang === 'ko'
+              ? fallback.matched
+                ? `계약에 장소가 없어 계약 본문이 언급한 등록 장소 ‘${fallback.name}’를 장면의 장소로 쓴다.`
+                : `계약에 장소가 없고 본문도 등록 장소를 언급하지 않아 첫 등록 장소 ‘${fallback.name}’를 임시로 쓴다. 실제 장소는 장면 서술이 정한다.`
+              : fallback.matched
+                ? `The contract named no location; scenes use the registered location its text mentions, ‘${fallback.name}’.`
+                : `The contract named no location and its text mentions none; scenes provisionally use the first registered location, ‘${fallback.name}’.`;
+          candidate = {
+            ...candidate,
+            locations: [fallback.id],
+            continuity_risks: [...candidate.continuity_risks, { description: note }],
+          };
+          recordNormalization('contract_location_fallback');
+        }
+      }
       const locked: ChapterContract = {
         ...candidate,
         status: 'locked',
