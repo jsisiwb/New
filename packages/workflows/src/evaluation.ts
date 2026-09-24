@@ -38,6 +38,7 @@ import {
   type KoStyleReport,
 } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
+import { draftLedgerFindings, ledgersForContract } from './ledger-checks.js';
 import { checkpointPack, packCallInput, packSections } from './drafting.js';
 import {
   composeDimensionScore,
@@ -513,6 +514,28 @@ export async function evaluateVersion(
       const orNone = (s: string | undefined) => (s?.trim() ? s : none);
       // ADR-0060: a policy without an evaluation block keeps the ADR-0056 behaviour exactly.
       const policyEval = ctx.policy.evaluation;
+      // ADR-0063: the draft against the state ledgers of accepted canon, only under a policy that opts in.
+      if (policyEval?.ledger_checks) {
+        const ledgers = await ledgersForContract(ctx.pool, ctx.projectId, input.contract);
+        draftLedgerFindings(nfc, ledgers).forEach((f, i) =>
+          issues.push(
+            toIssue(
+              ctx,
+              v.id,
+              'lint:ledger',
+              f.dimension,
+              {
+                kind: f.kind,
+                severity: f.severity,
+                confidence: 1,
+                claim: `[${f.rule}] ${f.claim}`,
+                chapter_span: { paragraph_ids: [...f.paragraph_ids] },
+              },
+              i,
+            ),
+          ),
+        );
+      }
 
       // Checker pack: the working version enters only as job-scoped chapter_text (status recorded in the manifest).
       const checker = await checkpointPack(ctx, {

@@ -187,6 +187,26 @@ Chapter k−1 is not the only memory. Beyond it:
   lists overdue promises, characters absent from canonical events past a threshold, canonical story time
   that moves backwards between chapters, and openings that read like the previous chapter's opening.
 
+### 4.2 State ledgers (ADR-0063)
+
+The **state ledger** (`state_ledger`, T1; writer, chapter planner, continuity checker) is a set of compact tables
+projected from accepted canon and accepted text at the chapter's start. It adds no store: facts are committed
+atomically at acceptance and read at the pinned canon version, so the same inputs give the same tables.
+
+- **Character state cards** for the on-page characters: location, condition, rank/level/stats, skills and
+  titles, possessions, affiliation, goal and emotion where canon carries them, dead or alive, and the last
+  chapter with a canonical appearance.
+- **Story clock and countdowns**: where this chapter starts and where the previous chapter's last canonical
+  event ended; the latest accepted mention of each countdown (`D-N`, `…까지 N일 남았다`), with the days left at
+  this chapter's start when the elapsed story days are known.
+- **호칭/말높이 matrix** per directed pair of on-page speakers: registered address terms and the expected 말높이.
+- **Status-window format**: the bracket style and field labels fixed by the first accepted status window.
+
+Under a policy with `evaluation.ledger_checks`, each draft is checked against the ledgers (countdowns,
+status-window format, registered address terms), and under `planning.plan_check` the contract and scene plans
+are checked before drafting; a dead character on page or story time running backwards stops the chapter as
+`PLAN_INCONSISTENT`.
+
 ## 5. Caching and deduplication
 
 - Section-level cache keyed by content hash (identity block, Active Constraint Set, bible slice, L4

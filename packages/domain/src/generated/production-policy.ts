@@ -61,6 +61,19 @@ export interface ProductionPolicy {
       major: number;
       blocking: number;
     };
+    /**
+     * ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs.
+     */
+    ledger_checks?: boolean;
+  };
+  /**
+   * Pre-draft planning checks (ADR-0063). A policy without this block drafts every scene plan unchecked, as before.
+   */
+  planning?: {
+    /**
+     * Check the contract and scene plans against the state ledgers, first meetings and the story clock before drafting. A blocking finding (an on-page character the ledger records as dead, story time running backwards) stops the chapter as PLAN_INCONSISTENT before any draft is written; other findings are recorded with the plan.
+     */
+    plan_check: boolean;
   };
   candidates: {
     chapter_candidates: number;

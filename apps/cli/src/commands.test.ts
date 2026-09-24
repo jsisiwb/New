@@ -17,6 +17,7 @@ describe('cli commands', () => {
       'policy/premium@1',
       'policy/standard@1',
       'policy/standard@2',
+      'policy/standard@3',
     ]);
   });
 

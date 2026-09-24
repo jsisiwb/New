@@ -10,6 +10,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/premium@1',
       'policy/standard@1',
       'policy/standard@2',
+      'policy/standard@3',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
   });
@@ -37,6 +38,20 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       return rest;
     };
     expect(strip(v2)).toEqual(strip(v1));
+  });
+
+  it('standard.v3 is standard.v2 plus the ADR-0063 ledger checks and plan check', () => {
+    const v2 = requirePolicy('policy/standard@2', policies);
+    const v3 = requirePolicy('policy/standard@3', policies);
+    expect(v2.planning).toBeUndefined();
+    expect(v2.evaluation?.ledger_checks).toBeUndefined();
+    expect(v3.planning).toEqual({ plan_check: true });
+    expect(v3.evaluation).toEqual({ ...v2.evaluation, ledger_checks: true });
+    const strip = (p: typeof v2) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v3)).toEqual(strip(v2));
   });
 
   it('standard.v1 resolves the former 2-vs-3 revision-round disagreement to 3 and gates per dimension', () => {

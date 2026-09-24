@@ -1145,7 +1145,7 @@ run('context packs over the real canon (Postgres integration)', () => {
     expect(meetings).toMatch(
       /(Park Mu-jin ↔ Kang Do-yoon|Kang Do-yoon ↔ Park Mu-jin): first appeared together in chapter 9\./,
     );
-    expect(writer.pack.manifest.template_version).toMatch(/^1\.1\.0\+/);
+    expect(writer.pack.manifest.template_version).toMatch(/^1\.2\.0\+/);
   });
 
   it('long-story memory (ADR-0061) renders its three sections in Korean for a Korean pack (ADR-0059)', async () => {
@@ -1187,6 +1187,38 @@ run('context packs over the real canon (Postgres integration)', () => {
       'FIRST MEETINGS',
     ])
       expect(user).not.toContain(english);
+  });
+
+  it('state ledger (ADR-0063): cards, address terms and the clock from accepted canon, in the pack language', async () => {
+    const writer = await build('scene_writer', { persist: false });
+    const ledger = writer.pack.sections.find((s) => s.name === 'state_ledger')?.text ?? '';
+    expect(ledger).toMatch(/\| Park Mu-jin → Kang Do-yoon \| kid, Do-yoon, son \| plain \|/);
+    expect(ledger).toMatch(
+      /\| Park Mu-jin \| Poison Fog Dungeon, second floor \| Beast venom in the left calf \(serious\) \|/,
+    );
+    expect(ledger).toMatch(/\| Lee Seo-ha \|[^\n]*\| no canonical appearance yet \|/);
+    expect(ledger).toContain(
+      "This chapter starts at ch.10.0 (D+36); the previous chapter's last event: ch.9.46 (D+35).",
+    );
+    const koIdentity = {
+      ...identity,
+      outputLanguage: { ...identity.outputLanguage, language: 'ko' as const },
+    };
+    const roomy = {
+      ...policy,
+      context: {
+        ...policy.context,
+        active_constraints_cap_tokens: 6000,
+        writer_input_budget_tokens: 96000,
+      },
+    };
+    const ko = await build('scene_writer', { identity: koIdentity, policy: roomy, persist: false });
+    const koLedger = ko.pack.sections.find((s) => s.name === 'state_ledger')?.text ?? '';
+    expect(koLedger).toMatch(/^\[상태 장부 — /);
+    expect(koLedger).toContain('| 화자 → 상대 | 호칭 | 말높이 |');
+    expect(koLedger).toMatch(/\| Park Mu-jin → Kang Do-yoon \| kid, Do-yoon, son \| 반말 \|/);
+    expect(koLedger).toContain('이번 화 시작: 10화.0 (D+36); 직전 화 마지막 사건: 9화.46 (D+35).');
+    expect(koLedger).not.toMatch(/speaker|location|last seen|This chapter/);
   });
 
   it('rollback de-accepts chapter 9 and removes its search documents and summary in the same transaction', async () => {

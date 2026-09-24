@@ -66,6 +66,7 @@ import {
   type VectorRetriever,
   withTimeout,
 } from './retrievers.js';
+import { loadLedgers, renderLedgers } from './ledgers.js';
 import { previousTail } from './tail.js';
 import { budgetFor, templateFor, type PackTemplate } from './templates.js';
 import {
@@ -720,6 +721,74 @@ async function fetchFirstMeetings(ctx: Ctx, out: Item[]): Promise<void> {
       dedupeKey: `first_meeting:${p.a}:${p.b}`,
     });
   }
+}
+
+/**
+ * State ledgers (ADR-0063): compact tables of the on-page characters' state, the story clock and countdowns,
+ * the directed address terms and the status-window format, derived from accepted canon and accepted text.
+ */
+async function fetchLedgers(ctx: Ctx, out: Item[]): Promise<void> {
+  const sec = namedSection(ctx.template, 'state_ledger', 'state_ledger');
+  if (!sec) return;
+  const ledgers = await loadLedgers(ctx.db, {
+    projectId: ctx.projectId,
+    timelineId: ctx.timeline.id,
+    canonVersion: ctx.canonVersion,
+    chapterNo: ctx.plan.chapterNo,
+    clockStart: ctx.plan.clockStart,
+    onPageIds: ctx.plan.onPageIds,
+    speakerPairs: ctx.plan.speakerPairs,
+  });
+  const r = renderLedgers(ledgers, ctx.lang);
+  const textSource: Item['source'] = {
+    kind: 'accepted_manuscript',
+    ref: `ledger:before-${String(ctx.plan.chapterNo)}`,
+    version: String(ctx.canonVersion),
+    project_id: ctx.projectId,
+  };
+  const push = (
+    id: string,
+    text: string | undefined,
+    provenance: Item['provenance'],
+    source: Item['source'],
+    entityIds: readonly string[],
+  ) => {
+    if (!text) return;
+    out.push({
+      kind: 'state_ledger',
+      id: `state_ledger:${id}`,
+      section: sec.name,
+      tier: sec.tier,
+      provenance,
+      source,
+      text,
+      materiality: 'material',
+      entityIds,
+      dedupeKey: `state_ledger:${id}`,
+    });
+  };
+  push(
+    'cards',
+    r.cards,
+    'canon_fact',
+    canonSource(ctx, 'ledger:cards', ctx.timeline.id),
+    ledgers.cards.map((c) => c.entityId),
+  );
+  push(
+    'clock',
+    r.clock,
+    'timeline',
+    ledgers.countdowns.length ? textSource : canonSource(ctx, 'ledger:clock', ctx.timeline.id),
+    [],
+  );
+  push(
+    'address',
+    r.address,
+    'relationship_state',
+    canonSource(ctx, 'ledger:address', ctx.timeline.id),
+    [...new Set(ledgers.address.flatMap((a) => [a.fromId, a.toId]))],
+  );
+  push('status_window', r.statusWindow, 'accepted_manuscript_excerpt', textSource, []);
 }
 
 async function fetchWorldRules(ctx: Ctx, out: Item[]): Promise<void> {
@@ -1432,6 +1501,7 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
     await fetchKnowledge(ctx, items);
     await fetchRelationships(ctx, items, registerLines);
     await fetchFirstMeetings(ctx, items);
+    await fetchLedgers(ctx, items);
     await fetchPromises(ctx, items);
     seenEvents = await fetchEvents(ctx, items);
     await fetchWorldRules(ctx, items);

@@ -439,3 +439,97 @@ run('Korean novel run under standard.v2: evaluation v2 (ADR-0060)', () => {
     expect([...new Set(leaks)]).toEqual([]);
   }, 300_000);
 });
+
+run(
+  'Korean novel run under standard.v3: state ledgers and the pre-draft plan check (ADR-0063)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = script(req);
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v3-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@3',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('checks each plan before drafting and gives the writer the state ledger', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v3-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      // One plan-check artifact per chapter, recorded before drafting, with no blocking finding.
+      const checks = await pool.query<{
+        payload: { chapter_no: number; findings: { blocking: boolean }[] };
+      }>(
+        `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'plan_check' ORDER BY created_at`,
+        [projectId],
+      );
+      expect(checks.rows.map((r) => r.payload.chapter_no)).toEqual([1, 2]);
+      for (const r of checks.rows) expect(r.payload.findings.filter((f) => f.blocking)).toEqual([]);
+
+      // The writer reads the ledger in Korean: the state cards of its on-page characters and the clock.
+      const writer = seen.filter((r) => r.trace?.role === 'scene_writer');
+      expect(writer.length).toBeGreaterThan(0);
+      for (const r of writer) {
+        expect(r.user).toMatch(/\[상태 장부 — [^\]]*\]/);
+        expect(r.user).toMatch(/이번 화 시작: /);
+      }
+
+      // KO-PROMPT-SURFACE-001 over the ADR-0063 surfaces.
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);

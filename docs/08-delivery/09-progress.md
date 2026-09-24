@@ -3,6 +3,42 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 4b — state ledgers and the pre-draft plan check — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers`. ADR-0063 records the decisions; the Step 0
+improvement audit (§4.3, §4.4) the findings.
+
+**Built:**
+
+- `@yeonjae/prose`: `extractCountdowns` / `checkCountdowns` (`D-N`, `…까지 열흘 남았다`; `N일 뒤` is not a
+  countdown), `parseStatusWindows` / `statusWindowFormat` / `checkStatusWindows`, `checkAddressRegister`.
+- `@yeonjae/db`: `acceptedTextsForLedgers` (accepted versions only), `lastAppearances`,
+  `latestCanonicalClock`.
+- `@yeonjae/context`: `loadLedgers` / `renderLedgers` and a `state_ledger` T1 section (new manifest item kind)
+  in `pack.scene_writer`, `pack.chapter_planner` and `pack.continuity_checker`, now `1.2.0`: state cards,
+  story clock and countdowns, 호칭/말높이 matrix, status-window format, in Korean for Korean packs.
+- `@yeonjae/workflows`: `draftLedgerFindings` in `evaluateVersion` under `evaluation.ledger_checks`
+  (CLOCK-COUNT-01/02, FMT-WINDOW-01/02, REG-ADDR-01 as scorecard issues); a checkpointed `plan_check` step under
+  `planning.plan_check` (PLAN-DEAD-01 and PLAN-CLOCK-01 stop the chapter as `PLAN_INCONSISTENT`, an attention
+  state; PLAN-COUNT-01 and PLAN-MEET-01 are recorded).
+- `standard.v3` = `standard.v2` + `evaluation.ledger_checks` + `planning.plan_check` (schema: optional
+  `evaluation.ledger_checks`, optional `planning` block). New projects keep their default policy.
+
+**Measured (deterministic suites, no live provider):**
+
+- Fixture canon at chapter 10 (English pack): four state cards (Mu-jin's location and venom injury,
+  Do-yoon's rank and sealed mana stones, last appearances), four directed address rows with expected speech
+  levels, and the clock line `ch.10.0 (D+36)` after `ch.9.46 (D+35)`; the Korean pack renders the same
+  ledger in Korean.
+- Korean chapters accepted through the real acceptance path: the ledger keeps chapter 2's `게이트까지 이레 남`
+  (7) and ignores a working chapter's `하루`; the status-window format comes from chapter 1.
+- Korean `standard.v3` run (simulated model): one plan-check artifact per chapter, no blocking finding, the
+  Korean ledger in every writer prompt, 0 Latin-script leaks over every call.
+
+**Not done:** re-planning with the findings (needs a scene-planner version with a feedback slot), a
+place/direction ledger (canon holds no structured directions), goal/emotion extraction, and a live run on
+`standard.v3`.
+
 ## Workstream 5 — prose quality for Korean manuscripts — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws2b--ws3--ws4--ws5`, ported from sigma41web/New#7 (branch
