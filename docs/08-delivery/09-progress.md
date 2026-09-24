@@ -3,6 +3,43 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 5 — prose quality for Korean manuscripts — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws2b--ws3--ws4--ws5`, ported from sigma41web/New#7 (branch
+`hoplite/mende-33d541c8--ws5-prose-quality`, stacked on Workstream 4). ADR-0062 records the decisions, and
+the Step 0 improvement audit (§5, PR #1) records the findings.
+
+**Built:**
+
+- The identity compiler measures Korean blocks with `estimateTokensKo` (one token per 자).
+- Port onto Workstream 2b: the two Korean estimators (WS2b's in `@yeonjae/context`, this workstream's in
+  `@yeonjae/narrative`) are one: `korean_chars_v1` in `@yeonjae/prose`, the same count as the length
+  model's `characters`; the identity compiler imports it and `@yeonjae/context` re-exports it. No profile
+  contains a carriage return, the only input the two copies counted differently, so no block changes size.
+- Port onto Workstream 2b: a lint test applies the Latin-script scan's word rule to the lint digest with
+  every new rule firing (KO-SP-01..03, KO-END-02, KO-NAME-01): only rule ids and severity tags are Latin.
+- Exemplars now have priority 86, up from 50.
+- Korean writer and editor packs give the block 35% of the pack budget; English blocks are unchanged.
+- The Korean language layer v4 adds 22 `spelling` patterns and thresholds for KO-END-02 (ending monotony)
+  and KO-NAME-01 (misspelled character names). Both rules run only for layers that carry their
+  thresholds.
+- The lint reports `monologue_ratio`.
+- Evaluation passes the bible's character names to the lint.
+
+**Measured:** Korean writer blocks composed from intake:
+
+| Genre | Size | Dropped at 8,400 (35% of 24,000) | Exemplars kept |
+| --- | --- | --- | --- |
+| hunter-gate | 5,185자 | nothing | yes |
+| regression | 6,235자 | nothing | yes |
+| academy | 6,653자 | nothing | yes |
+
+At the old 6,000 cap the same blocks would have dropped cadence and setting, or genres. The English
+estimator had counted them as about a third of their size.
+
+**Not done:** user style samples (Workstream 6), a polish pass, best-of-N candidates, continuation and
+trim, Korean export headings, and prompt-rule restructuring (Workstream 9).
+
 ## Workstream 4 — long-story memory — 2026-09-23
 
 Branch `hoplite/kamarina-b0515922--ws2b--ws3--ws4`, ported from sigma41web/New#6 (branch

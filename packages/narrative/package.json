@@ -17,6 +17,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yeonjae/domain": "workspace:*"
+    "@yeonjae/domain": "workspace:*",
+    "@yeonjae/prose": "workspace:*"
   }
 }
