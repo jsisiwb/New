@@ -61,6 +61,8 @@ export interface ValidationFailure {
   readonly path: string;
   readonly message: string;
   readonly keyword: string;
+  /** For `required` failures: the missing property name. */
+  readonly missingProperty?: string | undefined;
 }
 
 export type ValidationResult<T> =
@@ -71,6 +73,10 @@ function formatErrors(errors: ErrorObject[] | null | undefined): ValidationFailu
     path: e.instancePath || '/',
     message: e.message ?? 'invalid',
     keyword: e.keyword,
+    ...(e.keyword === 'required' &&
+    typeof (e.params as { missingProperty?: unknown }).missingProperty === 'string'
+      ? { missingProperty: (e.params as { missingProperty: string }).missingProperty }
+      : {}),
   }));
 }
 
@@ -116,4 +122,83 @@ export function assertValid<T>(schemaFile: string, input: unknown, label = schem
   if (r.ok) return r.value;
   const detail = r.errors.map((e) => `${e.path}: ${e.message}`).join('; ');
   throw new Error(`${label} failed schema validation: ${detail}`);
+}
+
+type Json = Record<string, unknown>;
+
+let shapeAjv: Ajv2020 | undefined;
+
+/**
+ * Validate against a bundled (self-contained) schema for SHAPE only: types, required fields, enums, ranges
+ * and unknown properties. `format` is not checked, because output-shape examples carry placeholders such
+ * as "엔티티 id" where the workflow later supplies a UUID (ADR-0057).
+ */
+export function shapeValidator(schema: Json): (input: unknown) => ValidationResult<unknown> {
+  shapeAjv ??= new Ajv2020Class({
+    allErrors: true,
+    strict: false,
+    allowUnionTypes: true,
+    validateFormats: false,
+  });
+  const fn = shapeAjv.compile(schema);
+  return (input: unknown) =>
+    fn(input) ? { ok: true, value: input } : { ok: false, errors: formatErrors(fn.errors) };
+}
+
+/**
+ * A self-contained copy of a schema (or one of its `$defs`) with every `$ref` inlined, for consumers that
+ * cannot resolve cross-file references: provider JSON-schema response formats and prompt shape generation
+ * (ADR-0057). Cycles are refused rather than truncated.
+ */
+export function bundledSchema(schemaFile: string, def?: string): Json {
+  const { schemas } = loadSchemas();
+  const root = schemas.get(schemaFile);
+  if (!root) throw new Error(`unknown schema ${schemaFile}`);
+  const start = def === undefined ? root.schema : pointer(root.schema, `/$defs/${def}`, schemaFile);
+  return inline(start, schemaFile, []) as Json;
+
+  function inline(node: unknown, file: string, stack: readonly string[]): unknown {
+    if (Array.isArray(node)) return node.map((n) => inline(n, file, stack));
+    if (!node || typeof node !== 'object') return node;
+    const obj = node as Json;
+    if (typeof obj.$ref === 'string') {
+      const [refFile, frag] = splitRef(obj.$ref, file);
+      const key = `${refFile}#${frag}`;
+      if (stack.includes(key)) throw new Error(`recursive $ref ${key} cannot be bundled`);
+      const target = schemas.get(refFile);
+      if (!target) throw new Error(`unknown $ref target ${obj.$ref} in ${file}`);
+      const resolved = inline(pointer(target.schema, frag, refFile), refFile, [
+        ...stack,
+        key,
+      ]) as Json;
+      const { $ref: _ref, ...siblings } = obj;
+      const rest = inline(siblings, file, stack) as Json;
+      return Object.keys(rest).length === 0 ? resolved : { allOf: [resolved], ...rest };
+    }
+    const out: Json = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === '$id' || k === '$schema' || k === '$defs') continue;
+      out[k] = inline(v, file, stack);
+    }
+    return out;
+  }
+}
+
+function splitRef(ref: string, currentFile: string): [string, string] {
+  const [file, frag = ''] = ref.split('#');
+  const target =
+    file === undefined || file === '' ? currentFile : file.replace(SCHEMA_BASE_URI, '');
+  return [target, frag];
+}
+
+function pointer(schema: Json, frag: string, file: string): unknown {
+  if (frag === '' || frag === '/') return schema;
+  let node: unknown = schema;
+  for (const raw of frag.replace(/^\//, '').split('/')) {
+    const part = raw.replace(/~1/g, '/').replace(/~0/g, '~');
+    if (!node || typeof node !== 'object' || !(part in (node as Json)))
+      throw new Error(`unresolvable pointer #${frag} in ${file}`);
+    node = (node as Json)[part];
+  }
+  return node;
 }

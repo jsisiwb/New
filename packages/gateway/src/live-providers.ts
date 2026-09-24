@@ -16,6 +16,11 @@
  * for `response_format: json_object` when `params.json_schema_mode` is set; Anthropic has no equivalent,
  * so the system prompt already demands JSON-only output and the gateway's fence stripping and bounded
  * repair handle the rest.
+ *
+ * Native structured output (ADR-0057): when the route declares `nativeStructuredOutput: 'json_schema'`
+ * (`YEONJAE_LIVE_STRUCTURED_OUTPUT=json_schema`), the gateway passes the answer schema and the OpenAI
+ * adapter sends it as `response_format: {type: 'json_schema'}` (non-strict, so schemas keep their full
+ * vocabulary). Endpoints without the feature keep `json_object`.
  */
 import { CancellationError } from './cancellation.js';
 import { ProviderFailure } from './failures.js';
@@ -205,9 +210,20 @@ export class OpenAiCompatibleProvider implements Provider {
         temperature: req.params.temperature,
         max_tokens: req.params.max_tokens,
         top_p: req.params.top_p,
-        ...(req.outputSchema !== undefined || req.params.json_schema_mode
-          ? { response_format: { type: 'json_object' } }
-          : {}),
+        ...(req.responseFormat?.kind === 'json_schema'
+          ? {
+              response_format: {
+                type: 'json_schema',
+                json_schema: {
+                  name: req.responseFormat.name,
+                  schema: req.responseFormat.schema,
+                  strict: false,
+                },
+              },
+            }
+          : req.outputSchema !== undefined || req.params.json_schema_mode
+            ? { response_format: { type: 'json_object' } }
+            : {}),
       };
       const { text, started } = await performRequest(opts, url, { authorization }, body, signal);
       const parsed = parseJson(text, opts.name);

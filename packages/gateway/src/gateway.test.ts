@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { compileBlock, composeIdentity, ProfileStore } from '@yeonjae/narrative';
 import { PromptRegistry, renderPrompt } from '@yeonjae/prompts';
 import { asUuid } from '@yeonjae/domain';
-import { Gateway, MemoryAuditStore, MemoryBudget, type RoutingTable } from './gateway.js';
+import {
+  Gateway,
+  MemoryAuditStore,
+  MemoryBudget,
+  type RouteEntry,
+  type RoutingTable,
+} from './gateway.js';
 import { guardRequest, sha256 } from './guard.js';
 import { MockProvider } from './mock-provider.js';
 import { ReplayProvider } from './replay-provider.js';
@@ -220,6 +226,31 @@ describe('Gateway call path', () => {
     });
     return { gw, mock, alt, audit, budget };
   }
+
+  it('sends the answer schema only to a route that declares native JSON-schema output (ADR-0057)', async () => {
+    const responseSchema = { name: 'scene_writer', schema: { type: 'object' } };
+    const plain = build();
+    await plain.gw.call(writerRequest({ responseSchema }).req);
+    expect(plain.mock.log[0]?.responseFormat).toBeUndefined();
+
+    const mock = new MockProvider(() => ({ json: ENGLISH_SCENE }));
+    const primary: RouteEntry | undefined = routing.P[0];
+    if (!primary) throw new Error('the test routing has no P route');
+    const native = new Gateway({
+      providers: new Map([['mock', mock]]),
+      routing: {
+        ...routing,
+        P: [{ ...primary, nativeStructuredOutput: 'json_schema' }],
+      },
+      budget: new MemoryBudget(10_000),
+      audit: new MemoryAuditStore(),
+    });
+    await native.call(writerRequest({ responseSchema }).req);
+    expect(mock.log[0]?.responseFormat).toEqual({ kind: 'json_schema', ...responseSchema });
+    // A request without an answer schema is unchanged even on a capable route.
+    await native.call(writerRequest().req);
+    expect(mock.log[1]?.responseFormat).toBeUndefined();
+  });
 
   it('records a complete audit row with both contract hashes, prompt/pack hashes, cost and language check', async () => {
     const { gw, audit } = build();

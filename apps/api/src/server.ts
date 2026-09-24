@@ -80,7 +80,7 @@ import { registerResourceRoutes } from './resource-routes.js';
 import { registerProductRoutes } from './product-routes.js';
 import { registerNovelRoutes, type NovelRouteDeps } from './novel-routes.js';
 import { contentHashOf } from '@yeonjae/prose';
-import type { LifecycleCoordinator } from '@yeonjae/domain';
+import { processMetrics, type LifecycleCoordinator } from '@yeonjae/domain';
 import {
   correct as correctCanonOp,
   correctionView,
@@ -377,9 +377,13 @@ export function buildApi(options: ApiOptions): FastifyInstance {
    * scraped per instance, so a multi-instance deployment relies on the scraper to aggregate. Nothing here
    * is a distributed counter.
    */
-  app.get('/metrics', async (_req, reply) =>
-    reply.type('text/plain; version=0.0.4; charset=utf-8').send(metrics.render()),
-  );
+  app.get('/metrics', async (_req, reply) => {
+    // Workflow-step counters (output normalizers, ADR-0057) live in the process-wide registry.
+    const processSeries = processMetrics.render();
+    return reply
+      .type('text/plain; version=0.0.4; charset=utf-8')
+      .send(processSeries.trim() ? `${metrics.render()}${processSeries}` : metrics.render());
+  });
   app.get('/ready', async (_req, reply) => {
     /**
      * Draining fails readiness IMMEDIATELY and without touching the database.

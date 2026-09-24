@@ -273,6 +273,8 @@ export const METRIC = {
   exportPackages: 'yeonjae_export_packages_total',
   batchOperations: 'yeonjae_batch_operations_total',
   batchItems: 'yeonjae_batch_items_total',
+  /** A workflow normalizer changed a model answer to fit its schema (ADR-0057), by normalizer. */
+  outputNormalizations: 'yeonjae_output_normalizations_total',
 } as const;
 
 export const METRIC_HELP: Readonly<Record<string, string>> = {
@@ -330,4 +332,6 @@ export const METRIC_HELP: Readonly<Record<string, string>> = {
   [METRIC.exportPackages]: 'Deterministic export packages prepared, by outcome.',
   [METRIC.batchOperations]: 'Bounded batch operations by operation and outcome.',
   [METRIC.batchItems]: 'Batch items processed by operation and outcome.',
+  [METRIC.outputNormalizations]:
+    'Model answers a workflow normalizer changed to fit their schema, by normalizer.',
 };

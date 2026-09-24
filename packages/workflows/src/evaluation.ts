@@ -11,10 +11,17 @@
  */
 import { createHash } from 'node:crypto';
 import { type ManuscriptVersionRow } from '@yeonjae/db';
-import { type Generated, loadSchemas, overrideClassFor, validatorFor } from '@yeonjae/domain';
+import {
+  type Generated,
+  loadSchemas,
+  overrideClassFor,
+  recordNormalization,
+  validatorFor,
+} from '@yeonjae/domain';
 import { exemplarsOf } from '@yeonjae/narrative';
 import {
   checkOutputLanguage,
+  compileModelPattern,
   judgeLength,
   koStyleDigest,
   lintKoreanWebnovel,
@@ -96,10 +103,12 @@ function toIssue(
     ? (raw.severity as Severity)
     : 'minor';
   const repair = normalizeRepair(raw.repair);
+  if (typeof raw.repair === 'string' && repair) recordNormalization('judge_repair');
   const quoted =
     !raw.chapter_span && anchor
       ? anchorIssueQuote(anchor.text, anchor.paragraphs, raw.quote)
       : undefined;
+  if (quoted) recordNormalization('judge_quote_anchor');
   return {
     id: issueIdFor(ctx, versionId, source, index),
     source,
@@ -315,7 +324,30 @@ export function runDeterministicChecks(
   }
   for (const mn of contract.must_not_happen) {
     for (const pat of mn.lexical_patterns ?? []) {
-      if (new RegExp(pat, 'i').test(nfc.text)) {
+      // The pattern is model-written contract text (ADR-0057): an unusable one is recorded and matched
+      // literally, so the guard still runs and the deterministic checks never throw.
+      const compiled = compileModelPattern(pat, 'i');
+      if (!compiled.valid)
+        issues.push(
+          toIssue(
+            ctx,
+            version.id,
+            'lint',
+            'contract',
+            {
+              kind: 'other',
+              severity: 'minor',
+              confidence: 1,
+              claim:
+                language === 'ko'
+                  ? `금지 조건 ${mn.id}의 어휘 패턴 /${pat}/을 정규식으로 쓸 수 없어(${compiled.reason === 'too_long' ? '너무 김' : '문법 오류'}) 글자 그대로 대조했다`
+                  : `must-not ${mn.id} lexical pattern /${pat}/ is not a usable regex (${compiled.reason ?? 'invalid'}); matched literally`,
+              metric: { rule_id: 'CONTRACT-PATTERN-INVALID' },
+            },
+            n++,
+          ),
+        );
+      if (compiled.re.test(nfc.text)) {
         shapeOk = false;
         issues.push(
           toIssue(
@@ -652,14 +684,14 @@ export async function evaluateVersion(
         sections: {
           prose: section('prose', proseScore, dimensionPassed('prose'), {
             judge_score: proseScore,
-            drift_flags: normalizeDriftFlags('prose', prose.output.drift_flags),
-            dimension_scores: normalizeDimensionScores(prose.output.dimension_scores),
+            drift_flags: driftFlags('prose', prose.output.drift_flags),
+            dimension_scores: dimensionScores(prose.output.dimension_scores),
             evaluator_call_id: prose.llmCallId,
           }),
           structure: section('structure', structureScore, dimensionPassed('structure'), {
             judge_score: structureScore,
-            drift_flags: normalizeDriftFlags('structure', structure.output.drift_flags),
-            dimension_scores: normalizeDimensionScores(structure.output.dimension_scores),
+            drift_flags: driftFlags('structure', structure.output.drift_flags),
+            dimension_scores: dimensionScores(structure.output.dimension_scores),
             ...(structure.output.hook_sentence_index !== undefined
               ? { hook_sentence_index: structure.output.hook_sentence_index }
               : {}),
@@ -673,14 +705,14 @@ export async function evaluateVersion(
           }),
           genre: section('genre', genreScore, dimensionPassed('genre'), {
             judge_score: genreScore,
-            drift_flags: normalizeDriftFlags('genre', genre.output.drift_flags),
-            dimension_scores: normalizeDimensionScores(genre.output.dimension_scores),
+            drift_flags: driftFlags('genre', genre.output.drift_flags),
+            dimension_scores: dimensionScores(genre.output.dimension_scores),
             evaluator_call_id: genre.llmCallId,
           }),
           voice: section('voice', voiceScore, dimensionPassed('voice'), {
             judge_score: voiceScore,
-            drift_flags: normalizeDriftFlags('voice', voice.output.drift_flags),
-            dimension_scores: normalizeDimensionScores(voice.output.dimension_scores),
+            drift_flags: driftFlags('voice', voice.output.drift_flags),
+            dimension_scores: dimensionScores(voice.output.dimension_scores),
             evaluator_call_id: voice.llmCallId,
           }),
           output_language: section(
@@ -758,6 +790,20 @@ export async function evaluateVersion(
     },
     v.id,
   );
+}
+
+/** Drift flags / 1–5 sub-scores the scorecard accepts; counts when the judge's answer needed fitting. */
+function driftFlags(section: 'prose' | 'structure' | 'genre' | 'voice', raw: unknown): string[] {
+  const out = normalizeDriftFlags(section, raw);
+  if (JSON.stringify(raw ?? []) !== JSON.stringify(out)) recordNormalization('judge_drift_flags');
+  return out;
+}
+
+function dimensionScores(raw: unknown): Record<string, number> {
+  const out = normalizeDimensionScores(raw);
+  if (JSON.stringify(raw ?? {}) !== JSON.stringify(out))
+    recordNormalization('judge_dimension_scores');
+  return out;
 }
 
 function clamp(n: number): number {

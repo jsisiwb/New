@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yeonjae.studio/schemas/model-output.schema.json",
+  "title": "Model answers without a document schema",
+  "description": "The JSON a model returns for roles whose persisted document is assembled by the workflow (scorecard, issues, scene plans, L1 summaries). Each $def is one role's answer; prompts generate their output-shape example from it and CI validates every active prompt's example against it (ADR-0057). Issue kinds, severities and repair objects reference issue.schema.json so the two never drift.",
+  "type": "object",
+  "$defs": {
+    "judgeIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "severity", "claim", "quote"],
+      "properties": {
+        "kind": { "$ref": "issue.schema.json#/properties/kind" },
+        "severity": { "type": "string", "enum": ["minor", "major", "blocking"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "claim": { "type": "string", "minLength": 1, "description": "The finding, in the project's working language." },
+        "quote": { "type": "string", "description": "A verbatim sentence or phrase of the manuscript, without paragraph markers; the workflow anchors it into chapter_span." },
+        "repair": { "$ref": "issue.schema.json#/properties/repair" }
+      }
+    },
+    "checkerIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "severity", "claim", "quote"],
+      "properties": {
+        "kind": { "$ref": "issue.schema.json#/properties/kind" },
+        "severity": { "type": "string", "enum": ["minor", "major", "blocking"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "claim": { "type": "string", "minLength": 1 },
+        "quote": { "type": "string" },
+        "canon_ref": { "type": "string", "description": "The canon item id or earlier paragraph id the text contradicts." },
+        "repair": { "$ref": "issue.schema.json#/properties/repair" }
+      }
+    },
+    "judgeBase": {
+      "type": "object",
+      "required": ["judge_score", "dimension_scores", "drift_flags", "issues"],
+      "properties": {
+        "judge_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "dimension_scores": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 5 }
+        },
+        "issues": { "type": "array", "items": { "$ref": "#/$defs/judgeIssue" } }
+      }
+    },
+    "prose_judge": {
+      "allOf": [{ "$ref": "#/$defs/judgeBase" }],
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "drift_flags": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["translation_like", "literary", "light_novel", "format"] }
+        }
+      }
+    },
+    "structure_judge": {
+      "allOf": [{ "$ref": "#/$defs/judgeBase" }],
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "drift_flags": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["western_novel", "serial", "exposition", "cadence"] }
+        },
+        "hook_sentence_index": { "type": "integer", "minimum": 0 },
+        "local_payoff_present": { "type": "boolean" },
+        "ending_type_detected": {
+          "type": "string",
+          "enum": ["cliffhanger", "revelation", "decision", "threat", "question", "reversal", "entrance", "status_alert", "none"]
+        }
+      }
+    },
+    "genre_judge": {
+      "allOf": [{ "$ref": "#/$defs/judgeBase" }],
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": { "drift_flags": { "type": "array", "items": { "type": "string" } } }
+    },
+    "voice_judge": {
+      "allOf": [{ "$ref": "#/$defs/judgeBase" }],
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": { "drift_flags": { "type": "array", "items": { "type": "string" } } }
+    },
+    "continuity_checker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issues"],
+      "properties": { "issues": { "type": "array", "items": { "$ref": "#/$defs/checkerIssue" } } }
+    },
+    "knowledge_leak_checker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issues"],
+      "properties": { "issues": { "type": "array", "items": { "$ref": "#/$defs/checkerIssue" } } }
+    },
+    "contract_checker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["criteria"],
+      "properties": {
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["criterion_id", "passed"],
+            "properties": {
+              "criterion_id": { "type": "string", "minLength": 1 },
+              "passed": { "type": "boolean" },
+              "evidence_paragraph_ids": { "type": "array", "items": { "type": "string", "pattern": "^p\\d+$" } },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        "issues": { "type": "array", "items": { "$ref": "#/$defs/contractIssue" } }
+      }
+    },
+    "contractIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "severity", "claim"],
+      "properties": {
+        "kind": { "$ref": "issue.schema.json#/properties/kind" },
+        "severity": { "type": "string", "enum": ["minor", "major", "blocking"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "claim": { "type": "string", "minLength": 1 }
+      }
+    },
+    "blueprintPromise": {
+      "description": "A promise the story architect proposes; the workflow resolves entity names to ids, assigns the promise id and builds the foreshadowing register.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statement", "type", "due_min_chapter", "due_max_chapter"],
+      "properties": {
+        "statement": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "promise.schema.json#/properties/type" },
+        "importance": { "type": "string", "enum": ["core", "major", "minor"] },
+        "related_entity_names": { "type": "array", "items": { "type": "string" } },
+        "due_min_chapter": { "type": "integer", "minimum": 1 },
+        "due_max_chapter": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "entityName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A registry display name the workflow resolves to an entity id."
+    },
+    "scene_planner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenes"],
+      "properties": {
+        "scenes": { "type": "array", "minItems": 1, "items": { "$ref": "scene-plan.schema.json" } }
+      }
+    },
+    "factual_summarizer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary_l1", "ending_hook"],
+      "properties": {
+        "summary_l1": { "type": "string", "minLength": 1 },
+        "ending_hook": { "type": "string" },
+        "state_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["entity_id", "attribute"],
+            "properties": {
+              "entity_id": { "type": "string" },
+              "attribute": { "type": "string" },
+              "from": { "type": "string" },
+              "to": { "type": "string" }
+            }
+          }
+        },
+        "knowledge_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["character_id", "proposition_id", "stance"],
+            "properties": {
+              "character_id": { "type": "string" },
+              "proposition_id": { "type": "string" },
+              "stance": { "type": "string", "enum": ["learns", "confirms", "doubts"] }
+            }
+          }
+        }
+      }
+    },
+    "assumption_explainer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["explanations"],
+      "properties": {
+        "explanations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["assumption_id", "rationale"],
+            "properties": {
+              "assumption_id": { "type": "string", "minLength": 1 },
+              "rationale": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

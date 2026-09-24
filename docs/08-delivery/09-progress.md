@@ -3,6 +3,40 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 1 — structured-output reliability — 2026-09-23
+
+Branch `hoplite/mende-33d541c8--ws1-structured-output` (base `d357099`). ADR-0057 records the decisions;
+the Step 0 improvement audit (§1, PR #1) the findings it addresses.
+
+**Built:**
+
+- `schemas/model-output.schema.json`: answer schemas for the four judges, three checkers, scene planner, L1
+  summarizer and assumption explainer. `@yeonjae/prompts` `OUTPUT_SHAPES` / `modelAnswerSchema` give every
+  JSON family a self-contained answer view (`bundledSchema` inlines `$ref`s; workflow-filled fields leave
+  `required`; the architect's promise proposals and character names are declared). Five design roles are
+  listed as unschematized.
+- `output-shapes.test.ts`: every active JSON prompt's example validates against its answer schema, offers
+  only schema enum values (example and note lines), and names every workflow-filled field. It found two
+  defects: `canon_extractor@4.0.0` taught `"payload": {}` and `story_architect@4.0.0` never named season
+  ordinals and entity ids as workflow-filled.
+- `renderShape` + `tools/render-shape.ts` + `tools/ko_prompts/shapes.py`: output shapes generated from the
+  schema. `canon_extractor@4.3.0` and `story_architect@4.3.0` are generated (fixed-point test); 297 versions.
+- Native structured output as a route capability: `YEONJAE_LIVE_STRUCTURED_OUTPUT=json_schema` makes live
+  OpenAI-compatible routes send the answer schema as `response_format: json_schema` (non-strict); every
+  other mode (Notion, replay, synthetic, genspark, Anthropic) is unchanged.
+- `yeonjae_output_normalizations_total{kind}` counts each ADR-0056 §11–12 normalizer when it changes an
+  answer (process-wide, on `/metrics`); classified into designed paths and shape repairs.
+- `compileModelPattern`: an unusable must-not lexical pattern is matched literally and recorded as
+  `CONTRACT-PATTERN-INVALID` instead of throwing out of the deterministic checks.
+
+**Measured (deterministic suites, no live provider):** normalizer hits — English replay suites
+(chapter-production, longform-replay, recovery): none; simulated-model runs (novel, novel-ko, story-plan):
+`scene_draft` 4 and `evidence_anchor` 2 per run. Which shape repairs still fire live is unmeasured until a
+live run with the counters.
+
+**Not verified:** no live provider call was made, so native JSON-schema output has only adapter-level tests,
+and the effect of the generated `canon_extractor` payload example on live extraction is unmeasured.
+
 ## Checkpoint K2 — Korean webnovel craft engine + live Notion run — 2026-09-23
 
 Branch `hoplite/epidamnos-dyrrhachion-8a8e00dd` (base `2e1f764`). ADR-0056 records the decisions.

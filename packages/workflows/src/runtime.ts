@@ -33,7 +33,12 @@ import {
   type NarrativeIdentityRef,
 } from '@yeonjae/gateway';
 import { type ComposedIdentity } from '@yeonjae/narrative';
-import { type PromptRegistry, renderPrompt, type PromptSet } from '@yeonjae/prompts';
+import {
+  modelAnswerSchema,
+  type PromptRegistry,
+  renderPrompt,
+  type PromptSet,
+} from '@yeonjae/prompts';
 import { asWorkflowError, WorkflowError } from './errors.js';
 
 export type ProductionPolicy = Generated.ProductionPolicySchema.ProductionPolicy;
@@ -497,6 +502,8 @@ export async function modelCall<T = unknown>(
   }
   const rendered = renderPrompt(pv, vars);
   const idempotencyKey = stepKey(ctx.workflowId, 'llm', input.activityId);
+  // Routes with provider-native structured output receive the answer schema (ADR-0057); others ignore it.
+  const answerSchema = pv.output_mode === 'json' ? modelAnswerSchema(pv.family) : undefined;
   const req: GatewayRequest = {
     workspaceId: ctx.workspaceId as Uuid,
     projectId: ctx.projectId as Uuid,
@@ -524,6 +531,7 @@ export async function modelCall<T = unknown>(
     // Pack-less JSON roles (judges, designers) declare no schema; the prompt's output_mode still tells
     // the gateway a prose answer is a repairable fault rather than a valid string.
     outputMode: pv.output_mode,
+    ...(answerSchema ? { responseSchema: { name: pv.family, schema: answerSchema } } : {}),
     params: { temperature: pv.params.temperature, max_tokens: pv.params.max_tokens },
     modelClass: pv.model_class,
   };

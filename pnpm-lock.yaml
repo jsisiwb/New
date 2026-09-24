@@ -288,6 +288,9 @@ importers:
 
   packages/prompts:
     dependencies:
+      '@yeonjae/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@yeonjae/narrative':
         specifier: workspace:*
         version: link:../narrative
