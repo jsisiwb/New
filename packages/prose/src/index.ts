@@ -15,3 +15,4 @@ export * from './story-clock.js';
 export * from './status-window.js';
 export * from './address-register.js';
 export * from './ko-style-v5.js';
+export * from './ko-style-v6.js';

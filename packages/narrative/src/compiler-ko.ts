@@ -269,11 +269,42 @@ const EXEMPLAR_FUNCTION_KO: Readonly<Record<string, string>> = {
   comedy_beat: '웃음 포인트',
 };
 
-type Exemplar = NonNullable<NonNullable<ComposedIdentity['tradition']['style_exemplars']>[number]>;
+type StudioExemplar = NonNullable<
+  NonNullable<ComposedIdentity['tradition']['style_exemplars']>[number]
+>;
+/** A studio exemplar, or the operator's style sample (ADR-0073). */
+export type Exemplar = Omit<StudioExemplar, 'provenance'> & {
+  readonly provenance: StudioExemplar['provenance'] | 'user_supplied';
+};
 
-/** At most three: genre layers first (primary, then secondary), then the tradition's own. */
+/** The id the operator's style sample carries among the exemplars (ADR-0073). */
+export const USER_STYLE_SAMPLE_ID = 'user-style-sample';
+
+/**
+ * The operator's style sample as an exemplar (ADR-0073), unless the identity refuses user exemplars. It is
+ * the top-priority rhythm reference; like the studio's, its sentences are never copied (EXEMPLAR-COPY).
+ */
+function userSampleOf(id: ComposedIdentity): Exemplar | undefined {
+  const sample = id.preferences?.style_sample;
+  if (!sample?.text.trim() || id.preferences?.exemplar_policy?.allow_user_exemplars === false)
+    return undefined;
+  return {
+    id: USER_STYLE_SAMPLE_ID,
+    functions: ['action'],
+    provenance: 'user_supplied',
+    text: sample.text.trim(),
+    ...(sample.note ? { note: sample.note } : {}),
+  };
+}
+
+/**
+ * At most three: the operator's style sample first (ADR-0073), then genre layers (primary, then
+ * secondary), then the tradition's own.
+ */
 export function exemplarsOf(id: ComposedIdentity): Exemplar[] {
+  const user = userSampleOf(id);
   const all = [
+    ...(user ? [user] : []),
     ...id.genres.flatMap((g) => g.style_exemplars ?? []),
     ...(id.tradition.style_exemplars ?? []),
   ];
@@ -287,8 +318,13 @@ export function exemplarsOf(id: ComposedIdentity): Exemplar[] {
  * references whose names, events and sentences must never be reused.
  */
 export function renderExemplarsKo(id: ComposedIdentity): string {
-  const xs = exemplarsOf(id);
-  if (xs.length === 0) return '';
+  const all = exemplarsOf(id);
+  const user = all.find((e) => e.id === USER_STYLE_SAMPLE_ID);
+  const xs = all.filter((e) => e.id !== USER_STYLE_SAMPLE_ID);
+  const userBlock = user
+    ? `〔작가 문체 견본 — 최우선〕\n이 작품의 작가가 준 문장이다. 문단 길이, 어미, 대사와 서술의 비율, 속마음의 결을 이 견본에 가장 먼저 맞춘다. 견본의 문장과 표현은 그대로 옮기지 않는다.\n${user.text}\n〔작가 문체 견본 끝〕`
+    : '';
+  if (xs.length === 0) return userBlock;
   const head =
     '아래 견본은 이 스튜디오가 직접 쓴 합성 문장이다. 문단 길이, 대사와 반응의 간격, 속마음 한 줄, 한 줄 강조 문단, 절단의 리듬만 몸에 익힌다. 견본의 이름·설정·사건·문장은 이 작품에 절대 가져다 쓰지 않고, 시점과 인물은 회차 계약을 따른다.';
   const body = xs.map((e, i) => {
@@ -297,7 +333,40 @@ export function renderExemplarsKo(id: ComposedIdentity): string {
     const label = [fns, pov].filter(Boolean).join(' | ');
     return `〔견본 ${String(i + 1)} — ${label}〕${e.note ? `\n(${e.note})` : ''}\n${e.text}\n〔견본 ${String(i + 1)} 끝〕`;
   });
-  return [head, ...body].join('\n\n');
+  return [...(userBlock ? [userBlock] : []), head, ...body].join('\n\n');
+}
+
+const POV_KO: Readonly<Record<string, string>> = {
+  first:
+    '1인칭 — 서술자는 시점 인물 자신이고 서술에서 자신을 ‘나’로 부른다. 시점 인물의 이름이나 ‘그/그녀’로 자신을 가리키지 않는다.',
+  third_limited:
+    '밀착 3인칭 — 서술은 시점 인물의 이름과 호칭으로 그를 가리키고, 서술에 ‘나’를 쓰지 않는다. 시점 인물이 모르는 것은 쓰지 않는다.',
+  third_omniscient:
+    '전지적 3인칭 — 서술은 인물을 이름과 호칭으로 가리키고, 서술에 ‘나’를 쓰지 않는다.',
+};
+
+/** The project's point of view as a writer/editor rule (ADR-0073); empty when the intake chose none. */
+export function renderPovKo(id: ComposedIdentity): string {
+  const pov = id.preferences?.pov;
+  return pov ? `시점: ${POV_KO[pov] ?? pov}` : '';
+}
+
+/**
+ * A rotating few of the operator's translated → webnovel contrast pairs (ADR-0073): `rotation` (the
+ * chapter number) picks a different window each chapter so the writer does not overfit three sentences.
+ */
+export function renderContrastPairsKo(id: ComposedIdentity, rotation: number, count = 3): string {
+  const pairs = id.preferences?.contrast_pairs ?? [];
+  if (pairs.length === 0) return '';
+  const n = Math.min(count, pairs.length);
+  const start = ((Math.max(1, Math.floor(rotation)) - 1) * n) % pairs.length;
+  const picked = Array.from({ length: n }, (_, i) => pairs[(start + i) % pairs.length]).filter(
+    (p): p is NonNullable<typeof p> => p !== undefined,
+  );
+  return [
+    '아래는 작가가 준 대조 예문이다. 왼쪽처럼 쓰지 않고 오른쪽의 호흡으로 쓴다. 문장 자체는 옮기지 않는다.',
+    ...picked.map((p) => `- 번역체: ${p.translated}\n  웹소설체: ${p.webnovel}`),
+  ].join('\n');
 }
 
 /**
@@ -329,6 +398,8 @@ export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
   preferences: '프로젝트 문체 선호',
   avoid: '쓰지 않는 문장 (번역투·AI 상투구)',
   exemplars: '문체 견본 (리듬 참고용, 베끼기 금지)',
+  pov: '시점 (절대)',
+  contrast: '대조 예문 (번역체 → 웹소설체)',
   restrictions: '콘텐츠 제한 (절대)',
   prose_rubric: '채점 기준',
   structure_rubric: '채점 기준',

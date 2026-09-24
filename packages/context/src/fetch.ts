@@ -1718,6 +1718,7 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
         ),
       participants,
       contentRestrictions: restrictions,
+      rotation: ctx.plan.chapterNo,
     });
     narrativeBlock = {
       text: block.text,

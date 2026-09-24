@@ -65,6 +65,9 @@ export async function relintAccepted(
     rows.flatMap((e) => [e.display_name, ...(e.short_forms ?? []), ...(e.aliases ?? [])]);
   const allowlist = namesOf(entities.rows);
   const personNames = namesOf(entities.rows.filter((e) => e.type === 'character'));
+  const displayNames = entities.rows
+    .filter((e) => e.type === 'character')
+    .map((e) => e.display_name);
   const chapters = await pool.query<{ number: number; text: string }>(
     `SELECT c.number, v.text FROM chapters c JOIN manuscript_versions v ON v.id = c.accepted_version_id
       WHERE c.project_id = $1 AND ($2::int IS NULL OR c.number = $2) ORDER BY c.number`,
@@ -79,6 +82,9 @@ export async function relintAccepted(
         translationMarkers: ol.translation_markers,
         forbiddenPatterns: ol.forbidden_patterns,
         thresholds: ol.lint_thresholds,
+        calquePhrases: ol.calque_phrases,
+        pov: identity.preferences?.pov,
+        displayNames,
         allowlist,
         exemplarTexts: exemplarsOf(identity).map((e) => e.text),
         personNames,

@@ -300,6 +300,53 @@
         "premium"
       ],
       "default": "standard"
+    },
+    "pov": {
+      "type": "string",
+      "enum": ["first", "third_limited", "third_omniscient"],
+      "description": "Narrative point of view for every chapter (ADR-0073): the contract's and scene plans' POV person are held to it, the writer's identity block states it, and the Korean lint checks narration against it (KO-POV-01)."
+    },
+    "style_sample": {
+      "type": "string",
+      "maxLength": 3000,
+      "description": "An optional passage in the manuscript language whose rhythm the writer should follow (ADR-0073). It becomes the top-priority exemplar in writer and editor blocks; its lines of 14 or more characters must never be copied into the manuscript (EXEMPLAR-COPY)."
+    },
+    "contrast_pairs": {
+      "type": "array",
+      "maxItems": 24,
+      "description": "Operator-supplied pairs of a translated-prose sentence and its webnovel rewrite (ADR-0073); writer and editor blocks show a rotating few per chapter. Never authored by the studio.",
+      "items": {
+        "type": "object",
+        "required": ["translated", "webnovel"],
+        "additionalProperties": false,
+        "properties": {
+          "translated": { "type": "string", "maxLength": 300 },
+          "webnovel": { "type": "string", "maxLength": 300 }
+        }
+      }
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["novelpia", "kakaopage", "munpia", "naver_series", "ridi", "other"],
+      "description": "The serial platform the novel is written for (ADR-0073); reaches the requirement interpreter and the reader panel."
+    },
+    "desired_saida_scenes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "사이다 (payoff) scenes the operator wants, in the manuscript language (ADR-0073)."
+    },
+    "taboo_overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Per-project overrides of the genre profile's taboos (ADR-0073): 'allow' lifts a genre taboo for this project, 'forbid' adds one.",
+      "properties": {
+        "allow": { "type": "array", "items": { "type": "string" } },
+        "forbid": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "protagonist_type": {
+      "type": "string",
+      "description": "The protagonist archetype the operator wants (e.g. 회귀자, 먼치킨, 성장형), in the manuscript language (ADR-0073)."
     }
   },
   "$defs": {

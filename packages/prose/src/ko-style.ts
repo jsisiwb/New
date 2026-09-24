@@ -9,6 +9,7 @@
  * them. It is a signal, not a literary judgment: thresholds are starting values (ADR-0029).
  */
 import { lintV5, type V5Metrics } from './ko-style-v5.js';
+import { lintV6, type V6Metrics } from './ko-style-v6.js';
 import { codePointLength } from './codepoints.js';
 import { toNfcText } from './nfc.js';
 import { segmentParagraphs } from './paragraphs.js';
@@ -45,6 +46,12 @@ export interface KoStyleSource {
    * away from one of them. Places and items are left out — their names share syllables with common nouns.
    */
   readonly personNames?: readonly string[] | undefined;
+  /** Western idiom calques (output_language.calque_phrases), matched literally by KO-IDIOM-01 (lang/ko@6). */
+  readonly calquePhrases?: readonly string[] | undefined;
+  /** Registered characters' full display names, for the lang/ko@6 name rules (KO-NAME-03/04). */
+  readonly displayNames?: readonly string[] | undefined;
+  /** The project's point of view (identity preferences.pov) for KO-POV-01 (lang/ko@6). */
+  readonly pov?: 'first' | 'third_limited' | 'third_omniscient' | undefined;
 }
 
 export type KoStyleIssueKind =
@@ -89,6 +96,8 @@ export interface KoStyleMetrics {
   readonly monologue_ratio?: number | undefined;
   /** lang/ko@5 measurements (ADR-0065); present only when the layer carries a v5 threshold. */
   readonly v5?: V5Metrics | undefined;
+  /** lang/ko@6 measurements (ADR-0073); present only when the layer carries a v6 threshold. */
+  readonly v6?: V6Metrics | undefined;
 }
 
 export interface KoStyleReport {
@@ -464,6 +473,20 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
   });
   findings.push(...v5.findings);
 
+  // lang/ko@6 rules (ADR-0073): each runs only when the layer carries its threshold.
+  const v6 = lintV6({
+    text,
+    paragraphs,
+    chars,
+    thresholds: src.thresholds,
+    personNames: src.personNames ?? [],
+    allowlist: src.allowlist ?? [],
+    calquePhrases: src.calquePhrases ?? [],
+    displayNames: src.displayNames,
+    pov: src.pov,
+  });
+  findings.push(...v6.findings);
+
   return {
     metrics: {
       characters: chars,
@@ -480,6 +503,7 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
         Math.round((paragraphs.reduce((a, p) => a + monologueChars(p.text), 0) / chars) * 1000) /
         1000,
       ...(v5.metrics ? { v5: v5.metrics } : {}),
+      ...(v6.metrics ? { v6: v6.metrics } : {}),
     },
     findings,
   };
@@ -505,7 +529,12 @@ export function koStyleDigest(report: KoStyleReport, maxFindings = 12): string {
   const head5 = v
     ? `\n문장·습관: 서술 문장 평균 ${String(v.sentence_mean_chars)}자, 상위 10% ${String(v.sentence_p90_chars)}자, 60자 초과 ${String(Math.round(v.long_sentence_ratio * 100))}%, 쉼표 ${String(v.comma_per_1k)}/1,000자, 대사+속마음 ${String(Math.round(v.talk_share * 100))}%.`
     : '';
+  // lang/ko@6 measurements likewise get their own line (ADR-0073).
+  const w = m.v6;
+  const head6 = w
+    ? `\n문장 부호·어순: 말줄임표 ${String(w.ellipsis_per_1k)}/1,000자, 줄표 ${String(w.dash_per_1k)}/1,000자, 서양식 관용구 ${String(w.idioms)}회, 겹친 수식 문장 ${String(Math.round(w.modifier_chain_ratio * 100))}%.`
+    : '';
   return top.length
-    ? `${head}${head5}\n${top.join('\n')}`
-    : `${head}${head5}\n- 결정적 문체 지적 없음.`;
+    ? `${head}${head5}${head6}\n${top.join('\n')}`
+    : `${head}${head5}${head6}\n- 결정적 문체 지적 없음.`;
 }

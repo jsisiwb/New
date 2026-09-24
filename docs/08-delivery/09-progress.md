@@ -3,6 +3,39 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase K — prose quality for Korean manuscripts, opt-in through `standard.v7` — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--korean-prose` (stacked on Phase A). ADR-0073 records the decisions; ADR-0074
+the two Phase A fixes that ship here.
+
+**Built:**
+
+- K5: `lang/ko@6` (`KO-PUNCT-ELL`, `KO-PUNCT-DASH`, `KO-IDIOM-01` with 19 calque phrases, `KO-ORDER-01`, `KO-NAME-03`,
+  `KO-NAME-04` replacing `KO-NAME-02`, `KO-POV-01`); the lint receives display names separately (A-2); a v6 digest
+  line. New projects stay on `lang/ko@5` unless the policy names a layer (`identity.language_layer`).
+- K4, K7, K6: intake `pov`, `style_sample`, `contrast_pairs` → identity preferences; writer/editor/voice-judge
+  blocks carry a hard POV section, the operator's sample as the top exemplar (EXEMPLAR-COPY applies), three
+  rotating contrast pairs; contracts and scene plans are held to the POV. Intake also takes `platform`,
+  `desired_saida_scenes`, `taboo_overrides`, `protagonist_type` (I1).
+- K8: serial-rhythm directives in the chapter planner's hard constraints and a `rhythm_check` artifact
+  (PLAN-RHYTHM-01..03).
+- K1: a Korean polish round after the gates, kept only when it still passes with fewer lint findings
+  (`polish_report`; `polish_rejected` quarantine).
+- A-3: `evaluation.pov_secrets_reader_visible` drops the POV character's own secrets from the knowledge-leak
+  checker's reader-secret list.
+- `standard.v7` = `standard.v6` + the opt-ins above.
+
+**Measured (deterministic):** `ko-style-v6.test.ts` 8/8 (including the six live `KO-NAME-02` false positives, now
+clean, and real misspellings still caught); `identity-from-intake.test.ts` 13/13 (layer opt-in, preferences, POV
+and pairs in blocks, unchanged bytes without them); `rhythm.test.ts` 3/3; `evaluator-inputs.test.ts` 2/2;
+`policy.test.ts` (v7 = v6 + the opt-ins); Korean `standard.v7` simulated run: `lang/ko@6` composed, every writer
+prompt with the POV section, the operator sample and the pairs, every planner prompt with the rhythm
+directives, contracts held to the POV, a rhythm check per chapter, 0 Latin-script leaks.
+
+**Not done:** K2 best-of-N in the autopilot path (doubles calls; the winner-only guard is not wired into
+production); K3 continuation/trim (length is measured in both counts; no continuation or trim call);
+pipeline-generated contrast pairs; live evidence on `standard.v7` (the v7 live run follows this change).
+
 ## Phase A — live Korean run on `standard.v6` through chapter 1 — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92--phase-a-live` (stacked on Phase P). ADR-0074 records the defects;

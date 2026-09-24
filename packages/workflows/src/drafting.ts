@@ -293,6 +293,12 @@ export async function planScenes(
           recordNormalization('scene_plans');
         }
       }
+      // ADR-0073: a project with a chosen point of view writes every scene in it.
+      const projectPov = ctx.identity.preferences?.pov;
+      if (projectPov && issues.length === 0)
+        scenes = scenes.map((s) =>
+          s.pov.person === projectPov ? s : { ...s, pov: { ...s.pov, person: projectPov } },
+        );
       if (issues.length === 0) {
         // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
         if (scenes.length < 1 || scenes.length > 5)

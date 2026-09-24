@@ -333,6 +333,42 @@ export type StoryIntake = {
   };
   operating_mode?: 'assisted' | 'semi_auto' | 'autopilot';
   quality_tier?: 'economy' | 'standard' | 'premium';
+  /**
+   * Narrative point of view for every chapter (ADR-0073): the contract's and scene plans' POV person are held to it, the writer's identity block states it, and the Korean lint checks narration against it (KO-POV-01).
+   */
+  pov?: 'first' | 'third_limited' | 'third_omniscient';
+  /**
+   * An optional passage in the manuscript language whose rhythm the writer should follow (ADR-0073). It becomes the top-priority exemplar in writer and editor blocks; its lines of 14 or more characters must never be copied into the manuscript (EXEMPLAR-COPY).
+   */
+  style_sample?: string;
+  /**
+   * Operator-supplied pairs of a translated-prose sentence and its webnovel rewrite (ADR-0073); writer and editor blocks show a rotating few per chapter. Never authored by the studio.
+   *
+   * @maxItems 24
+   */
+  contrast_pairs?: {
+    translated: string;
+    webnovel: string;
+  }[];
+  /**
+   * The serial platform the novel is written for (ADR-0073); reaches the requirement interpreter and the reader panel.
+   */
+  platform?: 'novelpia' | 'kakaopage' | 'munpia' | 'naver_series' | 'ridi' | 'other';
+  /**
+   * 사이다 (payoff) scenes the operator wants, in the manuscript language (ADR-0073).
+   */
+  desired_saida_scenes?: string[];
+  /**
+   * Per-project overrides of the genre profile's taboos (ADR-0073): 'allow' lifts a genre taboo for this project, 'forbid' adds one.
+   */
+  taboo_overrides?: {
+    allow?: string[];
+    forbid?: string[];
+  };
+  /**
+   * The protagonist archetype the operator wants (e.g. 회귀자, 먼치킨, 성장형), in the manuscript language (ADR-0073).
+   */
+  protagonist_type?: string;
 };
 /**
  * This interface was referenced by `undefined`'s JSON-Schema

@@ -43,6 +43,10 @@ export interface ProductionPolicy {
       en?: number;
       ko?: number;
     };
+    /**
+     * ADR-0073 (K1): after a Korean chapter passes its gates, one editor round on the Korean lint's 번역투, sentence-ending, dialogue-share and paragraph findings; the polished version is kept only if it still passes and the lint finds fewer of them, else it is quarantined (polish_rejected). Absent or false: no polish round
+     */
+    polish_pass?: boolean;
   };
   /**
    * Evaluation orchestration (ADR-0060). A policy without this block keeps the ADR-0056 behaviour: evaluators run one after another, only the seven core evaluators run, a gated dimension reads the judge's own 0-100 judge_score and every evaluator re-runs after a patch.
@@ -76,6 +80,10 @@ export interface ProductionPolicy {
      * ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs.
      */
     ledger_checks?: boolean;
+    /**
+     * ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed.
+     */
+    pov_secrets_reader_visible?: boolean;
   };
   /**
    * Pre-draft planning checks (ADR-0063). A policy without this block drafts every scene plan unchecked, as before.
@@ -93,6 +101,19 @@ export interface ProductionPolicy {
      * Generate the bible's cast in three checkpointed batches — protagonist, core cast, supporting cast — instead of one large character_designer call (ADR-0072). Each batch is its own checkpoint, so a rerun resumes after the last completed batch; later batches receive the names already designed and add the protagonist's registers toward the new characters. Absent or false: one call, as before.
      */
     design_batches?: boolean;
+    /**
+     * Serial-rhythm directives for the chapter planner (ADR-0073): from the accepted contracts, a chapter is told to carry a 사이다 beat when the last two had none (사이다 within three 화; at most two 고구마 chapters in a row), the first 25 화 carry the funnel's denser cadence, and the 절단 must change the situation. The directives join the planner's hard constraints and a plan check records each (PLAN-RHYTHM-01..03). Absent or false: no directive.
+     */
+    rhythm_directives?: boolean;
+  };
+  /**
+   * Identity choices a policy makes for projects composed under it (ADR-0073). Absent: a Korean project composes the newest Korean language layer up to lang/ko@5, as before.
+   */
+  identity?: {
+    /**
+     * The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches.
+     */
+    language_layer?: string;
   };
   /**
    * Retry and backoff for retryable provider failures (ADR-0072): HTTP 429 and 5xx (502/503/504 included), transport faults and, when retry_empty_reply is true, an empty completion. After each such failure the gateway waits base_delay_ms × multiplier^(n−1), capped at max_delay_ms (with full jitter a uniform share of it), moves to the class's next route and wraps to the first, up to max_attempts provider attempts per call. Every attempt and its backoff is recorded on the call's audit row. Absent: the next route at once, at most four attempts, as before.

@@ -31,6 +31,7 @@ import {
   type NovelRunLease,
   type Pool,
 } from '@yeonjae/db';
+import { requirePolicy, type PolicyRef } from '@yeonjae/domain';
 import { type Gateway } from '@yeonjae/gateway';
 import { produceChapter } from './chapter-production.js';
 import { WorkflowError } from './errors.js';
@@ -99,6 +100,7 @@ export async function startNovel(
     projectId: project.id,
     intake,
     store: deps.profiles,
+    languageLayer: pinnedLanguageLayer(project.production_policy_version),
   });
   const retryingPreApproval = run.status === 'failed' && run.approved_concept_id === null;
   if (!['intake', 'suggesting', 'awaiting_approval'].includes(run.status) && !retryingPreApproval)
@@ -664,3 +666,15 @@ async function failRun(
 }
 
 export { type StoryIntake };
+
+/**
+ * The language layer the project's pinned policy names (ADR-0073), if any. An unknown policy yields none
+ * here; `makePlanContext` fails the run on it right after.
+ */
+function pinnedLanguageLayer(policyRef: string): string | undefined {
+  try {
+    return requirePolicy(policyRef as PolicyRef).identity?.language_layer;
+  } catch {
+    return undefined;
+  }
+}

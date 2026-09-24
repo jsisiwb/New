@@ -293,6 +293,35 @@
             "min_score": { "type": "number", "minimum": 0, "maximum": 100 },
             "allow_user_exemplars": { "type": "boolean" }
           }
+        },
+        "pov": {
+          "type": "string",
+          "enum": ["first", "third_limited", "third_omniscient"],
+          "description": "The project's point of view from the intake (ADR-0073)."
+        },
+        "style_sample": {
+          "type": "object",
+          "required": ["text"],
+          "additionalProperties": false,
+          "description": "The operator's style sample (ADR-0073): the top-priority exemplar; never copied.",
+          "properties": {
+            "text": { "type": "string", "maxLength": 3000 },
+            "note": { "type": "string" }
+          }
+        },
+        "contrast_pairs": {
+          "type": "array",
+          "maxItems": 24,
+          "description": "Operator-supplied translated → webnovel sentence pairs (ADR-0073), shown a rotating few per chapter.",
+          "items": {
+            "type": "object",
+            "required": ["translated", "webnovel"],
+            "additionalProperties": false,
+            "properties": {
+              "translated": { "type": "string" },
+              "webnovel": { "type": "string" }
+            }
+          }
         }
       }
     },

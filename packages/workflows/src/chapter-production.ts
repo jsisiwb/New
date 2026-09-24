@@ -198,6 +198,8 @@ export interface ChapterProductionResult {
           | undefined;
         /** ADR-0064: patches that failed their regression check and were quarantined (discard_and_continue). */
         discarded?: readonly DiscardedPatch[] | undefined;
+        /** ADR-0073: the lint-driven polish round was kept. */
+        polished?: boolean | undefined;
       }
     | undefined;
   readonly accepted:
@@ -679,6 +681,83 @@ export async function produceChapter(
     revision ??= { rounds: 0 };
     if (discarded.length) revision = { ...revision, discarded };
 
+    // ---- ADR-0073 (K1): one lint-driven polish round for a Korean chapter that already passes its gates.
+    // The editor gets only the lint's 번역투 / ending / dialogue-share / paragraph findings; the polished
+    // version is kept only if it still passes and the lint finds fewer of them, else it is quarantined.
+    if (
+      ctx.policy.revision.polish_pass === true &&
+      manuscriptLang === 'ko' &&
+      evaluation.approvable
+    ) {
+      const targets = polishTargets(evaluation.scorecard);
+      const dimension = targets[0]?.dimension;
+      if (dimension) {
+        const polishRound = round + 1;
+        const parent = current;
+        const before = evaluation;
+        const revised = await reviseVersion(ctx, {
+          version: current,
+          chapterId: contract.chapterId,
+          chapterNo,
+          issues: targets,
+          dimension,
+          round: polishRound,
+          registerDigests: writerBuilt.variables.register_digests ?? '(none)',
+        });
+        versions.push(revised.version);
+        guard('revise');
+        const polished = await evaluateVersion(ctx, {
+          version: revised.version,
+          contract: contract.contract,
+          spec: spec.spec,
+          canonVersion: bible.canonVersion,
+          allowlist,
+          round: polishRound,
+          bible: input.bible,
+          carry: {
+            scorecard: before.scorecard,
+            versionText: parent.text,
+            targetedDimension: dimension,
+            changedClaims:
+              revised.patch.changed_claims.length > 0 || revised.patch.scope === 'scene',
+            patchesSinceFull: patchesSinceFull + 1,
+          },
+        });
+        scorecards.push(summarizeScorecard(polished.scorecard, polished.scorecardArtifactId));
+        const lintBefore = polishTargets(before.scorecard).length;
+        const lintAfter = polishTargets(polished.scorecard).length;
+        const kept = polished.approvable && lintAfter < lintBefore;
+        await saveArtifact(ctx, {
+          step: 'revise',
+          kind: 'polish_report',
+          key: `${revised.version.id}:p${String(polishRound)}`,
+          payload: { round: polishRound, lint_before: lintBefore, lint_after: lintAfter, kept },
+        });
+        if (kept) {
+          current = revised.version;
+          evaluation = polished;
+          revision = { ...revision, rounds: polishRound, polished: true };
+        } else {
+          const rejected = revised.version;
+          await runStep(
+            ctx,
+            'discard_patch',
+            async () => {
+              await quarantineVersion(
+                ctx.pool,
+                rejected.id,
+                `polish_rejected:p${String(polishRound)}`,
+              );
+              return { version_id: rejected.id };
+            },
+            `p${String(polishRound)}`,
+          );
+          current = parent;
+          evaluation = before;
+        }
+      }
+    }
+
     // ---- approval lock (blocks on any remaining blocking/major issue or failed gate)
     await approveVersion(ctx, {
       version: current,
@@ -1129,3 +1208,17 @@ export async function exportAccepted(
 }
 
 export type { ArcPlan, ChapterContract, StoryBible, StoryIntake, StorySpec, HeldLease };
+
+/** Lint rules a polish round works on (ADR-0073): 번역투, sentence endings, dialogue share, paragraphs. */
+const POLISH_RULE =
+  /^(KO-TRN-RATE|TRN-KO-\d+|KO-OVR-\d+|KO-END-02|KO-DLG-SHARE|KO-DLG-LOW|KO-PARA-(LONG|CHARS)|KO-SENT-LONG|KO-COMMA-RATE|KO-PUNCT-(ELL|DASH)|KO-IDIOM-01|KO-ORDER-01|KO-PRN-RATE|KO-CONJ-RATE)$/;
+
+/** Open Korean-lint issues a polish round may address, any severity. */
+export function polishTargets(scorecard: Scorecard): Scorecard['issues'] {
+  return scorecard.issues.filter(
+    (i) =>
+      i.status === 'open' &&
+      i.source === 'lint:ko_style' &&
+      POLISH_RULE.test(i.metric?.rule_id ?? ''),
+  );
+}

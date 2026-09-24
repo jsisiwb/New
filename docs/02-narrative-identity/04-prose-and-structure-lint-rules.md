@@ -138,6 +138,13 @@ code-point spans. Thresholds are starting values in `lang/ko@3` (ADR-0029: calib
 | `EXEMPLAR-NEAR` (ADR-0065) | share of a paragraph's 8-character shingles found in the studio exemplars | warn → minor, fail → major | paragraph |
 | `KO-NAME-02` (ADR-0065) | a word one or two compatibility jamo from a registered name, never a registered name, short form or alias; replaces `KO-NAME-01` in `lang/ko@5` | minor per distinct word; fail count → major | hit |
 | `KO-WIN-LINE` (ADR-0065) | a status window with more than one field on a line | minor | paragraph |
+| `KO-PUNCT-ELL` (ADR-0073, `lang/ko@6`) | ellipses (… or ...) per 1,000자 above the layer's threshold | minor / major | chapter |
+| `KO-PUNCT-DASH` (ADR-0073) | dashes (— ―) per 1,000자 above the threshold | minor / major | chapter |
+| `KO-IDIOM-01` (ADR-0073) | a Western idiom calque from the layer's `calque_phrases` | minor / major by count | paragraph |
+| `KO-ORDER-01` (ADR-0073) | share of narration sentences stacking three or more adnominal forms before a noun | minor / major | chapter |
+| `KO-NAME-03` (ADR-0073) | a registered full name transposed (진서우), split (서 진우) or doubled (서진진우) | minor / major by count | paragraph |
+| `KO-NAME-04` (ADR-0074; replaces `KO-NAME-02` in `lang/ko@6`) | a word one jamo from a full display name, or two within one syllable; aliases and short forms are never targets | minor / major by count | paragraph |
+| `KO-POV-01` (ADR-0073) | first person: narration without ‘나’; third person: ‘나’ in narration outside dialogue and 속마음 | minor / major | chapter |
 
 KO-END-02 and KO-NAME-01 run only when the language layer carries their thresholds (`lang/ko@4` onward), so
 a project pinned to an earlier layer lints as it did. The report also carries `monologue_ratio`, the ‘…’

@@ -992,3 +992,149 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v7: lang/ko@6, point of view, style sample, contrast pairs, rhythm (ADR-0073)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    const byBatch = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      // The polish round's editor (the base script has no reviser): a one-word sentence edit.
+      if (req.trace?.role === 'targeted_reviser') {
+        const span = /\[수정할 구간\]\n([\s\S]*?)\n\n\[뒷 맥락\]/.exec(req.user)?.[1] ?? '';
+        const sentence = /^[^.!?…]+[.!?…]/.exec(span.trim())?.[0] ?? span.trim();
+        return {
+          json: {
+            scope: 'sentence',
+            span: { original_quote: sentence },
+            new_text: `문득 ${sentence}`,
+            changed_claims: [],
+            preserved_facts_ack: [],
+            speaker_annotations: [],
+          },
+        };
+      }
+      if (req.trace?.role !== 'character_designer' || !('json' in out)) return out;
+      const cast = out.json as { characters: { display_name: string; role?: string }[] };
+      const hero = cast.characters.find((c) => c.role === 'protagonist') ?? cast.characters[0];
+      const rest = cast.characters.filter((c) => c !== hero);
+      if (req.user.includes('주인공 한 명만')) return { json: { ...cast, characters: [hero] } };
+      if (req.user.includes('핵심 인물'))
+        return { json: { characters: rest.slice(0, 1), propositions: [] } };
+      return { json: { characters: rest.slice(1), propositions: [] } };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = byBatch(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    // Synthetic test strings (two short sentences at most), not manuscript prose.
+    const intake = {
+      ...INTAKE,
+      // The simulated writer narrates in the third person; KO-POV-01 would (rightly) block a first-person
+      // project on it.
+      pov: 'third_limited',
+      style_sample: '문이 열렸다. 나는 숨을 삼켰다.',
+      contrast_pairs: [
+        { translated: '그는 그녀에게 그것에 대해 말했다.', webnovel: '말했다. 짧게.' },
+        { translated: '그녀는 미소를 지었다.', webnovel: '웃었다.' },
+      ],
+    };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v7-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@7',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('composes lang/ko@6 and carries the POV, sample, pairs and rhythm into the prompts', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v7-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const report = await buildRunReport(pool, projectId);
+      expect(report.lineage.output_language).toBe('lang/ko@6');
+
+      const writer = seen.filter((r) => r.trace?.role === 'scene_writer');
+      expect(writer.length).toBeGreaterThan(1);
+      for (const r of writer) {
+        expect(r.system).toContain('## 시점 (절대)');
+        expect(r.system).toContain('〔작가 문체 견본 — 최우선〕');
+        expect(r.system).toContain('대조 예문');
+      }
+      const planner = seen.filter((r) => r.trace?.role === 'chapter_planner');
+      for (const r of planner) expect(r.user).toContain('[연재 리듬 지시');
+      const voice = seen.filter((r) => r.trace?.role === 'voice_judge');
+      for (const r of voice) expect(r.system).toContain('## 시점 (절대)');
+
+      const contracts = await pool.query<{ person: string }>(
+        `SELECT payload->'pov'->>'person' AS person FROM workflow_artifacts
+          WHERE project_id = $1 AND kind = 'chapter_contract'`,
+        [projectId],
+      );
+      expect(contracts.rows.length).toBeGreaterThan(0);
+      expect(new Set(contracts.rows.map((r) => r.person))).toEqual(new Set(['third_limited']));
+      const rhythm = await pool.query<{ key: string }>(
+        "SELECT key FROM workflow_artifacts WHERE project_id = $1 AND kind = 'rhythm_check' ORDER BY key",
+        [projectId],
+      );
+      expect(rhythm.rows.map((r) => r.key)).toEqual(['1', '2']);
+      // The polish round ran where the lint had findings, and its outcome is recorded either way.
+      const polish = await pool.query<{ payload: { kept: boolean; lint_before: number } }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'polish_report'",
+        [projectId],
+      );
+      for (const p of polish.rows) expect(p.payload.lint_before).toBeGreaterThan(0);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
