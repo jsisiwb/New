@@ -78,6 +78,7 @@
 | [0069](0069-korean-export-headings.md) | Korean exports head chapters `N화` (Markdown, text, TXT and DOCX); a Korean heading marker counts only on its own line when chapters are split; English exports unchanged |
 | [0070](0070-phase-a-live-run-decisions.md) | Phase A live run: leave the Notion client deadline at the adapter default (it must outlast the bridge's failover); the default policy and the Korean lint thresholds do not move until live chapters exist; a novel start fails its run when its plan context cannot be built |
 | [0071](0071-deterministic-suites-policy-hash-check-sql-lexer.md) | Intermittent integration tests synchronise on the event (lease takeover, backend teardown, lock wait), never on time; `policy:rehash --check` fails CI on a stale policy hash; migration privilege analysis lexes SQL statements instead of grepping |
+| [0072](0072-provider-readiness-retry-batches-heartbeat-routing.md) | Provider readiness: retry with exponential backoff and jitter from the pinned policy (`provider_retry`), the bible cast in three checkpointed batches (`planning.design_batches`), `standard.v6`, a run heartbeat that fails a stuck run with `RUN_STUCK`, and a per-class routing capability check (`provider:check`); in notion mode judges share the writer's model (known limitation) |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

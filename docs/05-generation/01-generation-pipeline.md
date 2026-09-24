@@ -45,7 +45,8 @@ Calls: N + C(N,2)×2 (+1). N=2 → 4 calls.
 Sequential specialists, each producing schema-validated JSON, each receiving the spec + concept + previous
 outputs (as data, not chat):
 ```
-character_designer (protagonist + core cast; identities, goals, flaws, arcs, secrets)
+character_designer (protagonist + core cast; identities, goals, flaws, arcs, secrets; under
+   planning.design_batches three checkpointed batches — protagonist, core cast, supporting cast — ADR-0072)
  → register_profile_designer (per character: dialogue register toward counterparts — formality,
    deference, familiarity, address terms/titles in English, contraction usage, verbal habits; validated
    against genre register norms)

@@ -3,6 +3,44 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase P — provider readiness — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--provider-readiness` (stacked on Phase R). ADR-0072 records the decisions.
+
+**Built:**
+
+- `production-policy.provider_retry` (P1): retryable faults (429, 5xx incl. 502/503/504, transport) and empty
+  replies are retried with exponential backoff and full jitter, wrapping over the class's routes, up to
+  `max_attempts`; each attempt's `backoff_ms` is on the audit row; a 4xx is never retried. Without the block the
+  gateway behaves as before.
+- `planning.design_batches` (P2): the bible cast in three checkpointed `character_designer` batches (protagonist,
+  core cast, supporting cast) with Korean briefs for Korean projects; the merge folds the protagonist's
+  register-only entries into its design. `world_builder`, `power_system_designer` and `story_architect` keep one
+  call each (they succeeded live; see below). `faction_designer` / `naming_registry_compiler` do not exist here.
+- `standard.v6` = `standard.v5` + both opt-ins. `pnpm policy:rehash` also validates every policy against the
+  schema.
+- `novel:run --status-file=<f> [--stuck-after-min=N]` (P3): an atomic heartbeat every 30 s; a run with no call,
+  step or event past the threshold (default 150 min) ends `failed: RUN_STUCK` with the reason;
+  `quality:run-report --status-file=<f>` shows the beat.
+- `provider:check [--probe] [--json]` (P4): the R/P/M/C capability matrix derived from the active prompts
+  against the configured routes (missing route, context, native JSON, fallback, judge on the writer's model);
+  notion mode is reported as `SINGLE_POOLED_MODEL` — judges share the writer's model (known limitation). Model
+  ids are never printed. Live per-class routing is tested with fakes only.
+
+**Measured:**
+
+- Unit/integration (Postgres 16): `retry-backoff.test.ts` 6/6, `capabilities.test.ts` 5/5,
+  `cast-batches.test.ts` 5/5, `run-heartbeat.integration.test.ts` 2/2, the Korean `standard.v6` simulated run
+  (three batches, one merged cast with the supplied names, four completed `cast*` checkpoints, 0 Latin-script
+  leaks).
+- Live (Notion bridge, `standard.v6`, Phase A project): intake → Story Spec → two concepts in 3 min 20 s; the
+  bible (three cast batches, world, progression, blueprint) in 7 min 17 s after approval; 9 calls, 11 attempts —
+  one `concept_generator` and one `character_designer` attempt failed `retryable_provider` and were retried after
+  jittered backoffs of 7.3 s and 11.5 s, then succeeded. `provider:check` in notion mode: routing OK, one
+  `SINGLE_POOLED_MODEL` warning.
+
+**Not done:** splitting `world_builder` / `story_architect` (not needed by the live evidence); per-class sampling in
+the policy; a live run in `live` mode (no credentials; fakes only).
 ## Phase R — hygiene: deterministic suites, policy-hash check, lexed migrations — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92` (base `070dfa9`). ADR-0071 records the decisions.
