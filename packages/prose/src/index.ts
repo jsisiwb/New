@@ -14,3 +14,4 @@ export * from './repetition.js';
 export * from './story-clock.js';
 export * from './status-window.js';
 export * from './address-register.js';
+export * from './ko-style-v5.js';

@@ -8,6 +8,7 @@
  * style exemplars. Findings carry paragraph ids and code-point spans so a targeted revision can anchor on
  * them. It is a signal, not a literary judgment: thresholds are starting values (ADR-0029).
  */
+import { lintV5, type V5Metrics } from './ko-style-v5.js';
 import { codePointLength } from './codepoints.js';
 import { toNfcText } from './nfc.js';
 import { segmentParagraphs } from './paragraphs.js';
@@ -86,6 +87,8 @@ export interface KoStyleMetrics {
   readonly conjunction_per_1k: number;
   /** Share of characters inside ‘…’ (속마음/inner monologue), reported apart from dialogue (ADR-0062). */
   readonly monologue_ratio?: number | undefined;
+  /** lang/ko@5 measurements (ADR-0065); present only when the layer carries a v5 threshold. */
+  readonly v5?: V5Metrics | undefined;
 }
 
 export interface KoStyleReport {
@@ -325,7 +328,8 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
 
   const quoted = paragraphs.reduce((a, p) => a + quotedChars(p.text), 0);
   const dialogueRatio = Math.round((quoted / chars) * 1000) / 1000;
-  if (paragraphs.length >= 12)
+  // lang/ko@5 counts 속마음 (‘…’) with dialogue under KO-DLG-SHARE instead (ADR-0065).
+  if (paragraphs.length >= 12 && !src.thresholds?.['KO-DLG-SHARE'])
     rate(
       'KO-DLG-LOW',
       dialogueRatio,
@@ -340,6 +344,7 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
   const last = paragraphs[paragraphs.length - 1];
   if (
     last &&
+    !src.thresholds?.['KO-END-03'] &&
     /(그렇게 .{0,20}(하루|밤|날)(가|이) (저물|지나|흘러)|시작에 불과|(세상|인생|사람)(은|이란) (원래|언제나|늘|결국))/u.test(
       last.text,
     )
@@ -447,6 +452,18 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
     });
   }
 
+  // lang/ko@5 rules (ADR-0065): each runs only when the layer carries its threshold.
+  const v5 = lintV5({
+    text,
+    paragraphs,
+    chars,
+    thresholds: src.thresholds,
+    personNames: src.personNames ?? [],
+    allowlist: src.allowlist ?? [],
+    exemplarTexts: src.exemplarTexts ?? [],
+  });
+  findings.push(...v5.findings);
+
   return {
     metrics: {
       characters: chars,
@@ -462,6 +479,7 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
       monologue_ratio:
         Math.round((paragraphs.reduce((a, p) => a + monologueChars(p.text), 0) / chars) * 1000) /
         1000,
+      ...(v5.metrics ? { v5: v5.metrics } : {}),
     },
     findings,
   };
@@ -482,5 +500,12 @@ export function koStyleDigest(report: KoStyleReport, maxFindings = 12): string {
       (f) =>
         `- [${f.rule_id}${f.paragraph_ids.length ? ` ${f.paragraph_ids.slice(0, 3).join(',')}` : ''}] ${f.severity === 'minor' ? '' : `(${f.severity}) `}${f.message}`,
     );
-  return top.length ? `${head}\n${top.join('\n')}` : `${head}\n- 결정적 문체 지적 없음.`;
+  // lang/ko@5 measurements get their own line, so digests of earlier layers keep their bytes (ADR-0065).
+  const v = m.v5;
+  const head5 = v
+    ? `\n문장·습관: 서술 문장 평균 ${String(v.sentence_mean_chars)}자, 상위 10% ${String(v.sentence_p90_chars)}자, 60자 초과 ${String(Math.round(v.long_sentence_ratio * 100))}%, 쉼표 ${String(v.comma_per_1k)}/1,000자, 대사+속마음 ${String(Math.round(v.talk_share * 100))}%.`
+    : '';
+  return top.length
+    ? `${head}${head5}\n${top.join('\n')}`
+    : `${head}${head5}\n- 결정적 문체 지적 없음.`;
 }
