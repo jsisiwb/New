@@ -84,6 +84,11 @@ targeted spans of one dimension. With it (`standard.v10`), the targeted spans ar
 anchor inside its window, unusable sub-patches are dropped, and the usable ones become one revision recorded
 as an envelope patch and a `patch_set` artifact; the regression check then judges the round as a whole.
 
+**Regression baseline (ADR-0078).** Under `revision.regression_baseline: parent` (`standard.v11`) a patch's
+protections are measured against its parent: a protected section fails only on pass → fail, and a kind guard
+only when the revision carries more open blocking/major issues of its kinds than the parent. Earlier policies
+measure them on the revision alone.
+
 ### 4.1 Which checks re-run after a patch
 | Patch scope | Re-run |
 | --- | --- |

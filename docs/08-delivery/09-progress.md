@@ -18,8 +18,20 @@ simulated runs — two findings far apart get two reviser calls per chapter (`�
 whose envelope patch reproduces it from the parent; an unanchored sub-patch is dropped and the other applied;
 0 Latin-script leaks. Live `standard.v8` evidence that motivates it: `docs/08-delivery/12-live-run-ws1-7.md` §8.2.
 
+**Built (V-1, ADR-0078):** `revision.regression_baseline: parent` — a patch's protections are measured against its
+parent (a section fails only on pass → fail; a kind guard only on more open majors of its kinds);
+`standard.v11` = `standard.v10` + `regression_baseline: parent`.
+
+**Measured (live, Notion bridge, `standard.v10`):** chapter 1 at 4,799자; three multi-patch rounds of one cluster
+each; r1 cut blockings from 4 to 1; every round quarantined, r2/r3 only for `protection_failed` on sections and
+kinds r0 already failed — defect V-1, found in the regression reports of all three live runs (v6, v8, v10);
+stopped `APPROVAL_BLOCKED` (4 blocking: A-4 ×2, a bible rank dated after chapter 1, a voice-card violation).
+35 calls, 121,708 / 20,862 tokens, ≈ 1.0 / 2.1 points of bridge credits (`12-live-run-ws1-7.md` §8.3).
+Unit: `comparison.test.ts` 44/44 (the live defect fails absolute and passes parent; pass → fail and an extra
+guarded major still fail).
+
 **Not done:** the reader-panel evaluator and cross-judge score normalization (V2, V3) — not started; per-sub-patch
-regression checks (rejected for now, ADR-0077).
+regression checks (rejected for now, ADR-0077); A-4 (future knowledge) still open.
 
 ## Phase L — long-story context, opt-in through `standard.v9` — 2026-09-24
 

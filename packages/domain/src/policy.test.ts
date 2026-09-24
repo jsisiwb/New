@@ -10,6 +10,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/premium@1',
       'policy/standard@1',
       'policy/standard@10',
+      'policy/standard@11',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -20,6 +21,17 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v11 is standard.v10 with parent-baseline patch regression (ADR-0078)', () => {
+    const v10 = requirePolicy('policy/standard@10', policies);
+    const v11 = requirePolicy('policy/standard@11', policies);
+    expect(v11.revision).toEqual({ ...v10.revision, regression_baseline: 'parent' });
+    const strip = (p: typeof v10) => {
+      const { version: _v, name: _n, content_hash: _h, revision: _r, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v11)).toEqual(strip(v10));
   });
 
   it('standard.v10 is standard.v9 with multi-patch revision (ADR-0077)', () => {

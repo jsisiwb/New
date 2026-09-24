@@ -18,6 +18,7 @@ describe('cli commands', () => {
       'policy/standard@1',
       // loadPolicies reads the files in name order: standard.v10.json sorts before standard.v2.json.
       'policy/standard@10',
+      'policy/standard@11',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
