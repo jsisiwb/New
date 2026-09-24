@@ -3,6 +3,53 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase R — hygiene: deterministic suites, policy-hash check, lexed migrations — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92` (base `070dfa9`). ADR-0071 records the decisions.
+
+**Root causes and fixes (R1):**
+
+- `active-cancellation … a fenced-out run commits nothing` (former PR #9, `expected 2 to be +0`): the test read the
+  canon-commit count before releasing and stealing the lease while the run kept committing. It now counts after
+  the rival holds the lease (a commit in flight holds the lease row `FOR SHARE`, so the rival waits for it).
+- `multiprocess … no leftover connections` (former PR #10, `expected 1 to be +0`): a backend exits after its client
+  (Terminate or SIGKILL) and the query also counted the parent's own idle pool connections. The parent's
+  connections carry an `application_name`; the test waits, with a deadline, for every other client backend to
+  leave `pg_stat_activity`.
+- `lease-fence … serializes a concurrent steal` (inherited, recorded as a known flake): a 50 ms sleep before the
+  steal and JS-side ordering flags (PostgreSQL releases locks before it answers the committing client). The steal
+  now starts inside the fenced transaction, which commits only after `pg_blocking_pids` shows it waiting.
+- No retry wraps any test.
+
+**Built (R2, R3):** `pnpm policy:rehash [--check]` (run by `check:types-fresh`, so by `pnpm check` and by CI's
+existing `check:types-fresh` step — the agent's GitHub App cannot push workflow files; the write mode refuses a
+semantic change to a committed policy); `splitSqlStatements` / `migrationChangesPrivileges` replace the regex over
+migration files in the migration-replay suite (comments, strings, dollar-quoted bodies and nested comments no
+longer count; a `DO` block's `GRANT`/`EXECUTE format('GRANT …')` does).
+
+**Measured (R4, isolated worktree at `65cd518`, PostgreSQL 16.14, `CI=true`):**
+
+| Check | Result |
+| --- | --- |
+| Determinism loops (isolated worktree, 20× each) | active-cancellation 20/20, multiprocess 20/20, lease-fence 20/20 |
+| `check:types-fresh` (incl. `policy:rehash --check`), `typecheck`, `lint`, `format:check` | green (7 policies fresh) |
+| `pnpm test` | 147 files, 2,068 tests passed (includes the Korean e2e suites and their Latin-script scan) |
+| `test:replay-120` | 120 chapters, 20 tests passed |
+| `test:chaos` | 49 deterministic scenarios, 109 tests passed |
+| `drill:restore` | 40 invariants on PostgreSQL 16.14, 83 tests passed |
+| `test:security` | 16 scenarios, 180 tests passed |
+| `test:costs` | 14 scenarios, 21 tests passed |
+| `build:web` | green |
+| `validate:planning` | `RESULT: ALL OK` (34 schemas) |
+| `validate:contrast` | `contrast regression: PASSED` |
+
+`pnpm check` ran 3,067 s up to `validate:planning`, which first failed because the sandbox lacked the Python
+`jsonschema` module (CI installs it); after `pip install jsonschema` both remaining steps passed. A loop run in the
+worktree that was being edited at the same time recorded 3 failed active-cancellation runs; all three overlapped
+edits of the policy files and rebuilt `dist/`, and the isolated loop above has none.
+
+**Not done:** nothing in R1–R4.
+
 ## Phase A — first live Korean run after Workstreams 1–5 — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings--ws12-readme--phase-a`.

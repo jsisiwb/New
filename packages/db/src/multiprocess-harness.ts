@@ -34,6 +34,16 @@ function adminUrl(url: string): string {
   return withDatabase(url, 'postgres');
 }
 
+/** The `application_name` the parent's own pool reports, so a leak check can tell its backends apart. */
+export const PARENT_APPLICATION_NAME = 'yeonjae-mp-parent';
+
+/** A connection URL whose backends report `name` in `pg_stat_activity.application_name`. */
+export function withApplicationName(url: string, name: string): string {
+  const parsed = new URL(url);
+  parsed.searchParams.set('application_name', name);
+  return parsed.toString();
+}
+
 /**
  * A database created for one test, plus its teardown.
  *
@@ -59,7 +69,10 @@ export async function createIsolatedDatabase(
     await admin.end();
   }
   const url = withDatabase(baseUrl, name);
-  const pool = createPool({ connectionString: url, max: 8 });
+  const pool = createPool({
+    connectionString: withApplicationName(url, PARENT_APPLICATION_NAME),
+    max: 8,
+  });
   await migrate(pool);
   return {
     url,
