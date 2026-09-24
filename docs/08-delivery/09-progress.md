@@ -3,6 +3,29 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 7a — revision continues past a regressed patch — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision`. ADR-0064 records the decisions; the
+Step 0 improvement audit (§7.3, §7.4) the findings.
+
+**Built:**
+
+- `revision.on_regression: discard_and_continue`: a patch that fails the ADR-0014 regression check is
+  quarantined in a checkpointed `discard_patch` step, the chapter returns to the version before it with its
+  scorecard, and the next round may revise again; the result lists the discarded patches.
+- `revision.rounds_by_language`: revision rounds per manuscript language from the policy (absent: English one
+  round, Korean up to `max_rounds`, as before).
+- `standard.v4` = `standard.v3` + `on_regression: discard_and_continue` + `rounds_by_language: {en: 1, ko: 3}`.
+- Migration 0022: `quarantine_versions` gets its own `language IN ('en','ko')` check. Before it,
+  `canon.quarantine_version` failed for every Korean version (the copied ADR-0026 check), found by the first
+  Korean run that discarded a patch.
+
+**Measured (simulated model):** Korean `standard.v4` run — chapter 1's round-1 patch regressed and was
+quarantined (`patch_regressed:r1`), the round-2 patch passed, chapter 1 was accepted on a version that does not
+descend from the discarded patch, chapter 2 followed; 0 Latin-script leaks.
+
+**Not done:** audit §7.1, 7.2, 7.5, 7.7, 7.8, 7.9 and 7.10 (ADR-0064, Consequences).
+
 ## Workstream 4b — state ledgers and the pre-draft plan check — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers`. ADR-0063 records the decisions; the Step 0

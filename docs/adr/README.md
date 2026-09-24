@@ -70,6 +70,7 @@
 | [0061](0061-long-story-memory.md) | Long-story memory: story-so-far digest of accepted L1 summaries, first-meeting ledger, overdue promises always visible, arcs chained from the accepted ending, deterministic series audit |
 | [0062](0062-korean-prose-lint-and-exemplar-priority.md) | Prose quality for Korean manuscripts: identity blocks measured in 자 with exemplars above setting and a 35% Korean block share; a versioned Korean spelling list, ending-monotony and misspelled-name lint in the Korean language layer v4 |
 | [0063](0063-state-ledgers-and-plan-check.md) | State ledgers projected from accepted canon (state cards, story clock and countdowns, 호칭/말높이 matrix, status-window format) in a T1 pack section; deterministic draft checks against them and a pre-draft plan check, opt-in through `standard.v3` |
+| [0064](0064-revision-continues-past-a-regressed-patch.md) | A regressed patch is quarantined and revision continues from the version before it (`revision.on_regression`); revision rounds per manuscript language in the policy; rejected Korean versions can be quarantined (migration 0022); `standard.v4` |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

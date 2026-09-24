@@ -533,3 +533,153 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v4: a regressed patch is discarded and revision continues (ADR-0064)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    const firstSentence = (prompt: string) => {
+      const p2 = /\n\[p2\] ([^\n]+)/.exec(prompt)?.[1] ?? '';
+      return /^[^.!?…]+[.!?…]/.exec(p2)?.[0] ?? p2;
+    };
+    // Chapter 1: the first judgment flags a 번역투 sentence; the round-1 patch leaves it and scores lower, so the
+    // regression check fails; the round-2 patch resolves it.
+    const flagged = (req: ProviderRequest, score: number, subs: number) => ({
+      json: {
+        judge_score: score,
+        dimension_scores: {
+          idiomatic_korean: subs,
+          readability: subs,
+          register_fidelity: subs,
+          translation_markers: subs,
+        },
+        drift_flags: [],
+        issues: [
+          {
+            kind: 'translation_like_english',
+            severity: 'major',
+            confidence: 0.9,
+            claim: '번역투 문장이다. 주어를 줄이고 동작으로 쓴다.',
+            quote: firstSentence(req.user),
+          },
+        ],
+      },
+    });
+    const answer = (req: ProviderRequest) => {
+      const activity = req.trace?.activityId ?? '';
+      if (req.trace?.role === 'prose_judge' && activity.endsWith(':1:r0'))
+        return flagged(req, 60, 2);
+      if (req.trace?.role === 'prose_judge' && activity.endsWith(':1:r1'))
+        return flagged(req, 40, 1);
+      if (req.trace?.role === 'targeted_reviser') {
+        const span = /\[수정할 구간\]\n([\s\S]*?)\n\n\[뒷 맥락\]/.exec(req.user)?.[1] ?? '';
+        const sentence = /^[^.!?…]+[.!?…]/.exec(span.trim())?.[0] ?? span.trim();
+        return {
+          json: {
+            scope: 'sentence',
+            span: { original_quote: sentence },
+            new_text: `문득 ${sentence}`,
+            changed_claims: [],
+            preserved_facts_ack: [],
+            speaker_annotations: [],
+          },
+        };
+      }
+      return script(req);
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = answer(req);
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v4-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@4',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('quarantines the regressed patch, revises again from the version before it and accepts', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v4-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const reports = await pool.query<{ payload: { passed: boolean; round: number } }>(
+        `SELECT payload FROM workflow_artifacts
+        WHERE project_id = $1 AND kind = 'regression_report' ORDER BY created_at`,
+        [projectId],
+      );
+      expect(reports.rows.map((r) => [r.payload.round, r.payload.passed])).toEqual([
+        [1, false],
+        [2, true],
+      ]);
+      const quarantined = await pool.query<{ rejection_reason: string }>(
+        'SELECT rejection_reason FROM quarantine_versions WHERE project_id = $1',
+        [projectId],
+      );
+      expect(quarantined.rows).toEqual([{ rejection_reason: 'patch_regressed:r1' }]);
+      // The accepted chapter 1 descends from the version before the discarded patch, never from the patch.
+      const accepted = await pool.query<{ parent_version_id: string | null }>(
+        `SELECT mv.parent_version_id FROM chapters c JOIN manuscript_versions mv ON mv.id = c.accepted_version_id
+        WHERE c.project_id = $1 AND c.number = 1`,
+        [projectId],
+      );
+      const parents = await pool.query<{ id: string }>(
+        'SELECT id FROM quarantine_versions WHERE project_id = $1',
+        [projectId],
+      );
+      expect(accepted.rows[0]?.parent_version_id).not.toBe(parents.rows[0]?.id);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
