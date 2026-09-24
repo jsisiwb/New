@@ -22,6 +22,8 @@ import { approveConcept, resumeNovelRun, startNovel } from './novel.js';
 import { NovelRunner } from './novel-runner.js';
 import { ArtifactLlmOutputStore } from './runtime.js';
 import { angleSeeds, worldRulesTerm } from './story-plan.js';
+import { buildRunReport, renderRunReport } from './run-report.js';
+import { relintAccepted } from './relint.js';
 import { REPLAY_ROUTING } from './testkit.js';
 
 const run = databaseUrl() ? describe : describe.skip;
@@ -700,5 +702,50 @@ run(
       );
       expect([...new Set(leaks)]).toEqual([]);
     }, 300_000);
+
+    it('reports the run from what it persisted, and re-lints the accepted chapters under another layer', async () => {
+      const report = await buildRunReport(pool, projectId, { normalizations: { scene_plans: 2 } });
+      expect(report.policy).toBe('policy/standard@4');
+      expect(report.output_language).toBe('ko');
+      expect(report.run?.status).toBe('completed');
+      expect(report.chapters.map((c) => [c.number, c.status])).toEqual([
+        [1, 'accepted'],
+        [2, 'accepted'],
+      ]);
+      const [ch1, ch2] = report.chapters;
+      // Chapter 1: the first draft, the regressed patch (quarantined) and the patch that passed.
+      expect(ch1?.quarantined.map((q) => q.reason)).toEqual(['patch_regressed:r1']);
+      expect(ch1?.rounds.some((r) => r.quarantined)).toBe(true);
+      expect(ch1?.rounds[ch1.rounds.length - 1]?.accepted).toBe(true);
+      expect(ch2?.rounds[ch2.rounds.length - 1]?.accepted).toBe(true);
+      for (const c of report.chapters) {
+        expect(c.characters).toBeGreaterThan(0);
+        expect(c.plan_check).toBeDefined();
+        for (const r of c.rounds) {
+          expect(r.dimensions.map((d) => d.dimension).sort()).toEqual(
+            ['genre', 'prose', 'structure', 'voice'].sort(),
+          );
+          expect(r.gate_outcome).toBeTruthy();
+        }
+      }
+      const writer = report.roles.find((r) => r.role === 'scene_writer');
+      expect(writer?.calls).toBeGreaterThan(0);
+      expect(writer?.succeeded).toBe(writer?.calls);
+      expect(report.totals.calls).toBe(report.roles.reduce((n, r) => n + r.calls, 0));
+      const md = renderRunReport(report);
+      expect(md).toMatch(/\| 1 \| accepted \| \d+ \|/);
+      expect(md).toMatch(/\(quarantined\)/);
+      expect(md).toMatch(/`scene_plans`: 2/);
+
+      // New projects compose lang/ko@5; under lang/ko@4 the v5 measurements are absent.
+      const pinned = await relintAccepted(pool, projectId);
+      expect(pinned.layer).toBe('lang/ko@5');
+      expect(pinned.chapters.map((c) => c.number)).toEqual([1, 2]);
+      expect(pinned.chapters.every((c) => c.metrics.v5 !== undefined)).toBe(true);
+      const older = await relintAccepted(pool, projectId, { layer: 'lang/ko@4', chapter: 2 });
+      expect(older.layer).toBe('lang/ko@4');
+      expect(older.chapters.map((c) => c.number)).toEqual([2]);
+      expect(older.chapters[0]?.metrics.v5).toBeUndefined();
+    }, 120_000);
   },
 );

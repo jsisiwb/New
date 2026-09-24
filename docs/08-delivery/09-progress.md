@@ -3,6 +3,31 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Run report and Korean re-lint — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report`.
+ADR-0067 records the decisions; the Step 0 improvement audit (§8.4, §10.5, §11) the findings.
+
+**Built:**
+
+- `buildRunReport` / `renderRunReport` and `quality:run-report <project> [--metrics-log=<file>] [--json]`:
+  per chapter every evaluated version's gate outcome, gated dimensions (score, threshold, rubric score, lint
+  composite), severity counts, issue sources and Korean lint findings by rule; plan-check findings;
+  quarantined versions; per role calls, attempts, failed attempts, p50/p90/max latency of succeeded attempts,
+  tokens and cost; the wall clock from the run's creation; the newest normalizer snapshot of a
+  `novel:run --metrics-log` file.
+- `relintAccepted` and `quality:lint-ko <project> [--layer=<ref>] [--chapter=N]`: the Korean lint over accepted
+  chapters with the project's names and exemplars, under the pinned or another language layer.
+
+**Measured:** Korean `standard.v4` run (simulated model): the report lists both accepted chapters with their
+자, chapter 1's quarantined regressed patch among its evaluated versions, the four gated dimensions in every
+round and every role's calls; the re-lint reports v5 measurements under the pinned `lang/ko@5` and none
+under `lang/ko@4`. Against the live Phase A database, while the bible stage was running: four calls (eight
+attempts, five failed), with per-role latency.
+
+**Not done:** the other utilities of audit §11, cost/time projection at intake (§10.2), an A/B harness
+(§8.3).
+
 ## Workstream 6a — concept seeds and the world-rules term in Korean — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds`. ADR-0066 records
