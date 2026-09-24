@@ -1,29 +1,56 @@
-# Yeonjae Studio (연재 스튜디오) — Planning Package
+# Yeonjae Studio (연재 스튜디오)
 
-**State.** The repository holds the planning package (`docs/`, `schemas/`, `examples/`, `tools/`) and its
-implementation: a pnpm workspace with `apps/cli`, `apps/api`, `apps/web`, `apps/worker` and `packages/*`
-(domain, db, gateway, prompts, narrative, prose, context, canon, eval, workflows). What is built, what has run
-and what has not is recorded only in `docs/08-delivery/09-progress.md` (ADR-0043); this file describes the
-product and where to start.
+An AI production studio for **serialized web novels**: a Korean 연재형 웹소설 of 200+ 화 (about 5,000–5,500자
+each) written directly in Korean, or an English serial written in the same Korean-webnovel tradition. The
+repository holds the plan (`docs/`, `schemas/`, `examples/`, `tools/`) and its implementation, a pnpm
+workspace: `apps/cli`, `apps/api`, `apps/web`, `apps/worker` and `packages/*` (domain, db, gateway, prompts,
+narrative, prose, context, canon, eval, workflows). What is built, what has run live and what has not is
+recorded only in `docs/08-delivery/09-progress.md` (ADR-0043). For the whole pipeline in one read, see
+[`docs/HOW-A-KOREAN-NOVEL-IS-MADE.md`](docs/HOW-A-KOREAN-NOVEL-IS-MADE.md).
 
-**Quick start — write a novel (ADR-0051).** With Postgres 16 and a model provider:
+## Quick start — a Korean serial from the CLI
+
+Requirements: Node 22, pnpm 10, PostgreSQL 16, and a model provider (`.env.example` lists every variable,
+names only).
 
 ```bash
-pnpm install && pnpm cli db:migrate
-export YEONJAE_PROVIDER_MODE=live YEONJAE_LIVE_PROVIDER=openai YEONJAE_LIVE_API_KEY=… \
-       YEONJAE_MODEL_DEFAULT=<model> YEONJAE_MODEL_R=<strong-planning-model>
-pnpm --filter @yeonjae/api start          # API + inline novel runner on :8080
-pnpm --filter @yeonjae/web dev            # operator console → "New novel"
+pnpm install && pnpm build && pnpm cli db:migrate
+export YEONJAE_PROVIDER_MODE=notion          # or live / genspark / simulated / replay
+pnpm cli project:create "제목" --policy=policy/standard@11
+pnpm cli novel:start <project> intake.json    # intake → story spec → two story directions
+pnpm cli novel:approve <project> <concept-id> --stop-after=3
+pnpm cli novel:run <project> --status-file=run.json
 ```
 
-Or from the CLI: `pnpm cli project:create "Title" [--policy=<ref>]`, `pnpm cli novel:start <project> intake.json`,
-`pnpm cli novel:approve <project> <concept-id>`, `pnpm cli novel:run <project>`. The studio interprets the
-intake, proposes story directions, and after approval builds the complete Story Bible (cast, world,
-progression system, series blueprint, promises) before writing every chapter through the checkpointed,
-audited production loop. A Korean serial sets `"manuscript_language": "ko"` and
-`target_characters_per_chapter` (자) in its intake (ADR-0054). `YEONJAE_PROVIDER_MODE` selects `live`, the
-operator's `notion` or `genspark` bridge, `simulated` or `replay`; `pnpm cli quality:run-report <project>`
-reports a run from what it persisted. See `.env.example` for every variable (names only).
+The intake is configuration, not prose: premise, genre, characters, tone, forbidden developments,
+`"manuscript_language": "ko"`, `target_characters_per_chapter` (자), and optionally `pov`, `style_sample`,
+`contrast_pairs`, `platform` (`ops/live-runs/phase-a-v7-intake.json` is the one the live runs used). After
+approval the studio builds the full Story Bible (cast in batches, world, progression system, series blueprint,
+promises) and then writes chapter after chapter through the checkpointed, audited production loop. A chapter
+that cannot pass its gates stops as `needs_attention` with the reason; nothing unapproved reaches canon.
+
+**Which policy.** Policies are pinned per project and never change under it; every new behaviour is a new
+version. For a new Korean project use the newest `standard`:
+
+| Policy | Adds (each also contains everything above it) | ADR |
+| --- | --- | --- |
+| `standard@6` | provider retry with backoff, bible cast in three batches | 0072 |
+| `standard@7` | `lang/ko@6` Korean lint, point of view, style sample, contrast pairs, serial-rhythm directives, polish round | 0073, 0074 |
+| `standard@8` | pack budgets sized for Korean, scene length calibration | 0075 |
+| `standard@9` | arc summaries for long-story memory | 0076 |
+| `standard@10` | one patch per cluster of findings in a revision round | 0077 |
+| `standard@11` | patch regression measured against the parent version | 0078 |
+
+**Watching a run.**
+
+- `pnpm cli quality:run-report <project>` — what the run persisted.
+- `pnpm cli story:state <project>` — where the serial stands.
+- `pnpm cli pack:inspect <project> <chapter> <role>` — a context pack against its budget.
+- `pnpm cli cost:project <project> --chapters=200` — the audit projected to a whole serial.
+- `pnpm cli provider:check` — per-class routing.
+
+The API with an inline novel runner and the operator console are `pnpm --filter @yeonjae/api start` and
+`pnpm --filter @yeonjae/web dev`. `pnpm check` runs everything CI runs.
 
 **Purpose of this repository state:** a complete, internally consistent, production-level plan for an AI
 serialized-fiction production studio, written so that an engineering agent can implement it without

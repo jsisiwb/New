@@ -3,6 +3,24 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase D — documentation; Phase B — blocked — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--docs` (stacked on the operator tools).
+
+**Built (D):** `README.md` rewritten around the current product: a Korean-serial quick start, the policy ladder
+`standard@6`–`@11`, and the operator commands. `docs/HOW-A-KOREAN-NOVEL-IS-MADE.md` walks one serial from intake
+to 화 200 with the policy knob behind each step. `.env.example` now lists every variable the code reads (names
+only): the genspark bridge, enforcement mode, rate wait, runner poll and identity, drain and telemetry timing,
+worker health port, the Temporal task queue override, and the development-only insecure-cookie switch.
+
+**Decided (D):** the progress log is not split. ADR-0043 makes this file the single record of status, so an
+archive file would be a second one. It stays newest-first.
+
+**BLOCKED (B):** the gold-set and A/B benchmark needs operator-supplied material: rated Korean chapters (a gold
+set) and a blinded human rating of paired outputs. Existing pieces a harness would build on are
+`packages/eval/src/review-packet.ts` (blinded review packets) and `validate:contrast` (the deterministic contrast
+corpus). No harness was added without data to calibrate it.
+
 ## Phases O and W (tooling) — operator tools and prompt sizes — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92--operator-tools` (stacked on Phase V). ADR-0079 records the decisions.
