@@ -852,3 +852,143 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v6: the cast in three checkpointed batches, retries in the policy (ADR-0072)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    /**
+     * The simulated designer returns its whole cast for any brief, so each batch keeps its share: the
+     * protagonist, then one character plus the protagonist's register-only entry, then the rest.
+     */
+    const byBatch = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'character_designer' || !('json' in out)) return out;
+      const cast = out.json as { characters: { display_name: string; role?: string }[] };
+      const hero = cast.characters.find((c) => c.role === 'protagonist') ?? cast.characters[0];
+      const rest = cast.characters.filter((c) => c !== hero);
+      if (req.user.includes('주인공 한 명만')) return { json: { ...cast, characters: [hero] } };
+      if (req.user.includes('핵심 인물'))
+        return {
+          json: {
+            characters: [
+              ...rest.slice(0, 1),
+              {
+                display_name: hero?.display_name,
+                registers: [
+                  { toward: rest[0]?.display_name, type: 'equal', address_terms: ['선배'] },
+                ],
+              },
+            ],
+            propositions: [],
+          },
+        };
+      return { json: { characters: rest.slice(1), propositions: [] } };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = byBatch(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v6-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@6',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('designs the cast in three checkpointed batches and merges them', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v6-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const designer = seen.filter((r) => r.trace?.role === 'character_designer');
+      expect(designer).toHaveLength(3);
+      expect(designer[0]?.user).toContain('주인공 한 명만');
+      expect(designer[1]?.user).toContain('이미 설계된 인물: 서지안(주인공)');
+      expect(designer[2]?.user).toContain('조연 2~4명');
+
+      // One merged cast artifact; the supplied names all exist as characters.
+      const characters = await pool.query<{ display_name: string }>(
+        "SELECT display_name FROM entities WHERE project_id = $1 AND type = 'character'",
+        [projectId],
+      );
+      const names = characters.rows.map((c) => c.display_name);
+      for (const n of ['서지안', '백태호', '문해린']) expect(names).toContain(n);
+      const batches = await pool.query<{ key: string }>(
+        "SELECT key FROM workflow_artifacts WHERE project_id = $1 AND kind = 'cast_batch' ORDER BY key",
+        [projectId],
+      );
+      expect(batches.rows).toHaveLength(3);
+      // Each batch is its own completed checkpoint, so a rerun replays it instead of calling again.
+      const steps = await pool.query<{ step: string }>(
+        `SELECT js.step FROM job_steps js JOIN jobs j ON j.id = js.job_id
+          WHERE j.project_id = $1 AND js.status = 'completed' AND js.step LIKE 'cast%' ORDER BY js.step`,
+        [projectId],
+      );
+      expect(steps.rows.map((r) => r.step)).toEqual([
+        'cast',
+        'cast_core',
+        'cast_protagonist',
+        'cast_supporting',
+      ]);
+
+      // Every model call carried the policy's retry block; the audit rows record attempts.
+      const calls = await pool.query<{ n: string }>(
+        'SELECT count(*)::text AS n FROM llm_calls WHERE project_id = $1',
+        [projectId],
+      );
+      expect(Number(calls.rows[0]?.n ?? '0')).toBeGreaterThan(0);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);

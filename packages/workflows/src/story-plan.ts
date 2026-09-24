@@ -40,6 +40,14 @@ import { type Gateway } from '@yeonjae/gateway';
 import { resolveWorkflowPins } from './workflow-pins.js';
 import { WorkflowError } from './errors.js';
 import { assertDesignOutput } from './design-output.js';
+import {
+  CAST_BATCHES,
+  castBatchBrief,
+  mergeCastBatches,
+  missingSuppliedNames,
+  newCharacters,
+  type CastBatchOutput,
+} from './cast-batches.js';
 import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   compileFor,
@@ -503,39 +511,54 @@ export async function buildFullBible(
           `Design 6–12 characters: protagonist, antagonist(s), 2–4 allies/mentors, love interest if romance is present, at least one foil. Every character needs registers toward each key counterpart.`,
         ].join('\n');
 
-  const cast = await runDesignStep(ctx, 'cast', `cast:${concept.id}`, async (activityId) => {
-    const call = await modelCall<CastOutput>(ctx, {
-      step: 'cast',
-      family: 'character_designer',
-      activityId,
-      variables: { story_spec: specText, concept: conceptText, cast_brief: castBrief },
-      block,
-    });
-    assertDesignOutput('cast', call.output);
-    if (!Array.isArray(call.output.characters) || call.output.characters.length === 0)
-      throw new WorkflowError('SPEC_INVALID', 'character_designer returned no characters', {
-        step: 'cast',
-        recommendedActions: ['regenerate'],
-      });
+  const requiredNames = [intake.main_character, ...(intake.supporting_characters ?? [])]
+    .filter(isDefined)
+    .map((c) => c.name.trim().toLowerCase());
+  const checkCast = (step: string, output: CastOutput): void => {
     const names = new Set(
-      call.output.characters.map((c) => fieldText(c, 'display_name')?.toLowerCase()),
+      (output.characters ?? []).map((c) => fieldText(c, 'display_name')?.toLowerCase()),
     );
-    const requiredNames = [intake.main_character, ...(intake.supporting_characters ?? [])]
-      .filter(isDefined)
-      .map((c) => c.name.trim().toLowerCase());
     if (names.has(undefined) || requiredNames.some((name) => !names.has(name)))
       incompletePlan(
-        'cast',
+        step,
         'Every character needs a name, and supplied characters must be retained.',
       );
-    const ref = await saveArtifact(ctx, {
-      step: 'cast',
-      kind: 'cast',
-      key: concept.id,
-      payload: call.output,
-    });
-    return { output: call.output, artifactId: ref.artifact_id };
-  });
+  };
+
+  const cast =
+    ctx.policy.planning?.design_batches === true
+      ? await designCastInBatches(ctx, {
+          specText,
+          conceptText,
+          intake,
+          concept,
+          block,
+          lang,
+          checkCast,
+        })
+      : await runDesignStep(ctx, 'cast', `cast:${concept.id}`, async (activityId) => {
+          const call = await modelCall<CastOutput>(ctx, {
+            step: 'cast',
+            family: 'character_designer',
+            activityId,
+            variables: { story_spec: specText, concept: conceptText, cast_brief: castBrief },
+            block,
+          });
+          assertDesignOutput('cast', call.output);
+          if (!Array.isArray(call.output.characters) || call.output.characters.length === 0)
+            throw new WorkflowError('SPEC_INVALID', 'character_designer returned no characters', {
+              step: 'cast',
+              recommendedActions: ['regenerate'],
+            });
+          checkCast('cast', call.output);
+          const ref = await saveArtifact(ctx, {
+            step: 'cast',
+            kind: 'cast',
+            key: concept.id,
+            payload: call.output,
+          });
+          return { output: call.output, artifactId: ref.artifact_id };
+        });
 
   const world = await runDesignStep(ctx, 'world', `world:${concept.id}`, async (activityId) => {
     const call = await modelCall<WorldOutput>(ctx, {
@@ -1763,6 +1786,88 @@ async function runDesignStep<T>(
       }
       throw err;
     }
+  });
+}
+
+/**
+ * The cast in three checkpointed batches under `planning.design_batches` (ADR-0072): protagonist, core
+ * cast, supporting cast. Each batch is its own step and artifact, so a rerun replays the completed batches
+ * and calls only the first missing one; the merged cast is saved as the `cast` artifact the single-call
+ * path saves, and bible assembly reads it the same way.
+ */
+async function designCastInBatches(
+  ctx: WorkflowContext,
+  input: {
+    readonly specText: string;
+    readonly conceptText: string;
+    readonly intake: StoryIntake;
+    readonly concept: Concept;
+    readonly block: ReturnType<typeof compileFor>;
+    readonly lang: 'en' | 'ko';
+    readonly checkCast: (step: string, output: CastOutput) => void;
+  },
+): Promise<{ output: CastOutput; artifactId: string }> {
+  const outputs: CastBatchOutput[] = [];
+  for (const batch of CAST_BATCHES) {
+    const step = `cast_${batch}`;
+    const designed = mergeCastBatches(outputs).characters ?? [];
+    const result = await runDesignStep(
+      ctx,
+      step,
+      `cast:${input.concept.id}:${batch}`,
+      async (activityId) => {
+        const call = await modelCall<CastOutput>(ctx, {
+          step,
+          family: 'character_designer',
+          activityId,
+          variables: {
+            story_spec: input.specText,
+            concept: input.conceptText,
+            cast_brief: castBatchBrief(batch, input.lang, { intake: input.intake, designed }),
+          },
+          block: input.block,
+        });
+        const output: CastBatchOutput = call.output;
+        // Register-only entries for characters designed earlier are not designs; only new characters
+        // must carry the full design fields.
+        assertDesignOutput('cast', { ...call.output, characters: newCharacters(output, designed) });
+        if (newCharacters(output, designed).length === 0)
+          throw new WorkflowError(
+            'SPEC_INVALID',
+            `character_designer returned no new characters for the ${batch} batch`,
+            { step, recommendedActions: ['regenerate'] },
+          );
+        // Supplied characters must exist once the last batch is in; a miss regenerates that batch,
+        // whose brief names the characters still missing.
+        if (
+          batch === 'supporting' &&
+          missingSuppliedNames(
+            input.intake,
+            mergeCastBatches([...outputs, output]).characters ?? [],
+          ).length > 0
+        )
+          input.checkCast(step, mergeCastBatches([...outputs, output]));
+        const ref = await saveArtifact(ctx, {
+          step,
+          kind: 'cast_batch',
+          key: `${input.concept.id}:${batch}`,
+          payload: call.output,
+        });
+        return { output: call.output, artifactId: ref.artifact_id };
+      },
+    );
+    outputs.push(result.output);
+  }
+  return runStep(ctx, 'cast', async () => {
+    const merged: CastOutput = mergeCastBatches(outputs);
+    input.checkCast('cast', merged);
+    const ref = await saveArtifact(ctx, {
+      step: 'cast',
+      kind: 'cast',
+      key: input.concept.id,
+      payload: merged,
+    });
+    return { output: merged, artifactId: ref.artifact_id };
   });
 }
 

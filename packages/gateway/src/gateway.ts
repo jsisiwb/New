@@ -39,6 +39,7 @@ import {
   type ModelClass,
   type ModelParams,
   type Provider,
+  type ProviderRetryPolicy,
   type ProviderResponse,
 } from './types.js';
 
@@ -165,6 +166,8 @@ export interface AuditRecord {
         readonly cost_cents: number;
         readonly usage: ProviderResponse['usage'];
         readonly latency_ms: number;
+        /** Wait before the next attempt under the request's retry policy (ADR-0072); absent: none. */
+        readonly backoff_ms?: number | undefined;
       }[]
     | undefined;
   /** Prompt and output text are never logged in plaintext; only hashes and sizes live on the record. */
@@ -241,6 +244,8 @@ export interface GatewayOptions {
   readonly tokensPerWord?: number | undefined;
   /** Injectable timers so a test can drive a deadline or a poll interval without sleeping. */
   readonly timers?: TimerFns | undefined;
+  /** Uniform [0,1) source for backoff jitter (ADR-0072); injectable so a test is deterministic. */
+  readonly random?: (() => number) | undefined;
   /** Poll cadence for the durable cancellation observer. Defaults to `DURABLE_CANCEL_POLL_MS`. */
   readonly cancelPollMs?: number | undefined;
 }
@@ -290,8 +295,64 @@ export function isBudgetExhausted(err: unknown): boolean {
   );
 }
 
+/** Attempts a retry policy allows per call: its `max_attempts`, clamped to 1–8. */
+export function retryAttemptCap(policy: ProviderRetryPolicy | undefined): number {
+  if (!policy) return 4;
+  return Math.min(8, Math.max(1, Math.floor(policy.max_attempts)));
+}
+
+/**
+ * The wait after the `failures`-th retryable failure of a call (ADR-0072): `base × multiplier^(n−1)`,
+ * capped at `max_delay_ms`; with `full` jitter a uniform share of it, so parallel callers that failed
+ * together do not retry together.
+ */
+export function backoffDelayMs(
+  policy: ProviderRetryPolicy,
+  failures: number,
+  random: () => number = Math.random,
+): number {
+  const exponential = Math.min(
+    policy.max_delay_ms,
+    policy.base_delay_ms * Math.pow(Math.max(1, policy.multiplier), Math.max(0, failures - 1)),
+  );
+  const delay =
+    policy.jitter === 'full' ? exponential * Math.min(1, Math.max(0, random())) : exponential;
+  return Math.max(0, Math.floor(delay));
+}
+
+/** An answer with nothing in it: no text (or only whitespace), no JSON, and not a content filter. */
+function isEmptyReply(res: ProviderResponse): boolean {
+  return (
+    (res.text === undefined || res.text.trim() === '') &&
+    res.json === undefined &&
+    res.finishReason !== 'content_filter'
+  );
+}
+
 export class Gateway {
   constructor(private readonly opts: GatewayOptions) {}
+
+  /** Wait `ms`, returning early when the call is cancelled; the loop's gate then settles the cancel. */
+  private backoff(ms: number, signal: AbortSignal): Promise<void> {
+    if (ms <= 0 || signal.aborted) return Promise.resolve();
+    const timers: TimerFns = this.opts.timers ?? {
+      setTimeout: (fn, delay) => setTimeout(fn, delay),
+      clearTimeout: (h) => {
+        clearTimeout(h as ReturnType<typeof setTimeout>);
+      },
+    };
+    return new Promise((resolve) => {
+      const onAbort = (): void => {
+        timers.clearTimeout(timer);
+        resolve();
+      };
+      const timer = timers.setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, ms);
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+  }
 
   /**
    * Record one counter, with labels bounded at the call site.
@@ -488,6 +549,24 @@ export class Gateway {
     /** Usage a provider reported for an attempt that was then discarded by a cancellation race. */
     let discardedUsage: ProviderResponse['usage'] | undefined;
     let responseDiscarded = false;
+    // Retry policy (ADR-0072). Without one the loop behaves exactly as before.
+    const retry = req.retry;
+    const maxAttempts = retryAttemptCap(retry);
+    let retryableFailures = 0;
+    /** Wait owed before the next attempt; taken at the top of the loop, after the admission slot is freed. */
+    let pendingBackoffMs = 0;
+    /**
+     * After a retryable failure: move to the next route (wrapping to the first under a retry policy),
+     * and return the backoff owed before the next attempt, if one is still allowed.
+     */
+    const nextRouteAfterRetryable = (): number => {
+      routeIdx++;
+      if (!retry) return 0;
+      if (routeIdx >= routes.length) routeIdx = 0;
+      retryableFailures++;
+      if (attempt >= maxAttempts) return 0;
+      return backoffDelayMs(retry, retryableFailures, this.opts.random ?? Math.random);
+    };
 
     /**
      * Settle the call as cancelled: one audit row, the reservation released at ACTUAL cost, and the
@@ -534,12 +613,16 @@ export class Gateway {
     };
 
     try {
-      while (routeIdx < routes.length && attempt < 4) {
+      while (routeIdx < routes.length && attempt < maxAttempts) {
         const route = routes[routeIdx];
         if (!route) break;
         const provider = this.opts.providers.get(route.provider);
         if (!provider)
           throw new GatewayError('PROVIDER_FAILED', `provider ${route.provider} not configured`);
+        if (pendingBackoffMs > 0) {
+          await this.backoff(pendingBackoffMs, handle.signal);
+          pendingBackoffMs = 0;
+        }
         /**
          * The gate before EVERY attempt.
          *
@@ -717,6 +800,7 @@ export class Gateway {
             class: 'PROVIDER_FAILED',
             message: err instanceof Error ? err.message : String(err),
           };
+          const backoffMs = isRetryable(failureClass) ? nextRouteAfterRetryable() : 0;
           attemptRecords.push({
             attempt,
             model_id: route.modelId,
@@ -727,6 +811,7 @@ export class Gateway {
             cost_cents: 0,
             usage: { input: 0, output: 0, cached: 0 },
             latency_ms: 0,
+            ...(retry ? { backoff_ms: backoffMs } : {}),
           });
           this.count(METRIC.providerAttempts, {
             provider: route.provider,
@@ -739,7 +824,7 @@ export class Gateway {
           this.count(METRIC.retries, { reason: failureClass });
           this.count(METRIC.fallbacks, { reason: failureClass });
           fallbackFrom = route.modelId;
-          routeIdx++;
+          pendingBackoffMs = backoffMs;
           continue;
         } finally {
           /**
@@ -768,6 +853,38 @@ export class Gateway {
             latency_ms: res.latencyMs,
           });
         };
+
+        // 2b. an empty reply is a provider fault under a retry policy that says so (ADR-0072)
+        if (retry?.retry_empty_reply && isEmptyReply(res)) {
+          lastFailureClass = 'retryable_provider';
+          lastError = {
+            class: 'PROVIDER_FAILED',
+            message: 'provider returned an empty completion',
+          };
+          const backoffMs = nextRouteAfterRetryable();
+          attemptRecords.push({
+            attempt,
+            model_id: route.modelId,
+            provider: route.provider,
+            outcome: 'failed',
+            failure_class: 'retryable_provider',
+            error_class: 'EMPTY_REPLY',
+            cost_cents: attemptCost,
+            usage: res.usage,
+            latency_ms: res.latencyMs,
+            backoff_ms: backoffMs,
+          });
+          this.count(METRIC.providerAttempts, {
+            provider: route.provider,
+            model_class: req.modelClass,
+            status: 'failed',
+          });
+          this.count(METRIC.retries, { reason: 'retryable_provider' });
+          this.count(METRIC.fallbacks, { reason: 'retryable_provider' });
+          fallbackFrom = route.modelId;
+          pendingBackoffMs = backoffMs;
+          continue;
+        }
 
         // 3. truncation
         if (res.finishReason === 'length') {

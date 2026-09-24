@@ -89,6 +89,21 @@ export interface ProductionPolicy {
      * How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON.
      */
     scene_plan_format?: 'json' | 'labelled';
+    /**
+     * Generate the bible's cast in three checkpointed batches — protagonist, core cast, supporting cast — instead of one large character_designer call (ADR-0072). Each batch is its own checkpoint, so a rerun resumes after the last completed batch; later batches receive the names already designed and add the protagonist's registers toward the new characters. Absent or false: one call, as before.
+     */
+    design_batches?: boolean;
+  };
+  /**
+   * Retry and backoff for retryable provider failures (ADR-0072): HTTP 429 and 5xx (502/503/504 included), transport faults and, when retry_empty_reply is true, an empty completion. After each such failure the gateway waits base_delay_ms × multiplier^(n−1), capped at max_delay_ms (with full jitter a uniform share of it), moves to the class's next route and wraps to the first, up to max_attempts provider attempts per call. Every attempt and its backoff is recorded on the call's audit row. Absent: the next route at once, at most four attempts, as before.
+   */
+  provider_retry?: {
+    max_attempts: number;
+    base_delay_ms: number;
+    max_delay_ms: number;
+    multiplier: number;
+    jitter: 'full' | 'none';
+    retry_empty_reply: boolean;
   };
   candidates: {
     chapter_candidates: number;

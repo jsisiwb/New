@@ -62,7 +62,22 @@
       "additionalProperties": false,
       "properties": {
         "plan_check": {"type": "boolean", "description": "Check the contract and scene plans against the state ledgers, first meetings and the story clock before drafting. A blocking finding (an on-page character the ledger records as dead, story time running backwards) stops the chapter as PLAN_INCONSISTENT before any draft is written; other findings are recorded with the plan."},
-        "scene_plan_format": {"type": "string", "enum": ["json", "labelled"], "description": "How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON."}
+        "scene_plan_format": {"type": "string", "enum": ["json", "labelled"], "description": "How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON."},
+        "design_batches": {"type": "boolean", "description": "Generate the bible's cast in three checkpointed batches — protagonist, core cast, supporting cast — instead of one large character_designer call (ADR-0072). Each batch is its own checkpoint, so a rerun resumes after the last completed batch; later batches receive the names already designed and add the protagonist's registers toward the new characters. Absent or false: one call, as before."}
+      }
+    },
+    "provider_retry": {
+      "type": "object",
+      "description": "Retry and backoff for retryable provider failures (ADR-0072): HTTP 429 and 5xx (502/503/504 included), transport faults and, when retry_empty_reply is true, an empty completion. After each such failure the gateway waits base_delay_ms × multiplier^(n−1), capped at max_delay_ms (with full jitter a uniform share of it), moves to the class's next route and wraps to the first, up to max_attempts provider attempts per call. Every attempt and its backoff is recorded on the call's audit row. Absent: the next route at once, at most four attempts, as before.",
+      "required": ["max_attempts", "base_delay_ms", "max_delay_ms", "multiplier", "jitter", "retry_empty_reply"],
+      "additionalProperties": false,
+      "properties": {
+        "max_attempts": {"type": "integer", "minimum": 1, "maximum": 8},
+        "base_delay_ms": {"type": "integer", "minimum": 0},
+        "max_delay_ms": {"type": "integer", "minimum": 0},
+        "multiplier": {"type": "number", "minimum": 1},
+        "jitter": {"type": "string", "enum": ["full", "none"]},
+        "retry_empty_reply": {"type": "boolean"}
       }
     },
     "candidates": {

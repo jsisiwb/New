@@ -539,6 +539,8 @@ export async function modelCall<T = unknown>(
     ...(answerSchema ? { responseSchema: { name: pv.family, schema: answerSchema } } : {}),
     params: { temperature: pv.params.temperature, max_tokens: pv.params.max_tokens },
     modelClass: pv.model_class,
+    // Retry and backoff come from the pinned policy (ADR-0072); earlier pins carry none.
+    ...(ctx.policy.provider_retry ? { retry: ctx.policy.provider_retry } : {}),
   };
   let res: GatewayResponse;
   try {
