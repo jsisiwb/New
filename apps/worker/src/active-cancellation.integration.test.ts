@@ -563,9 +563,13 @@ run('active provider-request cancellation (durable state)', () => {
     let commitsBeforeLoss = 0;
     const { error, fired } = await whileRunning(
       async () => {
-        commitsBeforeLoss = await canonCommits();
         await releaseTargetLease(pool, mine);
         await acquire('worker-b');
+        // Counted only once the rival holds the lease. Counting before the release raced the run,
+        // whose legitimately fenced commits could land in between (R1, ADR-0071). A commit in flight
+        // holds the lease row FOR SHARE, so the rival's acquisition waits for it: nothing the old
+        // holder writes can land after this read.
+        commitsBeforeLoss = await canonCommits();
       },
       { lease: mine },
     );

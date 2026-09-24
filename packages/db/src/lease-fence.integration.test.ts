@@ -90,6 +90,26 @@ run('lease fence assertion is atomic with the write it protects', () => {
     return Number(r.rows[0]?.n ?? '0');
   }
 
+  /**
+   * Resolve once some backend is waiting on a lock held by `holderPid`.
+   *
+   * This is the barrier the steal test synchronises on: the server's own lock graph
+   * (`pg_blocking_pids`), not elapsed time. The deadline only bounds a broken implementation, whose
+   * steal would never wait at all.
+   */
+  async function untilBlockedBy(holderPid: number, deadlineMs = 15_000): Promise<boolean> {
+    const until = Date.now() + deadlineMs;
+    while (Date.now() < until) {
+      const r = await pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))`,
+        [holderPid],
+      );
+      if (Number(r.rows[0]?.n ?? '0') > 0) return true;
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    return false;
+  }
+
   // ---- the barrier itself ------------------------------------------------------------------------------
 
   it('refuses the protected write when the lease was stolen after the pre-step ownership read', async () => {
@@ -140,23 +160,25 @@ run('lease fence assertion is atomic with the write it protects', () => {
      * the lock the steal could commit first and the protected write could still land afterwards — the same
      * gap in a different disguise.
      *
-     * The steal is launched without awaiting it inside the transaction (awaiting it there would simply
-     * block on the lock forever), and the ordering is asserted afterwards.
+     * The steal is launched from INSIDE the fenced transaction, after its assertion took the share lock,
+     * and the transaction commits only once the server reports the steal's backend as blocked by it.
+     * The earlier version slept 50 ms before stealing and compared JS-side flags afterwards; under load
+     * the steal could start before the share lock existed, and the steal's reply could be read before
+     * the COMMIT's (Postgres releases locks before it answers the committing client), so it failed
+     * intermittently on a correct implementation (R1, ADR-0071).
      */
-    /**
-     * State in one mutable object, read through a property.
-     *
-     * A plain `let` boolean is narrowed to `false` by TypeScript after initialization, so the later check
-     * is reported as always-truthy and the assertion would be vacuous — the same narrowing trap the
-     * workflow's signal flags document. A property read is re-evaluated, which is the real semantics of a
-     * flag another task flips.
-     */
-    const order = { writeCommitted: false, stealResolvedBeforeCommit: false };
+    // Read through a property: a `let` flag would be narrowed by TypeScript and the check made vacuous.
+    const observed = { stealWaitedOnTheWrite: false };
+    let stealer: ReturnType<typeof acquireTargetLease> | undefined;
 
-    const stealer = (async () => {
-      // Give the fenced transaction time to take its share lock, then contend for the row.
-      await new Promise((r) => setTimeout(r, 50));
-      const lease = await acquireTargetLease(pool, {
+    await withFencedTransaction(pool, mine, async (client) => {
+      await client.query(
+        `INSERT INTO chapters (workspace_id, project_id, number, status) VALUES ($1, $2, 1, 'accepted')`,
+        [workspaceId, projectId],
+      );
+      const self = await client.query<{ pid: number }>('SELECT pg_backend_pid() AS pid');
+      const holderPid = self.rows[0]?.pid ?? -1;
+      stealer = acquireTargetLease(pool, {
         workspaceId,
         projectId,
         targetKind: 'chapter',
@@ -164,24 +186,16 @@ run('lease fence assertion is atomic with the write it protects', () => {
         holderWorkflowId: 'worker-b',
         ttlSeconds: 60,
       });
-      if (!order.writeCommitted) order.stealResolvedBeforeCommit = true;
-      return lease;
-    })();
-
-    await withFencedTransaction(pool, mine, async (client) => {
-      await client.query(
-        `INSERT INTO chapters (workspace_id, project_id, number, status) VALUES ($1, $2, 1, 'accepted')`,
-        [workspaceId, projectId],
-      );
-      // Hold the transaction open long enough that an unserialized steal would certainly finish first.
-      await new Promise((r) => setTimeout(r, 300));
+      observed.stealWaitedOnTheWrite = await untilBlockedBy(holderPid);
     });
-    order.writeCommitted = true;
-    await stealer;
+    const rival = await stealer;
 
     // The rightful holder's write landed, and the steal could not slip in ahead of it.
-    expect(order.stealResolvedBeforeCommit).toBe(false);
+    expect(observed.stealWaitedOnTheWrite).toBe(true);
     expect(await marks()).toBe(1);
+    // Once it got the row, the contender found a live lease and was refused: worker-a still holds it.
+    expect(rival).toBeUndefined();
+    expect((await leaseOwnership(pool, mine)).owned).toBe(true);
   }, 120_000);
 
   it('a stale worker cannot mark a chapter accepted through the fenced helper', async () => {
