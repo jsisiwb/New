@@ -3,6 +3,34 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase L — long-story context, opt-in through `standard.v9` — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--long-context` (stacked on Phase K). ADR-0076 records the decisions.
+
+**Built:**
+
+- L1 hierarchical story memory: `arc_summarizer` (prompt family 4.5.0, Korean) writes one arc summary (L2) per
+  accepted arc from its accepted L1 summaries; `ensureArcSummary` runs before an arc is planned, once per
+  chapter range (`insertArcSummaryOnce`); the story so far keeps the last 20 accepted chapters as L1 blocks and
+  one item per older arc (`storySoFarItems`, pure; ADR-0061's output unchanged without the block); the previous
+  arc's summary joins the next arc planner's brief.
+- L2 200-화 simulation of the story-so-far section (`story-memory.test.ts`).
+- L3 Korean retrieval fixture 26 → 60 queries with recall@1 / MRR floors.
+- Live defect L-1: a reviser patch without a valid `scope` gets one inferred from its text.
+- `standard.v9` = `standard.v8` + `context.story_memory`.
+
+**Measured (deterministic):** 200-화 simulation — story-so-far tokens (Korean estimator) flat 19,611 / 39,641 /
+59,782 / 79,922 vs hierarchical 12,634 / 15,179 / 17,798 / 20,363 at 50/100/150/200화, every chapter represented
+once. Retrieval on 60 queries: Korean recall@5 1.00, recall@1 0.82, MRR 0.88; English FTS 0.85 / 0.67 / 0.74.
+Korean `standard.v9` simulated run: an arc boundary makes one summarizer call, one L2 row and the next arc
+planner's brief; 0 Latin-script leaks. Unit: `story-memory.test.ts` 5/5, `revision.test.ts` 8/8, prompt
+registry 15/15 and output shapes 98/98 with the new family; the context, Korean novel and story-plan suites
+(85 tests) pass unchanged.
+
+**Not done:** season summaries (L3); writer voice cards from accepted utterances (speaker annotations are not
+persisted for accepted versions); a character-state table beyond ADR-0063's ledgers; live evidence of an arc
+boundary (a live run would need ten accepted chapters).
+
 ## Phase K — prose quality for Korean manuscripts, opt-in through `standard.v7` — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92--korean-prose` (stacked on Phase A). ADR-0073 records the decisions; ADR-0074

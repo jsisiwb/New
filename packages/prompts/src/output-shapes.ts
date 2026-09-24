@@ -73,6 +73,7 @@ export const OUTPUT_SHAPES: Readonly<Record<string, OutputShape>> = {
     schema: 'concept.schema.json',
     workflowFilled: ['id', 'project_id', 'spec_version', 'status'],
   },
+  arc_summarizer: answer('arc_summarizer'),
   continuity_checker: answer('continuity_checker'),
   contract_checker: answer('contract_checker'),
   factual_summarizer: answer('factual_summarizer'),

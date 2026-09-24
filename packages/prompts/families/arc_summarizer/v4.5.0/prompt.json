@@ -1,0 +1,34 @@
+{
+  "family": "arc_summarizer",
+  "version": "4.5.0",
+  "role": "arc_summarizer",
+  "purpose": "Korean webnovel arc summarizer for hierarchical story memory (ADR-0076), 4.5.0.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "C",
+  "input_variables": [
+    "arc_label",
+    "chapter_summaries",
+    "ending_hook",
+    "max_chars"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 1500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.5.0 — arc_summarizer (ADR-0076): one arc summary (L2) from the accepted L1 summaries of a finished arc, for the story-so-far section of long serials.",
+  "regression_cases": [
+    "arc_summarizer.fixture.smoke"
+  ],
+  "content_hash": "sha256:251932b4dbdcd50342c5838126a781aed2e79fb18bf8fe8abacd59ef1e13934d"
+}

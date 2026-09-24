@@ -16,8 +16,23 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@6',
       'policy/standard@7',
       'policy/standard@8',
+      'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v9 is standard.v8 with hierarchical story memory (ADR-0076)', () => {
+    const v8 = requirePolicy('policy/standard@8', policies);
+    const v9 = requirePolicy('policy/standard@9', policies);
+    expect(v9.context).toEqual({
+      ...v8.context,
+      story_memory: { arc_summaries: true, recent_chapters: 20, l2_max_chars: 500 },
+    });
+    const strip = (p: typeof v8) => {
+      const { version: _v, name: _n, content_hash: _h, context: _c, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v9)).toEqual(strip(v8));
   });
 
   it('standard.v8 is standard.v7 with Korean-calibrated budgets and scene length calibration (ADR-0075)', () => {

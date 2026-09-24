@@ -85,13 +85,30 @@ export function anchorPatchSpan(
     : undefined;
 }
 
+const PATCH_SCOPES: readonly string[] = ['sentence', 'paragraph', 'dialogue', 'scene', 'seam'];
+
 /**
  * Live-model near-misses of the patch fields, rewritten only where the raw value cannot validate: claim
  * pairs become `before → after` lines, a boolean `regression` (the workflow's report, not the model's) is
  * dropped, and prose written where fact ids belong is dropped so the acknowledgement check still decides.
+ * A patch with replacement text but no valid `scope` (live `standard.v8`, ADR-0076) gets the scope its text
+ * shows: several paragraphs are a scene rewrite — which re-runs the claim checkers — one line with several
+ * sentences a paragraph, else a sentence.
  */
 export function normalizePatchFields(raw: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...raw };
+  if (
+    typeof raw.new_text === 'string' &&
+    !(typeof raw.scope === 'string' && PATCH_SCOPES.includes(raw.scope))
+  ) {
+    const t = raw.new_text.trim();
+    const sentences = t.match(/[.!?…。]["'”’」』]?(?=\s|$)/g)?.length ?? 0;
+    out.scope = /\n\s*\n/.test(t)
+      ? 'scene'
+      : t.includes('\n') || sentences > 1
+        ? 'paragraph'
+        : 'sentence';
+  }
   const claims = raw.changed_claims;
   if (typeof claims === 'string') out.changed_claims = claims.trim() ? [claims] : [];
   else if (Array.isArray(claims))

@@ -132,6 +132,10 @@ accepted chapter (amortized).
 [10] release lease; job complete with cost summary
 ```
 
+**Arc summaries (ADR-0076).** Before an arc is planned, under `context.story_memory.arc_summaries`, each
+earlier arc whose chapters are all accepted gets one L2 summary from its accepted L1 summaries
+(`arc_summarizer`, class C, once per arc); the story-so-far section and the next arc planner read it.
+
 **Requested scene length (ADR-0075).** Under a policy with `length.scene_calibration` the scene writer in [2]
 is asked for `request_ratio` × the scene's target, and with `redistribute` the targets of the scenes still to
 be drafted are rescaled by the chapter's remaining budget — the planned total minus what the earlier scenes

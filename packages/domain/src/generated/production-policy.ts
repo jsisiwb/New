@@ -193,6 +193,14 @@ export interface ProductionPolicy {
     writer_input_budget_tokens?: number;
     l1_summary_max_words?: number;
     /**
+     * ADR-0076: hierarchical story memory. With arc_summaries, when a chapter's arc starts, every earlier scheduled arc whose chapters are all accepted gets one arc summary (L2) from its accepted L1 summaries (the arc_summarizer role, at most l2_max_chars), and the story-so-far section gives the writer, the chapter planner and the continuity checker the L1 summaries of the last recent_chapters accepted chapters in blocks of ten and one L2 item for each older arc. Absent: the story so far is every L1 summary in blocks of ten (ADR-0061).
+     */
+    story_memory?: {
+      arc_summaries: boolean;
+      recent_chapters: number;
+      l2_max_chars: number;
+    };
+    /**
      * Input token budget per pack template other than the writer (which uses writer_input_budget_tokens); keys are template names such as pack.chapter_planner
      */
     input_budget_tokens?: {

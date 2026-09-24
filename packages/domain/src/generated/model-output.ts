@@ -681,6 +681,13 @@ export interface LengthTarget {
 }
 /**
  * This interface was referenced by `ModelAnswersWithoutADocumentSchema`'s JSON-Schema
+ * via the `definition` "arc_summarizer".
+ */
+export interface ArcSummarizer {
+  summary_l2: string;
+}
+/**
+ * This interface was referenced by `ModelAnswersWithoutADocumentSchema`'s JSON-Schema
  * via the `definition` "factual_summarizer".
  */
 export interface FactualSummarizer {

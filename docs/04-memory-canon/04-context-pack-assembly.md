@@ -180,6 +180,13 @@ Chapter k−1 is not the only memory. Beyond it:
   every accepted chapter before k−1, in blocks of ten chapters, one item per block. The newest block ranks
   first, so a tight budget sheds the oldest. The digest is deterministic: accepted summaries only, never a
   model call and never a draft.
+- **Arc summaries (ADR-0076).** Under `context.story_memory.arc_summaries`, every earlier arc whose chapters
+  are all accepted gets one arc summary (L2) before the next arc is planned, written by `arc_summarizer` from
+  the arc's accepted L1 summaries and its last ending hook; the first stored summary of a range wins. The
+  story so far then keeps the L1 lines of the last `recent_chapters` accepted chapters (starting value 20,
+  `standard.v9`) in blocks of ten and gives each older summarized arc one item, ranked above chapter blocks
+  of the same age. A summary is read only while every chapter it covers is accepted. The previous arc's
+  summary also joins the next arc planner's brief.
 - **First meetings** (`first_meetings`, T1; same templates). For each pair of on-page participants, this
   gives the accepted chapter in which both first took part in a canonical event, or states that they
   never have. Pairs related from before the story are marked as related. A pair that has not met must not

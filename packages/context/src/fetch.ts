@@ -17,6 +17,7 @@ import {
   knowledgeOfKnowerAt,
   l1SummaryFor,
   promisesForChapter,
+  acceptedArcSummariesBefore,
   acceptedSummariesBefore,
   firstMeetings,
   propositionsById,
@@ -40,6 +41,7 @@ import { narrativeOrd, type Generated, type StoryClock } from '@yeonjae/domain';
 import { compileBlock, type ComposedIdentity, type ParticipantDigest } from '@yeonjae/narrative';
 import { segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { compileActiveConstraintSet, type ActiveConstraintSet } from './constraints.js';
+import { storySoFarItems } from './story-memory.js';
 import { ContextError } from './errors.js';
 import { cmp } from './hash.js';
 import { buildQueryPlan, type QueryPlan } from './plan.js';
@@ -627,51 +629,35 @@ function namedSection(
   return spec ? { name: spec.name, tier: spec.tier } : undefined;
 }
 
-/** Chapters per story-so-far block. */
-const DIGEST_BLOCK = 10;
-
 /**
- * The story so far (ADR-0061): the L1 summaries of every accepted chapter before the previous one, in blocks
- * of ten chapters, newest block ranked first so a tight budget sheds the oldest. Deterministic: a digest of
- * accepted summaries, never a model call and never a draft.
+ * The story so far (ADR-0061, ADR-0076): see `storySoFarItems`. Under `context.story_memory.arc_summaries`
+ * the arc summaries (L2) of accepted arcs older than the recent window stand in for their chapters' L1 lines.
  */
-async function fetchStorySoFar(ctx: Ctx, out: Item[]): Promise<void> {
+async function fetchStorySoFar(
+  ctx: Ctx,
+  out: Item[],
+  policyContext: ProductionPolicy['context'],
+): Promise<void> {
   const sec = namedSection(ctx.template, 'story_so_far', 'summary');
   const prev = ctx.plan.previousChapterNo;
   if (!sec || prev === undefined) return;
-  const rows = await acceptedSummariesBefore(ctx.db, ctx.projectId, prev);
-  if (rows.length === 0) return;
-  const ko = ctx.lang === 'ko';
-  const blocks = new Map<number, typeof rows>();
-  for (const r of rows) {
-    const b = Math.floor((r.chapter_no - 1) / DIGEST_BLOCK);
-    blocks.set(b, [...(blocks.get(b) ?? []), r]);
-  }
-  const newest = Math.max(...blocks.keys());
-  for (const [b, block] of blocks) {
-    const from = block[0]?.chapter_no ?? 0;
-    const to = block[block.length - 1]?.chapter_no ?? 0;
-    const lines = block.map((r) =>
-      ko ? `${r.chapter_no}화: ${r.text}` : `Ch.${r.chapter_no}: ${r.text}`,
-    );
-    out.push({
-      kind: 'summary',
-      id: `story_so_far:${from}-${to}`,
-      section: sec.name,
-      tier: sec.tier,
-      provenance: 'summary',
-      source: {
-        kind: 'summary',
-        ref: block.map((r) => r.summary_id).join(','),
-        version: `L1-digest@canon${ctx.canonVersion}`,
-        project_id: ctx.projectId,
-      },
-      text: `${ko ? `${from}~${to}화` : `Chapters ${from}–${to}`}\n${lines.join('\n')}`,
-      materiality: 'contextual',
-      signals: { recency: newest === 0 ? 1 : b / newest, entity_overlap: 0, importance: 0.5 },
-      dedupeKey: `story_so_far:${from}-${to}`,
-    });
-  }
+  const l1 = await acceptedSummariesBefore(ctx.db, ctx.projectId, prev);
+  const memory = policyContext.story_memory?.arc_summaries
+    ? { recentChapters: policyContext.story_memory.recent_chapters }
+    : undefined;
+  const l2 = memory ? await acceptedArcSummariesBefore(ctx.db, ctx.projectId, prev) : undefined;
+  out.push(
+    ...storySoFarItems({
+      l1,
+      l2,
+      lang: ctx.lang,
+      section: sec,
+      canonVersion: ctx.canonVersion,
+      projectId: ctx.projectId,
+      previousChapterNo: prev,
+      memory,
+    }),
+  );
 }
 
 /**
@@ -1506,7 +1492,7 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
     seenEvents = await fetchEvents(ctx, items);
     await fetchWorldRules(ctx, items);
     previous = await fetchPreviousChapter(ctx, items, opts.policy.context);
-    await fetchStorySoFar(ctx, items);
+    await fetchStorySoFar(ctx, items, opts.policy.context);
     const chapterText = await chapterTextItem(ctx, opts);
     if (chapterText) items.push(chapterText);
   } catch (err) {

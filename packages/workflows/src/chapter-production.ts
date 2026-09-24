@@ -54,6 +54,7 @@ import {
 } from './drafting.js';
 import { evaluateVersion, revisionTargets, type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
+import { ensureArcSummary } from './arc-summary.js';
 import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   buildStoryBible,
@@ -931,6 +932,19 @@ async function planFromBlueprint(
     previousArcExit = ko
       ? `${planned ? `(계획) ${planned}. ` : ''}(승인된 원고, ${actual.chapterNo}화에서 실제로 끝난 상태 — 계획과 다르면 이쪽이 우선한다) ${actual.summary}${actual.hook ? ` 마지막 장면: “${actual.hook}”` : ''}`
       : `${planned ? `(planned) ${planned}. ` : ''}(accepted text: how chapter ${actual.chapterNo} actually ended — this wins over the plan) ${actual.summary}${actual.hook ? ` Last scene: “${actual.hook}”` : ''}`;
+  }
+  // ADR-0076: every earlier arc whose chapters are all accepted gets its arc summary (L2) before this arc
+  // is planned; the previous arc's summary joins the brief.
+  if (ctx.policy.context.story_memory?.arc_summaries) {
+    let previousL2: string | undefined;
+    for (const earlier of schedule.arcs.filter((a) => a.to < arc.from)) {
+      const l2 = await ensureArcSummary(ctx, earlier);
+      if (earlier.id === previous?.id) previousL2 = l2?.text;
+    }
+    if (previousL2) {
+      const ko = ctx.identity.outputLanguage.language === 'ko';
+      previousArcExit = `${previousArcExit ? `${previousArcExit} ` : ''}${ko ? '(지난 아크 요약, 승인된 원고 기준)' : '(previous arc summary, from the accepted text)'} ${previousL2}`;
+    }
   }
   return planArcFromBlueprint(ctx, { blueprint, bible, arc, previousArcExit });
 }

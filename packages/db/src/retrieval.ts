@@ -645,6 +645,83 @@ export async function acceptedSummariesBefore(
   return r.rows;
 }
 
+/** One arc summary (L2) over accepted chapters, for hierarchical story memory (ADR-0076). */
+export interface ArcSummaryRow {
+  readonly summary_id: string;
+  readonly chapter_from: number;
+  readonly chapter_to: number;
+  readonly text: string;
+}
+
+/**
+ * The arc summaries (L2) that end before `beforeChapter`, oldest first. A summary is read only while every
+ * chapter it covers is accepted, so it never outlives the accepted text it was made from.
+ */
+export async function acceptedArcSummariesBefore(
+  db: Queryable,
+  projectId: string,
+  beforeChapter: number,
+): Promise<ArcSummaryRow[]> {
+  const r = await db.query<ArcSummaryRow>(
+    `SELECT DISTINCT ON (s.chapter_from, s.chapter_to)
+            s.id AS summary_id, s.chapter_from, s.chapter_to, s.text
+       FROM summaries s
+      WHERE s.project_id = $1 AND s.tier = 'L2' AND s.scope_kind = 'arc' AND s.chapter_to < $2
+        AND (SELECT count(*) FROM chapters c
+              WHERE c.project_id = $1 AND c.status = 'accepted'
+                AND c.number BETWEEN s.chapter_from AND s.chapter_to) = s.chapter_to - s.chapter_from + 1
+      ORDER BY s.chapter_from, s.chapter_to, s.created_at, s.id`,
+    [projectId, beforeChapter],
+  );
+  return r.rows;
+}
+
+/**
+ * Store an arc summary (L2) once per chapter range: the first stored summary of a range wins, so every
+ * chapter job that reaches the arc boundary reads the same one (ADR-0076).
+ */
+export async function insertArcSummaryOnce(
+  db: Queryable,
+  input: {
+    workspaceId: string;
+    projectId: string;
+    chapterFrom: number;
+    chapterTo: number;
+    text: string;
+    canonVersion: number;
+    promptVersionId?: string | undefined;
+  },
+): Promise<ArcSummaryRow & { readonly created: boolean }> {
+  const existing = await db.query<ArcSummaryRow>(
+    `SELECT id AS summary_id, chapter_from, chapter_to, text FROM summaries
+      WHERE project_id = $1 AND tier = 'L2' AND scope_kind = 'arc' AND chapter_from = $2 AND chapter_to = $3
+      ORDER BY created_at, id LIMIT 1`,
+    [input.projectId, input.chapterFrom, input.chapterTo],
+  );
+  const found = existing.rows[0];
+  if (found) return { ...found, created: false };
+  const text = toNfcText(input.text).text;
+  const hash = `sha256:${createHash('sha256').update(text).digest('hex')}`;
+  const r = await db.query<ArcSummaryRow>(
+    `INSERT INTO summaries (workspace_id, project_id, tier, scope_kind, chapter_from, chapter_to, text, canon_version, prompt_version_id, content_hash, language)
+     VALUES ($1, $2, 'L2', 'arc', $3, $4, $5, $6, $7, $8, (SELECT output_language FROM projects WHERE id = $2))
+     RETURNING id AS summary_id, chapter_from, chapter_to, text`,
+    [
+      input.workspaceId,
+      input.projectId,
+      input.chapterFrom,
+      input.chapterTo,
+      text,
+      input.canonVersion,
+      input.promptVersionId ?? null,
+      hash,
+    ],
+  );
+  const row = r.rows[0];
+  if (!row) throw new Error('arc summary insert returned no row');
+  return { ...row, created: true };
+}
+
 /** An accepted chapter's text, for the story-clock and status-window ledgers (ADR-0063). */
 export interface AcceptedTextRow {
   readonly chapter_no: number;

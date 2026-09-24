@@ -1,6 +1,7 @@
 /**
  * ADR-0058: Korean lexical retrieval over accepted text. The fixture is an original, studio-written Korean
- * serial (8 chapters, 48 paragraphs) with 26 query → expected paragraph pairs whose queries use different
+ * serial (8 chapters, 48 paragraphs) with 60 query → expected paragraph pairs (26 from ADR-0058, 34 harder
+ * paraphrase, alias and untargeted-paragraph queries from ADR-0076) whose queries use different
  * particles, endings and aliases than the text. Documents are indexed through the real acceptance path
  * (`canon.index_accepted_version`), so the language and entity tagging under test are the production ones.
  */
@@ -34,6 +35,24 @@ const fixture = JSON.parse(
 const K = 5;
 const url = databaseUrl();
 const run = url ? describe : describe.skip;
+
+/** Rank of the first expected paragraph in the top 10 (1-based), or 0 when none is there. */
+async function firstHitRanks(pool: Pool, projectId: string, language: 'en' | 'ko') {
+  const ranks: number[] = [];
+  for (const q of fixture.queries) {
+    const hits = await lexicalSearch(pool, {
+      projectId,
+      query: q.query,
+      language,
+      kinds: ['chapter_paragraph'],
+      limit: 10,
+    });
+    const keys = hits.map((h) => `${String(h.chapter_no)}:${h.ref_key}`);
+    const i = keys.findIndex((k) => q.expected.some(([c, p]) => k === `${String(c)}:${p}`));
+    ranks.push(i + 1);
+  }
+  return ranks;
+}
 
 async function recallAtK(pool: Pool, projectId: string, language: 'en' | 'ko') {
   const misses: string[] = [];
@@ -139,6 +158,18 @@ run('Korean lexical retrieval (ADR-0058)', () => {
     expect(ko.recall).toBeGreaterThanOrEqual(0.95);
     // The English configuration indexes each eojeol whole; particles make it miss.
     expect(en.recall).toBeLessThan(ko.recall);
+    const r = await firstHitRanks(pool, projectId, 'ko');
+    const e = await firstHitRanks(pool, projectId, 'en');
+    const stats = (xs: number[]) => ({
+      at1: xs.filter((x) => x === 1).length / xs.length,
+      at3: xs.filter((x) => x > 0 && x <= 3).length / xs.length,
+      mrr: xs.reduce((a, x) => a + (x > 0 ? 1 / x : 0), 0) / xs.length,
+    });
+    // Recall@5 saturates at 1.00; rank quality is what the 60 queries can still tell apart (ADR-0076):
+    // measured recall@1 0.82 / MRR 0.88 (Korean) against 0.67 / 0.74 (English FTS).
+    expect(stats(r).at1).toBeGreaterThanOrEqual(0.8);
+    expect(stats(r).mrr).toBeGreaterThanOrEqual(0.85);
+    expect(stats(r).mrr).toBeGreaterThan(stats(e).mrr);
   });
 
   it('expands a query through registry aliases (공녀 → 세라핀)', async () => {

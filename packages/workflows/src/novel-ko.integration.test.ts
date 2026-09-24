@@ -7,7 +7,15 @@
  * requirement, so the first Korean chapter contract failed with CONSTRAINT_UNRENDERABLE.
  */
 import { afterAll, beforeAll, expect, it, describe } from 'vitest';
-import { createProject, createWorkspace, getNovelRun, PgAuditStore, type Pool } from '@yeonjae/db';
+import {
+  acceptedArcSummariesBefore,
+  createProject,
+  createWorkspace,
+  getNovelRun,
+  insertArcSummaryOnce,
+  PgAuditStore,
+  type Pool,
+} from '@yeonjae/db';
 import { loadPolicies, loadSchemas, requirePolicy } from '@yeonjae/domain';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import {
@@ -1271,6 +1279,131 @@ run(
       );
       expect(packs.rows.length).toBeGreaterThan(0);
       expect(packs.rows.filter((p) => p.steps.length > 0)).toEqual([]);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v9: arc summaries for hierarchical story memory (ADR-0076)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // Two one-chapter seasons, so chapter 2 opens a new arc and the first arc gets its summary.
+    const twoArcs = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      const o = batchedScript(req, out);
+      if (req.trace?.role !== 'story_architect' || !('json' in o)) return o;
+      const bp = o.json as { seasons: Record<string, unknown>[] };
+      const s = bp.seasons[0] ?? {};
+      return {
+        json: {
+          ...bp,
+          seasons: [
+            { ...s, ordinal: 1, chapter_range_est: { from: 1, to: 1 } },
+            { ...s, ordinal: 2, chapter_range_est: { from: 2, to: 2 } },
+          ],
+        },
+      };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = twoArcs(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v9-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@9',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('summarizes a finished arc from its accepted L1 summaries and briefs the next arc with it', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v9-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const summarizer = seen.filter((r) => r.trace?.role === 'arc_summarizer');
+      expect(summarizer).toHaveLength(1);
+      expect(summarizer[0]?.trace?.activityId).toBe('arc_summary:1-1');
+      expect(summarizer[0]?.user).toMatch(/\[회차 요약[^\n]*\]\n1화: /);
+
+      const l2 = await acceptedArcSummariesBefore(pool, projectId, 3);
+      expect(l2.map((r) => [r.chapter_from, r.chapter_to])).toEqual([[1, 1]]);
+      expect(l2[0]?.text.startsWith('아크 요약: ')).toBe(true);
+      // Not readable before the arc it covers has ended.
+      expect(await acceptedArcSummariesBefore(pool, projectId, 1)).toEqual([]);
+      const art = await pool.query<{ payload: { summary_id: string; truncated: boolean } }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'arc_summary' AND key = '1-1'",
+        [projectId],
+      );
+      expect(art.rows[0]?.payload.summary_id).toBe(l2[0]?.summary_id);
+      expect(art.rows[0]?.payload.truncated).toBe(false);
+      // The first stored summary of a range wins.
+      const again = await insertArcSummaryOnce(pool, {
+        workspaceId,
+        projectId,
+        chapterFrom: 1,
+        chapterTo: 1,
+        text: '다른 요약.',
+        canonVersion: 0,
+      });
+      expect(again).toMatchObject({ created: false, summary_id: l2[0]?.summary_id });
+
+      // The second arc's planner reads the first arc's summary in its brief.
+      const planners = seen.filter((r) => r.trace?.role === 'arc_planner');
+      expect(planners).toHaveLength(2);
+      expect(planners[0]?.user).not.toContain('(지난 아크 요약');
+      expect(planners[1]?.user).toContain('(지난 아크 요약, 승인된 원고 기준)');
 
       const leaks = seen.flatMap((r) =>
         englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
