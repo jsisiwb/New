@@ -13,8 +13,35 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
+      'policy/standard@6',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v6 is standard.v5 plus provider_retry and planning.design_batches (ADR-0072)', () => {
+    const v5 = requirePolicy('policy/standard@5', policies);
+    const v6 = requirePolicy('policy/standard@6', policies);
+    expect(v6.provider_retry).toEqual({
+      max_attempts: 6,
+      base_delay_ms: 30_000,
+      max_delay_ms: 240_000,
+      multiplier: 2,
+      jitter: 'full',
+      retry_empty_reply: true,
+    });
+    expect(v6.planning).toEqual({ ...v5.planning, design_batches: true });
+    const strip = (p: typeof v5) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        provider_retry: _r,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v6)).toEqual(strip(v5));
   });
 
   it('standard.v2 is standard.v1 plus the ADR-0060 evaluation block', () => {
