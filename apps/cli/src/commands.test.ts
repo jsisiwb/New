@@ -23,6 +23,7 @@ describe('cli commands', () => {
       'policy/standard@6',
       'policy/standard@7',
       'policy/standard@8',
+      'policy/standard@9',
     ]);
   });
 
