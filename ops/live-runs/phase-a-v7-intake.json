@@ -5,18 +5,14 @@
   "manuscript_language": "ko",
   "genre": {
     "primary": "regression",
-    "secondary": [
-      "hunter-gate"
-    ]
+    "secondary": ["hunter-gate"]
   },
   "target_audience": {
     "rating": "15"
   },
   "target_chapters": 200,
   "target_characters_per_chapter": 5300,
-  "content_restrictions": [
-    "노골적인 성적 묘사 금지"
-  ],
+  "content_restrictions": ["노골적인 성적 묘사 금지"],
   "operating_mode": "autopilot",
   "pov": "first"
 }
