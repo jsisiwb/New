@@ -1148,6 +1148,47 @@ run('context packs over the real canon (Postgres integration)', () => {
     expect(writer.pack.manifest.template_version).toMatch(/^1\.1\.0\+/);
   });
 
+  it('long-story memory (ADR-0061) renders its three sections in Korean for a Korean pack (ADR-0059)', async () => {
+    // Same canon as above, read by a Korean pack: the system-written parts of each line are Korean; the
+    // English fixture content (names, the promise statement, summaries) is quoted as it is.
+    const koIdentity = {
+      ...identity,
+      outputLanguage: { ...identity.outputLanguage, language: 'ko' as const },
+    };
+    // korean_chars_v1 measures the English fixture text in 자 (about three times its token count), so the
+    // budgets are widened: this test is about rendering, not budgets.
+    const roomy = {
+      ...policy,
+      context: {
+        ...policy.context,
+        active_constraints_cap_tokens: 6000,
+        writer_input_budget_tokens: 96000,
+      },
+    };
+    const writer = await build('scene_writer', {
+      identity: koIdentity,
+      policy: roomy,
+      persist: false,
+    });
+    const section = (name: string) => writer.pack.sections.find((s) => s.name === name)?.text ?? '';
+    expect(section('promises')).toMatch(/Who forged the gate permit[^\n]*회수 기한 4화 초과/);
+    expect(section('story_so_far')).toMatch(
+      /^\[지난 줄거리 — [^\n]*\]\n\[SUMMARY · [^\]\n]+\] 3~3화\n3화: /,
+    );
+    expect(section('first_meetings')).toMatch(/^\[첫 만남 기록 — [^\n]*\]\n/);
+    expect(section('first_meetings')).toMatch(/: 9화에 처음 함께 나왔다\./);
+    const user = writer.pack.renderedUser;
+    for (const english of [
+      'OVERDUE by',
+      'Chapters 3',
+      'Ch.3:',
+      'first appeared together',
+      'STORY SO FAR',
+      'FIRST MEETINGS',
+    ])
+      expect(user).not.toContain(english);
+  });
+
   it('rollback de-accepts chapter 9 and removes its search documents and summary in the same transaction', async () => {
     // Chapter 10 is now unbuildable (k−1 no longer accepted); then re-accepting restores it.
     const before = await searchDocumentCount(pool, project);

@@ -5,7 +5,8 @@ Everything else in `docs/` describes design; only this file claims what exists a
 
 ## Workstream 4 — long-story memory — 2026-09-23
 
-Branch `hoplite/mende-33d541c8--ws4-long-memory`, stacked on Workstream 3. ADR-0061 records the decisions; the
+Branch `hoplite/kamarina-b0515922--ws2b--ws3--ws4`, ported from sigma41web/New#6 (branch
+`hoplite/mende-33d541c8--ws4-long-memory`, stacked on Workstream 3). ADR-0061 records the decisions; the
 Step 0 improvement audit (§4, PR #1) records the findings.
 
 **Built:**
@@ -33,6 +34,9 @@ Step 0 improvement audit (§4, PR #1) records the findings.
     the synthetic fixture opens every chapter with the same template sentence.
 - Context integration test: an overdue promise that shares no participant with chapter 10 now reaches the
   writer. Chapter 3 is in the digest. The chapter-9 first meeting of Mu-jin and Do-yoon is rendered.
+- Port onto Workstream 2b: the same canon read by a Korean pack renders all three new surfaces in Korean
+  (`회수 기한 4화 초과`, `3~3화` / `3화:`, `9화에 처음 함께 나왔다`) under Korean section titles, with none of
+  the English template phrases.
 
 **Not done:**
 
@@ -40,6 +44,8 @@ Step 0 improvement audit (§4, PR #1) records the findings.
 - The retcon flow (edit an accepted chapter, re-extract, list dependent chapters).
 - Deterministic planning-time enforcement of overdue promises; the promise checker and the audit report
   them instead.
+- The Korean arc-chaining brief (`(승인된 원고, N화에서 실제로 끝난 상태 …)`) is not exercised by a Korean
+  test: the two-chapter Korean run never crosses an arc boundary, so the Latin-script scan does not reach it.
 
 ## Workstream 3 — evaluation v2 — 2026-09-23
 
