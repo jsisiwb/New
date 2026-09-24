@@ -3,6 +3,19 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 12a — README refresh — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings--ws12-readme`.
+The Step 0 improvement audit (§12.1) the finding.
+
+**Changed:** the README no longer carries implementation status (Checkpoint 7, corpus, cancellation and
+"no live-provider calls / no HTTP client" paragraphs, stale `jsisiwb/New` links); it points to this file
+(ADR-0043). It names the implementation layout (`apps/`, `packages/`), Korean intake fields, the provider
+modes, `quality:run-report`, and describes the manuscript language as the project's (ADR-0054) instead of
+English-only.
+
+**Not done:** the rest of audit §12 (docs index and operator runbook refresh).
+
 ## Workstream 5c — Korean export headings — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text--ws5c-export-headings`.
