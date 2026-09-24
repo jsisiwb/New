@@ -61,7 +61,8 @@
       "required": ["plan_check"],
       "additionalProperties": false,
       "properties": {
-        "plan_check": {"type": "boolean", "description": "Check the contract and scene plans against the state ledgers, first meetings and the story clock before drafting. A blocking finding (an on-page character the ledger records as dead, story time running backwards) stops the chapter as PLAN_INCONSISTENT before any draft is written; other findings are recorded with the plan."}
+        "plan_check": {"type": "boolean", "description": "Check the contract and scene plans against the state ledgers, first meetings and the story clock before drafting. A blocking finding (an on-page character the ledger records as dead, story time running backwards) stops the chapter as PLAN_INCONSISTENT before any draft is written; other findings are recorded with the plan."},
+        "scene_plan_format": {"type": "string", "enum": ["json", "labelled"], "description": "How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON."}
       }
     },
     "candidates": {

@@ -74,6 +74,7 @@
 | [0065](0065-korean-lint-v5.md) | `lang/ko@5` lint: rates of 번역체 constructions, comma density, long-sentence share, dialogue plus 속마음 share, reflective-ending list, near copies of exemplars, jamo-level misspelled names, one status-window field per line; a synthetic translated passage must fail |
 | [0066](0066-korean-concept-seeds-and-world-rules-term.md) | Concept angle seeds and the bible's world-rules term are in the manuscript language (`세계 규칙` for Korean projects); English seeds keep their bytes; the Korean end-to-end test checks both directly |
 | [0067](0067-run-report-and-korean-relint.md) | Read-only `quality:run-report` (per-chapter scorecards, gates, lint by rule, plan checks, quarantined versions, model calls by role, wall clock, normalizer snapshot) and `quality:lint-ko` (the Korean lint over accepted chapters under the pinned or another language layer) |
+| [0068](0068-korean-scene-plan-as-labelled-text.md) | A Korean writer reads its scene plan as labelled Korean text with registry names under `planning.scene_plan_format: labelled` (`standard.v5`); earlier pins and English writers keep JSON |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

@@ -207,6 +207,12 @@ status-window format, registered address terms), and under `planning.plan_check`
 are checked before drafting; a dead character on page or story time running backwards stops the chapter as
 `PLAN_INCONSISTENT`.
 
+Under `planning.scene_plan_format: labelled` (ADR-0068) a Korean writer receives its scene plan as labelled
+Korean text — objective, POV, participants and location by name, story time, beats with their effect tags,
+entry and exit state, planned state changes, dialogue share, continuity anchors, what not to do, speaker pairs
+with their 말높이 and the length target in 자 — instead of the plan object as JSON. English writers always
+receive JSON.
+
 ## 5. Caching and deduplication
 
 - Section-level cache keyed by content hash (identity block, Active Constraint Set, bible slice, L4

@@ -4,7 +4,12 @@
  * every call), and deterministic assembly into one immutable working manuscript version.
  */
 import { createHash } from 'node:crypto';
-import { buildPack, PgLexicalRetriever, type ContextPack } from '@yeonjae/context';
+import {
+  buildPack,
+  PgLexicalRetriever,
+  renderScenePlanKo,
+  type ContextPack,
+} from '@yeonjae/context';
 import {
   createManuscriptVersion,
   manuscriptVersionsOf,
@@ -325,9 +330,23 @@ export interface SceneDraftRef {
 /** Sequential drafting: scene k sees the verbatim text of scenes 1..k−1 (job-scoped, never a stored draft). */
 export async function draftScenes(
   ctx: WorkflowContext,
-  input: { contract: ChapterContract; pack: StoredPack; scenes: readonly ScenePlan[] },
+  input: {
+    contract: ChapterContract;
+    pack: StoredPack;
+    scenes: readonly ScenePlan[];
+    /** Registry names; with them a Korean writer under `scene_plan_format: labelled` reads the plan as text. */
+    nameOf?: ((id: string) => string) | undefined;
+  },
 ): Promise<{ drafts: SceneDraftRef[]; texts: string[] }> {
   const ch = input.contract.chapter_number;
+  // ADR-0068: labelled Korean text instead of the plan object, only where the pinned policy says so.
+  const nameOf = input.nameOf;
+  const renderPlan = (scene: ScenePlan) =>
+    ctx.policy.planning?.scene_plan_format === 'labelled' &&
+    ctx.identity.outputLanguage.language === 'ko' &&
+    nameOf
+      ? renderScenePlanKo(scene, nameOf)
+      : JSON.stringify(scene);
   const texts: string[] = [];
   const drafts: SceneDraftRef[] = [];
   for (const scene of input.scenes) {
@@ -346,7 +365,7 @@ export async function draftScenes(
           family: 'scene_writer',
           activityId: `scene_draft:${ch}:${scene.scene_no}`,
           variables: {
-            scene_plan: JSON.stringify(scene),
+            scene_plan: renderPlan(scene),
             scene_no: String(scene.scene_no),
             previous_text: previous,
             length_target_words: String(scene.length_target.value),

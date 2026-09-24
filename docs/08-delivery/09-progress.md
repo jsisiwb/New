@@ -3,6 +3,26 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 6b — the scene plan as labelled Korean text — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report--ws6b-scene-plan-text`.
+ADR-0068 records the decisions; the Step 0 improvement audit (§6.10) the finding.
+
+**Built:**
+
+- `@yeonjae/context` `renderScenePlanKo`: every scene-plan field as labelled Korean text under a PLANNED header,
+  with participants, POV and location by registry name, Korean beat labels and effect tags, speaker pairs
+  with their 말높이, the length target in 자.
+- `planning.scene_plan_format` (`json` | `labelled`, optional) in the policy schema; `draftScenes` renders the
+  plan for a Korean writer when the pinned policy says `labelled`; `standard.v5` = `standard.v4` +
+  `scene_plan_format: labelled`.
+
+**Measured (simulated model):** Korean `standard.v5` run — both chapters accepted; every writer request carries
+a labelled plan (header, objective, numbered beats, length in 자, named participants) and none of the JSON
+keys; 0 Latin-script leaks over every call. Earlier pins keep JSON (their runs are unchanged).
+
+**Not done:** a live run on `standard.v5`; the scene-count and arc-window policy knobs (audit §6.8, §6.9).
+
 ## Run report and Korean re-lint — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds--run-report`.
