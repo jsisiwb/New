@@ -47,6 +47,13 @@ export interface ProductionPolicy {
      * ADR-0073 (K1): after a Korean chapter passes its gates, one editor round on the Korean lint's 번역투, sentence-ending, dialogue-share and paragraph findings; the polished version is kept only if it still passes and the lint finds fewer of them, else it is quarantined (polish_rejected). Absent or false: no polish round
      */
     polish_pass?: boolean;
+    /**
+     * ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.
+     */
+    multi_patch?: {
+      max_patches: number;
+      merge_gap_chars: number;
+    };
   };
   /**
    * Evaluation orchestration (ADR-0060). A policy without this block keeps the ADR-0056 behaviour: evaluators run one after another, only the seven core evaluators run, a gated dimension reads the judge's own 0-100 judge_score and every evaluator re-runs after a patch.

@@ -78,6 +78,12 @@ Scorecard issues (open) ─► cluster by span (overlapping/adjacent paragraphs;
   ─► loop until no blocking/major or round limit
 ```
 
+**As built (ADR-0077).** Without `revision.multi_patch` a round sends one reviser call the union of the
+targeted spans of one dimension. With it (`standard.v10`), the targeted spans are clustered (within
+`merge_gap_chars`), each of at most `max_patches` clusters gets its own call and window, a sub-patch must
+anchor inside its window, unusable sub-patches are dropped, and the usable ones become one revision recorded
+as an envelope patch and a `patch_set` artifact; the regression check then judges the round as a whole.
+
 ### 4.1 Which checks re-run after a patch
 | Patch scope | Re-run |
 | --- | --- |

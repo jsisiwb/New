@@ -3,6 +3,24 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phase V — multi-patch revision rounds, opt-in through `standard.v10` — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--revision-eval` (stacked on Phase L). ADR-0077 records the decisions.
+
+**Built:** `revision.multi_patch`: a round clusters the targeted spans (`clusterIssueSpans`), makes one reviser
+call per cluster (at most `max_patches`, never more than `max_patches_per_round`), keeps a sub-patch only if it
+anchors inside its own window and validates, merges the usable ones into one revision (`mergePatches`) recorded
+as an envelope patch plus a `patch_set` artifact, and fails only when none is usable. The polish round uses the
+same path. `standard.v10` = `standard.v9` + `multi_patch { max_patches: 4, merge_gap_chars: 120 }`.
+
+**Measured:** `multi-patch.test.ts` 5/5; `policy.test.ts` (v10 = v9 + the block); two Korean `standard.v10`
+simulated runs — two findings far apart get two reviser calls per chapter (`…:r1:p1`, `…:r1:p2`), one revision
+whose envelope patch reproduces it from the parent; an unanchored sub-patch is dropped and the other applied;
+0 Latin-script leaks. Live `standard.v8` evidence that motivates it: `docs/08-delivery/12-live-run-ws1-7.md` §8.2.
+
+**Not done:** the reader-panel evaluator and cross-judge score normalization (V2, V3) — not started; per-sub-patch
+regression checks (rejected for now, ADR-0077).
+
 ## Phase L — long-story context, opt-in through `standard.v9` — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92--long-context` (stacked on Phase K). ADR-0076 records the decisions.

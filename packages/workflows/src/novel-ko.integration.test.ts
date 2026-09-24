@@ -1414,3 +1414,174 @@ run(
     }, 300_000);
   },
 );
+
+function multiPatchRun(title: string, breakSecondPatch: boolean) {
+  run(title, () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // Round 0's prose judge flags the first sentence of the first and of the last paragraph: two spans far
+    // apart, so the revision round asks for two patches.
+    const twoIssues = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      const o = batchedScript(req, out);
+      if (
+        req.trace?.role !== 'prose_judge' ||
+        !req.trace.activityId.endsWith(':r0') ||
+        !('json' in o)
+      )
+        return o;
+      const text = /\[회차 원문[^\n]*\]\n([\s\S]*)/.exec(req.user)?.[1] ?? '';
+      const paras = [...text.matchAll(/^\[p\d+\] (.+)$/gm)].map((m) => m[1] ?? '');
+      const first = (p: string) => /^[^.!?…]+[.!?…]/.exec(p.trim())?.[0] ?? p.trim();
+      const quotes = [first(paras[0] ?? ''), first(paras[paras.length - 1] ?? '')];
+      return {
+        json: {
+          ...(o.json as Record<string, unknown>),
+          issues: quotes.map((quote) => ({
+            kind: 'translation_like_english',
+            claim: '번역투 문장이다.',
+            severity: 'major',
+            confidence: 0.9,
+            quote,
+          })),
+        },
+      };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out =
+        breakSecondPatch &&
+        req.trace?.role === 'targeted_reviser' &&
+        req.trace.activityId.endsWith(':p2')
+          ? {
+              json: {
+                scope: 'sentence',
+                span: { original_quote: '원고에 없는 문장이다.' },
+                new_text: '다른 문장이다.',
+                changed_claims: [],
+                preserved_facts_ack: [],
+                speaker_annotations: [],
+              },
+            }
+          : twoIssues(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v10-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@10',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('asks for one patch per span cluster and applies them as one revision', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v10-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const revisers = seen
+        .filter((r) => r.trace?.role === 'targeted_reviser')
+        .map((r) => r.trace?.activityId ?? '');
+      for (const ch of [1, 2]) {
+        expect(revisers).toContain(`revise:${ch}:prose:r1:p1`);
+        expect(revisers).toContain(`revise:${ch}:prose:r1:p2`);
+      }
+      const sets = await pool.query<{
+        payload: {
+          clusters: number;
+          applied: { start: number; end: number }[];
+          dropped: unknown[];
+        };
+      }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'patch_set' AND key LIKE '%:r1'",
+        [projectId],
+      );
+      expect(sets.rows).toHaveLength(2);
+      for (const { payload } of sets.rows) {
+        expect(payload.clusters).toBe(2);
+        // A sub-patch that does not anchor is recorded and dropped; the other one still applies.
+        expect(payload.applied).toHaveLength(breakSecondPatch ? 1 : 2);
+        expect(payload.dropped).toHaveLength(breakSecondPatch ? 1 : 0);
+      }
+      // Each envelope patch reproduces its revision from the parent version.
+      const patches = await pool.query<{
+        payload: {
+          from_version_id: string;
+          to_version_id: string;
+          span: { start: number; end: number };
+          new_text: string;
+        };
+      }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'patch' AND key LIKE '%:r1'",
+        [projectId],
+      );
+      expect(patches.rows).toHaveLength(2);
+      for (const { payload: p } of patches.rows) {
+        const texts = await pool.query<{ id: string; text: string }>(
+          'SELECT id, text FROM manuscript_versions WHERE id = ANY($1)',
+          [[p.from_version_id, p.to_version_id]],
+        );
+        const byId = new Map(texts.rows.map((r) => [r.id, r.text]));
+        const parent = Array.from(byId.get(p.from_version_id) ?? '');
+        expect(
+          parent.slice(0, p.span.start).join('') + p.new_text + parent.slice(p.span.end).join(''),
+        ).toBe(byId.get(p.to_version_id));
+      }
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  });
+}
+
+multiPatchRun('Korean novel run under standard.v10: multi-patch revision rounds (ADR-0077)', false);
+multiPatchRun(
+  'Korean novel run under standard.v10: an unanchored sub-patch is dropped, the rest applied (ADR-0077)',
+  true,
+);

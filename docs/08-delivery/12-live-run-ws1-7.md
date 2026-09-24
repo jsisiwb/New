@@ -195,3 +195,26 @@ chapter text 7,376, participants' states 3,744, contract 2,352, knowledge 2,025,
 constraints 570, ledgers and relationships 475, promises 194. The Phase A packs (§7) had been at 19,771–19,782
 of 20,000 with no ladder step. `standard.v8` raises the Korean-sensitive budgets and calibrates the scene
 writer's requested length (ADR-0075); the v7 project stays at chapter 1 as this record.
+
+### 8.2 `standard.v8` (17:01–17:48 UTC)
+
+A fresh project on the same intake pinned to `policy/standard@8`, run to chapter 1's stop, resumed once.
+
+| | |
+| --- | --- |
+| Start → concepts | 2 min 7 s |
+| Bible | 7 cast, 4 locations, 2 organizations, 15 propositions, 26 promises, 4 seasons |
+| Pack (K-1) | the continuity checker's pack built (the v7 stop is gone) |
+| Length (K-2) | scenes asked for 0.8 × target with the remainder redistributed; chapter 1 assembled at **5,349자** against 5,300 (+0.9 %; v7: +27 %) |
+| First stop | revision round 2: the reviser's patch had no `scope` → `PATCH_UNANCHORED`, run `failed` (live defect L-1, ADR-0076) |
+| Resume | on the Phase L code (scope inferred, `patch_fields` 1): three revision rounds completed |
+| Rounds | r0 overall 77, 7 majors, prose 66.1/78 ✗; patched rounds prose 93.1 / 85.6 / 81.2, each quarantined by the patch regression check |
+| Stop | `needs_attention: APPROVAL_BLOCKED` on r0 — 0 blocking, 7 majors; structure 87/78, genre 95/72, voice 91.3/76 |
+| Remaining majors (last scorecard) | `KO-DLG-SHARE` 14 % dialogue and inner speech (threshold 25 %); continuity: the phone shows Sunday, a later scene says “weekday afternoon”; contract: the veteran narrator talks to himself aloud against the contract's instruction |
+| Calls | 48, none failed; 165,194 in / 27,928 out; per role p50: scene writer 50.5 s, reviser 52.3 s, chapter planner 73.9 s, judges 20–32 s |
+| Cost | 0¢ recorded; bridge billing-period credits 62.24 % / 69.09 % → 63.98 % / 71.96 % |
+
+The remaining majors are genuine: a weekday contradiction, a contract instruction the draft breaks, and
+dialogue under the Korean lint's floor for a first-person opening. The pattern of Phase A repeats: the patched
+rounds fix what they target and are quarantined for what they bring. The reviser was sent the union of the
+targeted spans, and it rewrote whole scenes. ADR-0077 (multi-patch rounds, `standard.v10`) follows from this.

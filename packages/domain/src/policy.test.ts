@@ -9,6 +9,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/economy@1',
       'policy/premium@1',
       'policy/standard@1',
+      'policy/standard@10',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -19,6 +20,20 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v10 is standard.v9 with multi-patch revision (ADR-0077)', () => {
+    const v9 = requirePolicy('policy/standard@9', policies);
+    const v10 = requirePolicy('policy/standard@10', policies);
+    expect(v10.revision).toEqual({
+      ...v9.revision,
+      multi_patch: { max_patches: 4, merge_gap_chars: 120 },
+    });
+    const strip = (p: typeof v9) => {
+      const { version: _v, name: _n, content_hash: _h, revision: _r, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v10)).toEqual(strip(v9));
   });
 
   it('standard.v9 is standard.v8 with hierarchical story memory (ADR-0076)', () => {

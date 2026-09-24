@@ -70,7 +70,7 @@ import {
   type StorySpec,
 } from './planning.js';
 import { patchRegression, regressionArtifact, regressionReportId } from './comparison.js';
-import { pickRevisionDimension, reviseVersion } from './revision.js';
+import { pickRevisionDimension, reviseVersionMulti } from './revision.js';
 import {
   arcForChapter,
   planArcFromBlueprint,
@@ -557,7 +557,7 @@ export async function produceChapter(
       const beforeEvaluation = evaluation;
       const beforeScorecard = evaluation.scorecard;
       const targetedIssueIds = targets.filter((i) => i.dimension === dimension).map((i) => i.id);
-      const revised = await reviseVersion(ctx, {
+      const revised = await reviseVersionMulti(ctx, {
         version: current,
         chapterId: contract.chapterId,
         chapterNo,
@@ -696,7 +696,7 @@ export async function produceChapter(
         const polishRound = round + 1;
         const parent = current;
         const before = evaluation;
-        const revised = await reviseVersion(ctx, {
+        const revised = await reviseVersionMulti(ctx, {
           version: current,
           chapterId: contract.chapterId,
           chapterNo,
