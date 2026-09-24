@@ -142,6 +142,36 @@ run('novel run: intake → suggestions → approval → bible → chapters (simu
     expect(run?.status).toBe('failed');
   });
 
+  it('fails the run instead of leaving it suggesting when the plan context cannot be built', async () => {
+    // Phase A (12-live-run-ws1-7.md §3.3): a restart that crashed loading its pinned policy left the run
+    // `suggesting` with nothing running. An unknown pinned policy reproduces the same crash point.
+    const { projectId: broken } = await createProject(pool, {
+      workspaceId,
+      title: 'Broken pin',
+      operatingMode: 'autopilot',
+      policyVersion: 'policy/standard@99',
+    });
+    const deps = {
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId: broken },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId: broken }),
+        ),
+      }),
+    };
+    await expect(startNovel(deps, { projectId: broken, intake: INTAKE })).rejects.toThrow(
+      /policy\/standard@99/,
+    );
+    const run = await getNovelRun(pool, broken);
+    expect(run?.status).toBe('failed');
+    expect(run?.last_error).not.toBeNull();
+  });
+
   it('approval queues planning; the runner builds the full bible, then writes every chapter', async () => {
     const before = await getNovelRun(pool, projectId);
     const concept = (await startNovel(makeDeps(), { projectId, intake: INTAKE })).concepts[1];
