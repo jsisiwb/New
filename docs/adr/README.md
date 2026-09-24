@@ -67,6 +67,7 @@
 | [0058](0058-korean-lexical-retrieval.md) | Korean lexical retrieval: pg_trgm with particle-stripped stems and registry alias expansion, manuscript language stored on Korean rows, two-syllable Hangul names tagged; English FTS unchanged |
 | [0059](0059-korean-token-estimation-and-pack-localization.md) | Korean token estimation (`korean_chars_v1`, one token per 자, calibrated against o200k/cl100k) for Korean packs, and a fully Korean canon rendering enforced by a scan of every Korean model call |
 | [0060](0060-evaluation-v2.md) | Evaluation v2: every evaluator reads its own pack sections and inputs, promise_checker and repetition_judge, a Production Policy evaluation block (parallel evaluators, rubric-composed gates, targeted re-evaluation) and `standard.v2` |
+| [0061](0061-long-story-memory.md) | Long-story memory: story-so-far digest of accepted L1 summaries, first-meeting ledger, overdue promises always visible, arcs chained from the accepted ending, deterministic series audit |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
