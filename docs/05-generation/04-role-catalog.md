@@ -14,7 +14,7 @@ structured output) · **C** cheap/classification · **E** embeddings.
 | `requirement_interpreter` | Normalize intake (any language) → Story Spec items (hard/soft/assumption) with English working text | M | — | no | pack.requirements | story-spec.items | 4k | never translates into manuscript |
 | `assumption_explainer` | One-line rationale per assumption | C | — | no | inline | strings | 1k | |
 | `instruction_injection_classifier` | Flag meta-instructions in user/imported text | C | — | no | inline | label+score | 0.2k | security |
-| `concept_generator` | Concept candidate from spec + angle seed | R | planner_compact | no | pack.concept | concept | 3k | N=2/3 |
+| `concept_generator` | Concept candidate from spec + angle seed (in the manuscript language, ADR-0066) | R | planner_compact | no | pack.concept | concept | 3k | N=2/3 |
 | `concept_comparator` | Pairwise comparison of concepts | R | — | no | pack.compare | comparison-verdict | 2k | both orders |
 | `concept_merger` | Merge selected fields | M | planner_compact | no | pack.concept | concept | 3k | on request |
 | `character_designer` | Cast identities/arcs/secrets | R | planner_compact | no | pack.bible | bible.characters | 6k | |

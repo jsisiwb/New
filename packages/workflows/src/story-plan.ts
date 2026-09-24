@@ -249,12 +249,39 @@ export interface ConceptRound {
   readonly artifactId: string;
 }
 
-const ANGLES = [
-  'the most faithful reading of the premise, maximizing the genre core fantasy',
-  'a sharper hook: raise the stakes of chapter one and tighten the central mystery',
-  'a character-forward angle: foreground relationships and register conflict without softening progression',
-  'a subversive angle: keep every hard requirement but invert one reader expectation of the genre',
-];
+/**
+ * Angle seeds, one per concept candidate, in the manuscript language: a Korean concept prompt carries a
+ * Korean seed (audit §6.1). The English seeds keep their bytes, so English concept calls replay.
+ */
+const ANGLES: Readonly<Record<'en' | 'ko', readonly string[]>> = {
+  en: [
+    'the most faithful reading of the premise, maximizing the genre core fantasy',
+    'a sharper hook: raise the stakes of chapter one and tighten the central mystery',
+    'a character-forward angle: foreground relationships and register conflict without softening progression',
+    'a subversive angle: keep every hard requirement but invert one reader expectation of the genre',
+  ],
+  ko: [
+    '전제를 가장 충실하게 읽고, 장르의 핵심 판타지를 끝까지 살리는 방향',
+    '더 날카로운 훅: 1화의 판돈을 올리고 중심 미스터리를 조이는 방향',
+    '인물 중심: 관계와 말높이 갈등을 앞세우되 성장의 속도는 늦추지 않는 방향',
+    '비트는 방향: 하드 요구사항은 모두 지키고, 장르 독자의 기대 하나만 뒤집는다',
+  ],
+};
+
+export function angleSeeds(lang: 'en' | 'ko'): readonly string[] {
+  return ANGLES[lang];
+}
+
+function angleSeed(lang: 'en' | 'ko', i: number): string {
+  return ANGLES[lang][i] ?? (lang === 'ko' ? `대안 앵글 ${i + 1}` : `alternative angle ${i + 1}`);
+}
+
+/** The bible's catch-all term that world and progression rules attach to, named in the manuscript language. */
+export function worldRulesTerm(lang: 'en' | 'ko'): { name: string; description: string } {
+  return lang === 'ko'
+    ? { name: '세계 규칙', description: '이 작품에서 고정된 세계 규칙과 성장 규칙.' }
+    : { name: 'World rules', description: 'Locked world and progression rules of the setting.' };
+}
 
 /**
  * Interpret the intake into a Story Spec and propose N distinct story concepts for the operator to choose
@@ -266,14 +293,15 @@ export async function suggestConcepts(
 ): Promise<ConceptRound> {
   const specVersion = input.specVersion ?? 1;
   const spec = await interpretRequirements(ctx, input.intake, specVersion);
+  const lang = langOf(ctx);
   const count = Math.max(
     2,
-    Math.min(ANGLES.length, input.count ?? ctx.policy.candidates.concept_candidates),
+    Math.min(ANGLES[lang].length, input.count ?? ctx.policy.candidates.concept_candidates),
   );
   const block = compileFor(ctx, 'planner_compact');
   const concepts: Concept[] = [];
   for (let i = 0; i < count; i++) {
-    const angle = ANGLES[i] ?? `alternative angle ${i + 1}`;
+    const angle = angleSeed(lang, i);
     const result = await runStep(
       ctx,
       'concept',
@@ -283,7 +311,7 @@ export async function suggestConcepts(
           family: 'concept_generator',
           activityId: `concept:v${specVersion}:${i + 1}`,
           variables: {
-            story_spec: renderSpec(spec.spec, langOf(ctx)),
+            story_spec: renderSpec(spec.spec, lang),
             angle_seed: angle,
             spec_version: String(specVersion),
           },
@@ -648,9 +676,8 @@ export async function buildFullBible(
       design: a,
       ...(a.description ? { description: a.description.slice(0, 400) } : {}),
     });
-  const worldTermId = addEntity('term', 'World rules', {
-    description: 'Locked world and progression rules of the setting.',
-  });
+  const worldTerm = worldRulesTerm(lang);
+  const worldTermId = addEntity('term', worldTerm.name, { description: worldTerm.description });
   if (entities.length === 0)
     throw new WorkflowError('SPEC_INVALID', 'the bible has no entities after assembly', {
       step: 'bible_assembly',

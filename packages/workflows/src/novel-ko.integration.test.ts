@@ -21,6 +21,7 @@ import { simulatedModelScript as script } from './simulated-model.js';
 import { approveConcept, resumeNovelRun, startNovel } from './novel.js';
 import { NovelRunner } from './novel-runner.js';
 import { ArtifactLlmOutputStore } from './runtime.js';
+import { angleSeeds, worldRulesTerm } from './story-plan.js';
 import { REPLAY_ROUTING } from './testkit.js';
 
 const run = databaseUrl() ? describe : describe.skip;
@@ -141,6 +142,24 @@ run('Korean novel run: intake → bible → chapters, prompts in Korean (simulat
       ),
     );
     expect([...new Set(leaks)]).toEqual([]);
+
+    // Audit §6.1. The simulated model echoes its angle seed back, so the scan above counts a seed's
+    // words as model words; the seeds and the bible's world-rules term are checked directly.
+    const seeds = seen
+      .filter((r) => r.trace?.role === 'concept_generator')
+      .map((r) => /이 후보의 앵글 시드: (.+)/.exec(r.user)?.[1]);
+    expect(seeds.length).toBeGreaterThanOrEqual(2);
+    for (const s of seeds) {
+      expect(angleSeeds('ko')).toContain(s);
+      expect(s).not.toMatch(/[A-Za-z]/);
+    }
+    const terms = await pool.query<{ display_name: string }>(
+      "SELECT display_name FROM entities WHERE project_id = $1 AND type = 'term'",
+      [projectId],
+    );
+    const termNames = terms.rows.map((t) => t.display_name);
+    expect(termNames).toContain(worldRulesTerm('ko').name);
+    expect(termNames).not.toContain('World rules');
   }, 300_000);
 });
 

@@ -3,6 +3,27 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Workstream 6a — concept seeds and the world-rules term in Korean — 2026-09-24
+
+Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint--ws6a-korean-seeds`. ADR-0066 records
+the decisions; the Step 0 improvement audit (§6.1) the finding.
+
+**Built:**
+
+- `angleSeeds(lang)`: four Korean concept angle seeds with the English seeds' intents, and a Korean fallback
+  past the fourth; the English seeds keep their bytes.
+- `worldRulesTerm(lang)`: bible assembly names the world-rules term `세계 규칙` (Korean description) in Korean
+  projects and `World rules` in English ones.
+
+**Measured (simulated model):** Korean run — every `concept_generator` request carries a Korean seed with no
+Latin letters, and the bible's term entities include `세계 규칙` and not `World rules`. Before this change the
+Latin-script scan passed with the English seeds in every Korean concept prompt, because the simulated model
+echoes its seed and model words are exempt; the new assertions check the seeds and the term directly.
+
+**Not done:** the scene plan still reaches the writer as JSON (audit §6.10); the other planning inputs of
+audit §6 (intake fields, genre taboos as spec items, contract approval, per-chapter direction, the
+고구마/사이다 ledger, scene-count and arc-window policy knobs).
+
 ## Workstream 5b — Korean lint v5 — 2026-09-24
 
 Branch `hoplite/kamarina-b0515922--ws4b-ledgers--ws7a-revision--ws5b-lint`. ADR-0065 records the decisions; the Step 0 improvement audit (§5.5, §7.6) the findings.
