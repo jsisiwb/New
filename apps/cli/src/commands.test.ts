@@ -19,6 +19,7 @@ describe('cli commands', () => {
       // loadPolicies reads the files in name order: standard.v10.json sorts before standard.v2.json.
       'policy/standard@10',
       'policy/standard@11',
+      'policy/standard@12',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -64,8 +65,9 @@ describe('cli commands', () => {
     // (ADR-0055) + 25 Korean webnovel craft v4.0.0, the arc_planner/targeted_reviser v4.0.1 fixes, nine
     // v4.1.0 first-live-chapter versions and three v4.2.0 writer/planner versions (ADR-0056), and the two
     // schema-generated v4.3.0 output shapes (ADR-0057), six v4.4.0 evaluator versions (ADR-0060) and the
-    // v4.5.0 arc summarizer (ADR-0076).
-    expect((p.output as { versions: unknown[] }).versions).toHaveLength(304);
+    // v4.5.0 arc summarizer (ADR-0076), and five v4.6.0 same-model judging / Gemini writer versions
+    // (ADR-0081).
+    expect((p.output as { versions: unknown[] }).versions).toHaveLength(309);
   });
 
   it('compiles the Active Constraint Set for a chapter and fails on overflow', () => {

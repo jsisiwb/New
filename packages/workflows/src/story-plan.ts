@@ -29,6 +29,7 @@ import {
 import {
   canonicalPolicyHash,
   type Generated,
+  promptCeilingOf,
   requirePolicy,
   uuidFromKey,
   validatorFor,
@@ -157,7 +158,7 @@ export async function makePlanContext(
   } else {
     // Validate identity before any prompt or job row is persisted for a new workflow.
     identity = composeIdentity(store, identityRef, identityVersionId);
-    const activePromptSet = registry.activeSet();
+    const activePromptSet = registry.activeSet(promptCeilingOf(policies));
     const pins: WorkflowPins = {
       promptSetId: activePromptSet.id,
       promptSet: activePromptSet.mapping,

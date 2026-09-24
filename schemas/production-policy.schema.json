@@ -65,7 +65,23 @@
         "reevaluation": {"type": "string", "enum": ["full", "targeted"], "description": "targeted: after a patch the deterministic checks and the targeted dimension's evaluator re-run, continuity and knowledge re-run when the patch changed claims, and every other evaluator re-runs only when one of its carried findings no longer anchors or revision.smoke_after_patches patches have accumulated since its last run"},
         "lint_penalty_points": {"type": "object", "required": ["minor", "major", "blocking"], "additionalProperties": false, "description": "Points a deterministic finding takes off its dimension's lint composite (starting at 100, floored at 0) under rubric_subscores", "properties": {"minor": {"type": "number", "minimum": 0, "maximum": 100}, "major": {"type": "number", "minimum": 0, "maximum": 100}, "blocking": {"type": "number", "minimum": 0, "maximum": 100}}},
         "ledger_checks": {"type": "boolean", "description": "ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs."},
-        "pov_secrets_reader_visible": {"type": "boolean", "description": "ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed."}
+        "pov_secrets_reader_visible": {"type": "boolean", "description": "ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed."},
+        "length_in_structure": {"type": "boolean", "description": "ADR-0081: the chapter length finding (LEN-01) counts against the structure dimension's deterministic composite, so a judge cannot rate the structure of a chapter far off its length target as if it were complete. Absent or false: length gates only through its own major finding, as before."},
+        "judge_calibration": {
+          "type": "object",
+          "description": "ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.",
+          "required": ["max_gap_points"],
+          "additionalProperties": false,
+          "properties": {"max_gap_points": {"type": "number", "minimum": 0, "maximum": 100}}
+        }
+      }
+    },
+    "drafting": {
+      "type": "object",
+      "description": "Deterministic handling of scene drafts before assembly (ADR-0081).",
+      "additionalProperties": false,
+      "properties": {
+        "paragraph_per_line": {"type": "boolean", "description": "Every line break of a prose draft becomes a paragraph break (one paragraph per line, as serial platforms render it); words are untouched. Counted as the paragraph_per_line normalizer. Absent or false: drafts keep the model's own line layout."}
       }
     },
     "planning": {
@@ -86,6 +102,15 @@
       "additionalProperties": false,
       "properties": {
         "language_layer": {"type": "string", "pattern": "^lang/(en|ko)@[0-9]+$", "description": "The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches."}
+      }
+    },
+    "prompts": {
+      "type": "object",
+      "description": "The newest prompt family version this policy's jobs may pin (ADR-0081): the job's prompt set is the newest active version per family at or below max_version. Absent: 4.5.0, the newest version when the field was introduced, so earlier policies keep their prompts when a new version is added.",
+      "required": ["max_version"],
+      "additionalProperties": false,
+      "properties": {
+        "max_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
       }
     },
     "provider_retry": {

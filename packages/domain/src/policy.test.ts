@@ -11,6 +11,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@1',
       'policy/standard@10',
       'policy/standard@11',
+      'policy/standard@12',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -21,6 +22,50 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v12 is standard.v11 with the Gemini and same-model judging settings (ADR-0080, ADR-0081)', () => {
+    const v11 = requirePolicy('policy/standard@11', policies);
+    const v12 = requirePolicy('policy/standard@12', policies);
+    expect(v12.prompts).toEqual({ max_version: '4.6.0' });
+    expect(v11.prompts).toBeUndefined();
+    expect(v12.drafting).toEqual({ paragraph_per_line: true });
+    expect(v12.provider_retry).toEqual({
+      ...v11.provider_retry,
+      refusal: { max_retries: 2, detect_text: true },
+    });
+    expect(v12.evaluation).toEqual({
+      ...v11.evaluation,
+      length_in_structure: true,
+      judge_calibration: { max_gap_points: 30 },
+    });
+    expect(v12.length.scene_calibration).toEqual({
+      ...v11.length.scene_calibration,
+      request_ratio: 1.1,
+    });
+    expect(v12.gates.dimensions.structure).toEqual({ min_score: 78, judge_weight: 0.5 });
+    const strip = (p: typeof v11) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        calibration: _c,
+        prompts: _p,
+        drafting: _d,
+        provider_retry: _r,
+        evaluation: _e,
+        length: _l,
+        gates,
+        ...rest
+      } = p;
+      const { dimensions, ...g } = gates;
+      const { structure: _s, ...dims } = dimensions;
+      return { ...rest, gates: { ...g, dimensions: dims } };
+    };
+    expect(strip(v12)).toEqual(strip(v11));
+    // Thresholds are unchanged: no gate is lowered.
+    for (const d of ['prose', 'structure', 'genre', 'voice'] as const)
+      expect(v12.gates.dimensions[d]?.min_score).toBe(v11.gates.dimensions[d]?.min_score);
   });
 
   it('standard.v11 is standard.v10 with parent-baseline patch regression (ADR-0078)', () => {

@@ -67,6 +67,17 @@ export function requirePolicy(
   return p;
 }
 
+/**
+ * The newest prompt family version a policy's jobs may pin (ADR-0081). Policies written before the field
+ * existed get `4.5.0`, the newest version at that time, so every earlier policy keeps exactly the prompts
+ * it has always used when a newer version is added.
+ */
+export const LEGACY_PROMPT_CEILING = '4.5.0';
+
+export function promptCeilingOf(policy: ProductionPolicy): string {
+  return policy.prompts?.max_version ?? LEGACY_PROMPT_CEILING;
+}
+
 export type OverrideClass = 'never' | 'canon_workflow' | 'reviewer' | 'advisory';
 
 /** Resolve the override class for an issue kind + severity from the pinned policy (ADR-0042). */

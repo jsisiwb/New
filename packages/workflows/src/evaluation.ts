@@ -144,7 +144,11 @@ function toIssue(
     severity,
     override_class: overrideClassFor(ctx.policy, kind, severity),
     confidence: Math.max(0, Math.min(1, raw.confidence ?? 0.5)),
-    claim: raw.claim ?? `${kind} reported by ${source}`,
+    claim:
+      raw.claim ??
+      (ctx.identity.outputLanguage.language === 'ko'
+        ? `${kind}: ${source}의 지적`
+        : `${kind} reported by ${source}`),
     status: 'open',
     ...(raw.chapter_span
       ? { chapter_span: { ...raw.chapter_span, manuscript_version_id: versionId } }
@@ -217,7 +221,11 @@ export function runDeterministicChecks(
           kind: 'non_english_output',
           severity: 'blocking',
           confidence: 1,
-          claim: `English confidence ${lang.english_confidence}; offending paragraphs ${lang.offending_segments.map((s) => s.paragraph_id).join(', ')}`,
+          // A Korean project's claims stay Korean: they reach the reviser's prompt (ADR-0081).
+          claim:
+            language === 'ko'
+              ? `한국어 원고 검사 실패(신뢰도 ${String(lang.english_confidence)}): 문단 ${lang.offending_segments.map((s) => s.paragraph_id).join(', ')}`
+              : `English confidence ${lang.english_confidence}; offending paragraphs ${lang.offending_segments.map((s) => s.paragraph_id).join(', ')}`,
           chapter_span: { paragraph_ids: lang.offending_segments.map((s) => s.paragraph_id) },
         },
         n++,
@@ -286,7 +294,10 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'major',
           confidence: 1,
-          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
+          claim:
+            language === 'ko'
+              ? `분량 ${String(count)}자, 목표 ${String(contract.length_target.value)}자 대비 ${(len.ratio * 100).toFixed(0)}%`
+              : `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
           metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
@@ -303,7 +314,10 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'minor',
           confidence: 1,
-          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
+          claim:
+            language === 'ko'
+              ? `분량 ${String(count)}자, 목표 ${String(contract.length_target.value)}자 대비 ${(len.ratio * 100).toFixed(0)}% (허용 범위 안)`
+              : `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
           metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
@@ -930,12 +944,25 @@ export async function evaluateVersion(
           : 100;
       const composites: Record<GatedDimension, number> = {
         prose: lintOf('prose', 'output_language'),
-        structure: lintOf('structure'),
+        // ADR-0081: under `evaluation.length_in_structure` the length finding counts against structure.
+        structure: policyEval?.length_in_structure
+          ? lintOf('structure', 'length')
+          : lintOf('structure'),
         genre: Math.round((terminology?.compliance ?? 1) * 1000) / 10,
         voice: Math.round((1 - (register?.register_violation_rate ?? 0)) * 1000) / 10,
       };
-      const rubricOf = (d: GatedDimension, out: JudgeOutput) =>
-        rubricScore(d, dimensionScores(out.dimension_scores));
+      // ADR-0081: a judge grading its own model may not rate a dimension more than `max_gap_points` above
+      // the dimension's deterministic composite; the rubric is capped there (never raised).
+      const maxGap = policyEval?.judge_calibration?.max_gap_points;
+      const calibration: Partial<Record<GatedDimension, { rubric: number; capped_at: number }>> =
+        {};
+      const rubricOf = (d: GatedDimension, out: JudgeOutput) => {
+        const raw = rubricScore(d, dimensionScores(out.dimension_scores));
+        if (maxGap === undefined || raw <= composites[d] + maxGap) return raw;
+        const cap = Math.round((composites[d] + maxGap) * 10) / 10;
+        calibration[d] = { rubric: raw, capped_at: cap };
+        return cap;
+      };
       const scoreOf = (d: GatedDimension, out: JudgeOutput) =>
         subscores
           ? composeDimensionScore(
@@ -1011,6 +1038,7 @@ export async function evaluateVersion(
                 ? {
                     rubric_score: rubricOf(d, out),
                     judge_weight: gates.dimensions[d]?.judge_weight ?? 1,
+                    ...(calibration[d] ? { judge_calibration: calibration[d] } : {}),
                   }
                 : {}),
               ...(d === 'prose' || d === 'structure' ? { lint_composite: composites[d] } : {}),

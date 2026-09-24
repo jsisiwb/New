@@ -1585,3 +1585,105 @@ multiPatchRun(
   'Korean novel run under standard.v10: an unanchored sub-patch is dropped, the rest applied (ADR-0077)',
   true,
 );
+
+run(
+  'Korean novel run under standard.v12: same-model judging, prompt ceiling, lines (ADR-0081)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // The simulated writer breaks lines inside blocks, as Gemini did live; v12 makes each line a paragraph.
+    const lineBroken = (req: ProviderRequest, out: ReturnType<typeof script>) =>
+      req.trace?.role === 'scene_writer' && 'text' in out && typeof out.text === 'string'
+        ? { text: out.text.replace(/\n\n/g, '\n') }
+        : out;
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = lineBroken(req, batchedScript(req, script(req)));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v12-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@12',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('pins the 4.6.0 judges and writer, keeps every prompt Korean and every line a paragraph', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v12-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      for (const role of ['prose_judge', 'structure_judge', 'voice_judge', 'genre_judge']) {
+        const calls = seen.filter((r) => r.trace?.role === role);
+        expect(calls.length, role).toBeGreaterThan(0);
+        for (const r of calls) {
+          expect(r.system).toMatch(/판정 순서/);
+          expect(r.system).toMatch(/점수 기준표\(1~5\)/);
+          expect(r.user).toMatch(/"weakest_passages"/);
+        }
+      }
+      const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+      expect(writers.length).toBeGreaterThan(0);
+      for (const r of writers) expect(r.system).toMatch(/속마음\(‘ ’\)은 반말 독백으로만 쓴다/);
+
+      // Every stored version keeps one paragraph per line: no line break without a blank line.
+      const versions = await pool.query<{ text: string }>(
+        'SELECT text FROM manuscript_versions WHERE project_id = $1',
+        [projectId],
+      );
+      expect(versions.rows.length).toBeGreaterThan(0);
+      for (const v of versions.rows) expect(/[^\n]\n[^\n]/.test(v.text)).toBe(false);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 240_000);
+  },
+);

@@ -46,3 +46,21 @@ export function paragraphAt(
 ): Paragraph | undefined {
   return paragraphs.find((p) => p.start <= codePointOffset && codePointOffset < p.end);
 }
+
+/**
+ * One paragraph per line (ADR-0081): every single line break becomes a paragraph break, as Korean serial
+ * platforms render it and as the writer prompt asks. Gemini breaks lines inside blocks; read by blank lines,
+ * a block of twenty short lines is one 700자 "paragraph" to the lint, the judges and the reviser. Words and
+ * their order are untouched: only line breaks are doubled and runs of blank lines collapsed.
+ */
+export function paragraphPerLine(text: string): string {
+  return text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((l) => l.replace(/[ \t]+$/u, ''))
+    .filter((l, i, all) => l.trim() !== '' || (i > 0 && all[i - 1]?.trim() !== ''))
+    .join('\n')
+    .replace(/\n(?!\n)/g, '\n\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}

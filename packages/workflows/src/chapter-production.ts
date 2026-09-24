@@ -31,7 +31,7 @@ import {
   type JobRow,
   type Pool,
 } from '@yeonjae/db';
-import { canonicalPolicyHash, requirePolicy, type PolicyRef } from '@yeonjae/domain';
+import { canonicalPolicyHash, promptCeilingOf, requirePolicy, type PolicyRef } from '@yeonjae/domain';
 import { type Gateway } from '@yeonjae/gateway';
 import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/narrative';
 import { PromptRegistry } from '@yeonjae/prompts';
@@ -287,7 +287,7 @@ export async function makeContext(
   } else {
     // Validate identity before any prompt or job row is persisted for a new workflow.
     identity = composeIdentity(store, identityRef, identityVersionId);
-    const activePromptSet = registry.activeSet();
+    const activePromptSet = registry.activeSet(promptCeilingOf(policies));
     const pins: WorkflowPins = {
       promptSetId: activePromptSet.id,
       promptSet: activePromptSet.mapping,

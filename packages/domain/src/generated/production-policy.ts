@@ -95,6 +95,25 @@ export interface ProductionPolicy {
      * ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed.
      */
     pov_secrets_reader_visible?: boolean;
+    /**
+     * ADR-0081: the chapter length finding (LEN-01) counts against the structure dimension's deterministic composite, so a judge cannot rate the structure of a chapter far off its length target as if it were complete. Absent or false: length gates only through its own major finding, as before.
+     */
+    length_in_structure?: boolean;
+    /**
+     * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
+     */
+    judge_calibration?: {
+      max_gap_points: number;
+    };
+  };
+  /**
+   * Deterministic handling of scene drafts before assembly (ADR-0081).
+   */
+  drafting?: {
+    /**
+     * Every line break of a prose draft becomes a paragraph break (one paragraph per line, as serial platforms render it); words are untouched. Counted as the paragraph_per_line normalizer. Absent or false: drafts keep the model's own line layout.
+     */
+    paragraph_per_line?: boolean;
   };
   /**
    * Pre-draft planning checks (ADR-0063). A policy without this block drafts every scene plan unchecked, as before.
@@ -125,6 +144,12 @@ export interface ProductionPolicy {
      * The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches.
      */
     language_layer?: string;
+  };
+  /**
+   * The newest prompt family version this policy's jobs may pin (ADR-0081): the job's prompt set is the newest active version per family at or below max_version. Absent: 4.5.0, the newest version when the field was introduced, so earlier policies keep their prompts when a new version is added.
+   */
+  prompts?: {
+    max_version: string;
   };
   /**
    * Retry and backoff for retryable provider failures (ADR-0072): HTTP 429 and 5xx (502/503/504 included), transport faults and, when retry_empty_reply is true, an empty completion. After each such failure the gateway waits base_delay_ms × multiplier^(n−1), capped at max_delay_ms (with full jitter a uniform share of it), moves to the class's next route and wraps to the first, up to max_attempts provider attempts per call. Every attempt and its backoff is recorded on the call's audit row. Absent: the next route at once, at most four attempts, as before.

@@ -36,6 +36,17 @@
       "type": "object",
       "required": ["judge_score", "dimension_scores", "drift_flags", "issues"],
       "properties": {
+        "weakest_passages": {
+          "type": "array",
+          "maxItems": 5,
+          "description": "The dimension's weakest passages, quoted before any score (ADR-0081).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["quote", "why"],
+            "properties": { "quote": { "type": "string" }, "why": { "type": "string" } }
+          }
+        },
         "judge_score": { "type": "number", "minimum": 0, "maximum": 100 },
         "dimension_scores": {
           "type": "object",

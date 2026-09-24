@@ -16,7 +16,7 @@ one per phase; the agent cannot merge, so a roll-up PR from the top branch close
 | Order | Phase | Branch | Status |
 | --- | --- | --- | --- |
 | 1 | 0 — state and provider readiness | `hoplite/hipponion-22b29187` | done (ADR-0080) |
-| 2 | G — Gemini baseline and same-model judging | `…--gemini-baseline` | next |
+| 2 | G — Gemini baseline and same-model judging | `…--gemini-baseline` | done (ADR-0081, `standard@12`) |
 | 3+ | C, U, V2, N, Q, M, I, E, W, B, D | stacked on G | pending |
 
 **Done in Phase 0.** Both model-id names (`YEONJAE_NOTION_MODEL` wins over `YEONJAE_MODEL_NOTION`); split error
@@ -36,12 +36,43 @@ Korean voice.
 sandbox database (the test kit resets what it is given; `RESET_REFUSED` now guards the permanent one). Live
 runs use the permanent `DATABASE_URL` from a separate worktree so a rebuild cannot change a running process.
 
-**Next step.** Phase G: record the G1 `standard@11` chapter-1 baseline on Gemini
-(`13-live-run-gemini.md` §1), compare with §8.4 of `12-live-run-ws1-7.md`, then same-model judging
-mitigations (`standard@12`).
+**Next step.** Phase C: import the operator corpus into the permanent database (`corpus` schema), corpus
+statistics, the voice analysis, the copy index, the calibrated `lang/ko@7`, the operator voice layer, exemplars and
+contrast pairs, the C8 metric and the academy intake (`13-live-run-gemini.md` §3 holds the v12 checkpoint).
 
 **Open defects carried in.** A-4 (future knowledge vs the reveal schedule), G-1 (genre vocabulary), the bible
 time frame, A5 (dialogue-share floor for first-person openings) — scheduled for Phases C4 and U.
+
+## Phase G — Gemini baseline and same-model judging, `standard.v12` — 2026-09-24
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline` (stacked on Phase 0). ADR-0081 records the decisions;
+`13-live-run-gemini.md` §1–§2 the evidence.
+
+**Measured (G1, live, `standard@11` unchanged on Gemini):** chapter 1 at 3,965자 (−25 %), two scenes; r0 prose
+34.2/78 (rubric 56.3, lint 1), structure 93.5, genre 90, voice 86.9; 3 blocking / 12 major; every patched round
+quarantined; 47 calls (75 attempts), 150,428 / 24,748 tokens, 3.29 credit points, 31 min. Four majors were a
+line-layout artifact (Gemini breaks lines inside blank-line blocks); three were 속마음 in 존댓말; the blockings
+repeat A-4 and add two bible contradictions.
+
+**Built:** `production-policy.prompts.max_version` and `PromptRegistry.activeSet(maxVersion)` — a job pins the
+newest active prompt at or below its policy's ceiling; policies without the field keep the 4.5.0 set
+(`LEGACY_PROMPT_CEILING`), so a new prompt version never changes an older policy. Prompt family 4.6.0: the four
+gated judges quote their three weakest passages first (`weakest_passages`, optional in the answer schema) and
+score against anchored Korean rubrics with caps; the scene writer keeps 속마음 in 반말 and one paragraph per line.
+`drafting.paragraph_per_line` (deterministic, `paragraphPerLine`, counted), `evaluation.length_in_structure`,
+`evaluation.judge_calibration.max_gap_points` (rubric capped at composite + gap, recorded per section). Korean
+claims for length, output-language and fallback findings (the English length claim reached the reviser).
+`standard.v12` = v11 + all of the above + the refusal rule (ADR-0080) + scene `request_ratio` 1.1 + structure
+`judge_weight` 0.5; thresholds unchanged.
+
+**Tests:** `registry.test.ts` (legacy set at 4.5.0; 4.6.0 adds exactly five families), `policy.test.ts` (v12 = v11 +
+the listed changes, no threshold moved), `paragraph-per-line.test.ts` 3/3, `output-shapes.test.ts` (4.6.0 shapes
+are schema-generated), `workflow-pins.integration.test.ts` (a release below the ceiling reaches new jobs, one
+above it does not), `normalizers.test.ts`, and a Korean simulated run under v12 in `novel-ko.integration.test.ts`
+(4.6.0 judges and writer pinned, line-broken drafts stored one paragraph per line, Latin-leak scan clean).
+
+**Not done:** the v12 live checkpoint is recorded in `13-live-run-gemini.md` §3 when it has run; a judge-calibration
+report across projects waits for more scorecards (C8 supplies the operator-corpus side).
 
 ## Phase 0 — state and provider readiness — 2026-09-24
 

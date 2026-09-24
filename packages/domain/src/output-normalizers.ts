@@ -25,6 +25,8 @@ export const OUTPUT_NORMALIZERS = [
   // Gateway-level JSON recovery (ADR-0080): a fenced answer, or JSON inside chatty text.
   'json_fence_stripped',
   'json_object_extracted',
+  // One paragraph per line in a text-mode scene draft (ADR-0081).
+  'paragraph_per_line',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

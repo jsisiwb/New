@@ -20,6 +20,7 @@ import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeon
 import {
   codePointLength,
   measure,
+  paragraphPerLine,
   segmentParagraphs,
   targetCount,
   toNfcText,
@@ -440,19 +441,26 @@ export async function draftScenes(
         // A prose-only (text-mode) writer answers with the manuscript itself; the envelope is built here
         // deterministically. A recorded (or well-formed) JSON draft is taken verbatim; a live draft whose
         // offsets or paragraph table disagree with its own prose is normalized from the prose.
+        // ADR-0081: under `drafting.paragraph_per_line` every line of a prose draft is its own paragraph.
+        let prose = call.output;
+        if (typeof prose === 'string' && ctx.policy.drafting?.paragraph_per_line) {
+          const perLine = paragraphPerLine(prose);
+          if (perLine !== prose.trim()) recordNormalization('paragraph_per_line');
+          prose = perLine;
+        }
         const draft =
-          typeof call.output === 'string'
+          typeof prose === 'string'
             ? validateSceneDraft(
                 normalizeSceneDraft(
                   proseEnvelope(
-                    call.output,
+                    prose,
                     scene.scene_no,
                     ctx.identity.outputLanguage.language ?? 'en',
                   ),
                 ),
                 scene.scene_no,
               )
-            : validateOrNormalizeSceneDraft(call.output, scene.scene_no);
+            : validateOrNormalizeSceneDraft(prose, scene.scene_no);
         const ref = await saveArtifact(ctx, {
           step: 'scene_draft',
           kind: 'scene_draft',

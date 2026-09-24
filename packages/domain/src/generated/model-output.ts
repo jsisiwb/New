@@ -170,6 +170,83 @@ export interface CheckerIssue {
  * via the `definition` "judgeBase".
  */
 export interface JudgeBase {
+  /**
+   * The dimension's weakest passages, quoted before any score (ADR-0081).
+   *
+   * @maxItems 5
+   */
+  weakest_passages?:
+    | []
+    | [
+        {
+          quote: string;
+          why: string;
+        },
+      ]
+    | [
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+      ]
+    | [
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+      ]
+    | [
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+      ]
+    | [
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+        {
+          quote: string;
+          why: string;
+        },
+      ];
   judge_score: number;
   dimension_scores: {
     [k: string]: number | undefined;
