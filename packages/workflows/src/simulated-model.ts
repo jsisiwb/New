@@ -526,6 +526,8 @@ function scriptByRole(req: ProviderRequest) {
       const sceneNo = Number(
         /Scene (\d+)|"scene_no":\s*(\d+)/.exec(prompt)?.[1] ??
           /"scene_no":\s*(\d+)/.exec(prompt)?.[1] ??
+          // A labelled Korean scene plan (ADR-0068) carries no JSON; the template names the scene.
+          /장면 (\d+) 작성/.exec(prompt)?.[1] ??
           '1',
       );
       const ch = Number(/chapter_contract:(\d+)|Chapter (\d+)/.exec(prompt)?.[2] ?? chapterNo);

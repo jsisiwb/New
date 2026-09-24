@@ -12,6 +12,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
+      'policy/standard@5',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
   });
@@ -39,6 +40,18 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       return rest;
     };
     expect(strip(v2)).toEqual(strip(v1));
+  });
+
+  it('standard.v5 is standard.v4 plus the ADR-0068 labelled scene plan', () => {
+    const v4 = requirePolicy('policy/standard@4', policies);
+    const v5 = requirePolicy('policy/standard@5', policies);
+    expect(v4.planning?.scene_plan_format).toBeUndefined();
+    expect(v5.planning).toEqual({ ...v4.planning, scene_plan_format: 'labelled' });
+    const strip = (p: typeof v4) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v5)).toEqual(strip(v4));
   });
 
   it('standard.v4 is standard.v3 plus the ADR-0064 revision knobs', () => {

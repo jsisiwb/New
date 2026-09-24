@@ -14,6 +14,7 @@ export type Provenance = NonNullable<ManifestItem['provenance']>;
 export type SourceRef = NonNullable<ManifestItem['source']>;
 export type Compression = NonNullable<ManifestItem['compression']>;
 export type ChapterContract = Generated.ChapterContractSchema.ChapterContract;
+export type ScenePlan = Generated.ScenePlanSchema.ScenePlan;
 export type Requirement = Generated.StorySpecSchema.Requirement;
 export type StorySpec = Generated.StorySpecSchema.StorySpec;
 

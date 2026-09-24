@@ -500,10 +500,12 @@ export async function produceChapter(
     guard('scene_plan');
     // ADR-0063: the plan against the state ledgers before any draft, under a policy that opts in.
     if (ctx.policy.planning?.plan_check) await checkPlan(ctx, contract.contract, plan.scenes);
+    const registryNames = new Map(input.bible.entities.map((e) => [e.id, e.display_name]));
     const drafted = await draftScenes(ctx, {
       contract: contract.contract,
       pack: writerBuilt,
       scenes: plan.scenes,
+      nameOf: (id) => registryNames.get(id) ?? id,
     });
     guard('scene_draft');
     const assembled = await assembleChapter(ctx, {
