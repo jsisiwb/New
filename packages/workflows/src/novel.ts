@@ -112,9 +112,11 @@ export async function startNovel(
     expectFrom: retryingPreApproval ? ['failed'] : ['intake'],
     patch: retryingPreApproval ? { lastError: null } : undefined,
   });
-  const { ctx } = await makePlanContext(deps, project.id);
   let round;
   try {
+    // Inside the failure handler: a context that cannot be built (an unknown pinned policy, a stale policy
+    // hash) fails the run instead of leaving it `suggesting` with nothing running.
+    const { ctx } = await makePlanContext(deps, project.id);
     round = await suggestConcepts(ctx, {
       intake,
       specVersion: run.spec_version,
