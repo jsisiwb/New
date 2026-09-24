@@ -21,6 +21,8 @@ import { normalizePatchFields } from './revision.js';
 /** Shape repairs: remove once the counter reads zero across live runs with generated shapes. */
 const SHAPE_REPAIRS = [
   'contract_output',
+  // ADR-0074 (A-1): a contract that names no location gets a registered one.
+  'contract_location_fallback',
   'scene_plans',
   'patch_fields',
   'judge_drift_flags',
