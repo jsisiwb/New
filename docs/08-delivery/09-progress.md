@@ -3,6 +3,24 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Phases O and W (tooling) — operator tools and prompt sizes — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--operator-tools` (stacked on Phase V). ADR-0079 records the decisions.
+
+**Built:** `pack:inspect`, `story:state`, `cost:project`, `contract:show` (I, read-only), `prompts:size` — read-only;
+none calls a model, writes canon or creates a job.
+
+**Measured:** `ops-tools.test.ts` 3/3, `ops-tools.integration.test.ts` 2/2. On live data: `pack:inspect` reproduces
+the v7 overflow (20,928 / 20,000) and fits it under the v8 budget (21,288 / 34,000); `cost:project` on the v8
+project projects 200 chapters to ≈ 7,800 calls, 27.9M / 3.1M tokens, ≈ 76 model-hours (one chapter observed,
+three revision rounds); `prompts:size` ranks the chapter planner first (6,781 estimator tokens).
+
+**Not done:** prompt pruning (W — a pruned prompt is a new version and needs A/B evidence); rendered prompts
+of recorded calls (inputs are not stored, `input_ref` is empty); an `edit-chapter` command and contract editing
+(I — editing a checkpointed contract needs a re-plan path); Korean chapter titles (I — the contract has no
+title field; needs a planner output and prompt version); a separate `export` command (`export:accepted` and
+`export:package` exist).
+
 ## Phase V — multi-patch revision rounds, opt-in through `standard.v10` — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92--revision-eval` (stacked on Phase L). ADR-0077 records the decisions.

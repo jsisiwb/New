@@ -85,6 +85,7 @@
 | [0076](0076-hierarchical-story-memory-arc-summaries.md) | Hierarchical story memory, `standard.v9`: one arc summary (L2) per accepted arc by `arc_summarizer`, the story so far as recent L1 blocks plus one item per older arc; 60-query Korean retrieval fixture with rank-quality floors; a reviser patch without `scope` gets one inferred from its text (live defect L-1) |
 | [0077](0077-multi-patch-revision-rounds.md) | Multi-patch revision rounds, `standard.v10`: one reviser call per cluster of the targeted spans, each anchored inside its own window, merged into one revision recorded as an envelope patch plus a `patch_set`; unusable sub-patches are dropped, the round fails only when none is usable |
 | [0078](0078-patch-regression-against-the-parent.md) | Patch regression protections against the parent, `standard.v11`: a protected section fails only on pass → fail and a kind guard only on more open majors of its kinds than the parent (live defect V-1: every live patched round was quarantined for what its parent already failed) |
+| [0079](0079-operator-tools.md) | Read-only operator tools: `pack:inspect` (sections against the pinned budget, from the stored contract), `story:state`, `cost:project` (audit → N chapters), `contract:show`, `prompts:size` |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
