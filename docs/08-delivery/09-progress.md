@@ -26,6 +26,9 @@ decisions; the Step 0 improvement audit (§3, PR #1) records the findings.
   evaluators, composes gated scores from rubric sub-scores and deterministic composites, and carries
   findings through a targeted re-evaluation after a patch.
 - `project:create --policy=` pins a shipped policy. New projects still default to `standard.v1`.
+- Port onto Workstream 2b: the Korean run's Latin-script scan (ADR-0059) also covers every model call of
+  the `standard.v2` run, so the 4.4.0 evaluators, `promise_checker`, `repetition_judge` and the targeted
+  re-evaluation are scanned too (0 leaks).
 
 **Measured:**
 

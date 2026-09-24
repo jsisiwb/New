@@ -244,14 +244,15 @@ run('Korean novel run under standard.v2: evaluation v2 (ADR-0060)', () => {
   const seen: ProviderRequest[] = [];
   let inFlight = 0;
   let evaluatorPeak = 0;
+  // Words the model itself wrote, for the Latin-script scan (as in the standard.v1 run above).
+  const modelWords = new Set<string>();
   // Chapter 1's first prose judgment finds one 번역투 sentence, so one revision round runs and the
   // re-evaluation after the patch is targeted (ADR-0060): only the prose judge answers again.
   const flaggedSentence = (prompt: string) => {
     const p2 = /\n\[p2\] ([^\n]+)/.exec(prompt)?.[1] ?? '';
     return /^[^.!?…]+[.!?…]/.exec(p2)?.[0] ?? p2;
   };
-  const mock = new MockProvider((req) => {
-    seen.push(req);
+  const answer = (req: ProviderRequest) => {
     const activity = req.trace?.activityId ?? '';
     if (req.trace?.role === 'prose_judge' && activity.endsWith(':1:r0'))
       return {
@@ -290,6 +291,12 @@ run('Korean novel run under standard.v2: evaluation v2 (ADR-0060)', () => {
       };
     }
     return script(req);
+  };
+  const mock = new MockProvider((req) => {
+    seen.push(req);
+    const out = answer(req);
+    for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+    return out;
   });
   // Evaluator answers take a few milliseconds, so parallel evaluation is observable as overlap.
   const provider: Provider = {
@@ -421,5 +428,14 @@ run('Korean novel run under standard.v2: evaluation v2 (ADR-0060)', () => {
       expect(typeof sections.voice?.register_violation_rate).toBe('number');
       expect(typeof sections.genre?.terminology_compliance).toBe('number');
     }
+
+    // KO-PROMPT-SURFACE-001 over the evaluation v2 surfaces (the 4.4.0 evaluators, promise_checker,
+    // repetition_judge and the targeted re-evaluation), which only a standard.v2 project reaches.
+    const leaks = seen.flatMap((r) =>
+      englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+        (w) => `${r.trace?.role ?? '?'}: ${w}`,
+      ),
+    );
+    expect([...new Set(leaks)]).toEqual([]);
   }, 300_000);
 });
