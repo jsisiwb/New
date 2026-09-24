@@ -226,6 +226,15 @@ export interface ProductionPolicy {
   length: {
     warn_tolerance_ratio: number;
     fail_tolerance_ratio: number;
+    /**
+     * ADR-0075 (K3): the length a scene writer is asked for. The scene plan keeps its target; the writer is asked for request_ratio × the target, and with redistribute the targets of the remaining scenes are rescaled by the chapter's remaining budget (the planned total minus what the earlier scenes measured), clamped to [min_ratio, max_ratio]. Evaluation still measures the chapter against the contract's target. Absent: the writer is asked for the plan's target.
+     */
+    scene_calibration?: {
+      request_ratio: number;
+      redistribute: boolean;
+      min_ratio: number;
+      max_ratio: number;
+    };
   };
   /**
    * issue kind → override class (ADR-0042). Kinds not listed default to `reviewer` for major and `advisory` for minor/note.

@@ -8,7 +8,7 @@
  */
 import { afterAll, beforeAll, expect, it, describe } from 'vitest';
 import { createProject, createWorkspace, getNovelRun, PgAuditStore, type Pool } from '@yeonjae/db';
-import { loadSchemas } from '@yeonjae/domain';
+import { loadPolicies, loadSchemas, requirePolicy } from '@yeonjae/domain';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import {
   Gateway,
@@ -26,6 +26,9 @@ import { angleSeeds, worldRulesTerm } from './story-plan.js';
 import { buildRunReport, renderRunReport } from './run-report.js';
 import { relintAccepted } from './relint.js';
 import { REPLAY_ROUTING } from './testkit.js';
+import { calibrateSceneTarget } from './length-calibration.js';
+import { type ScenePlan } from './drafting.js';
+import { measure, toNfcText } from '@yeonjae/prose';
 
 const run = databaseUrl() ? describe : describe.skip;
 
@@ -996,6 +999,36 @@ run(
   },
 );
 
+/**
+ * The simulated script for policies with batched cast design and a polish round: the cast batches split the
+ * base script's cast, and the polish round's editor makes a one-word sentence edit.
+ */
+const batchedScript = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+  // The polish round's editor (the base script has no reviser): a one-word sentence edit.
+  if (req.trace?.role === 'targeted_reviser') {
+    const span = /\[수정할 구간\]\n([\s\S]*?)\n\n\[뒷 맥락\]/.exec(req.user)?.[1] ?? '';
+    const sentence = /^[^.!?…]+[.!?…]/.exec(span.trim())?.[0] ?? span.trim();
+    return {
+      json: {
+        scope: 'sentence',
+        span: { original_quote: sentence },
+        new_text: `문득 ${sentence}`,
+        changed_claims: [],
+        preserved_facts_ack: [],
+        speaker_annotations: [],
+      },
+    };
+  }
+  if (req.trace?.role !== 'character_designer' || !('json' in out)) return out;
+  const cast = out.json as { characters: { display_name: string; role?: string }[] };
+  const hero = cast.characters.find((c) => c.role === 'protagonist') ?? cast.characters[0];
+  const rest = cast.characters.filter((c) => c !== hero);
+  if (req.user.includes('주인공 한 명만')) return { json: { ...cast, characters: [hero] } };
+  if (req.user.includes('핵심 인물'))
+    return { json: { characters: rest.slice(0, 1), propositions: [] } };
+  return { json: { characters: rest.slice(1), propositions: [] } };
+};
+
 run(
   'Korean novel run under standard.v7: lang/ko@6, point of view, style sample, contrast pairs, rhythm (ADR-0073)',
   () => {
@@ -1004,34 +1037,9 @@ run(
     let projectId: string;
     const seen: ProviderRequest[] = [];
     const modelWords = new Set<string>();
-    const byBatch = (req: ProviderRequest, out: ReturnType<typeof script>) => {
-      // The polish round's editor (the base script has no reviser): a one-word sentence edit.
-      if (req.trace?.role === 'targeted_reviser') {
-        const span = /\[수정할 구간\]\n([\s\S]*?)\n\n\[뒷 맥락\]/.exec(req.user)?.[1] ?? '';
-        const sentence = /^[^.!?…]+[.!?…]/.exec(span.trim())?.[0] ?? span.trim();
-        return {
-          json: {
-            scope: 'sentence',
-            span: { original_quote: sentence },
-            new_text: `문득 ${sentence}`,
-            changed_claims: [],
-            preserved_facts_ack: [],
-            speaker_annotations: [],
-          },
-        };
-      }
-      if (req.trace?.role !== 'character_designer' || !('json' in out)) return out;
-      const cast = out.json as { characters: { display_name: string; role?: string }[] };
-      const hero = cast.characters.find((c) => c.role === 'protagonist') ?? cast.characters[0];
-      const rest = cast.characters.filter((c) => c !== hero);
-      if (req.user.includes('주인공 한 명만')) return { json: { ...cast, characters: [hero] } };
-      if (req.user.includes('핵심 인물'))
-        return { json: { characters: rest.slice(0, 1), propositions: [] } };
-      return { json: { characters: rest.slice(1), propositions: [] } };
-    };
     const provider = new MockProvider((req) => {
       seen.push(req);
-      const out = byBatch(req, script(req));
+      const out = batchedScript(req, script(req));
       for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
       return out;
     });
@@ -1131,6 +1139,138 @@ run(
         [projectId],
       );
       for (const p of polish.rows) expect(p.payload.lint_before).toBeGreaterThan(0);
+
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v8: Korean pack budgets and scene length calibration (ADR-0075)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = batchedScript(req, script(req));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    // The simulated writer narrates in the third person (KO-POV-01 would block a first-person project).
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v8-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@8',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('asks each scene writer for the calibrated length; plans and packs keep the targets', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v8-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      const cal = requirePolicy('policy/standard@8', loadPolicies()).length.scene_calibration;
+      if (!cal) throw new Error('standard.v8 has no scene_calibration');
+      const plans = await pool.query<{ key: string; payload: { scenes: ScenePlan[] } }>(
+        "SELECT key, payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scene_plan'",
+        [projectId],
+      );
+      const drafts = new Map(
+        (
+          await pool.query<{ key: string; text: string }>(
+            `SELECT key, payload->>'text' AS text FROM workflow_artifacts
+            WHERE project_id = $1 AND kind = 'scene_draft'`,
+            [projectId],
+          )
+        ).rows.map((r) => [r.key, r.text]),
+      );
+      const firstAsk = new Map<string, string>();
+      for (const r of seen) {
+        const id = r.trace?.activityId ?? '';
+        if (
+          r.trace?.role === 'scene_writer' &&
+          /^scene_draft:\d+:\d+$/.test(id) &&
+          !firstAsk.has(id)
+        )
+          firstAsk.set(id, r.user);
+      }
+      let checked = 0;
+      for (const plan of plans.rows) {
+        const ch = plan.key.split(':')[0] ?? '';
+        const targets = plan.payload.scenes.map((s) => s.length_target.value);
+        // The stored plan keeps the planner's targets (700자 per simulated scene), not the requested length.
+        expect(new Set(targets)).toEqual(new Set([700]));
+        const measured: number[] = [];
+        for (const [i, s] of plan.payload.scenes.entries()) {
+          const expected = calibrateSceneTarget(targets, i, measured, cal).requested;
+          if (i === 0) expect(expected).toBe(560);
+          expect(firstAsk.get(`scene_draft:${ch}:${s.scene_no}`)).toContain(
+            `목표 ${expected}자(공백 포함)`,
+          );
+          const text = drafts.get(`${ch}:${s.scene_no}`) ?? '';
+          measured.push(measure(toNfcText(text)).characters);
+          checked++;
+        }
+      }
+      expect(checked).toBeGreaterThan(2);
+
+      // Under the v8 budgets no Korean pack here needs a degradation-ladder step (the run has no vector or
+      // lexical retriever, so `degraded` itself is set for that reason).
+      const packs = await pool.query<{ template: string; steps: unknown[] }>(
+        `SELECT template, manifest->'degradation'->'ladder_steps' AS steps FROM context_packs
+        WHERE project_id = $1`,
+        [projectId],
+      );
+      expect(packs.rows.length).toBeGreaterThan(0);
+      expect(packs.rows.filter((p) => p.steps.length > 0)).toEqual([]);
 
       const leaks = seen.flatMap((r) =>
         englishLeaks(`${r.system}\n${r.user}`, modelWords).map(

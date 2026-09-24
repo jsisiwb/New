@@ -15,8 +15,32 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@5',
       'policy/standard@6',
       'policy/standard@7',
+      'policy/standard@8',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v8 is standard.v7 with Korean-calibrated budgets and scene length calibration (ADR-0075)', () => {
+    const v7 = requirePolicy('policy/standard@7', policies);
+    const v8 = requirePolicy('policy/standard@8', policies);
+    expect(v8.context).toEqual({
+      ...v7.context,
+      writer_input_budget_tokens: 36_000,
+      input_budget_tokens: {
+        'pack.chapter_planner': 20_000,
+        'pack.continuity_checker': 34_000,
+        'pack.extractor': 30_000,
+      },
+    });
+    expect(v8.length).toEqual({
+      ...v7.length,
+      scene_calibration: { request_ratio: 0.8, redistribute: true, min_ratio: 0.5, max_ratio: 1.3 },
+    });
+    const strip = (p: typeof v7) => {
+      const { version: _v, name: _n, content_hash: _h, context: _c, length: _l, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v8)).toEqual(strip(v7));
   });
 
   it('standard.v7 is standard.v6 plus the Korean-prose opt-ins (ADR-0073, ADR-0074)', () => {

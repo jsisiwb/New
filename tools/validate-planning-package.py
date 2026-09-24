@@ -89,6 +89,7 @@ EXAMPLES = [
     ("examples/production-policies/standard.v5.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v6.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v7.json", "production-policy.schema.json"),
+    ("examples/production-policies/standard.v8.json", "production-policy.schema.json"),
 ]
 # Bundles: JSON files whose top-level arrays hold instances of stored schemas (key → schema).
 BUNDLES = {

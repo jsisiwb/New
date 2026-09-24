@@ -172,3 +172,26 @@ Excerpt (the first three lines of the pipeline's chapter 1, unedited):
 
 The v6 project stays at chapter 1 on its pinned layer and is kept as this record; the continuation runs a
 fresh project on `standard.v7`.
+
+## 8. Phase K checkpoint — `standard.v7`, then `standard.v8` (2026-09-24)
+
+### 8.1 `standard.v7` (16:21–16:34 UTC)
+
+A fresh project on the Phase A intake plus `pov: first` (`ops/live-runs/phase-a-v7-intake.json`, config only),
+pinned to `policy/standard@7` (`lang/ko@6`), driven by the same scripts as §7 through the Notion bridge.
+
+| | |
+| --- | --- |
+| Start → concepts | 1 min 59 s (requirement interpreter, two concepts) |
+| Approval → bible | three cast batches, world, progression, blueprint; 7 cast, 3 locations, 3 organizations, 15 propositions, 10 promises, 4 seasons |
+| Chapter 1 | arc plan, contract (rhythm check recorded), three scene plans, three scenes drafted and assembled |
+| Stop | `failed: PACK_FAILED` at the continuity checker's pack — critical context 20,928 tokens after the ladder against 20,000 (K-1, ADR-0075) |
+| Length | scenes 2,293자 / 1,960자 / 2,464자 against 1,700 / 1,800 / 1,800 — 6,717자 against 5,300 (+27 %, K-2, ADR-0075) |
+| Calls | 15, none failed; 66,390 in / 17,273 out; per role p50: scene writer 63.7 s, chapter planner 36.6 s, story architect 43.7 s |
+| Cost | 0¢ recorded; bridge billing-period credits 61.76 % / 67.51 % → 62.24 % / 69.09 % |
+
+Offline, on the same project state, the continuity pack's items measured 18,407 tokens before rendering:
+chapter text 7,376, participants' states 3,744, contract 2,352, knowledge 2,025, world rules 1,433,
+constraints 570, ledgers and relationships 475, promises 194. The Phase A packs (§7) had been at 19,771–19,782
+of 20,000 with no ladder step. `standard.v8` raises the Korean-sensitive budgets and calibrates the scene
+writer's requested length (ADR-0075); the v7 project stays at chapter 1 as this record.

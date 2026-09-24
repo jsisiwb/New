@@ -72,6 +72,12 @@ for POV + top-4 participants and compact rows for others), T2 fill by rank, T3 i
 the target model's tokenizer when available, else a calibrated English estimator (words × 1.3 ± margin);
 the manifest records both counts and the estimator used.
 
+**Korean budgets (ADR-0075).** A Korean pack is measured with the Korean estimator, one token per 자
+(ADR-0059), about 1.4 times the o200k count; budgets sized for English packs overflow on a Korean chapter's
+text plus a full bible's canon (live: 20,928 against the continuity checker's 20,000 at chapter 1). The
+`standard.v8` budgets are sized for that estimator (starting values, `standard.v8`: writer 36k;
+chapter_planner 20k; continuity_checker 34k; extractor 30k); older policies keep theirs.
+
 **Why T0 cannot grow unboundedly (ADR-0033):** hard requirements are never rendered as the raw
 requirement list. `PlanningHorizonWorkflow` compiles, per chapter, an **Active Constraint Set**: requirements
 whose scope covers this chapter (series-wide, this season/arc, this chapter range, these participants), with

@@ -200,7 +200,19 @@
       "additionalProperties": false,
       "properties": {
         "warn_tolerance_ratio": {"type": "number", "minimum": 0, "maximum": 0.5},
-        "fail_tolerance_ratio": {"type": "number", "minimum": 0, "maximum": 0.5}
+        "fail_tolerance_ratio": {"type": "number", "minimum": 0, "maximum": 0.5},
+        "scene_calibration": {
+          "type": "object",
+          "description": "ADR-0075 (K3): the length a scene writer is asked for. The scene plan keeps its target; the writer is asked for request_ratio × the target, and with redistribute the targets of the remaining scenes are rescaled by the chapter's remaining budget (the planned total minus what the earlier scenes measured), clamped to [min_ratio, max_ratio]. Evaluation still measures the chapter against the contract's target. Absent: the writer is asked for the plan's target.",
+          "required": ["request_ratio", "redistribute", "min_ratio", "max_ratio"],
+          "additionalProperties": false,
+          "properties": {
+            "request_ratio": {"type": "number", "exclusiveMinimum": 0, "maximum": 1.5},
+            "redistribute": {"type": "boolean"},
+            "min_ratio": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+            "max_ratio": {"type": "number", "minimum": 1, "maximum": 3}
+          }
+        }
       }
     },
     "override_matrix": {

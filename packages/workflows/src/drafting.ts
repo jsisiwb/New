@@ -17,8 +17,15 @@ import {
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
 import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
-import { codePointLength, measure, segmentParagraphs, toNfcText } from '@yeonjae/prose';
+import {
+  codePointLength,
+  measure,
+  segmentParagraphs,
+  targetCount,
+  toNfcText,
+} from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
+import { calibrateSceneTarget } from './length-calibration.js';
 import { chooseFallbackLocation, normalizeScenePlans } from './plan-normalize.js';
 import { normalizeSceneDraft } from './anchoring.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
@@ -350,6 +357,11 @@ export interface SceneDraftRef {
    * checkpoints written before ADR-0059.
    */
   readonly characters?: number;
+  /**
+   * ADR-0075 (K3): the length the writer was asked for under `length.scene_calibration`, in the plan's unit.
+   * Absent when the policy does not calibrate (the writer was asked for the plan's target).
+   */
+  readonly requested_length?: number;
   /** The manuscript-language check's confidence, whatever the language. */
   readonly language_confidence: number | undefined;
   /** @deprecated Kept for checkpoints written before ADR-0059; read `language_confidence`. */
@@ -378,7 +390,24 @@ export async function draftScenes(
       : JSON.stringify(scene);
   const texts: string[] = [];
   const drafts: SceneDraftRef[] = [];
-  for (const scene of input.scenes) {
+  const calibration = ctx.policy.length.scene_calibration;
+  const targets = input.scenes.map((s) => s.length_target.value);
+  for (const [index, planned] of input.scenes.entries()) {
+    // ADR-0075: only what the writer is asked for changes; the stored plan and the gate keep the target.
+    const requested = calibration
+      ? calibrateSceneTarget(
+          targets,
+          index,
+          texts.map((t, i) =>
+            targetCount(measure(toNfcText(t)), input.scenes[i]?.length_target.unit ?? 'words'),
+          ),
+          calibration,
+        ).requested
+      : undefined;
+    const scene: ScenePlan =
+      requested === undefined
+        ? planned
+        : { ...planned, length_target: { ...planned.length_target, value: requested } };
     const previous = texts.length
       ? texts.join('\n\n')
       : (input.pack.variables.previous_text ??
@@ -438,6 +467,7 @@ export async function draftScenes(
           llm_call_id: call.llmCallId,
           words: toNfcText(draft.text).text.split(/\s+/).filter(Boolean).length,
           characters: measure(toNfcText(draft.text)).characters,
+          ...(requested !== undefined ? { requested_length: requested } : {}),
           language_confidence: call.outputLanguageCheck?.performed
             ? call.outputLanguageCheck.englishConfidence
             : undefined,

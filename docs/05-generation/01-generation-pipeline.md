@@ -132,6 +132,13 @@ accepted chapter (amortized).
 [10] release lease; job complete with cost summary
 ```
 
+**Requested scene length (ADR-0075).** Under a policy with `length.scene_calibration` the scene writer in [2]
+is asked for `request_ratio` × the scene's target, and with `redistribute` the targets of the scenes still to
+be drafted are rescaled by the chapter's remaining budget — the planned total minus what the earlier scenes
+measured — within `[min_ratio, max_ratio]`. The scene plan, the length check in [4] and the run report keep
+the contract's target; the draft checkpoint records the requested length. A policy without the block asks for
+the plan's target.
+
 ### 4.1 Call budget (Standard tier, 3-scene ~2,500-word chapter, no candidates)
 
 | Step | Calls | Model class |

@@ -24,6 +24,11 @@ the two Phase A fixes that ship here.
 - A-3: `evaluation.pov_secrets_reader_visible` drops the POV character's own secrets from the knowledge-leak
   checker's reader-secret list.
 - `standard.v7` = `standard.v6` + the opt-ins above.
+- `standard.v8` = `standard.v7` + Korean-calibrated pack budgets (writer 36k, continuity checker 34k, extractor 30k,
+  chapter planner 20k) and `length.scene_calibration` (K3: the writer is asked for 0.8 × the scene target, the
+  remaining budget redistributed across the chapter's later scenes; plans and gates keep the target), ADR-0075 —
+  the two defects the live `standard.v7` run hit (K-1 `PACK_FAILED` at the continuity pack, 20,928 against
+  20,000; K-2 scenes +27 % over target).
 
 **Measured (deterministic):** `ko-style-v6.test.ts` 8/8 (including the six live `KO-NAME-02` false positives, now
 clean, and real misspellings still caught); `identity-from-intake.test.ts` 13/13 (layer opt-in, preferences, POV
@@ -32,9 +37,17 @@ and pairs in blocks, unchanged bytes without them); `rhythm.test.ts` 3/3; `evalu
 prompt with the POV section, the operator sample and the pairs, every planner prompt with the rhythm
 directives, contracts held to the POV, a rhythm check per chapter, 0 Latin-script leaks.
 
+**Measured (live, Notion bridge, `standard.v7`):** intake → concepts 1 min 59 s; bible (7 cast, 15 propositions,
+10 promises); chapter 1 contract with its rhythm check, three scenes drafted and assembled; stopped
+`failed: PACK_FAILED` (K-1) with the scenes at 6,717자 against 5,300 (K-2). 15 calls, none failed, 66,390 /
+17,273 tokens, 0¢ recorded, ≈ 0.5 / 1.6 points of the bridge's billing-period credits
+(`docs/08-delivery/12-live-run-ws1-7.md` §8.1). Unit: `length-calibration.test.ts` 6/6; `policy.test.ts`
+(v8 = v7 + the two changes); Korean `standard.v8` simulated run: every scene writer asked for the calibrated
+length, plans at the planner's target, no pack needing a ladder step, 0 Latin-script leaks.
+
 **Not done:** K2 best-of-N in the autopilot path (doubles calls; the winner-only guard is not wired into
-production); K3 continuation/trim (length is measured in both counts; no continuation or trim call);
-pipeline-generated contrast pairs; live evidence on `standard.v7` (the v7 live run follows this change).
+production); K3's trim/continuation call after assembly (the request calibration replaces it for now;
+ADR-0075); pipeline-generated contrast pairs.
 
 ## Phase A — live Korean run on `standard.v6` through chapter 1 — 2026-09-24
 
