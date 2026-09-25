@@ -16,7 +16,7 @@ names only).
 ```bash
 pnpm install && pnpm build && pnpm cli db:migrate
 export YEONJAE_PROVIDER_MODE=notion          # or live / genspark / simulated / replay
-pnpm cli project:create "제목" --policy=policy/standard@11
+pnpm cli project:create "제목" --policy=policy/standard@15
 pnpm cli novel:start <project> intake.json    # intake → story spec → two story directions
 pnpm cli novel:approve <project> <concept-id> --stop-after=3
 pnpm cli novel:run <project> --status-file=run.json
@@ -40,6 +40,10 @@ version. For a new Korean project use the newest `standard`:
 | `standard@9` | arc summaries for long-story memory | 0076 |
 | `standard@10` | one patch per cluster of findings in a revision round | 0077 |
 | `standard@11` | patch regression measured against the parent version | 0078 |
+| `standard@12` | Gemini on every role: prompt ceilings per policy, judges that quote their weakest passages, one paragraph per line, refusal rule | 0080, 0081 |
+| `standard@13` | the operator's voice: corpus-calibrated `lang/ko@7`, voice profile, the operator's passages as exemplars, the corpus copy check | 0082, 0083 |
+| `standard@14` | dialogue floor and scene partner, reader secrets in the scene plan, the premise device's vocabulary, re-judging open majors | 0084 |
+| `standard@15` | reveal schedule, talk partner and countable talk targets, the cut as the last beat, time frames, the plan critic, findings attributed to the patch, full confirmation before approval | 0086 |
 
 **Watching a run.**
 

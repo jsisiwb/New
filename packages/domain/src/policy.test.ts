@@ -14,6 +14,11 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@12',
       'policy/standard@13',
       'policy/standard@14',
+      'policy/standard@15',
+      'policy/standard@16',
+      'policy/standard@17',
+      'policy/standard@18',
+      'policy/standard@19',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -24,6 +29,170 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v19 is standard.v18 with the G8 fixes (ADR-0090)', () => {
+    const v18 = requirePolicy('policy/standard@18', policies);
+    const v19 = requirePolicy('policy/standard@19', policies);
+    expect(v19.planning).toEqual({
+      ...v18.planning,
+      reveal_schedule: { ...v18.planning?.reveal_schedule, narrator_current_knowledge: true },
+    });
+    expect(v19.drafting).toEqual({ ...v18.drafting, pov_redraft: true });
+    expect(v19.evaluation).toEqual({ ...v18.evaluation, pronoun_band_cap: true });
+    expect(v19.identity).toEqual({ ...v18.identity, device_rules: 2, protagonist_type: true });
+    expect(v19.prompts).toEqual({ max_version: '4.10.0' });
+    const strip = (p: typeof v18) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        drafting: _d,
+        evaluation: _e,
+        identity: _i,
+        prompts: _pr,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v19)).toEqual(strip(v18));
+    expect(v19.gates).toEqual(v18.gates);
+  });
+
+  it('standard.v18 is standard.v17 with the G7 fixes (ADR-0089)', () => {
+    const v17 = requirePolicy('policy/standard@17', policies);
+    const v18 = requirePolicy('policy/standard@18', policies);
+    expect(v18.planning).toEqual({
+      ...v17.planning,
+      strip_provenance_tags: true,
+      register_time_frames: true,
+    });
+    expect(v18.prompts).toEqual({ max_version: '4.9.0' });
+    expect(v18.identity).toEqual({
+      ...v17.identity,
+      language_layer: 'lang/ko@8',
+      genre_layers: ['genre/regression@4'],
+    });
+    const strip = (p: typeof v17) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        prompts: _pr,
+        identity: _i,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v18)).toEqual(strip(v17));
+    expect(v18.gates).toEqual(v17.gates);
+  });
+
+  it('standard.v17 is standard.v16 with the G6 fixes (ADR-0088)', () => {
+    const v16 = requirePolicy('policy/standard@16', policies);
+    const v17 = requirePolicy('policy/standard@17', policies);
+    expect(v17.planning).toEqual({
+      ...v16.planning,
+      reveal_schedule: { ...v16.planning?.reveal_schedule, narrator_knowledge: true },
+      plan_critic: { ...v16.planning?.plan_critic, contract: true },
+    });
+    expect(v17.drafting).toEqual({ ...v16.drafting, dedupe_repeated_lines: true });
+    expect(v17.prompts).toEqual({ max_version: '4.8.0' });
+    expect(v17.identity).toEqual({ ...v16.identity, voice_profile: 'voice/operator@2' });
+    // Five Korean revision rounds: a revision budget, not a gate (G6a converged 9 → 2 → 1 majors and ran out).
+    expect(v17.revision).toEqual({
+      ...v16.revision,
+      max_rounds: 5,
+      rounds_by_language: { ...v16.revision.rounds_by_language, ko: 5 },
+    });
+    const strip = (p: typeof v16) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        drafting: _d,
+        prompts: _pr,
+        identity: _i,
+        revision: _r,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v17)).toEqual(strip(v16));
+    expect(v17.gates).toEqual(v16.gates);
+  });
+
+  it('standard.v16 is standard.v15 with the escalation ladder (ADR-0087)', () => {
+    const v15 = requirePolicy('policy/standard@15', policies);
+    const v16 = requirePolicy('policy/standard@16', policies);
+    expect(v16.revision).toEqual({
+      ...v15.revision,
+      candidates_per_cluster: 2,
+      ladder: {
+        scene_rewrite_kinds: ['weak_pacing', 'excessive_exposition', 'western_novel_drift'],
+      },
+    });
+    const strip = (p: typeof v15) => {
+      const { version: _v, name: _n, content_hash: _h, revision: _r, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v16)).toEqual(strip(v15));
+    expect(v16.gates).toEqual(v15.gates);
+  });
+
+  it('standard.v15 is standard.v14 with plan-level prevention and converging revision (ADR-0086)', () => {
+    const v14 = requirePolicy('policy/standard@14', policies);
+    const v15 = requirePolicy('policy/standard@15', policies);
+    expect(v15.revision).toEqual({
+      ...v14.revision,
+      convergence: {
+        rejudge_open_majors: true,
+        prefer_failing_dimension: true,
+        span_attribution: true,
+        threshold_protection: true,
+        round_scope: 'all_open',
+        score_targets: true,
+        confirm_full: true,
+      },
+    });
+    expect(v15.planning).toEqual({
+      ...v14.planning,
+      reveal_schedule: { hint_budget: 1 },
+      plan_critic: { max_repairs: 1 },
+      cut_design: true,
+      time_frames: true,
+      dialogue_floor: {
+        ...v14.planning?.dialogue_floor,
+        scene_redraft_ratio: 0.6,
+        partner_in_contract: true,
+        strip_talk_bans: true,
+        line_targets: {
+          median_per_1k: 9.2,
+          min_per_1k: 5.3,
+          monologue_max_per_1k: 2.1,
+          median_share: 0.234,
+        },
+      },
+    });
+    expect(v15.prompts).toEqual({ max_version: '4.7.0' });
+    const strip = (p: typeof v14) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        revision: _r,
+        planning: _p,
+        prompts: _pr,
+        ...rest
+      } = p;
+      return rest;
+    };
+    // No gate threshold moves (rule 5): everything else, gates included, is v14's.
+    expect(strip(v15)).toEqual(strip(v14));
+    expect(v15.gates).toEqual(v14.gates);
   });
 
   it('standard.v14 is standard.v13 with revision convergence and the dialogue floor (ADR-0084)', () => {

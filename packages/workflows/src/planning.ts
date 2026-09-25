@@ -24,6 +24,20 @@ import { WorkflowError } from './errors.js';
 import { chooseFallbackLocation, normalizeContractOutput } from './plan-normalize.js';
 import { checkRhythm, renderRhythmDirectives, type RhythmContract } from './rhythm.js';
 import {
+  contractHasPartner,
+  parsePlanCriticIssues,
+  renderPlanFeedback,
+  structureTargets,
+  type PlanFinding,
+} from './plan-prevention.js';
+import {
+  hiddenFromReader,
+  readerGuardsFor,
+  renderRevealSchedule,
+  revealSchedule,
+  type ScheduledSecret,
+} from './reveal-schedule.js';
+import {
   bind,
   existingArtifact,
   modelCall,
@@ -419,6 +433,38 @@ export interface ContractInput {
   readonly contractId: string;
   /** Registry and promises rendered for the planner; absent falls back to the pinned-state notes. */
   readonly bible?: StoryBible | undefined;
+  /** ADR-0086: bible local proposition id → canon id, for the contract's reader guards. */
+  readonly canonPropositionIds?: Readonly<Record<string, string>> | undefined;
+}
+
+/**
+ * The first-person narrator's bible id (ADR-0086, U1): the protagonist of a project whose intake chose first
+ * person. A third-person project has no narrator, so every secret keeps its reveal chapter for the reader.
+ */
+export function narratorIdOf(
+  ctx: Pick<WorkflowContext, 'identity'>,
+  bible: StoryBible | undefined,
+): string | undefined {
+  if (ctx.identity.preferences?.pov !== 'first') return undefined;
+  const hero = bible?.entities.find(
+    (e) =>
+      e.type === 'character' &&
+      (e.design as { role?: unknown } | undefined)?.role === 'protagonist',
+  );
+  return hero?.id;
+}
+
+/** The reveal schedule a policy with `planning.reveal_schedule` gives this project (undefined otherwise). */
+export function scheduleOf(
+  ctx: Pick<WorkflowContext, 'identity' | 'policy'>,
+  bible: StoryBible | undefined,
+): ScheduledSecret[] | undefined {
+  if (!ctx.policy.planning?.reveal_schedule || !bible) return undefined;
+  return revealSchedule(bible, {
+    narratorId: narratorIdOf(ctx, bible),
+    narratorKnowledge: ctx.policy.planning.reveal_schedule.narrator_knowledge,
+    narratorCurrentKnowledge: ctx.policy.planning.reveal_schedule.narrator_current_knowledge,
+  });
 }
 
 /**
@@ -463,107 +509,209 @@ export async function generateContract(
       const rhythm = ctx.policy.planning?.rhythm_directives
         ? await acceptedRhythmContracts(ctx, input.chapterNo)
         : undefined;
-      const call = await modelCall<ChapterContract>(ctx, {
-        step: 'chapter_contract',
-        family: 'chapter_planner',
-        activityId: `chapter_contract:${input.chapterNo}`,
-        variables: {
-          arc_plan: JSON.stringify(input.arcPlan),
-          chapter_number: String(input.chapterNo),
-          previous_chapter_summary: input.previousSummary,
-          canon_state: input.bible
-            ? `${renderBibleState(input.bible, ctx.bindings, lang)}\n\n${
-                lang === 'ko'
-                  ? 'participants, locations, pov.character_id에는 위의 엔티티 id만, knowledge_guards와 knowledge_deltas에는 위의 명제 id만 쓴다.'
-                  : 'Use ONLY the entity ids above for participants, locations and pov.character_id, and ONLY the proposition ids above in knowledge_guards and knowledge_deltas.'
-              } ${await renderCanonFacts(ctx, input.chapterNo)}`
-            : lang === 'ko'
-              ? '(구조화된 정사는 계약 검증 때 워크플로가 고정한다)'
-              : '(structured canon is pinned by the workflow at contract validation)',
-          knowledge_state: input.bible
-            ? renderKnowledge(input.bible, lang)
-            : lang === 'ko'
-              ? '(지식 상태는 계약 검증 때 워크플로가 고정한다)'
-              : '(knowledge is pinned by the workflow at contract validation)',
-          open_promises: input.bible
-            ? renderPromiseLines(input.bible, lang)
-            : lang === 'ko'
-              ? '(약속은 계약 검증 때 워크플로가 고정한다)'
-              : '(promises are pinned by the workflow at contract validation)',
-          active_constraints: rhythm
-            ? `${acsHard.hardText}\n\n${renderRhythmDirectives(input.chapterNo, rhythm, lang)}`
-            : acsHard.hardText,
-          length_target_words: String(input.lengthTarget.value),
-        },
-        block,
-      });
-      const acs = compileActiveConstraintSet(
-        input.spec,
-        {
-          chapterNo: input.chapterNo,
-          arcId: input.arcPlan.id,
-          seasonId: input.arcPlan.season_id,
-          participantIds: (Array.isArray(call.output.participants)
-            ? (call.output.participants as unknown[])
-            : []
-          )
-            .map((p) =>
-              typeof p === 'object' && p !== null
-                ? (p as { character_id?: unknown }).character_id
-                : p,
-            )
-            .filter((id): id is string => typeof id === 'string' && knownEntityIds.has(id)),
-          specVersion: input.spec.version,
-        },
-        {
-          capTokens: ctx.policy.context.active_constraints_cap_tokens,
-          workingLanguage: ctx.identity.outputLanguage.language ?? 'en',
-        },
+      // ADR-0086 (U1): the planner reads the reveal schedule; (U6) a contract without a talk partner goes back once.
+      const schedule = scheduleOf(ctx, input.bible);
+      const nameOfEntity = new Map(
+        (input.bible?.entities ?? []).map((e) => [e.id, e.display_name]),
       );
-      const envelope = (content: Partial<ChapterContract>): ChapterContract => ({
-        ...(content as ChapterContract),
-        // The prompt tells the model the workflow fills the version; a fresh contract is version 1.
-        version: typeof content.version === 'number' ? content.version : 1,
-        id: input.contractId,
-        project_id: ctx.projectId,
-        chapter_number: input.chapterNo,
-        arc_id: input.arcPlan.id,
-        season_id: input.arcPlan.season_id,
-        timeline_id: input.mainTimelineId,
-        status: 'draft',
-        pinned: {
-          spec_version: input.spec.version,
-          bible_version: 1,
-          narrative_identity_version_id: ctx.pins.narrativeIdentityVersionId,
-          canon_version: project.canon_version,
-          template_version: 'pack.chapter_planner@1.0.0',
-        },
-        narrative_identity_version_id: ctx.pins.narrativeIdentityVersionId,
-        active_constraints_ref: {
-          id: acs.id,
-          content_hash: acs.contentHash,
-          token_count: acs.tokenCount,
-        },
-      });
-      let candidate = envelope(call.output);
-      let issues = validateContract(candidate, input, knownPropositionIds, knownEntityIds);
-      // A live model's near-miss shape is coerced only when the raw output does not validate, so a
-      // schema-valid (recorded) contract keeps its exact bytes.
-      if (issues.some((i) => i.startsWith('schema '))) {
-        const normalized = envelope(
-          normalizeContractOutput(call.output, {
+      const planFindings: PlanFinding[] = [];
+      const planOnce = async (feedback: string | undefined, suffix: string) => {
+        const call = await modelCall<ChapterContract>(ctx, {
+          step: 'chapter_contract',
+          family: 'chapter_planner',
+          activityId: `chapter_contract:${input.chapterNo}${suffix}`,
+          variables: {
+            ...(schedule
+              ? {
+                  reveal_schedule:
+                    renderRevealSchedule(schedule, input.chapterNo, 'planner', {
+                      nameOf: (id) => nameOfEntity.get(id) ?? id,
+                      hintBudget: ctx.policy.planning?.reveal_schedule?.hint_budget,
+                    }) ?? '(설정에 기록된 비밀 없음)',
+                }
+              : {}),
+            ...(feedback !== undefined ? { plan_feedback: feedback } : {}),
+            arc_plan: JSON.stringify(input.arcPlan),
+            chapter_number: String(input.chapterNo),
+            previous_chapter_summary: input.previousSummary,
+            canon_state: input.bible
+              ? `${renderBibleState(input.bible, ctx.bindings, lang)}\n\n${
+                  lang === 'ko'
+                    ? 'participants, locations, pov.character_id에는 위의 엔티티 id만, knowledge_guards와 knowledge_deltas에는 위의 명제 id만 쓴다.'
+                    : 'Use ONLY the entity ids above for participants, locations and pov.character_id, and ONLY the proposition ids above in knowledge_guards and knowledge_deltas.'
+                } ${await renderCanonFacts(ctx, input.chapterNo)}`
+              : lang === 'ko'
+                ? '(구조화된 정사는 계약 검증 때 워크플로가 고정한다)'
+                : '(structured canon is pinned by the workflow at contract validation)',
+            knowledge_state: input.bible
+              ? renderKnowledge(input.bible, lang)
+              : lang === 'ko'
+                ? '(지식 상태는 계약 검증 때 워크플로가 고정한다)'
+                : '(knowledge is pinned by the workflow at contract validation)',
+            open_promises: input.bible
+              ? renderPromiseLines(input.bible, lang)
+              : lang === 'ko'
+                ? '(약속은 계약 검증 때 워크플로가 고정한다)'
+                : '(promises are pinned by the workflow at contract validation)',
+            active_constraints: rhythm
+              ? `${acsHard.hardText}\n\n${renderRhythmDirectives(input.chapterNo, rhythm, lang)}`
+              : acsHard.hardText,
+            length_target_words: String(input.lengthTarget.value),
+          },
+          block,
+        });
+        const acs = compileActiveConstraintSet(
+          input.spec,
+          {
             chapterNo: input.chapterNo,
-            lengthTarget: input.lengthTarget,
-            knownEntityIds,
-            knownPropositionIds,
-            knownPromiseIds: new Set((input.bible?.promises ?? []).map((p) => p.id)),
-          }),
+            arcId: input.arcPlan.id,
+            seasonId: input.arcPlan.season_id,
+            participantIds: (Array.isArray(call.output.participants)
+              ? (call.output.participants as unknown[])
+              : []
+            )
+              .map((p) =>
+                typeof p === 'object' && p !== null
+                  ? (p as { character_id?: unknown }).character_id
+                  : p,
+              )
+              .filter((id): id is string => typeof id === 'string' && knownEntityIds.has(id)),
+            specVersion: input.spec.version,
+          },
+          {
+            capTokens: ctx.policy.context.active_constraints_cap_tokens,
+            workingLanguage: ctx.identity.outputLanguage.language ?? 'en',
+          },
         );
-        const retry = validateContract(normalized, input, knownPropositionIds, knownEntityIds);
-        if (retry.length < issues.length) {
-          candidate = normalized;
-          issues = retry;
-          recordNormalization('contract_output');
+        const envelope = (content: Partial<ChapterContract>): ChapterContract => ({
+          ...(content as ChapterContract),
+          // The prompt tells the model the workflow fills the version; a fresh contract is version 1.
+          version: typeof content.version === 'number' ? content.version : 1,
+          id: input.contractId,
+          project_id: ctx.projectId,
+          chapter_number: input.chapterNo,
+          arc_id: input.arcPlan.id,
+          season_id: input.arcPlan.season_id,
+          timeline_id: input.mainTimelineId,
+          status: 'draft',
+          pinned: {
+            spec_version: input.spec.version,
+            bible_version: 1,
+            narrative_identity_version_id: ctx.pins.narrativeIdentityVersionId,
+            canon_version: project.canon_version,
+            template_version: 'pack.chapter_planner@1.0.0',
+          },
+          narrative_identity_version_id: ctx.pins.narrativeIdentityVersionId,
+          active_constraints_ref: {
+            id: acs.id,
+            content_hash: acs.contentHash,
+            token_count: acs.tokenCount,
+          },
+        });
+        let candidate = envelope(call.output);
+        let issues = validateContract(candidate, input, knownPropositionIds, knownEntityIds);
+        // A live model's near-miss shape is coerced only when the raw output does not validate, so a
+        // schema-valid (recorded) contract keeps its exact bytes.
+        if (issues.some((i) => i.startsWith('schema '))) {
+          const normalized = envelope(
+            normalizeContractOutput(call.output, {
+              chapterNo: input.chapterNo,
+              lengthTarget: input.lengthTarget,
+              knownEntityIds,
+              knownPropositionIds,
+              knownPromiseIds: new Set((input.bible?.promises ?? []).map((p) => p.id)),
+            }),
+          );
+          const retry = validateContract(normalized, input, knownPropositionIds, knownEntityIds);
+          if (retry.length < issues.length) {
+            candidate = normalized;
+            issues = retry;
+            recordNormalization('contract_output');
+          }
+        }
+        return { candidate, issues };
+      };
+      const newPolicyPlanning =
+        schedule !== undefined || ctx.policy.planning?.dialogue_floor?.partner_in_contract;
+      let { candidate, issues } = await planOnce(newPolicyPlanning ? '(없음)' : undefined, '');
+      if (
+        issues.length === 0 &&
+        ctx.policy.planning?.dialogue_floor?.partner_in_contract &&
+        !contractHasPartner(candidate)
+      ) {
+        const finding = {
+          target: '계약',
+          message: '주인공과 말을 주고받을 인물이 지면에 없다',
+          fix: '이번 화의 사건에 자연스럽게 있을 등록 인물 한 명 이상을 participants에 on_page true로 넣고, 그 인물과 말이 오가는 사건을 설계한다',
+        };
+        const retry = await planOnce(renderPlanFeedback([finding]), ':repair');
+        const repaired = retry.issues.length === 0 && contractHasPartner(retry.candidate);
+        if (repaired) {
+          ({ candidate, issues } = retry);
+          recordNormalization('contract_repair');
+        }
+        planFindings.push({
+          rule: 'PLAN-PARTNER-02',
+          severity: 'major',
+          target: '계약',
+          message: finding.message,
+          repaired,
+        });
+      }
+      // ADR-0088 (live defect G6-2): the contract itself is critiqued before any scene is planned — a hook built on
+      // a fact the reader may not learn yet, or on knowledge the hero cannot have, is a contract defect that no
+      // scene plan can repair.
+      if (issues.length === 0 && ctx.policy.planning?.plan_critic?.contract) {
+        const critic = await modelCall<{ issues?: unknown }>(ctx, {
+          step: 'chapter_contract',
+          family: 'plan_critic',
+          activityId: `plan_critic:${String(input.chapterNo)}:contract`,
+          variables: {
+            chapter_contract: JSON.stringify(candidate),
+            scene_plans: '(장면 설계 전이다. 계약만 검수한다.)',
+            reveal_schedule: schedule
+              ? (renderRevealSchedule(schedule, input.chapterNo, 'planner', {
+                  nameOf: (id) => nameOfEntity.get(id) ?? id,
+                  hintBudget: ctx.policy.planning.reveal_schedule?.hint_budget,
+                }) ?? '(설정에 기록된 비밀 없음)')
+              : '(설정에 기록된 비밀 없음)',
+            canon_state: input.bible
+              ? renderBibleState(input.bible, ctx.bindings, lang)
+              : '(정사 상태 없음)',
+            structure_targets: structureTargets({
+              chapterNo: input.chapterNo,
+              lineTargets: ctx.policy.planning.dialogue_floor?.line_targets,
+              lengthTarget: input.lengthTarget.value,
+              plannerVoice: ctx.identity.preferences?.operator_voice?.planner,
+            }),
+          },
+        });
+        const serious = parsePlanCriticIssues(critic.output.issues).filter(
+          (i) => i.severity !== 'minor',
+        );
+        if (serious.length > 0) {
+          const retry = await planOnce(
+            renderPlanFeedback(
+              serious.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+            ),
+            ':critic',
+          );
+          const partnerKept =
+            !ctx.policy.planning.dialogue_floor?.partner_in_contract ||
+            contractHasPartner(retry.candidate);
+          const repaired = retry.issues.length === 0 && partnerKept;
+          if (repaired) {
+            ({ candidate, issues } = retry);
+            recordNormalization('contract_repair');
+          }
+          for (const i of serious)
+            planFindings.push({
+              rule: 'PLAN-CRITIC-CONTRACT',
+              severity: i.severity,
+              target: i.target,
+              message: `${i.kind}: ${i.claim}`,
+              repaired,
+            });
         }
       }
       if (issues.length > 0)
@@ -609,6 +757,48 @@ export async function generateContract(
       const projectPov = ctx.identity.preferences?.pov;
       if (projectPov && candidate.pov.person !== projectPov)
         candidate = { ...candidate, pov: { ...candidate.pov, person: projectPov } };
+      if (schedule) {
+        const canonOf = (localId: string) => input.canonPropositionIds?.[localId];
+        const hidden = new Set(
+          hiddenFromReader(schedule, input.chapterNo)
+            .map((x) => canonOf(x.localId))
+            .filter((x): x is string => typeof x === 'string'),
+        );
+        // A first-person narrator who comes to know a hidden secret tells the reader: the plan reveals it early.
+        const narrator = candidate.pov.person === 'first' ? candidate.pov.character_id : undefined;
+        const early = candidate.knowledge_deltas.filter(
+          (d) =>
+            narrator !== undefined &&
+            d.knower.entity_id === narrator &&
+            d.proposition_id !== undefined &&
+            hidden.has(d.proposition_id),
+        );
+        if (early.length > 0) {
+          candidate = {
+            ...candidate,
+            knowledge_deltas: candidate.knowledge_deltas.filter((d) => !early.includes(d)),
+          };
+          recordNormalization('reveal_repair');
+          planFindings.push({
+            rule: 'PLAN-REVEAL-01',
+            severity: 'major',
+            target: '계약',
+            message: `독자에게 아직 밝히지 않는 비밀 ${String(early.length)}개를 서술자가 알게 되는 지식 변화를 지웠다`,
+            repaired: true,
+          });
+        }
+        candidate = {
+          ...candidate,
+          reader_guards: readerGuardsFor(schedule, input.chapterNo, canonOf),
+        };
+      }
+      if (planFindings.length > 0)
+        await saveArtifact(ctx, {
+          step: 'chapter_contract',
+          kind: 'plan_findings',
+          key: `${input.chapterNo}:contract`,
+          payload: { chapter_no: input.chapterNo, stage: 'contract', findings: planFindings },
+        });
       const locked: ChapterContract = {
         ...candidate,
         status: 'locked',

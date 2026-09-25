@@ -19,6 +19,7 @@ import {
   getNovelRun,
   getProject,
   listNovelRunEvents,
+  type NovelRunRow,
   PgAuditStore,
   PgProviderAdmission,
   SharedBudget,
@@ -197,7 +198,13 @@ export async function runNovelCommand(
             },
           };
         }
-        const runner = new NovelRunner({ pool, makeDeps: make, runnerId: `cli:${process.pid}` });
+        // ADR-0091: this command drives its own project's run and no other.
+        const runner = new NovelRunner({
+          pool,
+          makeDeps: make,
+          runnerId: `cli:${process.pid}`,
+          projectId,
+        });
         // Normalizer counters are process-wide and in memory (ADR-0057); a long live run appends a cumulative
         // snapshot after every tick so a crash or a resume in a new process loses none of them.
         const metricsLog = flag(args, 'metrics-log');
@@ -232,14 +239,25 @@ export async function runNovelCommand(
         const beatTimer = statusFile ? setInterval(() => void beat(), 30_000) : undefined;
         beatTimer?.unref();
         let tick = 0;
-        // Drive until nothing is claimable: the run rests (completed, paused, needs_attention, failed).
-        while (await runner.tick()) {
-          tick += 1;
-          if (metricsLog)
-            appendFileSync(
-              metricsLog,
-              `${JSON.stringify({ at: new Date().toISOString(), pid: process.pid, tick, normalizations: normalizationCounts() })}\n`,
-            );
+        const runnerId = `cli:${process.pid}`;
+        // ADR-0091: a lease this process lost (a database blip) is taken back once it expires, a bounded number of
+        // times; a lease another live process holds is never waited on.
+        let retries = Number(flag(args, 'lease-retries') ?? '3');
+        for (;;) {
+          // Drive until nothing is claimable: the run rests (completed, paused, needs_attention, failed).
+          while (await runner.tick()) {
+            tick += 1;
+            if (metricsLog)
+              appendFileSync(
+                metricsLog,
+                `${JSON.stringify({ at: new Date().toISOString(), pid: process.pid, tick, normalizations: normalizationCounts() })}\n`,
+              );
+          }
+          const waitMs = lostLeaseWaitMs(await getNovelRun(pool, projectId), runnerId, new Date());
+          if (waitMs === undefined || retries <= 0) break;
+          retries -= 1;
+          console.error(`lease lost; retaking it in ${String(Math.round(waitMs / 1000))} s`);
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
         }
         if (beatTimer) clearInterval(beatTimer);
         await beat();
@@ -328,3 +346,17 @@ Novel lifecycle (DATABASE_URL + YEONJAE_PROVIDER_MODE required; live mode needs 
   novel:status <project>                       run state, chapter progress, recent events
   novel:pause <project> | novel:resume <project> [--stop-after=N] | novel:cancel <project>
 `;
+
+/**
+ * ADR-0091: how long to wait before taking back a lease this process lost (its runner id still on an in-progress
+ * run), or undefined when there is nothing of ours to take back — the run rests, or another runner holds it.
+ */
+export function lostLeaseWaitMs(
+  run: Pick<NovelRunRow, 'status' | 'runner_id' | 'lease_expires_at'> | undefined,
+  runnerId: string,
+  now: Date,
+): number | undefined {
+  if (!run || (run.status !== 'planning' && run.status !== 'producing')) return undefined;
+  if (run.runner_id !== runnerId || run.lease_expires_at === null) return undefined;
+  return Math.max(0, run.lease_expires_at.getTime() - now.getTime()) + 5_000;
+}

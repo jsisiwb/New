@@ -1,0 +1,505 @@
+=== scorecard r0 overall={'score': 76, 'note_count': 0, 'major_count': 5, 'minor_count': 20, 'blocking_count': 2}
+  section genre {"score": 80, "passed": true, "issue_ids": ["49766478-e84e-8e91-b8d8-4911d53bf987", "2c69592b-68a5-8a90-bafb-4807fde23991", "4a744d63-014e-8de7-8278-561cebd44e96"], "drift_flags": [], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 75, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 3, "device_correctness": 4, "vocabulary_register": 5}, "eval
+  section prose {"score": 61.5, "passed": false, "issue_ids": ["d9cf2fd7-81b4-88cb-aeba-d1e32ca3c025", "ef10083f-502f-8306-a7bb-8eb631b1d97f", "2ba1018f-d1ca-8398-923c-af7a295254ba", "d0c5938c-fd30-83cf-94d2-2ac17841711e", "da825582-11a6-8a7a-86a6-5be534eecd5a", "54067489-2f61-8471-8617-57c6daa2d7d6", "c165decb-1f19-8524-87fd-d1ebce1e7b0e", "29d36a4c-8be6-8519-a041-8a4103f1bf3a", "c0bb106c-e615-8947-88e1-84b3ddd6
+  section voice {"score": 81, "passed": true, "issue_ids": ["91473173-77ba-86d8-af48-93813aadec8f", "6e10badf-28e9-81d7-8635-3f64686522bd"], "drift_flags": ["1인칭/3인칭 서술 혼용", "대화 중 반말 독백 노출"], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 75, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 2, "register_naturalness": 4}, "evaluat
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "aa28681d-71c3-87c2-8590-3f407839fdee"}], "issue_ids": [], "evaluator_call_id": "01a0d806-8e55-7573-8598-b18abaa9333f"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d805-fb0e-7740-8692-ea1b8a4059aa"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["35a537f4-a346-8a81-b759-2abaa3ec2141", "df9a8b1b-86e6-80aa-b654-c8c1c0d4a25f"], "drift_flags": ["exposition"], "judge_score": 82, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff": 5, "exposition_control": 3, "dialogue_forwardness": 4
+  section continuity {"score": 0, "passed": false, "issue_ids": ["d20dc21d-3227-861b-94f5-1722a4712ab4", "d654319a-0378-8af4-b601-f24f2f982b57", "537cacee-c466-85a7-9eea-0ec224ef42bb"], "evaluator_call_id": "01a0d806-88f5-76e6-bcec-5df3e61cece7"}
+  section repetition {"score": 0, "passed": false, "issue_ids": ["7492c2a5-65a6-87a0-8bf9-6786e7c67957", "2cfdd32b-b404-8cf6-911d-fa9e94a21218"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d807-1557-75f9-af61-33c4e347e7e4"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d806-178f-773b-9b4d-c1cbca11797e"}
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그는 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀는 
+  [minor/open] prose literary_drift lint:ko_style AIT-KO-06
+     claim: AI 상투구: “공기가 얼어붙” — ‘공기가 무거워졌다/얼어붙었다’ — 인물 반응으로 보여 준다.
+     quote: 공기가 얼어붙
+  [minor/open] prose other lint:ko_style KO-END-02
+     claim: 서술 문장 4개가 연달아 ‘~었다.’로 끝난다 (기준 4개). 어미와 문장 길이를 바꿔 호흡을 살린다.
+  [blocking/open] continuity other judge:continuity_checker 
+     claim: 하드 요구사항인 1인칭 서술 시점(REQ-008)을 위반했습니다. p1~p125 구간은 '진혁은', '진혁이' 등 3인칭으로 서술되다가 오진희와 만나는 p137부터 갑자기 '나는'이라는 1인칭으로 바뀌는 서술 시점 혼용이 발생했습니다.
+     quote: 진혁은 무심한 걸음으로 소파에 다가가 털썩 주저앉았다.
+  [major/open] continuity canon_contradiction judge:continuity_checker 
+     claim: p91에서는 열흘 뒤 게이트가 열리고 세상에 마력이 풀리기 전까지는 아티팩트가 '철저히 봉인되어 마력을 느낄 수 없는 고철'에 불과하다고 명시했습니다. 그러나 p111에서는 반지를 끼자마자 아무런 개입 없이 마력이 흘러나오며 아티팩트가 활성화되는 모순이 발생했습니다.
+     quote: 투박하던 철반지 표면에 붉은 균열이 번지며 핏빛 마력이 미세하게 흘러나왔다.
+  [major/open] continuity power_rule_violation judge:continuity_checker 
+     claim: 회차 계약의 연속성 위험 지침과 원고(p7) 서술에 따르면 진혁의 육체는 일반인 수준인 '허약한 F급'이므로 강한 물리력을 행사할 수 없습니다. 그러나 p20에서 철문을 떨어져 나갈 듯 걷어차고, p131에서 잠긴 문을 걷어차 녹슨 경첩을 부수는 묘사는 현재의 스탯과 맞지 않습니다.
+     quote: 발길질 한 번에 낡은 철문이 떨어져 나갈 듯 열렸다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '~로 인해', '~하게 된다'는 번역투 표현이므로 '마수들이 쏟아져 멸망한다' 등으로 고치는 것이 좋습니다.
+     quote: 세상은 게이트에서 쏟아지는 마수들로 인해 멸망의 길을 걷게 된다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 대명사 '그'와 '그녀'가 여러 차례 반복되어 번역투 느낌을 줍니다. 이름이나 직함으로 대체하거나 주어를 생략해야 합니다.
+     quote: 그녀가 반사적으로 책상 밑으로 손을 뻗었다.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 상황이나 분위기를 묘사할 때 '공기가 얼어붙다'와 같은 상투적인 비유 대신 인물의 구체적인 행동이나 반응을 보여주는 것이 좋습니다.
+     quote: 방 안의 공기가 얼어붙은 것처럼 뻣뻣해졌다.
+  [minor/open] prose repetitive_sentence_openings judge:prose_judge 
+     claim: 서술 문장이 연달아 '~었다.'로 끝나 호흡이 단조롭습니다. 어미에 변화를 주어 리듬감을 살려야 합니다.
+     quote: 가게 안은 말 그대로 잡동사니 무덤이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 피동 표현('봉인되어')이 쓰였습니다. 능동형이나 상태를 나타내는 간결한 표현으로 수정하는 것이 좋습니다.
+     quote: 철저히 봉인되어 있으니까.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 주요 인물과 세계관에 대한 정보를 서술로 한 번에 전달하려는 경향이 있습니다.
+     quote: 과거 잘나가던 증권사 애널리스트에서 내부 고발자로 찍혀 뒷골목 정보상으로 추락한 여자.
+  [minor/open] structure weak_pacing judge:structure_judge 
+     claim: 행동과 대사로 진행되던 호흡이 사채업자를 연속으로 터는 장면에서 요약으로 처리되어 리듬이 끊어집니다.
+     quote: 그렇게 세 시간을 돌며 끌어모은 현찰만 도합 5억 원.
+  [major/open] genre other judge:genre_judge 
+     claim: 열흘 뒤 사회 인프라가 붕괴해 돈이 무가치해진다고 독자에게 확언해놓고, 정보상을 설득하기 위해 3일 뒤의 주식과 코인 폭등을 이용한다는 계획은 독자에게 개연성 충돌로 다가옵니다. 현금이 당장 필요한 이유가 명확히 보강되어야 합니다.
+     quote: 앞으로 3일. 그 안에 미친 듯이 폭등할 주식과 코인 종목들입니다.
+  [minor/open] genre repetitive_arc judge:genre_judge 
+     claim: 새로운 공간에 입장하여 상대를 압도할 때 '문을 박차고 들어감 -> 소파에 주저앉음 -> 살기를 뿜어냄'이라는 연출 패턴이 한 회차 안에서 너무 기계적으로 반복됩니다.
+     quote: 나는 성큼성큼 걸어가 낡은 가죽 소파에 털썩 주저앉았다. 그러고는 여유롭게 다리를 꼬았다.
+  [minor/open] genre forbidden_development judge:genre_judge 
+     claim: 미래 지식을 활용해 5억을 얻고 사기적인 기연을 손에 넣는 과정에 아무런 대가나 오차가 존재하지 않습니다. 너무 편의적으로만 지식이 소모되고 있어 장르적 긴장감이 떨어집니다.
+     quote: 그 사기적인 기연을 방금 단돈 오천만 원에 손에 넣었다.
+  [blocking/open] voice voice_drift judge:voice_judge 
+     claim: 1인칭 시점 절대 규칙을 위반하고 초반부(p1~p127) 내내 주인공을 '진혁', '그' 등의 3인칭으로 지칭하여 서술자의 정체성과 목소리가 무너졌습니다. 이후 p128부터 갑자기 '내 곁을', '나는'으로 시점이 바뀝니다.
+     quote: 진혁은 무심한 걸음으로 소파에 다가가 털썩 주저앉았다.
+  [minor/open] voice register_error judge:voice_judge 
+     claim: 결정적 검사에서 지적된 대화 중 말높이 혼용(p86, p171)은 명사형 종결이나 확인성 반말 등 자연스러운 연출로 볼 수 있으나, p172에서 오진희가 쓴 반말은 철저한 해요체 설정에 비추어 볼 때 미세한 흔들림입니다.
+     quote: “하. 5억을 전부 여기다 쏟아붓겠다?”
+  [major/open] repetition repeated_scene judge:repetition_judge 
+     claim: [SUMMARY] 이 회차 안에서 주인공이 문을 거칠게 열고 들어가 멸망 이전의 살기나 기세를 개방해 상대를 제압하는 전개가 사채업자, 전당포 주인, 정보상에게 세 번 연속으로 똑같이 반복되고 있습니다. [EVIDENCE] 특히 기세로 상대를 압도하며 공간을 짓누르는 묘사는 대상과 장소만 바뀌었을 뿐 자기 복제 수준으로 겹칩니다.
+     quote: 지옥 같은 20년을 버텨낸 기세가 좁은 전당포 안을 짓눌렀다.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: [UNTRUSTED] 단어 통계에도 나타나듯, 이 회차 안에서 '진혁은', '나는', '그' 등 특정 대명사가 문장 첫머리에 지나치게 자주 이어집니다. [FACT] 게다가 전반부의 3인칭(진혁은) 서술이 후반부 정보상 장면부터 갑자기 1인칭(나는)으로 바뀌는 치명적인 시점 혼용 오류를 동반하며 문장 첫머리를 반복하고 있습니다.
+     quote: 나는 성큼성큼 걸어가 낡은 가죽 소파에 털썩 주저앉았다.
+=== scorecard r1 overall={'score': 78, 'note_count': 0, 'major_count': 5, 'minor_count': 18, 'blocking_count': 0}
+  section genre {"score": 90, "passed": true, "issue_ids": ["7977e421-452e-8497-ab03-c71a2870ca2c", "5cb60afb-7164-8485-bd09-09708c065e62"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d809-4b37-71a1-b2
+  section prose {"score": 66.9, "passed": false, "issue_ids": ["5f513f5d-9377-8804-b5b1-edf6b9e2d51a", "f4e54f98-f351-8474-ae41-c8e1fbd85fe2", "429a2e6d-625c-8050-ad0d-8a4aca1358ef", "986242f9-7b7d-89fc-9485-9f0e09513780", "49d0feea-7194-819d-83bb-ec1ddfa283f3", "f48dacda-fdf7-82ce-ae75-81b1439ef9fe", "58f6cfa1-1f88-89fc-8588-91301a9d952d", "c7fa4ef4-fe4b-85a4-8903-789202516de5", "c27832db-1310-83c3-afc7-e5ec4304
+  section voice {"score": 81, "passed": true, "issue_ids": ["8dd0d7f7-048b-805b-9d80-b38d7a0239ef", "488d0a6c-e2f3-830f-aea6-941c1293160e", "9b6ef922-c50b-8477-8e99-495fca3a79b3"], "drift_flags": ["기계적 말버릇 삽입", "번역투 대명사"], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 75, "dimension_scores": {"verbal_habits": 4, "distinguishability": 4, "register_consistency": 4, "regi
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "aa28681d-71c3-87c2-8590-3f407839fdee"}], "issue_ids": [], "carried_from": "b06c83ca-ee4a-877a-a975-0307d2acd5e5", "evaluator_call_id": "01a0d806-8e55-7573-8598-b18abaa9333f"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d809-3af5-725b-9b93-503351858b75"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["182188b2-90b8-8ff1-b5b2-f66d3835b269", "0830de5a-5581-8c0c-98b3-eb87f11a4a11"], "drift_flags": ["exposition"], "judge_score": 82, "score_model": "rubric_subscores", "carried_from": "b06c83ca-ee4a-877a-a975-0307d2acd5e5", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff
+  section continuity {"score": 0, "passed": false, "issue_ids": ["6c6d1a25-84ca-8ef3-8dc4-cb6e7e79e51d", "0fa61181-43e5-8a46-a799-b18a8ea0661c"], "evaluator_call_id": "01a0d809-188a-73a3-9a85-09ffa3e82fd8"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["15e74d97-e983-86ea-b36c-9d00b89c3068"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d809-8246-741b-8240-968e94a31649"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d809-04f3-70e6-a7c3-7eb8b0ca87e7"}
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그는 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀는 
+  [minor/open] prose literary_drift lint:ko_style AIT-KO-06
+     claim: AI 상투구: “공기가 얼어붙” — ‘공기가 무거워졌다/얼어붙었다’ — 인물 반응으로 보여 준다.
+     quote: 공기가 얼어붙
+  [minor/open] prose other lint:ko_style KO-END-02
+     claim: 서술 문장 4개가 연달아 ‘~었다.’로 끝난다 (기준 4개). 어미와 문장 길이를 바꿔 호흡을 살린다.
+  [major/open] continuity power_rule_violation judge:continuity_checker 
+     claim: 회차 계약의 연속성 위험 항목과 [p7]에 따르면 현재 강진혁의 육체는 마력이 없는 허약한 F급(비각성자 수준)입니다. 평범한 성인 남성 수준의 신체로 낡았더라도 잠겨 있는 철문의 경첩을 발차기 한 번에 부수며 들어가는 것은 물리적 폭력을 배제하라는 지침과 육체 능력 설정에 위배됩니다.
+     quote: 잠겨 있던 낡은 문을 발로 걷어차 열었다. 녹슨 경첩이 비명을 지르며 떨어져 나갔다.
+  [major/open] continuity power_rule_violation judge:continuity_checker 
+     claim: [p7]에서 '마력 한 줌 맺히지 않은 텅 빈 혈관'이라며 현재 몸에 마력이나 기운이 없음을 분명히 서술했습니다. 그런데 포식의 반지를 활성화할 때 '단전에 품어 온 한 줌 기운을 밀어 넣었다'고 묘사하는 것은 앞선 상태 묘사와 정면으로 모순됩니다.
+     quote: 회귀하며 단전에 품어 온 한 줌 기운을 밀어 넣었다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: '~로 인해'와 '~하게 된다'는 번역투이므로 '마수들이 쏟아져 멸망한다' 등으로 고치는 것이 좋습니다.
+     quote: 세상은 게이트에서 쏟아지는 마수들로 인해 멸망의 길을 걷게 된다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 한국어에서는 주어를 생략하거나 인물 이름/지칭을 쓰는 것이 자연스럽습니다. 린트 보고에서 지적된 7번의 '그/그녀'를 모두 삭제하거나 이름으로 대체해야 합니다.
+     quote: 그가 들고 있던 태블릿 PC에
+  [minor/open] prose other judge:prose_judge 
+     claim: '공기가 얼어붙다'는 잦은 AI 상투구입니다. 사채업자나 전당포 주인의 구체적인 반응이나 행동으로 분위기를 묘사하는 것이 좋습니다.
+     quote: 방 안의 공기가 얼어붙은 것처럼 뻣뻣해졌다.
+  [minor/open] prose other judge:prose_judge 
+     claim: 연달아 3문장 이상이 '~었다.'로 끝납니다. 종결어미에 변화를 주어 호흡을 살려야 합니다.
+     quote: 가게 안은 말 그대로 잡동사니 무덤이었다.
+
+주인을 알 수 없는 낡은 장신구부터 쓸모를 다한 고철 더미가 진열장 하나 없이 바닥에 뒹굴고 있었다.
+
+전당포 주인은 카운터에 발을 올린 채 꾸벅꾸벅 졸고 있었다. 진혁의 인기척에도 눈만 번쩍 뜨더니 심드렁하게 입을 열었다.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 주요 인물과 세계관에 대한 정보를 서술로 한 번에 전달하려는 경향이 있습니다.
+     quote: 과거 잘나가던 증권사 애널리스트에서 내부 고발자로 찍혀 뒷골목 정보상으로 추락한 여자.
+  [minor/open] structure weak_pacing judge:structure_judge 
+     claim: 행동과 대사로 진행되던 호흡이 사채업자를 연속으로 터는 장면에서 요약으로 처리되어 리듬이 끊어집니다.
+     quote: 그렇게 세 시간을 돌며 끌어모은 현찰만 도합 5억 원.
+  [major/open] genre other judge:genre_judge 
+     claim: 주식으로 돈을 불리는 목적이 멸망 설정과 모순됨
+  [minor/open] genre other judge:genre_judge 
+     claim: 독백과 이어지는 서술의 내용 충돌
+     quote: ‘지난 생에서는 이 반지의 가치를 아무도 몰랐지.’
+  [minor/open] voice register_error judge:voice_judge 
+     claim: 상대를 위협하는 맥락이긴 하나, 한 발화 안에서 하십시오체와 끝을 흐리는 반말투가 매끄럽지 않게 섞였습니다.
+     quote: 걱정 마십쇼. 어차피 갚을 일 없을 테니까.
+  [minor/open] voice other judge:voice_judge 
+     claim: 캐릭터 카드의 말버릇을 대화 맥락에 맞게 변형하지 않고 원문 그대로 기계적으로 삽입하여 작위적인 느낌이 듭니다.
+     quote: 그래서, 견적은 얼마나 나오죠?
+  [minor/open] voice address_term_error judge:voice_judge 
+     claim: 한국어 구어체 대사에서 '당신의'와 같은 2인칭 대명사 소유격 수식은 번역투의 어색함을 줍니다.
+     quote: 당신의 인프라.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: 이번 회차 안에서 '진혁은', '나는', '그', '진희가' 등 특정 대명사와 인물명으로 시작하는 문장 첫머리가 지나치게 반복되고 있습니다. 단일 회차 내에서 동일한 주어 구문으로 문장을 시작하는 패턴이 잦아 서술이 단조롭게 느껴질 수 있습니다.
+     quote: 진혁은 검은색 스포츠가방에 가득 찬 5만 원권 다발을 툭툭 치며 입꼬리를 올렸다.
+=== scorecard r2 overall={'score': 81, 'note_count': 0, 'major_count': 4, 'minor_count': 20, 'blocking_count': 1}
+  section genre {"score": 95, "passed": true, "issue_ids": ["c26d5cbe-23e6-819b-a74d-b4e967f8d4b5", "a69145c9-b4ca-8986-b50f-57b5c2abbed6"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 93.8, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 5, "vocabulary_register": 5}, "evaluator_call_id": "01a0d80b-b132-73dd-ac
+  section prose {"score": 72.2, "passed": false, "issue_ids": ["f4985f2e-c0b9-8463-aff9-eb0ecfe4d928", "0f2aa25b-eaec-8dc0-8e0d-a1d079eb8f5b", "8c258306-9d17-82ff-836f-0845ff6754b6", "122d5e00-5542-8439-ba72-38f872d07c18", "e703c15c-5a75-8393-bb2c-593fb3fa7795", "b34bdcdc-7264-85dd-b039-12cb3fe28ef8", "637fe2dc-992b-8434-b5bc-9e03953fcbab", "a975420f-8431-8413-b5f3-c902f1efb708", "fadcacae-7cbd-8ccb-a609-17f71af6
+  section voice {"score": 81, "passed": true, "issue_ids": ["3a94a843-ed6c-8ba7-a7bf-65458783784e", "d1bbbb8b-58fc-84ac-bab4-73d10f41e7d7", "95d3f2e3-a0c0-8fad-842d-ffdc413db838"], "drift_flags": ["기계적 말버릇 삽입", "번역투 대명사"], "judge_score": 75, "score_model": "rubric_subscores", "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "judge_weight": 0.7, "rubric_score": 75, "dimension_scores": {"verbal_habits": 4, "
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "aa28681d-71c3-87c2-8590-3f407839fdee"}], "issue_ids": [], "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "evaluator_call_id": "01a0d806-8e55-7573-8598-b18abaa9333f"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["e0b2a0ea-51bd-8a14-b2c1-114cf88fae02"], "evaluator_call_id": "01a0d80b-96de-7022-b9fd-c36b85052ea7"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["c5e57ba4-0c2e-8356-9ebe-21791e00ab99", "c87a525e-c2e1-86ce-bcba-a71e61b195ce"], "drift_flags": ["exposition"], "judge_score": 82, "score_model": "rubric_subscores", "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff
+  section continuity {"score": 0, "passed": false, "issue_ids": ["93f09774-b1e8-8c4f-a975-3baad93788c3", "8cbda590-2e1e-87b5-8dad-cdd64dcf4ec3", "eac157f5-bd48-8c17-9585-46d112860f73"], "evaluator_call_id": "01a0d80b-bf9a-77d2-a6df-b9e89c9ee9f3"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["de3a1a62-0f0b-8ec7-a7c3-d9e37a62eed5"], "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "evaluator_call_id": "01a0d809-8246-741b-8240-968e94a31649"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d80b-57c3-71bc-96c3-884a15cb0a81"}
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그는 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀는 
+  [minor/open] prose literary_drift lint:ko_style AIT-KO-06
+     claim: AI 상투구: “공기가 얼어붙” — ‘공기가 무거워졌다/얼어붙었다’ — 인물 반응으로 보여 준다.
+     quote: 공기가 얼어붙
+  [minor/open] prose other lint:ko_style KO-END-02
+     claim: 서술 문장 4개가 연달아 ‘~었다.’로 끝난다 (기준 4개). 어미와 문장 길이를 바꿔 호흡을 살린다.
+  [blocking/open] continuity world_rule_violation judge:continuity_checker 
+     claim: 작품의 현재 시점은 첫 게이트가 열리기 10일 전(D-10)으로 세상에 헌터와 마력이 등장하기 전입니다. 그러나 일반인인 사채업자가 'F급 짐꾼'이나 '던전'과 같은 헌터 세계관의 용어를 자연스럽게 사용하며 진혁을 조롱하는 것은 명백한 타임라인 및 세계관 설정 모순입니다.
+     quote: F급 짐꾼 강진혁. 너 미쳤냐? 당장 내일 던전에서 뒈져도 이상할 것 없는 놈한테 무슨 대출이야.
+  [major/open] continuity character_inconsistency judge:continuity_checker 
+     claim: 진혁이 사채업자의 사무실에 들어가 대출을 요구했을 뿐 자신의 이름을 밝히거나 신분증을 제시하지 않았는데, 사채업자의 태블릿 PC에 즉시 진혁의 신상 정보가 떠 있는 것은 장면 내 개연성에 어긋납니다.
+     quote: 사채업자가 들고 있던 태블릿 PC에 진혁의 신상 정보가 떠 있었다.
+  [minor/open] continuity inventory_impossible judge:continuity_checker 
+     claim: 진혁이 오진희의 사무실에 가기 전 주식과 코인 종목을 미리 적어두었거나 메모장을 준비했다는 묘사가 앞선 장면들에 전혀 없었는데, 대화 도중 품에서 이미 작성된 메모를 꺼내는 것은 다소 부자연스럽습니다.
+     quote: 품에서 메모장 한 장을 대충 찢어 꺼냈다.
+  [major/open] knowledge knowledge_ignorance judge:knowledge_leak_checker 
+     claim: 주어진 설정에 따르면 오진희는 회귀 전 강진혁을 조력하다 암살당했던 기억을 0화부터 알고 있어야 하지만, 원고에서는 강진혁을 완전히 처음 보는 사람처럼 경계하며 대하고 있어 자신이 아는 지식을 무시하고 있습니다.
+     quote: “누구시죠? 예약된 손님은 없는 걸로 아는데요.”
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 결정적 검사에서 지적된 바와 같이 '공기가 얼어붙다'는 전형적인 AI 상투구입니다. 막연한 비유 대신 인물의 구체적인 신체 반응으로 긴장감을 묘사해야 합니다.
+     quote: 방 안의 공기가 얼어붙은 것처럼 뻣뻣해졌다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: '~을 느낄 수 없게', '봉인되어' 등 피동과 번역투가 겹쳤습니다. '마력이 느껴지지 않게 철저히 봉인해 뒀으니까' 등으로 고치는 것이 능동적이고 자연스럽습니다.
+     quote: 각성자라도 만져서는 그 안의 마력을 느낄 수 없게 철저히 봉인되어 있으니까.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 대명사 '그는'이 쓰였습니다. 앞선 맥락에서 주어가 분명하므로 생략하는 것이 한국어 어법에 맞습니다.
+     quote: 그는 홀린 듯 서랍을 열어 대출 계약서를 꺼냈다.
+  [minor/open] prose other judge:prose_judge 
+     claim: 서술 문장 4개가 연달아 '~었다.'로 끝나 호흡이 단조롭습니다. 명사형 종결이나 어미 변화를 통해 리듬을 살려야 합니다.
+     quote: 가게 안은 말 그대로 잡동사니 무덤이었다.
+  [minor/open] prose other judge:prose_judge 
+     claim: '가방을 고쳐 매며'는 맞춤법 오류입니다. '가방을 고쳐 메며'가 올바른 표기입니다.
+     quote: 진혁은 가방을 고쳐 매며 흐린 하늘을 올려다보았다.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 주요 인물과 세계관에 대한 정보를 서술로 한 번에 전달하려는 경향이 있습니다.
+     quote: 과거 잘나가던 증권사 애널리스트에서 내부 고발자로 찍혀 뒷골목 정보상으로 추락한 여자.
+  [minor/open] structure weak_pacing judge:structure_judge 
+     claim: 행동과 대사로 진행되던 호흡이 사채업자를 연속으로 터는 장면에서 요약으로 처리되어 리듬이 끊어집니다.
+     quote: 그렇게 세 시간을 돌며 끌어모은 현찰만 도합 5억 원.
+  [minor/open] genre repetitive_arc judge:genre_judge 
+     claim: 기세로 공기를 얼어붙게 만드는 연출의 반복
+     quote: 방 안의 공기가 얼어붙은 것처럼 뻣뻣해졌다.
+  [minor/open] genre payoff_without_setup judge:genre_judge 
+     claim: 능력치가 없는 상태에서 기세만으로 거액을 얻어내는 편의적 전개
+     quote: 인류 최후의 1인이 뿜어내는 기세만으로도 뒷골목 사채업자들의 기를 꺾기에는 차고 넘쳤다.
+  [minor/open] voice register_error judge:voice_judge 
+     claim: 상대를 위협하는 맥락이긴 하나, 한 발화 안에서 하십시오체와 끝을 흐리는 반말투가 매끄럽지 않게 섞였습니다.
+     quote: 걱정 마십쇼. 어차피 갚을 일 없을 테니까.
+  [minor/open] voice other judge:voice_judge 
+     claim: 캐릭터 카드의 말버릇을 대화 맥락에 맞게 변형하지 않고 원문 그대로 기계적으로 삽입하여 작위적인 느낌이 듭니다.
+     quote: 그래서, 견적은 얼마나 나오죠?
+  [minor/open] voice address_term_error judge:voice_judge 
+     claim: 한국어 구어체 대사에서 '당신의'와 같은 2인칭 대명사 소유격 수식은 번역투의 어색함을 줍니다.
+     quote: 당신의 인프라.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: 이번 회차 안에서 '진혁은', '나는', '그', '진희가' 등 특정 대명사와 인물명으로 시작하는 문장 첫머리가 지나치게 반복되고 있습니다. 단일 회차 내에서 동일한 주어 구문으로 문장을 시작하는 패턴이 잦아 서술이 단조롭게 느껴질 수 있습니다.
+     quote: 진혁은 검은색 스포츠가방에 가득 찬 5만 원권 다발을 툭툭 치며 입꼬리를 올렸다.
+=== scorecard r3 overall={'score': 81, 'note_count': 0, 'major_count': 3, 'minor_count': 18, 'blocking_count': 1}
+  section genre {"score": 85, "passed": true, "issue_ids": ["b228c28b-e62c-8a20-bb2e-030cc7b800c0", "08e7a6a6-4e6a-8d5f-a9a5-5540d23d87c7"], "drift_flags": [], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 81.3, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 4, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d80e-4a8f-73d1-97
+  section prose {"score": 72.2, "passed": false, "issue_ids": ["3652ec9c-77b4-8da4-af17-164c8e436bf0", "5607d82e-eaa7-8fe4-b51c-42f1f65d93db", "57fd751c-a570-8b46-bcaa-049c2b20c90d", "4f136778-497a-8859-95b3-94613e344b66", "0f24ee0d-0d54-8068-b39a-420e3cf66e41", "df4b4feb-41cf-82fa-9909-6ce68a7957f8", "516e2f69-bf40-8fba-b8ad-4f9c8578f44a", "8f413587-a56a-8efd-9fe6-e61beb0c2f18", "5290aba8-558b-8fca-8b24-5b21c37a
+  section voice {"score": 81, "passed": true, "issue_ids": ["1784094a-e86d-8609-b563-c53de52413dc", "6525d73a-8395-84ef-ac99-6615d29eff89", "f8681d5c-868e-8f46-b7c9-7053a698490f"], "drift_flags": ["기계적 말버릇 삽입", "번역투 대명사"], "judge_score": 75, "score_model": "rubric_subscores", "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "judge_weight": 0.7, "rubric_score": 75, "dimension_scores": {"verbal_habits": 4, "
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "aa28681d-71c3-87c2-8590-3f407839fdee"}], "issue_ids": [], "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "evaluator_call_id": "01a0d806-8e55-7573-8598-b18abaa9333f"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d80d-d3e7-7647-9db6-983a572a6c94"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["2f1faea6-7378-80c1-8b3a-47d1c9c536b9", "5d23b73e-7274-88fc-b335-fa5736ae0f91"], "drift_flags": ["exposition"], "judge_score": 82, "score_model": "rubric_subscores", "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff
+  section continuity {"score": 0, "passed": false, "issue_ids": ["a4944c61-a194-827c-8fd6-ee1f6f9e972d"], "evaluator_call_id": "01a0d80e-5125-76e1-9bc2-1f46ca1d7515"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["8387ef81-e4e0-808c-afab-2640b7e4d5f6"], "carried_from": "4281c07e-a3d0-8e34-a778-5fa464d5a1b4", "evaluator_call_id": "01a0d809-8246-741b-8240-968e94a31649"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d80d-f584-749e-82b1-cf9a2878c625"}
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그는 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀는 
+  [minor/open] prose literary_drift lint:ko_style AIT-KO-06
+     claim: AI 상투구: “공기가 얼어붙” — ‘공기가 무거워졌다/얼어붙었다’ — 인물 반응으로 보여 준다.
+     quote: 공기가 얼어붙
+  [minor/open] prose other lint:ko_style KO-END-02
+     claim: 서술 문장 4개가 연달아 ‘~었다.’로 끝난다 (기준 4개). 어미와 문장 길이를 바꿔 호흡을 살린다.
+  [blocking/open] continuity location_error judge:continuity_checker 
+     claim: 이태원 지하 전당포의 장소 설정에 따르면 주인공은 대출금 5억 원을 전부 털어 '포식의 반지'를 매입해야 합니다. 그러나 원문에서는 5천만 원만 지불하고 4억 5천만 원을 남겨 설정과 명백히 모순됩니다. 이는 이후 오진희가 '5억을 전부 여기다 쏟아붓겠다?'([p174])라고 묻는 상황과도 개연성이 맞지 않게 됩니다.
+     quote: 오천만 원. 이 반지 값으로 치겠습니다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 3인칭 대명사 '그'가 쓰였습니다. 주어를 생략하거나 '사채업자'로 명시해야 자연스럽습니다.
+     quote: 그는 홀린 듯 서랍을 열어 대출 계약서를 꺼냈다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 대명사 '그녀'가 반복적으로 남용되어 번역 소설처럼 읽힙니다. 이름(진희)으로 대체하거나 주어를 생략해야 합니다.
+     quote: 그녀의 안경알 위로 파란 불빛이 번쩍였다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 마찬가지로 '그녀가/그녀는'이라는 번역투 대명사가 지속해서 쓰였습니다.
+     quote: 그녀가 곁눈질로 메모장을 확인하더니 기가 차다는 듯 실소를 터뜨렸다.
+  [minor/open] prose other judge:prose_judge 
+     claim: AI 상투구인 '공기가 얼어붙다'가 쓰였습니다. 온도가 변했다는 앞의 서술과 겹치며, 인물의 구체적인 반응으로 분위기를 묘사하는 것이 좋습니다.
+     quote: 방 안의 공기가 얼어붙은 것처럼 뻣뻣해졌다.
+  [minor/open] prose other judge:prose_judge 
+     claim: 서술 문장 4개가 연달아 '~었다.'로 종결되어 호흡이 단조롭습니다. 어미와 문장 길이에 변화를 주어야 합니다.
+     quote: 가게 안은 말 그대로 잡동사니 무덤이었다.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 주요 인물과 세계관에 대한 정보를 서술로 한 번에 전달하려는 경향이 있습니다.
+     quote: 과거 잘나가던 증권사 애널리스트에서 내부 고발자로 찍혀 뒷골목 정보상으로 추락한 여자.
+  [minor/open] structure weak_pacing judge:structure_judge 
+     claim: 행동과 대사로 진행되던 호흡이 사채업자를 연속으로 터는 장면에서 요약으로 처리되어 리듬이 끊어집니다.
+     quote: 그렇게 세 시간을 돌며 끌어모은 현찰만 도합 5억 원.
+  [major/open] genre other judge:genre_judge 
+     claim: 10일 뒤 세계가 멸망하여 종이 화폐가 휴지조각이 된다고 선언해 놓고(p12~p16), 정보상에게 남은 자금을 주식과 코인으로 불려달라고 요구(p173)하는 것은 심각한 설정 모순입니다. 돈이 목적이 아니라 특정 인물이나 아이템을 사기 위한 과정이라면 그 이유가 짧게라도 제시되어야 합니다.
+     quote: 그 찌라시가 현실이 되면, 당신이 가진 정보망과 차명 계좌로 내 자금을 굴려주면 됩니다.
+  [minor/open] genre other judge:genre_judge 
+     claim: AI 상투구 의심: '방 안의 공기가 얼어붙은 것처럼'과 같이 과장되고 맥락에 맞지 않는 비유가 일부 사용되었습니다.
+     quote: 방 안의 공기가 얼어붙은 것처럼 뻣뻣해졌다.
+  [minor/open] voice register_error judge:voice_judge 
+     claim: 상대를 위협하는 맥락이긴 하나, 한 발화 안에서 하십시오체와 끝을 흐리는 반말투가 매끄럽지 않게 섞였습니다.
+     quote: 걱정 마십쇼. 어차피 갚을 일 없을 테니까.
+  [minor/open] voice other judge:voice_judge 
+     claim: 캐릭터 카드의 말버릇을 대화 맥락에 맞게 변형하지 않고 원문 그대로 기계적으로 삽입하여 작위적인 느낌이 듭니다.
+     quote: 그래서, 견적은 얼마나 나오죠?
+  [minor/open] voice address_term_error judge:voice_judge 
+     claim: 한국어 구어체 대사에서 '당신의'와 같은 2인칭 대명사 소유격 수식은 번역투의 어색함을 줍니다.
+     quote: 당신의 인프라.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: 이번 회차 안에서 '진혁은', '나는', '그', '진희가' 등 특정 대명사와 인물명으로 시작하는 문장 첫머리가 지나치게 반복되고 있습니다. 단일 회차 내에서 동일한 주어 구문으로 문장을 시작하는 패턴이 잦아 서술이 단조롭게 느껴질 수 있습니다.
+     quote: 진혁은 검은색 스포츠가방에 가득 찬 5만 원권 다발을 툭툭 치며 입꼬리를 올렸다.
+=== scorecard r4 overall={'score': 83, 'note_count': 0, 'major_count': 2, 'minor_count': 20, 'blocking_count': 2}
+  section genre {"score": 80, "passed": true, "issue_ids": ["3f195ad8-0cc6-8a86-a755-717123b55d34", "4d639ac6-e7fc-8df4-b3b9-2c68dcaf8923", "fae0cd3a-a3cd-8cba-aed9-1e10a48868e4"], "drift_flags": ["pov_inconsistency"], "judge_score": 68, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 75, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_r
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["f35bd25f-da19-83ba-b960-f0e2f2738298", "90aa84be-39b0-881c-a6a7-c05e913a96c4", "2243b768-341b-83e8-b848-06af5e3b19f3", "2a957298-9769-806f-81df-ef5d16a2742b", "f4c2e13f-8e39-89f4-8224-c603bd67e229", "737243f0-a62c-83d7-a222-e609802f6483", "66214b65-55a3-865c-9663-5901d89ee65a", "e9e493f9-30be-8a2f-8888-69a449cdab07", "db77f6a4-0405-87ab-9b5a-4a7265a7
+  section voice {"score": 76.6, "passed": true, "issue_ids": ["4ff3e7eb-065e-8dce-aeca-075b191f72c9", "c8a1cfe3-e469-8a47-84eb-98802a5c757b"], "drift_flags": ["존대·반말 혼용"], "judge_score": 80, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 68.8, "dimension_scores": {"verbal_habits": 4, "distinguishability": 4, "register_consistency": 3, "register_naturalness": 4}, "evaluator_call_id": "01a0
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "aa28681d-71c3-87c2-8590-3f407839fdee"}], "issue_ids": [], "evaluator_call_id": "01a0d810-a303-7279-955f-f825f506d7ec"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d80f-f781-76da-b1bb-2600995e1b55"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["4f38b37d-76e5-8139-b690-2b8b515fb65d", "ba6a17f5-6b05-830a-a270-401684138089", "fa06f3b5-2e7d-8a49-bb65-cdc86a912edd"], "drift_flags": ["serial"], "judge_score": 82, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff": 5, "exposition_co
+  section continuity {"score": 0, "passed": false, "issue_ids": ["0b97ee4f-baef-89c7-9443-c6f4c0753b30"], "evaluator_call_id": "01a0d810-7405-7589-83c5-1eec57971e00"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["b49674be-f302-86fe-a6f6-948e4a69ee02", "307c0a9e-0afc-88dd-b5f4-0d3ab7f8ed63"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d810-f316-704b-b175-8ae7cf565f73"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d810-56ca-74a7-a1ad-dddc015893cc"}
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그는 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀는 
+  [minor/open] prose literary_drift lint:ko_style AIT-KO-06
+     claim: AI 상투구: “공기가 얼어붙” — ‘공기가 무거워졌다/얼어붙었다’ — 인물 반응으로 보여 준다.
+     quote: 공기가 얼어붙
+  [minor/open] prose other lint:ko_style KO-END-02
+     claim: 서술 문장 4개가 연달아 ‘~었다.’로 끝난다 (기준 4개). 어미와 문장 길이를 바꿔 호흡을 살린다.
+  [blocking/open] continuity numeric_inconsistency judge:continuity_checker 
+     claim: 앞선 문단(p98)에서는 진혁이 전당포 주인에게 반지 값으로 '오억 원'을 지불했다고 말했으나, 여기서는 5천만 원에 구매했다고 서술되어 있으며 이어지는 내용(p126)에서도 남은 돈이 4억 5천만 원이라고 하여 앞뒤 지출 금액과 잔액 산수가 맞지 않습니다.
+     quote: 그 사기적인 기연을 방금 단돈 오천만 원에 손에 넣었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 번역투 주어 '그는'이 사용되었습니다. 주어를 생략하거나 인물의 이름으로 대체하는 것이 자연스럽습니다.
+     quote: 그는 홀린 듯 서랍을 열어 대출 계약서를 꺼냈다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 대표적인 AI 상투구인 '공기가 얼어붙다'가 쓰였습니다. 분위기를 뭉뚱그려 서술하기보다 인물의 구체적인 행동이나 반응을 보여주어야 합니다.
+     quote: 방 안의 공기가 얼어붙은 것처럼 뻣뻣해졌다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 3인칭 대명사 '그녀의'가 포함된 번역투 문장입니다. '진희의' 등으로 고치거나 생략해야 합니다.
+     quote: 나를 위해 사비를 털어 물자를 조달하다, 결국 신성 길드의 암살자들에게 찢겨 죽었던 그녀의 마지막이 머릿속을 스쳤다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 대명사 주어 '그녀가'와 흔한 AI 표정 상투구인 '입술을 깨물었다'가 겹쳐 어색합니다.
+     quote: 그녀가 메모장과 나를 번갈아 보며 입술을 깨물었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 대명사 '그녀는'이 불필요하게 사용되었습니다. 한국어 웹소설에서는 문맥상 알 수 있는 주어를 생략하는 것이 낫습니다.
+     quote: 의심은 곧 탐욕으로 바뀔 것이고, 그녀는 스스로 나를 찾아올 수밖에 없다.
+  [minor/open] prose repetitive_sentence_openings judge:prose_judge 
+     claim: 서술 문장 4개가 연달아 '~었다.'로 끝나 호흡이 단조롭습니다. 종결 어미와 문장 길이에 변화를 주어 리듬감을 살려야 합니다.
+     quote: 가게 안은 말 그대로 잡동사니 무덤이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '통제력을 잃고'는 상황에 비해 다소 과장된 번역투 느낌의 표현입니다. '손이 저도 모르게 달달거렸다' 등으로 풀어쓰는 것이 좋습니다.
+     quote: 태블릿 PC를 쥔 손이 통제력을 잃고 달달거렸다.
+  [minor/open] structure repeated_scene judge:structure_judge 
+     claim: 전당포 주인과 정보상을 대할 때 주인공이 무시당한 뒤 '당연한 반응이다'라며 여유를 부리는 독백과 대처 패턴이 한 회차 안에서 반복됨
+     quote: 축객령.
+
+당연한 반응이다.
+  [minor/open] structure weak_pacing judge:structure_judge 
+     claim: 사채업자들을 털어 5억을 모으는 과정이 긴장감 있는 씬이 아니라 요약 서술로 처리됨
+     quote: 그렇게 세 시간을 돌며 끌어모은 현찰만 도합 5억 원.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 기연을 얻었을 때 그 아이템의 원래 주인과 능력을 설명하는 서술 문단이 연달아 나옴
+     quote: 어느 이름 모를 F급 짐꾼이 우연히 주워 끼고 다니다가 몬스터에게 뜯겨 죽었고
+  [blocking/open] genre other judge:genre_judge 
+     claim: 1인칭 주인공 시점과 3인칭 시점의 치명적 혼용
+     quote: 진혁이 고개를 돌렸다.
+  [major/open] genre other judge:genre_judge 
+     claim: 지불 액수 설정 오류 (5억 원 전달 후 5천만 원 지불로 서술)
+     quote: 오억 원. 이 반지 값으로 치겠습니다.
+  [minor/open] genre payoff_without_setup judge:genre_judge 
+     claim: 미래 지식과 살기만으로 위기를 넘기는 과정이 지나치게 반복적이고 긴장감이 떨어짐
+     quote: 허약한 F급의 몸뚱이였지만, 인류 최후의 1인이 뿜어내는 기세만으로도
+  [minor/open] voice register_error judge:voice_judge 
+     claim: 린터가 지적한 대로 발화 내에서 존댓말과 반말이 섞이는 구간이 있어 일관성이 떨어집니다.
+     quote: “아, 그거? 어떤 미친놈이 대단한 물건이라고 맡기고 간 건데, 십 년째 안 찾아가고 있는 고철 덩어리요.”
+  [minor/open] voice other judge:voice_judge 
+     claim: 설정된 인물 말투에 맞춰 존댓말을 쓰지만, 번역투처럼 딱딱한 명사형 종결이 섞여 다소 부자연스럽습니다.
+     quote: “당신의 인프라. 그 찌라시가 현실이 되면, 당신이 가진 정보망과 차명 계좌로 내 자금을 굴려 주면 됩니다.
+  [minor/open] repetition repeated_scene judge:repetition_judge 
+     claim: 한 회차 안에서 '목적지 방문 → 상대방에게 F급 또는 미친놈 취급을 받으며 무시당함 → 압도적인 기세나 돈, 미래 정보로 상대를 경악시킴'으로 이어지는 동일한 구조의 장면이 사채업자, 전당포 주인, 정보상을 상대로 세 번이나 연달아 반복되어 전개가 단조롭습니다.
+     quote: F급 짐꾼 강진혁. 너 미쳤냐? 당장 내일 던전에서 뒈져도 이상할 것 없는 놈한테 무슨 대출이야.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: 회차 전반에 걸쳐 '진혁은', '진혁이', '나는' 등 주어를 문장 첫머리에 두는 패턴이 빈번합니다. 특히 1인칭과 3인칭 시점이 혼용되는 가운데 주어로 시작하는 서술이 이어져 문장 구조가 단조롭게 느껴집니다.
+     quote: 나는 성큼성큼 걸어가 낡은 가죽 소파에 털썩 주저앉았다.
+=== scorecard r5 overall={'score': 76, 'note_count': 0, 'major_count': 1, 'minor_count': 19, 'blocking_count': 3}
+  section genre {"score": 90, "passed": true, "issue_ids": ["af538d3f-46a2-8331-88b0-c4beb64ec1a9", "e0c64c3a-6f9b-887b-bc46-490b92e485dc"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d813-0563-77fa-97
+  section prose {"score": 62, "passed": false, "issue_ids": ["7c9d227b-5e29-831a-9265-46a028b4f5d7", "ee7eb77c-e287-85bb-8479-7b3563678fdc", "a4a486cc-43c1-8ef0-a651-3a0aeadb362b", "1c55719e-c935-83a7-aa99-5df86c6b3557", "7afa22b4-a6af-876d-b641-9de0ada8852c", "648052c2-3ebd-8992-8ffd-f797f8210eaa", "06fdee78-1b04-84b0-a338-a28cb8d3dee7", "87902c15-d170-8d97-901c-247ba3720bff", "a521d7c8-cba4-8480-8709-da5f1b2c59
+  section voice {"score": 76.6, "passed": true, "issue_ids": ["cc38f799-6e2c-89ee-a242-d0f6f478017d", "918d6f64-c0f5-8416-8353-10f31d87b497"], "drift_flags": ["존대·반말 혼용"], "judge_score": 80, "score_model": "rubric_subscores", "carried_from": "f7d89994-8af0-89d3-aee4-dc3121b9a8ec", "judge_weight": 0.7, "rubric_score": 68.8, "dimension_scores": {"verbal_habits": 4, "distinguishability": 4, "register_consistency": 3
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "aa28681d-71c3-87c2-8590-3f407839fdee"}], "issue_ids": [], "carried_from": "f7d89994-8af0-89d3-aee4-dc3121b9a8ec", "evaluator_call_id": "01a0d810-a303-7279-955f-f825f506d7ec"}
+  section knowledge {"score": 0, "passed": true, "issue_ids": ["7b75681e-f4cc-8763-9509-de886d150c21"], "evaluator_call_id": "01a0d813-0561-7365-b939-30f9879ec653"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["31493fca-cc42-8561-9360-0f39ea854f75", "fc0da2bc-3b30-88f8-82a4-fd5046627d73", "75cdf820-aa99-825e-a652-6afe950d4d42"], "drift_flags": ["serial"], "judge_score": 82, "score_model": "rubric_subscores", "carried_from": "f7d89994-8af0-89d3-aee4-dc3121b9a8ec", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull"
+  section continuity {"score": 0, "passed": false, "issue_ids": ["9cab7ee5-c22c-8f09-9007-6f7006215c90", "6d110576-ba02-83a1-99ab-28332651f98d"], "evaluator_call_id": "01a0d813-0b5e-7088-a406-f1de4e2217e9"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["d71555b2-422a-8de7-81ed-54cc2948c23e", "8247d04a-17ab-84d2-8cc3-63a38a799929"], "carried_from": "f7d89994-8af0-89d3-aee4-dc3121b9a8ec", "evaluator_call_id": "01a0d810-f316-704b-b175-8ae7cf565f73"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d812-aa14-77e8-9d48-9c879a476117"}
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그는 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀의 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀의 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀가 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀가 
+  [minor/open] prose translation_like_english lint:ko_style TRN-KO-14
+     claim: 번역투: “그녀는 ” — ‘그는/그녀는/그의’ — 이름·호칭을 쓰거나 주어를 생략한다.
+     quote: 그녀는 
+  [minor/open] prose other lint:ko_style KO-END-02
+     claim: 서술 문장 4개가 연달아 ‘~었다.’로 끝난다 (기준 4개). 어미와 문장 길이를 바꿔 호흡을 살린다.
+  [blocking/open] continuity canon_contradiction judge:continuity_checker 
+     claim: 정사(잠긴 사실) 항목과 회차 계약의 상태 변화 계획에 따르면 주인공은 대출금 5억 원을 모두 털어(소진하여) 포식의 반지를 매입해야 합니다. 그러나 원고에서는 5천만 원만 지불하고 가방에 4억 5천만 원이 남는 것으로 서술되어 설정과 크게 모순됩니다.
+     quote: 오천만 원. 이 반지 값으로 치겠습니다.
+  [blocking/open] continuity other judge:continuity_checker 
+     claim: 시리즈 하드 요구사항에 따라 작품은 1인칭 시점('나')으로 서술되어야 하나, 원고 도중 주인공을 '진혁이', '진혁은' 등 3인칭으로 지칭하는 시점(뷰포인트) 오류가 다수 발생했습니다. (p27, p41, p49, p53, p103 등)
+     quote: 진혁이 테이블을 손가락으로 톡, 톡 두드렸다.
+  [minor/open] knowledge knowledge_leak judge:knowledge_leak_checker 
+     claim: 진혁이 사무실에 들어와 대출을 요구했을 뿐 이름이나 신분증을 제시하지 않았음에도 불구하고, 사채업자가 처음 만난 진혁의 이름과 헌터 등급(F급 짐꾼)을 곧바로 알고 말하는 것은 지시사항에 명시된 '소개도 받기 전에 상대 이름이나 사정을 아는 지식 누출'에 해당합니다.
+     quote: F급 짐꾼 강진혁. 너 미쳤냐? 당장 내일 던전에서 뒈져도 이상할 것 없는 놈한테 무슨 대출이야.
+  [blocking/open] prose other judge:prose_judge 
+     claim: 1인칭 시점('나는')과 3인칭 시점('진혁이')이 무분별하게 섞여 있어 서사 몰입을 크게 방해합니다.
+     quote: 진혁이 테이블을 손가락으로 톡, 톡 두드렸다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 지시어 '그', '그녀'가 여러 번 번역투로 사용되었습니다. 인물의 이름이나 직함으로 대체하거나 생략해야 합니다.
+     quote: 그녀의 마지막이 머릿속을 스쳤다.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 먹구름이 세상을 비웃는다는 식의 작위적이고 관조적인 비유가 들어갔습니다. AI 초고에서 흔히 나타나는 상투구입니다.
+     quote: 짙게 깔린 먹구름이 멸망을 앞둔 세상을 비웃는 것 같았다.
+  [minor/open] prose other judge:prose_judge 
+     claim: 서술 문장 4개가 연속으로 '~었다.'로 끝나 문장의 호흡이 단조롭고 기계적입니다.
+     quote: 가게 안은 말 그대로 잡동사니 무덤이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '느낄 수 없게'는 대표적인 번역투 표현입니다. '느껴지지 않게' 등으로 고쳐야 합니다.
+     quote: 그 안의 마력을 느낄 수 없게 철저히 봉인되어 있으니까.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 의미를 알 수 없는 짙은 미소나 서늘한 눈빛 등의 표정 상투구가 반복해서 사용되었습니다.
+     quote: 진혁의 입술 사이로 절로 짙은 미소가 비집고 나왔다.
+  [minor/open] structure repeated_scene judge:structure_judge 
+     claim: 전당포 주인과 정보상을 대할 때 주인공이 무시당한 뒤 '당연한 반응이다'라며 여유를 부리는 독백과 대처 패턴이 한 회차 안에서 반복됨
+     quote: 축객령.
+
+당연한 반응이다.
+  [minor/open] structure weak_pacing judge:structure_judge 
+     claim: 사채업자들을 털어 5억을 모으는 과정이 긴장감 있는 씬이 아니라 요약 서술로 처리됨
+     quote: 그렇게 세 시간을 돌며 끌어모은 현찰만 도합 5억 원.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 기연을 얻었을 때 그 아이템의 원래 주인과 능력을 설명하는 서술 문단이 연달아 나옴
+     quote: 어느 이름 모를 F급 짐꾼이 우연히 주워 끼고 다니다가 몬스터에게 뜯겨 죽었고
+  [minor/open] genre payoff_without_setup judge:genre_judge 
+     claim: 능력이 초기화된 F급 육체임에도 불구하고 살기와 기세만으로 어떠한 물리적 위기나 대가 없이 막대한 자금을 얻는 과정이 지나치게 수월합니다.
+     quote: 방식은 똑같았다. 무력 시위 대신 지옥에서 벼려낸 압도적인 살기를 개방하는 것.
+  [minor/open] genre other judge:genre_judge 
+     claim: 멸망이 10일 남은 시점에서 주식과 코인의 폭등을 이용해 자산을 증식한다는 계획은, 직전에 언급한 '돈이 휴지조각이 된다'는 설정과 맞물려 독자에게 설정의 혼란을 줄 수 있습니다.
+     quote: 앞으로 3일. 그 안에 미친 듯이 폭등할 주식과 코인 종목들입니다.
+  [minor/open] voice register_error judge:voice_judge 
+     claim: 린터가 지적한 대로 발화 내에서 존댓말과 반말이 섞이는 구간이 있어 일관성이 떨어집니다.
+     quote: “아, 그거? 어떤 미친놈이 대단한 물건이라고 맡기고 간 건데, 십 년째 안 찾아가고 있는 고철 덩어리요.”
+  [minor/open] voice other judge:voice_judge 
+     claim: 설정된 인물 말투에 맞춰 존댓말을 쓰지만, 번역투처럼 딱딱한 명사형 종결이 섞여 다소 부자연스럽습니다.
+     quote: “당신의 인프라. 그 찌라시가 현실이 되면, 당신이 가진 정보망과 차명 계좌로 내 자금을 굴려 주면 됩니다.
+  [minor/open] repetition repeated_scene judge:repetition_judge 
+     claim: 한 회차 안에서 '목적지 방문 → 상대방에게 F급 또는 미친놈 취급을 받으며 무시당함 → 압도적인 기세나 돈, 미래 정보로 상대를 경악시킴'으로 이어지는 동일한 구조의 장면이 사채업자, 전당포 주인, 정보상을 상대로 세 번이나 연달아 반복되어 전개가 단조롭습니다.
+     quote: F급 짐꾼 강진혁. 너 미쳤냐? 당장 내일 던전에서 뒈져도 이상할 것 없는 놈한테 무슨 대출이야.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: 회차 전반에 걸쳐 '진혁은', '진혁이', '나는' 등 주어를 문장 첫머리에 두는 패턴이 빈번합니다. 특히 1인칭과 3인칭 시점이 혼용되는 가운데 주어로 시작하는 서술이 이어져 문장 구조가 단조롭게 느껴집니다.
+     quote: 나는 성큼성큼 걸어가 낡은 가죽 소파에 털썩 주저앉았다.

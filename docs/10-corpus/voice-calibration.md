@@ -69,7 +69,21 @@ markers than the operator does (the lint's markers are not all defects at the op
 
 ## 4. Stock phrases (C7)
 
-The permanent database holds two pipeline first drafts so far (G1, G3b), so mining waits for the checkpoint runs.
-Word pairs and triples both drafts use and the operator's 656 chapters never do: `비릿한 피`, `훅 끼쳤다`,
-`끔찍한 고통이`, `벌떡 몸을 일으켰다` (plus premise words). They are candidates for a later language layer, not
-rules.
+Mined twice. The first pass (two first drafts, G1 and G3b) found `비릿한 피`, `훅 끼쳤다`, `끔찍한 고통이` and
+`벌떡 몸을 일으켰다` in both drafts and none of the operator's 656 chapters.
+
+The second pass (ADR-0089) read the 32 manuscript and quarantined versions of eight projects in the permanent
+database after G6. A phrase becomes a `lang/ko` rule when drafts of **at least three different projects** use it (a
+chapter's revision versions repeat one sentence, so versions are not independent), the operator's chapters never do,
+and no existing rule already matches it:
+
+| Pattern (`lang/ko@8`) | Distinct draft sentences | Projects | Operator chapters |
+|---|---|---|---|
+| `고쳐 (잡\|쥐)` | 7 | 5 | 0 |
+| `비릿한 (피\|핏)` | 4 | 3 | 0 |
+| `훅 (끼쳤\|끼쳐)` | 4 | 3 | 0 |
+| `눈을 가늘게 (떴\|뜨\|뜬)` | 4 | 3 | 0 |
+
+Not rules, and why: `끔찍한 고통`, `벌떡 몸을 일으`, `마른침을 삼키` (the operator uses each once); `정적이 내려앉`
+(already `AIT-KO-05`); `입꼬리가 비릿하게 …` (already `drafts-lip-curl`); `공기가 싸늘하게 얼어붙`, `서늘한 투지`,
+`굉음과 함께`, `알 수 없는 위화감` (one sentence in one project so far — candidates for the next pass).

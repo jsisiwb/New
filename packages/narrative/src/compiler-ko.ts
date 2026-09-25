@@ -374,10 +374,36 @@ const DEVICE_KO: Readonly<Record<string, string>> = {
     '이 작품의 장치는 빙의다. 주인공이 들어온 세계가 게임인지 소설인지는 첫 화에서 정하고, 그 뒤로는 그 한 가지 어휘만 쓴다.',
 };
 
+/**
+ * ADR-0090 (G8-2): the operator's game-possession book calls the game itself the 원작 17 times ('원작 게임에서',
+ * '원작대로라면'); only the novel-possession words stay foreign, as `KO-DEVICE-01` already judges.
+ */
+const DEVICE_KO_V2: Readonly<Record<string, string>> = {
+  game_possession:
+    '이 작품의 장치는 게임 빙의다. 주인공은 자기가 하던 게임 속 인물의 몸에 들어왔다. 앞날의 지식은 주로 ‘게임’, ‘공략’, ‘회차’, ‘퀘스트’, ‘특성’, ‘플레이어’ 같은 게임 어휘로 말하고, 게임 자체를 ‘원작’이라 부를 수는 있다(‘원작 게임에서는’, ‘원작대로라면’). ‘원작 주인공’, ‘원작 소설’처럼 소설 속으로 들어간 이야기의 어휘는 쓰지 않는다.',
+};
+
 /** The project's premise device as a rule (ADR-0084); empty unless the identity records one. */
 export function renderDeviceKo(id: ComposedIdentity): string {
   const d = id.preferences?.story_device;
-  return d ? (DEVICE_KO[d] ?? '') : '';
+  if (!d) return '';
+  const v2 = id.preferences.story_device_rules === 2 ? DEVICE_KO_V2[d] : undefined;
+  return v2 ?? DEVICE_KO[d] ?? '';
+}
+
+/**
+ * ADR-0090 (G8-4): the operator's academy intake names a 먼치킨 hero; the genre judge read cost-free power as a
+ * forbidden development in every round of G7a and G8a.
+ */
+const PROTAGONIST_KO: Readonly<Record<string, string>> = {
+  munchkin:
+    '이 작품의 주인공은 처음부터 압도적으로 강한 먼치킨이다(작가가 정한 설정). 압도적인 힘은 이 작품의 약속이지 결함이 아니다. 긴장은 힘의 한계가 아니라 주변의 착각·관계·목표의 판돈에서 만든다. 힘에 대가나 제약이 없다는 이유만으로 설정 붕괴, 긴장감 소멸, 대가 없는 해결로 지적하지 않는다(바이블의 세계 규칙이 정한 대가는 지킨다).',
+};
+
+/** The protagonist type as a rule (ADR-0090); empty unless the identity records one. */
+export function renderProtagonistKo(id: ComposedIdentity): string {
+  const t = id.preferences?.protagonist_type;
+  return t ? (PROTAGONIST_KO[t] ?? '') : '';
 }
 
 const VOICE_HEAD_KO: Readonly<Record<'writer' | 'planner' | 'judges', string>> = {
@@ -462,6 +488,7 @@ export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
   avoid: '쓰지 않는 문장 (번역투·AI 상투구)',
   exemplars: '문체 견본 (리듬 참고용, 베끼기 금지)',
   device: '장치 어휘 (절대)',
+  premise: '주인공 유형',
   voice: '작가 문체 (작가 원고에서 잰 기준)',
   voice_planner: '작가의 구성 습관',
   voice_judges: '이 작가의 문체 (결함 아님)',

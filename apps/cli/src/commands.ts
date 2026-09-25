@@ -86,6 +86,7 @@ import { loadPolicies as loadPolicyMap, type PolicyRef } from '@yeonjae/domain';
 import {
   auditSeries,
   buildRunReport,
+  fixRates,
   callRows,
   inspectPack,
   projectCost,
@@ -95,6 +96,7 @@ import {
   storyState,
   readHeartbeatFile,
   renderRunReport,
+  renderFixRates,
   simulatedProvider,
   exportAccepted,
   ExportRefusedError,
@@ -465,6 +467,16 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
           ...(heartbeat ? { heartbeat } : {}),
         });
         return { ok: true, output: flags.includes('--json') ? report : renderRunReport(report) };
+      }
+      case 'quality:fix-rates': {
+        // ADR-0087: per finding kind, how often a revision round's patch resolved it. Reads only.
+        const projects = rest
+          .find((f) => f.startsWith('--projects='))
+          ?.slice('--projects='.length)
+          .split(',')
+          .filter(Boolean);
+        const report = await fixRates(pool, projects);
+        return { ok: true, output: rest.includes('--json') ? report : renderFixRates(report) };
       }
       case 'pack:inspect': {
         // ADR-0079: rebuild a chapter's pack from its stored contract; every section against the budget.
@@ -1668,6 +1680,7 @@ export const DB_COMMANDS = new Set([
   'project:create',
   'series:audit',
   'quality:run-report',
+  'quality:fix-rates',
   'quality:lint-ko',
   'pack:inspect',
   'story:state',
@@ -1844,6 +1857,7 @@ Database commands (DATABASE_URL required):
   series:audit <project> [--absent-after=<n>]  whole-serial audit: overdue promises, absent characters,
                                                story-time regressions, repeated openings (accepted canon only)
   quality:run-report <project> [--metrics-log=<file>] [--status-file=<file>] [--json]
+  quality:fix-rates [--projects=<id,id>] [--json]   per finding kind, the share of targeted findings a revision round resolved (ADR-0087)
   provider:check [--probe] [--json]            per-class capability matrix of the configured provider mode (ADR-0072)
                                                a run as persisted: per-chapter scorecards (gates, dimensions,
                                                lint by rule), plan checks, quarantined versions, model calls by

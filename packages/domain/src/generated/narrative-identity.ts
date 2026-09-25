@@ -148,14 +148,7 @@ export type NarrativeIdentityProfile = {
   genre?: {
     genre_id?: string;
     reader_fantasy?: string;
-    vocabulary?: {
-      /**
-       * English terms
-       */
-      preferred_terms?: string[];
-      discouraged_terms?: string[];
-      terminology_defaults?: TerminologyEntry[];
-    };
+    vocabulary?: Vocabulary;
     devices?: Device[];
     cadence?: {
       progression_event_every_chapters?: number;
@@ -190,6 +183,16 @@ export type NarrativeIdentityProfile = {
      */
     rubric?: RubricDimension[];
     style_exemplars?: StyleExemplars;
+    /**
+     * ADR-0089 (live defect G7-2): the overlay in one premise device's own words. When the composed identity records preferences.story_device and the overlay has a variant for it, each field the variant sets replaces the overlay's field before any writer, planner or judge reads it. A 회빙환 overlay worded for novel possession otherwise tells a regression writer to use 원작 while the device rule forbids it.
+     */
+    device_variants?: {
+      regression?: GenreDeviceVariant;
+      reincarnation?: GenreDeviceVariant;
+      game_possession?: GenreDeviceVariant;
+      novel_possession?: GenreDeviceVariant;
+      possession?: GenreDeviceVariant;
+    };
   };
   /**
    * Layer 4 — Setting & cultural profile
@@ -312,6 +315,14 @@ export type NarrativeIdentityProfile = {
       planner: string[];
       judges: string[];
     };
+    /**
+     * ADR-0090 (live defect G8-4): the protagonist type the intake names, recorded when the policy names identity.protagonist_type. munchkin: overwhelming from the start (먼치킨) — writers and planners build tension from misunderstanding, relationships and stakes, and the genre and structure judges do not treat cost-free power itself as a defect. Absent: no such line.
+     */
+    protagonist_type?: 'munchkin';
+    /**
+     * ADR-0090 (live defect G8-2): the wording of the device rule this identity was composed with. 2: a game-possession serial may call the game itself the 원작 (‘원작 게임에서는’, ‘원작대로라면’), as the operator's game-possession book does 17 times; 원작 주인공 and 원작 소설 stay the other device's words. Absent: the ADR-0084 wording.
+     */
+    story_device_rules?: 2;
     /**
      * ADR-0084 (U2, live defect G-1): the premise device, derived from the intake when the policy names identity.device_lexicon. It selects the device vocabulary writers, planners and the genre judge are given, and the words a deterministic check flags (a regression serial does not call its past the 원작).
      */
@@ -589,6 +600,14 @@ export interface Device {
   format_grammar?: string;
   max_per_chapter?: number;
 }
+export interface Vocabulary {
+  /**
+   * English terms
+   */
+  preferred_terms?: string[];
+  discouraged_terms?: string[];
+  terminology_defaults?: TerminologyEntry[];
+}
 /**
  * Abstract canonical description of how a speaker addresses a counterpart, rendered in natural English by the writer (replaces Korean speech-level enforcement).
  */
@@ -632,4 +651,23 @@ export interface DialogueRegister {
     titles?: string[];
   };
   note?: string;
+}
+/**
+ * The genre fields one premise device words differently (ADR-0089); an absent field keeps the overlay's own.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "genreDeviceVariant".
+ */
+export interface GenreDeviceVariant {
+  reader_fantasy?: string;
+  vocabulary?: Vocabulary;
+  devices?: Device[];
+  structure_overrides?: {
+    [k: string]: unknown | undefined;
+  };
+  register_notes?: string[];
+  taboos?: string[];
+  judge_notes?: string[];
+  rubric?: RubricDimension[];
+  style_exemplars?: StyleExemplars;
 }

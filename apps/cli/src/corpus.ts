@@ -14,18 +14,35 @@
  */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  acceptedChapter,
   corpusChapters,
   corpusPassages,
   importCorpusBook,
   insertCorpusPassages,
   listCorpusBooks,
+  pinnedIdentityDocument,
   type CorpusChapterRow,
   type Pool,
 } from '@yeonjae/db';
+import {
+  buildBlindPacket,
+  decodeKey,
+  encodeKey,
+  pickOperatorMatches,
+  type OperatorChapter,
+  type PacketSource,
+} from '@yeonjae/workflows';
 import { ProfileStore } from '@yeonjae/narrative';
 import {
   chapterMetrics,
@@ -57,6 +74,8 @@ export const CORPUS_COMMANDS = new Set([
   'corpus:passages',
   'corpus:likeness',
   'corpus:stock-phrases',
+  'corpus:blind-packet',
+  'corpus:reveal',
 ]);
 export const CORPUS_IMPORT_VERSION = 'corpus-import@1';
 
@@ -363,6 +382,8 @@ export async function runCorpusCommand(
   if (cmd === 'corpus:passages') return passagesCmd(pool, args);
   if (cmd === 'corpus:likeness') return likenessCmd(pool, args);
   if (cmd === 'corpus:stock-phrases') return stockPhrasesCmd(pool, args);
+  if (cmd === 'corpus:blind-packet') return blindPacketCmd(pool, args);
+  if (cmd === 'corpus:reveal') return revealCmd(args);
   return { ok: false, output: { error: 'UNKNOWN_COMMAND', cmd } };
 }
 
@@ -487,5 +508,91 @@ async function stockPhrasesCmd(pool: Pool, args: readonly string[]): Promise<Res
   return {
     ok: true,
     output: { drafts: rows.length, corpus_chapters: corpus.length, n, minDrafts, phrases },
+  };
+}
+
+/**
+ * N3: accepted chapters of the named projects mixed with the operator's chapters at the same positions, normalized
+ * alike, shuffled by the seed; the answer key is written encoded, its hash in the manifest.
+ */
+async function blindPacketCmd(pool: Pool, args: readonly string[]): Promise<Result> {
+  const projects = (flag(args, 'projects') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const seed = flag(args, 'seed');
+  const out = flag(args, 'out');
+  const [from = 1, to = 5] = (flag(args, 'chapters') ?? '1-5').split('-').map(Number);
+  if (projects.length === 0 || !seed || !out || !Number.isInteger(from) || !Number.isInteger(to))
+    return {
+      ok: false,
+      output: {
+        error: 'USAGE',
+        usage:
+          'corpus:blind-packet --projects=<id>[,<id>] --seed=<text> --out=<dir> [--chapters=1-5]',
+      },
+    };
+  const pipeline: (PacketSource & { readonly pov: 'first' | 'third' | null })[] = [];
+  for (const projectId of projects) {
+    const title =
+      (await pool.query<{ title: string }>('SELECT title FROM projects WHERE id = $1', [projectId]))
+        .rows[0]?.title ?? projectId;
+    const doc = await pinnedIdentityDocument(pool, { projectId, kind: 'narrative_identity' });
+    const pov = (doc?.payload as { preferences?: { pov?: string } } | undefined)?.preferences?.pov;
+    for (let n = from; n <= to; n++) {
+      const found = await acceptedChapter(pool, projectId, n);
+      if (found.state !== 'accepted') continue;
+      pipeline.push({
+        origin: 'pipeline',
+        label: `pipeline: ${title} (${projectId}) 화 ${String(n)} v${String(found.chapter.version.version_no)}`,
+        position: n,
+        text: found.chapter.version.text,
+        pov: pov === 'first' ? 'first' : pov ? 'third' : null,
+      });
+    }
+  }
+  if (pipeline.length === 0) return { ok: false, output: { error: 'NO_ACCEPTED_CHAPTERS' } };
+  const ordinals = new Map<string, number>();
+  const chapters: OperatorChapter[] = (await corpusChapters(pool))
+    .filter((r) => r.kind === 'chapter')
+    .map((r) => {
+      const ordinal = (ordinals.get(r.book_id) ?? 0) + 1;
+      ordinals.set(r.book_id, ordinal);
+      return { id: r.id, book: r.book_title, ordinal, pov: r.pov, text: r.text };
+    });
+  const operator: PacketSource[] = pickOperatorMatches(
+    pipeline.map((p) => ({ position: p.position, pov: p.pov })),
+    chapters,
+    seed,
+  ).map((m) => ({
+    origin: 'operator',
+    label: `operator: ${m.book} chapter ${String(m.ordinal)} (${m.id})`,
+    position: m.ordinal,
+    text: m.text,
+  }));
+  const built = buildBlindPacket(
+    [...pipeline.map(({ pov: _pov, ...source }) => source), ...operator],
+    seed,
+  );
+  mkdirSync(out, { recursive: true });
+  const manifest = { ...built.manifest, pipeline: pipeline.length, operator: operator.length };
+  writeFileSync(join(out, 'packet.md'), built.packet);
+  writeFileSync(join(out, 'answer-key.b64.txt'), `${encodeKey(built.key)}\n`);
+  writeFileSync(join(out, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  return { ok: true, output: { out, ...manifest } };
+}
+
+/** The answer key of a packet folder, checked against its manifest. */
+function revealCmd(args: readonly string[]): Result {
+  const dir = flag(args, 'dir');
+  if (!dir)
+    return { ok: false, output: { error: 'USAGE', usage: 'corpus:reveal --dir=<packet folder>' } };
+  const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as {
+    key_sha256: string;
+  };
+  const key = decodeKey(readFileSync(join(dir, 'answer-key.b64.txt'), 'utf8'), manifest);
+  return {
+    ok: true,
+    output: key.items.map(({ item, origin, label }) => ({ item, origin, label })),
   };
 }

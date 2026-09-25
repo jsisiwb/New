@@ -11,6 +11,10 @@ regexes = [
   # Estimator ids recorded in pack manifests (`*_TOKEN_ESTIMATOR_ID = 'korean_chars_v1'` reads as an API key).
   '''^(?:english_estimator|korean_chars)_v[0-9]+$''',
 ]
+# b579f9d exported G5 findings with `key=<uuid>` labels (studio ids, reviewed: no secret); later exports omit them.
+commits = [
+  '''b579f9d60ffbe0fd7ac08f1e211909bcdad2cdb0''',
+]
 paths = [
   '''pnpm-lock\.yaml''',
   '''packages/domain/src/generated/.*''',

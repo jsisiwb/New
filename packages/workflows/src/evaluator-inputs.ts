@@ -65,23 +65,36 @@ export function voiceCards(
   return lines.length ? lines.join('\n') : undefined;
 }
 
-/** The designed register and address terms of each participant toward each counterpart (호칭 matrix). */
+/**
+ * The designed register and address terms of each participant toward each counterpart (호칭 matrix). Under
+ * `timeFramed` (ADR-0089, G7-3) a register dated to a later 화 is left out and one that begins in this 화 says so.
+ */
 export function addressMatrix(
   contract: ChapterContract,
   bible: StoryBible | undefined,
   lang: Lang,
+  opts: { readonly timeFramed?: boolean | undefined } = {},
 ): string | undefined {
   const lines: string[] = [];
+  const chapterNo = contract.chapter_number;
   for (const e of participants(contract, bible)) {
     for (const r of recs(e.design?.registers)) {
       const toward = str(r.toward);
       if (!toward) continue;
+      const since = opts.timeFramed && typeof r.since_chapter === 'number' ? r.since_chapter : 0;
+      if (since > chapterNo) continue;
       const terms = list(r.address_terms);
       const type = str(r.type);
+      const begins =
+        since >= 1 && since === chapterNo
+          ? lang === 'ko'
+            ? ' (이 화에서 시작되는 관계다. 관계가 생긴 뒤에만 이 말높이와 호칭을 쓴다)'
+            : ' (the relationship begins in this chapter; these terms apply only once it has formed)'
+          : '';
       lines.push(
         lang === 'ko'
-          ? `- ${e.display_name} → ${toward}: ${type ?? '말높이 미지정'}${terms.length ? `; 호칭 ‘${terms.join('’, ‘')}’` : ''}`
-          : `- ${e.display_name} → ${toward}: ${type ?? 'register unspecified'}${terms.length ? `; address terms “${terms.join('”, “')}”` : ''}`,
+          ? `- ${e.display_name} → ${toward}: ${type ?? '말높이 미지정'}${terms.length ? `; 호칭 ‘${terms.join('’, ‘')}’` : ''}${begins}`
+          : `- ${e.display_name} → ${toward}: ${type ?? 'register unspecified'}${terms.length ? `; address terms “${terms.join('”, “')}”` : ''}${begins}`,
       );
     }
   }

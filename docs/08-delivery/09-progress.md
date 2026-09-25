@@ -3,57 +3,150 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
-## Next session — handoff (2026-09-25, Gemini run)
+## Next session — handoff (2026-09-25, operator-voice continuation)
 
-**Where the roadmap stands.** Everything through ADR-0079 / `standard@11` (phases R, P, A, K, L, V, O/W, D) is
-merged into `hoplite/ainos-1ac771f8` (PR #1 of `sigma43web/New`). GitHub Actions runs on every push and is
-green on the default branch (`ci` 18 min 46 s, `planning-validation` 19 s, 2026-09-24 20:54 UTC).
+**Repository.** `sigma44web/New` (moved from `sigma43web/New`; the PR history did not move with it), default branch
+`hoplite/ainos-1ac771f8`, which holds everything through ADR-0084 / `standard@14`. This run works on one branch,
+`hoplite/euhesperides-dd340964`, one commit series per phase; the draft roll-up PR #1 into the default branch is what
+the operator merges.
 
-This run (2026-09-24 →) moves every role to Gemini through the Notion bridge, learns the operator's voice
-from their own novels (`sigma43web/ko-corpus`), and targets accepted chapters. It is one chain of stacked PRs,
-one per phase; the agent cannot merge, so a roll-up PR from the top branch closes the chain.
+| Order | Phase (operator plan step) | Status |
+| --- | --- | --- |
+| 1 | STEP 1 — `standard@14` checkpoint on both projects | done: the recorded G5 pair (ADR-0085, `13-live-run-gemini.md` §5) |
+| 2 | STEP 2 — Phase U (plan-level prevention) + the V2 rules G5-3 demanded | done: `standard@15` (ADR-0086); live G6 (§6) |
+| 3 | STEP 3 — Phase V2 (escalation ladder) | done: `standard@16` (ADR-0087); fix-rate table |
+| 3b | G6 fixes | done: `standard@17` (ADR-0088); live G7 (§7) |
+| 3c | G7 fixes | done: `standard@18` (ADR-0089); live G8 (§8) |
+| 3d | G8 fixes | done: `standard@19` (ADR-0090); live G9 next |
+| 4 | STEP 4 — finish Phase C | partly: C7 into `lang/ko@8` (ADR-0089); C2, C6 pending |
+| 5 | STEP 5 — Phase N (accepted chapters) | next, on whichever project accepts chapter 1 |
+| 6–8 | STEPS 6–8 — Q, M, I, E, W, B, D | pending |
 
-| Order | Phase | Branch | Status |
-| --- | --- | --- | --- |
-| 1 | 0 — state and provider readiness | `hoplite/hipponion-22b29187` | done (ADR-0080) |
-| 2 | G — Gemini baseline and same-model judging | `…--gemini-baseline` | done (ADR-0081, `standard@12`) |
-| 3 | C (part 1) — corpus import, statistics, voice analysis, copy detection | `…--corpus` | done (ADR-0082) |
-| 4 | C (part 2) — calibrated lint, voice profile, the operator's passages, likeness | `…--corpus--voice` | done (ADR-0083, `standard@13`) |
-| 5 | U + V2 — upstream prevention and revision convergence | `…--voice--upstream` | done (ADR-0084, `standard@14`) |
-| 6+ | N, Q, M, I, E, W, B, D | stacked on U | pending |
+**Where acceptance stands.** No chapter is accepted yet. G6 (`standard@15`): the academy chapter converged from 9
+blocking/major findings to 1 with all four gates passing and every round kept, then a full re-evaluation raised seven
+majors (single 그/그녀 inside the operator's own band, a comic cut the rubric did not know) and the three rounds ran out;
+the regression chapter was blocked by the hero's prior-life knowledge against the bible's reader dates. `standard@17`
+answers both (ADR-0088). G7 (`standard@17`, §7): both chapters passed all four dimension gates in at least one round
+and the regression chapter's last round stood at one blocking finding and no major; in both, the last blocker was the
+bible's settled relationship register (사부님, 형님) enforced from 화 0 in the chapter where the relationship forms.
+`standard@18` answers it (ADR-0089). G8 (`standard@18`, §8): no finding cited a 화-0 register any more; the academy
+chapter reached 0 blocking findings in two rounds (3 majors each) — at r5 two of the three were single 그녀 below the
+operator's own pronoun band; the regression chapter never recovered from two scenes drafted in the third person.
+`standard@19` answers those and five more (ADR-0090); G9 on `standard@19` is the next evidence.
 
-**Done in Phase 0.** Both model-id names (`YEONJAE_NOTION_MODEL` wins over `YEONJAE_MODEL_NOTION`); split error
-classes and a policy-gated same-route refusal rule; counted gateway JSON recoveries; `bridge:credits`;
-`provider:check --probe --deep`; libpq `sslmode` semantics for the permanent database; a reset guard so a test
-run can never drop it. The permanent database is migrated (0001–0022, 68 tables); `story:state` on a fresh
-project answers (0 accepted, canon version 0).
+**Open defects.** None of G5-1 … G5-9, G6-1 … G6-5, G7-1 … G7-3 or G8-1 … G8-7 is open in code; G7-4 (solo scenes far
+below their planned talk; the redraft needs an on-page partner) is open; a database blip records a run as cancelled by
+the operator and stops it (G8 incident; matters for unattended runs, N4); G5-8 (voice metrics: likeness 70 in G6r, 속마음
+and endings outside the band) is only partly addressed. Carried: the operator's 3인칭 cutaways (not planned), story-clock
+checks by the continuity checker (U4, partly), C2/C6/C7 corpus work, Phases N–D.
 
-**Live facts to keep.** The reply to the identity probe names Gemini; JSON comes back unfenced; long
-structured output is not truncated (1,500 items, 7,894 characters). A tiny call costs 0.05–0.08 billing-period
-points; the bridge serializes per workspace, so parallel calls fail fast and are retried. Credits at the start:
-66.07 % / 76.68 % (period ends 2026-10-09). Book 3 of the corpus (`아카데미 사기 룬을 얻었다.epub`) is an **English
-machine translation**, not Korean (0 of 364 files Korean-majority); only books 1 and 2 carry the operator's
-Korean voice.
+**Budget.** Bridge credits after G8: ws1 83.04 %, ws2 98.57 %, ws3 11.35 %, ws4 4.33 % (billing period ending
+2026-10-09; about 203 points remain, workspace 2 nearly spent). A chapter-1 run from a fresh project costs about 6
+points with five rounds (12.73 for the G8 pair; 11.98 for G7; 8.91 for G6 on `standard@15`).
 
-**Safety rules for the next session.** Run every test and `pnpm check` with `DATABASE_URL` pointing at a local
-sandbox database (the test kit resets what it is given; `RESET_REFUSED` now guards the permanent one). Live
-runs use the permanent `DATABASE_URL` from a separate worktree so a rebuild cannot change a running process.
+**Safety rules.** Tests run against local sandbox databases (`yeonjae_test` for full suites, `yeonjae_test_b` for
+targeted runs — never both suites on one database at once); the inherited `DATABASE_URL` is the permanent database,
+used only by live runs, corpus commands and reports, from the separate worktree `/tmp/hoplite/live`. Never run the full `pnpm
+check` while a live run is in flight: at G8 (09:42 UTC) its memory peak at the sandbox's 4 GiB ceiling dropped the live
+runs' database connections — one runner stopped on the failed heartbeat, the other failed closed as cancelled — and both
+resumed from their checkpoints (`novel:resume`, a fresh `novel:run`).
 
-**Next step.** The live checkpoint of `standard@14` on both projects (the regression intake
-`ops/live-runs/phase-a-v7-intake.json` and the academy intake `ops/live-runs/phase-c-academy-intake.json`), then
-Phase N (chapters 2–5, 6–15) on whichever project accepts chapter 1. The `standard@13` checkpoint (G4,
-`13-live-run-gemini.md` §4) accepted neither chapter: dialogue 6–7 % (structure blocking in both, even where the plan
-asked for 30–40 %), reader secrets revealed ahead of their chapters, and 원작 in the regression serial — the inputs
-to ADR-0084.
+## G8 fixes — `standard.v19` — 2026-09-25
 
-**Budget.** Credits after G4: ws1 71.57 %, ws2 86.16 % of the billing period ending 2026-10-09 (about 42 points
-left across both workspaces). A chapter-1 run from a fresh project costs about 3.2–4.1 points. 200 화 on two
-projects cannot be produced inside this billing period.
+**Built (ADR-0090):** `planning.reveal_schedule.narrator_current_knowledge` (present secrets the narrator knows at the
+start are the reader's); `identity.device_rules` 2 (a game-possession serial may call the game the 원작, as the operator
+does); `identity.protagonist_type` (the intake's 먼치킨 hero as a 주인공 유형 section for writers, editors, planners and
+the genre and structure judges); `drafting.pov_redraft` with `thirdPersonDrift` (a first-person scene narrated in the
+third person is re-drafted once); `evaluation.pronoun_band_cap` (`capPronounFindings`: a prose-judge pronoun finding
+below the language layer's pronoun warn threshold is minor); prompt family 4.10.0 (`scene_writer`: no copied example
+lines, no stranger named before an introduction, an unawakened body within its level).
 
-**Open defects carried in.** The writer's talk share (5–7 % in three live runs; `standard@14` adds the plan floor
-and one scene redraft), the operator's POV architecture (1인칭 hero with 3인칭 cutaways), structural re-drafting of a
-scene after the plan meets the floor, the bible time frame (G3-4), contract criteria that fight the voice profile's
-openings (G4r AC-1).
+**Measured:** G8 (§8) is the evidence for the fixes; `standard@19` itself is measured by G9.
+
+**Tests:** `reveal-schedule.test.ts`, `identity-from-intake.test.ts` (device rules 2, the protagonist section by role),
+`ko-style-v6.test.ts` (`thirdPersonDrift`), `pronoun-cap.test.ts`, `registry.test.ts` (4.10.0 changes one family and
+sorts after 4.9.0), `policy.test.ts` (v19), the CLI inventory (318 prompt versions), `novel-ko.integration.test.ts` (a
+simulated first-person run under v19: drifted scenes re-drafted once, the first-person redraft kept).
+
+**Not done (and why):** the cancellation reason recorded for a lease lost on a database error (`operator_cancelled`)
+— fixed with the unattended-run work (N4); judge variance across full re-evaluations (each round surfaces one to three
+new majors on unchanged text) — to be measured on a fixed version before any rule.
+
+## G7 fixes and C7 — `standard.v18` — 2026-09-25
+
+**Built (ADR-0089):** the cast designer 4.9.0 dates each relationship (`since_chapter`); under
+`planning.register_time_frames` a relationship that begins in 화 N ≥ 1 is not seeded as canon and the voice judge's 호칭
+matrix leaves it out before 화 N and marks it in 화 N; `genre/regression@4` with `device_variants` (regression,
+reincarnation, game possession) applied by `composeIdentity` for the recorded premise device, opted into by
+`identity.genre_layers` (`genre/regression` capped at v3 otherwise); `planning.strip_provenance_tags` for designer and
+planner answers (`provenance-tags.ts`); `lang/ko@8` with four stock phrases mined from 32 versions of eight projects
+(`voice-calibration.md` §4).
+
+**Measured:** G7 (§7) is the evidence for the fixes; `standard@18` itself is measured by G8.
+
+**Tests:** `provenance-tags.test.ts`, `identity-from-intake.test.ts` (device variants, v4 without a device = v3's bytes),
+`evaluator-inputs.test.ts` (the dated 호칭 matrix), `design-output.test.ts`, `registry.test.ts` (4.9.0 changes one
+family), `policy.test.ts` (v18), `compiler.test.ts` and the CLI inventory (new profiles, 317 prompt versions),
+`novel-ko.integration.test.ts` (a simulated regression run under v18).
+
+**Not done (and why):** G7-4 (talk in solo scenes) — the structure gate passed at every G7 round, and the operator's own
+first-person openings include solo scenes, so a rule waits for G8's evidence; four single-project stock phrases wait for
+the next mining pass.
+
+## STEP 2 / STEP 3 / G6 fixes — `standard.v15`, `standard.v16`, `standard.v17` — 2026-09-25
+
+**Built (`standard@15`, ADR-0086):** `reveal-schedule.ts` (reader and character dates, knowledge layers; renderings for
+planners, writer and knowledge checker; `reader_guards` on the contract; `PLAN-REVEAL-01`); `plan-prevention.ts`
+(countable talk targets from the operator's line densities, talk-ban removal, the plan self-check, the cut beat,
+structure targets, feedback); a contract re-asked once for a partner; the `plan_critic` family and one scene-plan repair;
+time frames in the cast bible (`true_from_chapter`, knowledge dated from it); revision convergence (findings attributed to
+changed lines, threshold protection, every open finding targeted, score-only targets, a full confirmation before
+approval); prompt family 4.7.0 (six families). **(`standard@16`, ADR-0087):** two candidate patches per cluster chosen by
+local lint checks; the scene-rewrite rung for pacing, exposition and Western-register findings; `quality:fix-rates`.
+**(`standard@17`, ADR-0088):** the narrator's remembered knowledge is the reader's; the contract is critiqued before the
+scenes; repeated lines dropped at assembly; cast designer 4.8.0; `voice/operator@2`; five Korean revision rounds.
+
+**Measured:** G6 (§6). Fix rates over 18 live patched rounds before `standard@15`: prose and continuity kinds 67–100 %,
+structural pacing 33 %, exposition 17 % (ADR-0087).
+
+**Tests:** `reveal-schedule.test.ts`, `plan-prevention.test.ts`, `convergence.test.ts` (G5a r3 replayed: kept under v15,
+quarantined under v14), `policy.test.ts` (v15–v17, gates unchanged), `registry.test.ts` (4.7.0 adds six families, 4.8.0
+changes one), `output-shapes.test.ts`, `voice.test.ts`, `normalizers.test.ts`, `novel-ko.integration.test.ts` (simulated
+runs under v15, v16 and v17). Full suite on the sandbox database: 2,217 passed before the count updates; the only real
+failures were the CLI's expected policy and prompt counts, since updated.
+
+**Not done (and why):** chapter regeneration and re-plan rungs (no live chapter has needed them yet); second-sample
+confirmation of variance findings (the measurable part of G6-5 was calibration); the 3인칭 cutaways.
+
+## Operator-voice continuation — reconciliation of the operator's plan (2026-09-25)
+
+Status of every item of the plan the operator gave this run, against the repository and the permanent database at the
+start of the run (merged through ADR-0084 / `standard@14`). Later phases update the rows they change.
+
+| Plan item | Status | Evidence |
+| --- | --- | --- |
+| STEP 1 — `standard@14` checkpoint, both projects | done | G5a / G5r (`13-live-run-gemini.md` §5, ADR-0085) |
+| U1 — planner reads the reveal schedule; reader vs character reveal; knowledge layers; hint budget; planner check | done (`standard@15`, `@17`) | the writer reads the checker's reader-secret list (ADR-0084); the POV owner's secrets leave that list (ADR-0074) but not the canon state the checker also reads (`packages/context/src/fetch.ts`, G5-1); one reveal chapter per secret; no layers, hint budget or planner check |
+| U3 — time frames for planned character states | done for secrets (`true_from_chapter`, `standard@15`); turning points already carry chapters | bible states carry no from/until chapter (G5-6) |
+| U4 — story clock ledger (date, weekday, time of day, countdowns, semester) | partly | story clock and countdowns in the ledgers (ADR-0061, ADR-0063, `packages/context/src/ledgers.ts`); the contract's `story_time` is an ordinal; no calendar, no time-span check |
+| U5 — 절단 by design | done (`planning.cut_design`, `standard@15`); a weak cut is a structure finding the ladder targets | the contract's `hook` (type, description, question) and rhythm directives (ADR-0073); no placement rule, no last-scene check or rewrite (G5-5) |
+| U6 — dialogue at plan level, structural scene redraft, POV cutaways | done except cutaways (partner in contract, line targets, redraft ratio, scene rewrite; G6 talk inside the band) | plan floor, partner and one redraft below 12 % (ADR-0084); no dialogue beats with a partner per scene; no cutaways (G5-2) |
+| U7 — contract / scene-plan self-consistency pre-check | done (`checkPlanConsistency`, `standard@15`) | deterministic plan check against the ledgers (ADR-0063); nothing checks the scene plans against their contract |
+| U8 — pre-flight plan critic | done (`plan_critic`, scene plans `standard@15`, contract `standard@17`) | ADR-0086, ADR-0088 |
+| STEP 3 — V2 escalation ladder, constrained patches, N candidates, best non-regressed version, fix-rate table | done except chapter-regeneration and re-plan rungs (`standard@15`, `@16`) | multi-patch rounds (ADR-0077), parent baseline (ADR-0078), discard-and-continue (ADR-0064), re-judging open majors and failing dimension first (ADR-0084); every G5 patched round quarantined (G5-3) |
+| C1 statistics, C0.3 analysis, C3 voice profile, C4 calibrated lint, C5 exemplars, C8 likeness, C9 academy intake, copy detection | done | ADR-0082, ADR-0083, `docs/10-corpus/` |
+| C2 — structure profiles of the operator's chapters as planner targets | partly | read by hand (`operator-voice-analysis.md` §9–§10); no per-chapter profiles, no planner targets |
+| C6 — contrast pairs (pipeline 번역투 version vs operator original) | not started | `corpus.contrast_pairs` is empty |
+| C7 — stock-phrase mining into the next `lang/ko` | done | `lang/ko@8`: four phrases in drafts of three or more projects and none of the operator's 656 chapters (`voice-calibration.md` §4, ADR-0089) |
+| Likeness in every A/B | partly | reported per live checkpoint; no A/B harness |
+| STEP 5 — N1–N5 accepted chapters, blinded packet, unattended 6–15, audits | not started | no live project has an accepted chapter |
+| Q — best-of-N, polish kept on agreement, reader panel, voice cards, cross-judge normalization, titles | partly | a polish round (ADR-0073) and the judge calibration cap (ADR-0081); the rest not started |
+| M — season/series summaries, drift audit, repetition, retrieval fixture, vectors, 200-화 simulation | partly | arc summaries (ADR-0076), `series:audit`, the 120-chapter replay; no season summaries, drift audit, mined queries; no embedding provider |
+| I — contract:edit / approve, intake defaults, schedules in contract:show / story:state | partly | `contract:show`, `story:state` read-only (ADR-0079) |
+| E — export formats, Correction/Retcon live, 200-화 projection, glossary | partly | `export:accepted` (markdown, text), `export:package`, API txt/docx; `cost:project`; the Correction workflow exists (`packages/canon/src/correction.ts`), never run live; no EPUB, no glossary export |
+| W — stored rendered inputs, prompts:render, composable ko_prompts, pruning | partly | outputs stored (`llm_output` artifacts), inputs not (`input_ref` empty); `prompts:size`; `tools/ko_prompts` per version |
+| B — A/B harness against the operator corpus, final policy vs @11/@13/@14 | not started | blocked earlier for want of a gold set; the corpus now is one |
+| D — README, HOW-A-KOREAN-NOVEL-IS-MADE, 05-generation, 10-corpus, .env.example | partly | README's policy table stops at `standard@11` |
 
 ## Phase U + V2 — upstream prevention and revision convergence, `standard.v14` — 2026-09-25
 

@@ -1,0 +1,34 @@
+{
+  "family": "character_designer",
+  "version": "4.9.0",
+  "role": "character_designer",
+  "purpose": "Korean webnovel prompt for a cast bible that dates each relationship (ADR-0089), 4.9.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "cast_brief"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.9.0 — the cast bible dates each relationship (ADR-0089): every register carries since_chapter, the 화 in which the relationship begins, 0 when the two already knew each other before 화 1.",
+  "regression_cases": [
+    "character_designer.full_bible_names",
+    "character_designer.full_bible_fields"
+  ],
+  "content_hash": "sha256:b92f6e1658f5971f79f54703462c4b2af7bceba52a714eb53ce07abdfc10647c"
+}

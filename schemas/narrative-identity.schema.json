@@ -182,7 +182,19 @@
         "judge_notes": { "type": "array", "items": { "type": "string" } },
         "lint_thresholds": { "$ref": "#/$defs/thresholds" },
         "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" }, "description": "Genre Judge rubric (dimension C)" },
-        "style_exemplars": { "$ref": "#/$defs/styleExemplars" }
+        "style_exemplars": { "$ref": "#/$defs/styleExemplars" },
+        "device_variants": {
+          "type": "object",
+          "description": "ADR-0089 (live defect G7-2): the overlay in one premise device's own words. When the composed identity records preferences.story_device and the overlay has a variant for it, each field the variant sets replaces the overlay's field before any writer, planner or judge reads it. A 회빙환 overlay worded for novel possession otherwise tells a regression writer to use 원작 while the device rule forbids it.",
+          "additionalProperties": false,
+          "properties": {
+            "regression": { "$ref": "#/$defs/genreDeviceVariant" },
+            "reincarnation": { "$ref": "#/$defs/genreDeviceVariant" },
+            "game_possession": { "$ref": "#/$defs/genreDeviceVariant" },
+            "novel_possession": { "$ref": "#/$defs/genreDeviceVariant" },
+            "possession": { "$ref": "#/$defs/genreDeviceVariant" }
+          }
+        }
       }
     },
 
@@ -335,6 +347,16 @@
             "judges": { "type": "array", "items": { "type": "string" } }
           }
         },
+        "protagonist_type": {
+          "type": "string",
+          "enum": ["munchkin"],
+          "description": "ADR-0090 (live defect G8-4): the protagonist type the intake names, recorded when the policy names identity.protagonist_type. munchkin: overwhelming from the start (먼치킨) — writers and planners build tension from misunderstanding, relationships and stakes, and the genre and structure judges do not treat cost-free power itself as a defect. Absent: no such line."
+        },
+        "story_device_rules": {
+          "type": "integer",
+          "enum": [2],
+          "description": "ADR-0090 (live defect G8-2): the wording of the device rule this identity was composed with. 2: a game-possession serial may call the game itself the 원작 (‘원작 게임에서는’, ‘원작대로라면’), as the operator's game-possession book does 17 times; 원작 주인공 and 원작 소설 stay the other device's words. Absent: the ADR-0084 wording."
+        },
         "story_device": {
           "type": "string",
           "enum": ["regression", "reincarnation", "game_possession", "novel_possession", "possession"],
@@ -473,6 +495,22 @@
         "severity": { "$ref": "common.schema.json#/$defs/severity" },
         "weight": { "type": "number", "minimum": 0, "maximum": 2 },
         "note": { "type": "string" }
+      }
+    },
+    "genreDeviceVariant": {
+      "type": "object",
+      "description": "The genre fields one premise device words differently (ADR-0089); an absent field keeps the overlay's own.",
+      "additionalProperties": false,
+      "properties": {
+        "reader_fantasy": { "type": "string" },
+        "vocabulary": { "$ref": "#/properties/genre/properties/vocabulary" },
+        "devices": { "type": "array", "items": { "$ref": "#/$defs/device" } },
+        "structure_overrides": { "type": "object", "additionalProperties": true },
+        "register_notes": { "type": "array", "items": { "type": "string" } },
+        "taboos": { "type": "array", "items": { "type": "string" } },
+        "judge_notes": { "type": "array", "items": { "type": "string" } },
+        "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" } },
+        "style_exemplars": { "$ref": "#/$defs/styleExemplars" }
       }
     },
     "rubricDimension": {

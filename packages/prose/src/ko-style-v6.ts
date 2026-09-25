@@ -16,6 +16,7 @@
  */
 import { editDistance, jamo } from './ko-style-v5.js';
 import { type Paragraph } from './paragraphs.js';
+import { codePointLength } from './codepoints.js';
 
 interface Threshold {
   readonly warn: number;
@@ -299,4 +300,30 @@ export function lintV6(input: {
       modifier_chain_ratio: chainRatio,
     },
   };
+}
+
+/**
+ * ADR-0090 (live defect G8-5): a first-person scene narrated in the third person — the narration names the POV
+ * character as subject or object and hardly says ‘나’. KO-POV-01 reads the whole chapter, so one first-person
+ * scene hid two third-person ones.
+ */
+export function thirdPersonDrift(
+  text: string,
+  povNames: readonly string[],
+): { firstPerson: number; named: number; drifted: boolean } {
+  const narration = text.replace(QUOTED, ' ');
+  const firstPerson = [...narration.matchAll(FIRST_PERSON)].length;
+  const names = [...new Set(povNames.map((n) => n.trim()).filter((n) => codePointLength(n) >= 2))];
+  const escaped = names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const named = escaped.length
+    ? [
+        ...narration.matchAll(
+          new RegExp(
+            `(?<![가-힣])(?:${escaped.join('|')})(?:은|는|이|가|을|를|의|에게|도|만|과|와)`,
+            'gu',
+          ),
+        ),
+      ].length
+    : 0;
+  return { firstPerson, named, drifted: named >= 3 && firstPerson <= 1 };
 }

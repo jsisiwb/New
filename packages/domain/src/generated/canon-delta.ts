@@ -517,6 +517,18 @@ export interface PropositionProposal {
      */
     reveal_plan_ref?: string;
     reveal_not_before_chapter?: number;
+    /**
+     * ADR-0086 (U1): the chapter from which the READER may learn the secret; reveal_not_before_chapter is the chapter from which other characters may. Absent: the first-person narrator's own secrets are reader-visible from chapter 1, others at reveal_not_before_chapter.
+     */
+    reader_reveal_chapter?: number;
+    /**
+     * ADR-0086 (U3): the chapter from which the secret is true in the story (a state that arises later); its knowers know it from then. Absent: true from the start.
+     */
+    true_from_chapter?: number;
+    /**
+     * ADR-0086 (U1): knowledge layer — current timeline, prior-life memory (회귀 전 기억) or source-work knowledge (원작·게임 지식).
+     */
+    layer?: 'current' | 'prior_loop' | 'source_work';
   };
   truth?: PropositionTruthProposal[];
 }
