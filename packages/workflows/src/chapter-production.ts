@@ -62,6 +62,7 @@ import {
   failingDimensions,
   povPlanId,
   revisionTargets,
+  scoreTargets,
   type Scorecard,
 } from './evaluation.js';
 import { WorkflowError } from './errors.js';
@@ -467,6 +468,10 @@ export async function produceChapter(
         // Only the model-driven path renders the registry into the planner prompt; the fixture path keeps
         // its recorded prompt text byte-identical.
         ...(input.blueprint ? { bible: input.bible } : {}),
+        // ADR-0086: canon ids for the contract's reader guards (read only under planning.reveal_schedule).
+        ...(ctx.policy.planning?.reveal_schedule
+          ? { canonPropositionIds: bible.propositionIds }
+          : {}),
       },
       knownProps,
       knownEntities,
@@ -511,7 +516,15 @@ export async function produceChapter(
       };
     }
     const usedPacks: StoredPack[] = [writerBuilt];
-    const plan = await planScenes(ctx, { contract: contract.contract, pack: writerBuilt });
+    const registryNamesForPlan = new Map(input.bible.entities.map((e) => [e.id, e.display_name]));
+    const plan = await planScenes(ctx, {
+      contract: contract.contract,
+      pack: writerBuilt,
+      // ADR-0086: the reveal schedule and the plan critic read the bible (policies without them ignore it).
+      ...(ctx.policy.planning?.reveal_schedule || ctx.policy.planning?.plan_critic
+        ? { bible: input.bible, nameOf: (id: string) => registryNamesForPlan.get(id) ?? id }
+        : {}),
+    });
     guard('scene_plan');
     // ADR-0063: the plan against the state ledgers before any draft, under a policy that opts in.
     if (ctx.policy.planning?.plan_check) await checkPlan(ctx, contract.contract, plan.scenes);
@@ -521,6 +534,7 @@ export async function produceChapter(
       pack: writerBuilt,
       scenes: plan.scenes,
       nameOf: (id) => registryNames.get(id) ?? id,
+      ...(ctx.policy.planning?.reveal_schedule ? { bible: input.bible } : {}),
       // ADR-0084 (U1): the writer sees the reader secrets the knowledge-leak checker will judge against.
       ...(ctx.policy.drafting?.reader_secrets_in_plan
         ? {
@@ -573,28 +587,40 @@ export async function produceChapter(
     const discarded: DiscardedPatch[] = [];
     // ADR-0060: patches applied since every evaluator last ran on the whole chapter.
     let patchesSinceFull = 0;
+    const convergence = ctx.policy.revision.convergence;
+    const allOpen = convergence?.round_scope === 'all_open';
     while (!evaluation.approvable && round < maxRounds) {
       const targets = revisionTargets(evaluation.scorecard);
-      const dimension = pickRevisionDimension(
-        targets,
-        ctx.policy.revision.convergence?.prefer_failing_dimension
-          ? failingDimensions(evaluation.scorecard)
-          : undefined,
-      );
+      // ADR-0086 (G5-3e): a dimension failing by score alone gets its judge's weakest passages as targets.
+      const scoreOnly = convergence?.score_targets
+        ? scoreTargets(evaluation.scorecard, current.text)
+        : [];
+      const dimension =
+        pickRevisionDimension(
+          targets,
+          convergence?.prefer_failing_dimension
+            ? failingDimensions(evaluation.scorecard)
+            : undefined,
+        ) ?? scoreOnly[0]?.dimension;
       if (!dimension) break;
       round++;
       const parent = current;
       const beforeEvaluation = evaluation;
       const beforeScorecard = evaluation.scorecard;
-      const targetedIssueIds = targets.filter((i) => i.dimension === dimension).map((i) => i.id);
+      // ADR-0086 (G5-3d): under all_open every open blocking/major finding is a target of the round.
+      const targetedIssueIds = (
+        allOpen ? targets : targets.filter((i) => i.dimension === dimension)
+      ).map((i) => i.id);
       const revised = await reviseVersionMulti(ctx, {
         version: current,
         chapterId: contract.chapterId,
         chapterNo,
-        issues: targets,
+        issues: scoreOnly.length ? [...targets, ...scoreOnly] : targets,
         dimension,
         round,
         registerDigests: writerBuilt.variables.register_digests ?? '(none)',
+        ...(allOpen ? { allDimensions: true } : {}),
+        ...(scoreOnly.length ? { extraTargetIds: new Set(scoreOnly.map((i) => i.id)) } : {}),
       });
       versions.push(revised.version);
       revision = { rounds: round, dimension, patch_artifact_id: revised.patchArtifactId };
@@ -628,6 +654,10 @@ export async function produceChapter(
         after: evaluation.scorecard,
         dimension,
         targetedIssueIds,
+        // ADR-0086: read only under revision.convergence.span_attribution.
+        ...(convergence?.span_attribution
+          ? { texts: { parent: parentText, child: current.text } }
+          : {}),
       });
       const regressionRef = await saveArtifact(ctx, {
         step: 'revise',
@@ -703,6 +733,21 @@ export async function produceChapter(
             recommendedActions: ['regenerate', 'edit_manually'],
           },
         );
+      // ADR-0086: a version approvable on a targeted re-evaluation is approved only if every evaluator agrees.
+      if (convergence?.confirm_full && evaluation.approvable && evaluation.mode === 'targeted') {
+        evaluation = await evaluateVersion(ctx, {
+          version: current,
+          contract: contract.contract,
+          spec: spec.spec,
+          canonVersion: bible.canonVersion,
+          allowlist,
+          round,
+          bible: input.bible,
+          confirm: true,
+        });
+        scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
+        patchesSinceFull = 0;
+      }
       // The English lineage keeps the Checkpoint-5 single representative revision (its recorded fixtures
       // replay byte-identically). A Korean craft-engine run (ADR-0056) may take further rounds, each on
       // the dimension with the most open blocking/major issues and each regression-checked, up to the

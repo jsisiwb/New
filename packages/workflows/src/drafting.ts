@@ -30,7 +30,13 @@ import { WorkflowError } from './errors.js';
 import { calibrateSceneTarget } from './length-calibration.js';
 import { chooseFallbackLocation, normalizeScenePlans } from './plan-normalize.js';
 import { normalizeSceneDraft } from './anchoring.js';
-import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
+import {
+  type ChapterContract,
+  type StoryBible,
+  type StorySpec,
+  compileFor,
+  scheduleOf,
+} from './planning.js';
 import {
   bind,
   loadArtifact,
@@ -40,6 +46,19 @@ import {
   type WorkflowContext,
 } from './runtime.js';
 import { applyDialogueFloor } from './dialogue-floor.js';
+import {
+  checkPlanConsistency,
+  cutNote,
+  ensureCutBeat,
+  lineTargetNote,
+  renderPlanFeedback,
+  renderScenesForCritic,
+  sceneLineTargets,
+  stripTalkBans,
+  structureTargets,
+  type PlanFinding,
+} from './plan-prevention.js';
+import { renderRevealSchedule } from './reveal-schedule.js';
 
 export type ScenePlan = Generated.ScenePlanSchema.ScenePlan;
 export type SceneDraft = Generated.SceneDraftSchema.SceneDraftWriterOutputEnvelope;
@@ -243,7 +262,13 @@ async function withFallbackLocation(
 
 export async function planScenes(
   ctx: WorkflowContext,
-  input: { contract: ChapterContract; pack: StoredPack },
+  input: {
+    contract: ChapterContract;
+    pack: StoredPack;
+    /** ADR-0086: the bible, for the reveal schedule and the plan critic (absent: neither runs). */
+    bible?: StoryBible | undefined;
+    nameOf?: ((id: string) => string) | undefined;
+  },
 ): Promise<{ scenes: ScenePlan[]; artifactId: string }> {
   const ch = input.contract.chapter_number;
   return runStep(
@@ -254,83 +279,106 @@ export async function planScenes(
       // no location; the scene plan then grounds its scenes in the registered location the contract's text
       // mentions (else the first one) instead of failing every scene.
       const contract = await withFallbackLocation(ctx, input.contract);
-      const call = await modelCall<{ scenes?: unknown }>(ctx, {
-        step: 'scene_plan',
-        family: 'scene_planner',
-        activityId: `scene_plan:${ch}`,
-        variables: {
-          previous_chapter_tail:
-            input.pack.variables.previous_text ??
-            (ctx.identity.outputLanguage.language === 'ko'
-              ? `(${ch}화에는 직전 회차가 없다. 연재를 연다.)`
-              : `(Chapter ${ch} has no previous chapter; open the series.)`),
-        },
-        pack: packCallInput(input.pack),
-        block: compileFor(ctx, 'planner_compact'),
-      });
-      const raw = Array.isArray(call.output.scenes) ? call.output.scenes : undefined;
-      if (!raw)
-        throw new WorkflowError('SCENE_PLAN_INVALID', 'scene planner returned no scenes array', {
+      // ADR-0086 (U1, U8): the scene planner reads the reveal schedule and, on a repair, the plan's findings.
+      const nameOf = input.nameOf ?? ((id: string) => id);
+      const schedule = scheduleOf(ctx, input.bible);
+      const scheduleText = schedule
+        ? renderRevealSchedule(schedule, ch, 'planner', {
+            nameOf,
+            hintBudget: ctx.policy.planning?.reveal_schedule?.hint_budget,
+          })
+        : undefined;
+      const critic = ctx.policy.planning?.plan_critic;
+      const planVars =
+        schedule || critic
+          ? {
+              reveal_schedule: scheduleText ?? '(설정에 기록된 비밀 없음)',
+              plan_feedback: '(없음)',
+            }
+          : {};
+      const planOnce = async (feedback: string | undefined, suffix: string) => {
+        const call = await modelCall<{ scenes?: unknown }>(ctx, {
           step: 'scene_plan',
-          recommendedActions: ['regenerate'],
+          family: 'scene_planner',
+          activityId: `scene_plan:${ch}${suffix}`,
+          variables: {
+            ...planVars,
+            ...(feedback !== undefined ? { plan_feedback: feedback } : {}),
+            previous_chapter_tail:
+              input.pack.variables.previous_text ??
+              (ctx.identity.outputLanguage.language === 'ko'
+                ? `(${ch}화에는 직전 회차가 없다. 연재를 연다.)`
+                : `(Chapter ${ch} has no previous chapter; open the series.)`),
+          },
+          pack: packCallInput(input.pack),
+          block: compileFor(ctx, 'planner_compact'),
         });
-      const validate = validatorFor<ScenePlan>('scene-plan.schema.json');
-      const check = (candidates: readonly unknown[]) => {
-        const scenes: ScenePlan[] = [];
-        const issues: string[] = [];
-        candidates.forEach((s, i) => {
-          const v = validate(s);
-          if (!v.ok)
+        const raw = Array.isArray(call.output.scenes) ? call.output.scenes : undefined;
+        if (!raw)
+          throw new WorkflowError('SCENE_PLAN_INVALID', 'scene planner returned no scenes array', {
+            step: 'scene_plan',
+            recommendedActions: ['regenerate'],
+          });
+        const validate = validatorFor<ScenePlan>('scene-plan.schema.json');
+        const check = (candidates: readonly unknown[]) => {
+          const scenes: ScenePlan[] = [];
+          const issues: string[] = [];
+          candidates.forEach((s, i) => {
+            const v = validate(s);
+            if (!v.ok)
+              issues.push(
+                `scene ${i + 1}: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+              );
+            else scenes.push(v.value);
+          });
+          return { scenes, issues };
+        };
+        let { scenes, issues } = check(raw);
+        const lengthsOff = () => {
+          const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
+          const tol = contract.length_target.tolerance_ratio ?? 0.12;
+          return Math.abs(total / contract.length_target.value - 1) > tol;
+        };
+        // A live plan with near-miss shapes or unsummed lengths is grounded in the contract; a plan that
+        // already validates (recorded fixtures) keeps its exact bytes.
+        if (raw.length > 0 && (issues.length > 0 || lengthsOff())) {
+          const retry = check(normalizeScenePlans(raw, { contract }));
+          if (retry.issues.length === 0) {
+            ({ scenes, issues } = retry);
+            recordNormalization('scene_plans');
+          }
+        }
+        // ADR-0073: a project with a chosen point of view writes every scene in it.
+        const projectPov = ctx.identity.preferences?.pov;
+        if (projectPov && issues.length === 0)
+          scenes = scenes.map((s) =>
+            s.pov.person === projectPov ? s : { ...s, pov: { ...s.pov, person: projectPov } },
+          );
+        if (issues.length === 0) {
+          // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
+          if (scenes.length < 1 || scenes.length > 5)
+            issues.push(`contract wants ${contract.scene_count} scenes, plan has ${scenes.length}`);
+          scenes.forEach((s, i) => {
+            if (s.scene_no !== i + 1) issues.push(`scene ${i + 1} is numbered ${s.scene_no}`);
+            if (!contract.participants.some((p) => p.character_id === s.pov.character_id))
+              issues.push(`scene ${s.scene_no} POV is not a contract participant`);
+            for (const p of s.participants)
+              if (!contract.participants.some((c) => c.character_id === p))
+                issues.push(`scene ${s.scene_no} participant ${p} is not in the contract`);
+            if (!contract.locations.includes(s.location_id))
+              issues.push(`scene ${s.scene_no} location is not in the contract`);
+          });
+          const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
+          const target = contract.length_target.value;
+          const tol = contract.length_target.tolerance_ratio ?? 0.12;
+          if (Math.abs(total / target - 1) > tol)
             issues.push(
-              `scene ${i + 1}: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+              `scene length targets sum to ${total}, chapter target is ${target} ${contract.length_target.unit} (±${tol * 100}%)`,
             );
-          else scenes.push(v.value);
-        });
+        }
         return { scenes, issues };
       };
-      let { scenes, issues } = check(raw);
-      const lengthsOff = () => {
-        const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const tol = contract.length_target.tolerance_ratio ?? 0.12;
-        return Math.abs(total / contract.length_target.value - 1) > tol;
-      };
-      // A live plan with near-miss shapes or unsummed lengths is grounded in the contract; a plan that
-      // already validates (recorded fixtures) keeps its exact bytes.
-      if (raw.length > 0 && (issues.length > 0 || lengthsOff())) {
-        const retry = check(normalizeScenePlans(raw, { contract }));
-        if (retry.issues.length === 0) {
-          ({ scenes, issues } = retry);
-          recordNormalization('scene_plans');
-        }
-      }
-      // ADR-0073: a project with a chosen point of view writes every scene in it.
-      const projectPov = ctx.identity.preferences?.pov;
-      if (projectPov && issues.length === 0)
-        scenes = scenes.map((s) =>
-          s.pov.person === projectPov ? s : { ...s, pov: { ...s.pov, person: projectPov } },
-        );
-      if (issues.length === 0) {
-        // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
-        if (scenes.length < 1 || scenes.length > 5)
-          issues.push(`contract wants ${contract.scene_count} scenes, plan has ${scenes.length}`);
-        scenes.forEach((s, i) => {
-          if (s.scene_no !== i + 1) issues.push(`scene ${i + 1} is numbered ${s.scene_no}`);
-          if (!contract.participants.some((p) => p.character_id === s.pov.character_id))
-            issues.push(`scene ${s.scene_no} POV is not a contract participant`);
-          for (const p of s.participants)
-            if (!contract.participants.some((c) => c.character_id === p))
-              issues.push(`scene ${s.scene_no} participant ${p} is not in the contract`);
-          if (!contract.locations.includes(s.location_id))
-            issues.push(`scene ${s.scene_no} location is not in the contract`);
-        });
-        const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const target = contract.length_target.value;
-        const tol = contract.length_target.tolerance_ratio ?? 0.12;
-        if (Math.abs(total / target - 1) > tol)
-          issues.push(
-            `scene length targets sum to ${total}, chapter target is ${target} ${contract.length_target.unit} (±${tol * 100}%)`,
-          );
-      }
+      let { scenes, issues } = await planOnce(undefined, '');
       if (issues.length > 0)
         throw new WorkflowError('SCENE_PLAN_INVALID', issues.join('; '), {
           step: 'scene_plan',
@@ -339,12 +387,77 @@ export async function planScenes(
         });
       // ADR-0084 (U6): enough planned talk and someone to talk to, under a policy that opts in.
       const floor = ctx.policy.planning?.dialogue_floor;
-      const floored = floor ? applyDialogueFloor(scenes, contract, floor) : undefined;
-      if (floored) {
-        scenes = floored.scenes;
-        for (const f of floored.findings)
-          if (f.repaired)
-            recordNormalization(f.rule === 'PLAN-DLG-01' ? 'dialogue_floor' : 'dialogue_partner');
+      const planFindings: PlanFinding[] = [];
+      const repairDeterministic = (planned: ScenePlan[]) => {
+        let out = planned;
+        const floored = floor ? applyDialogueFloor(out, contract, floor) : undefined;
+        if (floored) {
+          out = floored.scenes;
+          for (const f of floored.findings)
+            if (f.repaired)
+              recordNormalization(f.rule === 'PLAN-DLG-01' ? 'dialogue_floor' : 'dialogue_partner');
+        }
+        // ADR-0086 (G5-2, G5-5): no scene line forbids talking; the final scene's last beat is the cut.
+        if (floor?.strip_talk_bans) {
+          const stripped = stripTalkBans(out);
+          out = stripped.scenes;
+          planFindings.push(...stripped.findings);
+          if (stripped.findings.length) recordNormalization('plan_talk_ban');
+        }
+        if (ctx.policy.planning?.cut_design) {
+          const cut = ensureCutBeat(contract, out);
+          out = cut.scenes;
+          planFindings.push(...cut.findings);
+          if (cut.findings.length) recordNormalization('plan_cut_beat');
+        }
+        return { scenes: out, floored };
+      };
+      let repaired = repairDeterministic(scenes);
+      scenes = repaired.scenes;
+      const floored = repaired.floored;
+      // ADR-0086 (U7, U8): the plan is checked before any drafting call; serious findings go back to the planner.
+      let criticIssues: PlanCriticIssue[] = [];
+      if (critic) {
+        const deterministic = checkPlanConsistency(contract, scenes, {
+          cutDesign: ctx.policy.planning?.cut_design,
+          partnerRequired: floor?.partner_in_contract,
+        });
+        criticIssues = await runPlanCritic(ctx, {
+          chapterNo: ch,
+          contract,
+          scenes,
+          pack: input.pack,
+          nameOf,
+          scheduleText,
+        });
+        planFindings.push(...deterministic);
+        let serious: { target: string; message: string; fix?: string }[] = [
+          ...deterministic.filter((f) => f.severity !== 'minor' && !f.repaired),
+          ...criticIssues
+            .filter((i) => i.severity !== 'minor' && !i.target.includes('계약'))
+            .map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+        ];
+        for (let attempt = 1; attempt <= critic.max_repairs && serious.length > 0; attempt++) {
+          const retry = await planOnce(renderPlanFeedback(serious), `:repair${String(attempt)}`);
+          if (retry.issues.length > 0) break;
+          repaired = repairDeterministic(retry.scenes);
+          scenes = repaired.scenes;
+          const again = checkPlanConsistency(contract, scenes, {
+            cutDesign: ctx.policy.planning?.cut_design,
+            partnerRequired: floor?.partner_in_contract,
+          });
+          planFindings.push({
+            rule: 'PLAN-REPAIR',
+            severity: 'minor',
+            target: '장면 설계',
+            message: `결함 ${String(serious.length)}개로 장면 설계를 다시 받았다(${String(attempt)}회차)`,
+            repaired: true,
+          });
+          serious = again
+            .filter((f) => f.severity !== 'minor' && !f.repaired)
+            .map((f) => ({ target: f.target, message: f.message }));
+          recordNormalization('plan_repair');
+        }
       }
       const ref = await saveArtifact(ctx, {
         step: 'scene_plan',
@@ -355,12 +468,70 @@ export async function planScenes(
           contract_id: contract.id,
           scenes,
           ...(floored?.findings.length ? { dialogue_floor: floored.findings } : {}),
+          ...(planFindings.length ? { plan_findings: planFindings } : {}),
+          ...(criticIssues.length ? { plan_critic: criticIssues } : {}),
         },
       });
       return { scenes, artifactId: ref.artifact_id };
     },
     String(ch),
   );
+}
+
+export interface PlanCriticIssue {
+  readonly kind: string;
+  readonly severity: 'minor' | 'major' | 'blocking';
+  readonly target: string;
+  readonly claim: string;
+  readonly fix: string;
+}
+
+/** ADR-0086 (U8): the pre-flight plan critic over the contract and scene plans; malformed items are dropped. */
+async function runPlanCritic(
+  ctx: WorkflowContext,
+  input: {
+    chapterNo: number;
+    contract: ChapterContract;
+    scenes: readonly ScenePlan[];
+    pack: StoredPack;
+    nameOf: (id: string) => string;
+    scheduleText: string | undefined;
+  },
+): Promise<PlanCriticIssue[]> {
+  const call = await modelCall<{ issues?: unknown }>(ctx, {
+    step: 'scene_plan',
+    family: 'plan_critic',
+    activityId: `plan_critic:${String(input.chapterNo)}`,
+    variables: {
+      scene_plans: renderScenesForCritic(input.scenes, input.nameOf),
+      reveal_schedule: input.scheduleText ?? '(설정에 기록된 비밀 없음)',
+      structure_targets: structureTargets({
+        chapterNo: input.chapterNo,
+        lineTargets: ctx.policy.planning?.dialogue_floor?.line_targets,
+        lengthTarget: input.contract.length_target.value,
+        plannerVoice: ctx.identity.preferences?.operator_voice?.planner,
+      }),
+    },
+    pack: packCallInput(input.pack),
+  });
+  const raw = Array.isArray(call.output.issues) ? (call.output.issues as unknown[]) : [];
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  return raw.flatMap((item): PlanCriticIssue[] => {
+    if (typeof item !== 'object' || item === null) return [];
+    const r = item as Record<string, unknown>;
+    const severity = r.severity === 'blocking' || r.severity === 'major' ? r.severity : 'minor';
+    const claim = str(r.claim);
+    if (!claim) return [];
+    return [
+      {
+        kind: str(r.kind) || 'other',
+        severity,
+        target: str(r.target) || '장면 설계',
+        claim,
+        fix: str(r.fix),
+      },
+    ];
+  });
 }
 
 export interface SceneDraftRef {
@@ -399,6 +570,8 @@ export async function draftScenes(
      * appended to every scene plan the writer reads under `drafting.reader_secrets_in_plan`.
      */
     readerSecrets?: string | undefined;
+    /** ADR-0086: the bible, for the reveal schedule the writer reads under `planning.reveal_schedule`. */
+    bible?: StoryBible | undefined;
   },
 ): Promise<{ drafts: SceneDraftRef[]; texts: string[] }> {
   const ch = input.contract.chapter_number;
@@ -410,10 +583,48 @@ export async function draftScenes(
       ? `\n\n독자에게 아직 밝히지 않는 비밀 (서술, 속마음, 대사 어디에서도 말하거나 암시하지 않는다):\n${input.readerSecrets.trim()}`
       : `\n\nSecrets the reader must not learn yet (never state or hint them in narration, thought or dialogue):\n${input.readerSecrets.trim()}`
     : '';
-  const renderPlan = (scene: ScenePlan) =>
+  // ADR-0086 (U1): under a reveal schedule the writer reads what the reader knows, what it may only hint at, and
+  // that the hero thinks with prior-life and source-work knowledge — the same schedule the checker reads.
+  const schedule = scheduleOf(ctx, input.bible);
+  const scheduleNote = schedule
+    ? `\n\n[공개 일정]\n${
+        renderRevealSchedule(schedule, ch, 'writer', {
+          nameOf,
+          hintBudget: ctx.policy.planning?.reveal_schedule?.hint_budget,
+        }) ?? ''
+      }`
+    : undefined;
+  // ADR-0086 (G5-2, G5-5): countable talk targets per scene and the cut as the last scene's end.
+  const lineTargets = ctx.policy.planning?.dialogue_floor?.line_targets;
+  const chapterLines = lineTargets
+    ? sceneLineTargets(
+        {
+          dialogue_density_target: input.contract.dialogue_density_target,
+          length_target: input.contract.length_target,
+        },
+        lineTargets,
+      )
+    : undefined;
+  const planNotes = (planned: ScenePlan) => {
+    let note = '';
+    if (lineTargets)
+      note += lineTargetNote(
+        sceneLineTargets(planned, lineTargets),
+        planned.participants
+          .filter((p) => p !== planned.pov.character_id)
+          .map((p) => (nameOf ? nameOf(p) : p)),
+        chapterLines,
+      );
+    if (ctx.policy.planning?.cut_design && planned.scene_no === input.scenes.length)
+      note += cutNote(input.contract);
+    return note;
+  };
+  const renderPlan = (scene: ScenePlan, planned: ScenePlan) =>
     (ctx.policy.planning?.scene_plan_format === 'labelled' && ko && nameOf
       ? renderScenePlanKo(scene, nameOf)
-      : JSON.stringify(scene)) + secretsNote;
+      : JSON.stringify(scene)) +
+    (scheduleNote ?? secretsNote) +
+    planNotes(planned);
   const texts: string[] = [];
   const drafts: SceneDraftRef[] = [];
   const calibration = ctx.policy.length.scene_calibration;
@@ -445,7 +656,7 @@ export async function draftScenes(
       'scene_draft',
       async () => {
         const variables = {
-          scene_plan: renderPlan(scene),
+          scene_plan: renderPlan(scene, planned),
           scene_no: String(scene.scene_no),
           previous_text: previous,
           length_target_words: String(scene.length_target.value),
@@ -479,19 +690,28 @@ export async function draftScenes(
         // ADR-0084 (U6): a scene with someone to talk to that came back far below the talk band is
         // re-drafted once with its measured share; the redraft is kept only when it talks more.
         const redraftBelow = ctx.policy.planning?.dialogue_floor?.scene_redraft_below;
+        // ADR-0086 (G5-2): relative to the scene's own plan too — a scene planned at 45 % that returns 26 % redrafts.
+        const redraftRatio = ctx.policy.planning?.dialogue_floor?.scene_redraft_ratio;
+        const plannedShare = scene.dialogue_density_target;
+        const redraftAt = Math.max(
+          redraftBelow ?? 0,
+          redraftRatio !== undefined && plannedShare !== undefined
+            ? redraftRatio * plannedShare
+            : 0,
+        );
         if (
-          redraftBelow !== undefined &&
+          (redraftBelow !== undefined || redraftRatio !== undefined) &&
           typeof prose === 'string' &&
           scene.participants.some((p) => p !== scene.pov.character_id)
         ) {
           const measured = sceneTalkShare(prose);
-          if (measured < redraftBelow) {
+          if (measured < redraftAt) {
             const retry = await writeScene(
               {
                 ...variables,
                 scene_plan:
                   variables.scene_plan +
-                  talkRedraftNote(measured, scene.dialogue_density_target ?? redraftBelow, ko),
+                  talkRedraftNote(measured, scene.dialogue_density_target ?? redraftAt, ko),
               },
               `scene_draft:${ch}:${scene.scene_no}:talk`,
             );

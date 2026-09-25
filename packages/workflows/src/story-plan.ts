@@ -383,7 +383,17 @@ interface CastOutput extends Record<string, unknown> {
     goals?: string[] | string;
     flaws?: string[] | string;
     secrets?: (
-      string | { statement?: string; known_by?: string[]; reveal_not_before_chapter?: number }
+      | string
+      | {
+          statement?: string;
+          known_by?: string[];
+          reveal_not_before_chapter?: number;
+          /** ADR-0086 (U1): the chapter from which the reader may learn it. */
+          reader_reveal_chapter?: number;
+          /** ADR-0086 (U3): the chapter from which it is true (a state that arises later). */
+          true_from_chapter?: number;
+          layer?: string;
+        }
     )[];
     arc?:
       | string
@@ -719,6 +729,9 @@ export async function buildFullBible(
       owner_ids: string[];
       allowed_knower_ids: string[];
       reveal_not_before_chapter?: number;
+      reader_reveal_chapter?: number;
+      true_from_chapter?: number;
+      layer?: 'current' | 'prior_life' | 'source_work';
     },
   ): string | undefined => {
     const text = (statement ?? '').trim();
@@ -737,7 +750,9 @@ export async function buildFullBible(
     });
     return localId;
   };
-  const secretHolders: { knowerId: string; localId: string }[] = [];
+  const secretHolders: { knowerId: string; localId: string; fromChapter?: number }[] = [];
+  const chapterAtLeast1 = (v: unknown): number | undefined =>
+    typeof v === 'number' && Number.isInteger(v) && v >= 1 ? v : undefined;
   for (const c of characters) {
     const ownerId = resolve(c.display_name);
     if (!ownerId) continue;
@@ -746,14 +761,33 @@ export async function buildFullBible(
       const knownBy = typeof s === 'string' ? [] : (s.known_by ?? []);
       const knowers = dedupe([ownerId, ...knownBy.map(resolve).filter(isString)]);
       const notBefore = typeof s === 'string' ? undefined : s.reveal_not_before_chapter;
+      // ADR-0086: a reader date, a date the secret becomes true and a knowledge layer, when the designer gave them
+      // (4.7.0); older designer answers carry none, so their bibles are unchanged.
+      const readerFrom =
+        typeof s === 'string' ? undefined : chapterAtLeast1(s.reader_reveal_chapter);
+      const trueFrom = typeof s === 'string' ? undefined : chapterAtLeast1(s.true_from_chapter);
+      const layer =
+        typeof s !== 'string' &&
+        (s.layer === 'current' || s.layer === 'prior_life' || s.layer === 'source_work')
+          ? s.layer
+          : undefined;
       const localId = addProposition(statement, 'secret', [ownerId], {
         owner_ids: [ownerId],
         allowed_knower_ids: knowers,
         ...(notBefore !== undefined && notBefore >= 1
           ? { reveal_not_before_chapter: notBefore }
           : {}),
+        ...(readerFrom !== undefined ? { reader_reveal_chapter: readerFrom } : {}),
+        ...(trueFrom !== undefined ? { true_from_chapter: trueFrom } : {}),
+        ...(layer ? { layer } : {}),
       });
-      if (localId) for (const k of knowers) secretHolders.push({ knowerId: k, localId });
+      if (localId)
+        for (const k of knowers)
+          secretHolders.push({
+            knowerId: k,
+            localId,
+            ...(trueFrom !== undefined ? { fromChapter: trueFrom } : {}),
+          });
     }
   }
   for (const p of cast.output.propositions ?? []) {
@@ -894,7 +928,12 @@ export async function buildFullBible(
       proposition_id: `{{proposition.${s.localId}}}`,
       stance: 'knows',
       source: { kind: 'remembered', chapter_id: '{{chapter.1}}' },
-      valid_from: clock0,
+      // ADR-0086 (U3): a secret that becomes true later is known from that chapter, so a pack for an earlier
+      // chapter does not present it as the knower's current knowledge.
+      valid_from:
+        s.fromChapter !== undefined && ctx.policy.planning?.time_frames === true
+          ? { chapter_no: s.fromChapter, ordinal: 0, precision: 'exact' }
+          : clock0,
       valid_to: null,
     },
   }));

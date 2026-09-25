@@ -180,6 +180,10 @@ export async function reviseVersion(
     dimension: Issue['dimension'];
     round: number;
     registerDigests: string;
+    /** ADR-0086 (G5-3d): target every open blocking/major finding, whatever its dimension. */
+    allDimensions?: boolean | undefined;
+    /** ADR-0086 (G5-3e): minor issues that are targets of this round too (a score-only failure's passages). */
+    extraTargetIds?: ReadonlySet<string> | undefined;
   },
 ): Promise<RevisionResult> {
   const maxRounds = ctx.policy.revision.max_rounds;
@@ -195,7 +199,9 @@ export async function reviseVersion(
     async () => {
       const targeted = input.issues.filter(
         (i) =>
-          i.dimension === input.dimension && (i.severity === 'blocking' || i.severity === 'major'),
+          input.extraTargetIds?.has(i.id) === true ||
+          ((input.allDimensions === true || i.dimension === input.dimension) &&
+            (i.severity === 'blocking' || i.severity === 'major')),
       );
       if (targeted.length === 0)
         throw new WorkflowError(
@@ -453,7 +459,9 @@ export async function reviseVersionMulti(
     async () => {
       const targeted = input.issues.filter(
         (i) =>
-          i.dimension === input.dimension && (i.severity === 'blocking' || i.severity === 'major'),
+          input.extraTargetIds?.has(i.id) === true ||
+          ((input.allDimensions === true || i.dimension === input.dimension) &&
+            (i.severity === 'blocking' || i.severity === 'major')),
       );
       if (targeted.length === 0)
         throw new WorkflowError(
@@ -491,7 +499,9 @@ export async function reviseVersionMulti(
           family: 'targeted_reviser',
           activityId: `revise:${input.chapterNo}:${input.dimension}:r${input.round}:p${k + 1}`,
           variables: {
-            dimension: input.dimension,
+            dimension: input.allDimensions
+              ? [...new Set(cluster.issues.map((i) => i.dimension))].join(', ')
+              : input.dimension,
             issues: JSON.stringify(
               cluster.issues.map((i) => ({
                 id: i.id,

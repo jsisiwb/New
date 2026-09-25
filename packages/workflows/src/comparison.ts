@@ -422,6 +422,47 @@ function sectionPassed(scorecard: Scorecard, name: string): boolean | undefined 
   return sections[name]?.passed;
 }
 
+/** Scorecard sections whose pass flag is decided by findings of these issue dimensions. */
+const SECTION_DIMENSIONS: Readonly<Record<string, readonly string[]>> = {
+  continuity: ['continuity'],
+  knowledge: ['knowledge'],
+  contract_compliance: ['contract'],
+};
+
+/**
+ * Code-point ranges of the lines each text has that the other does not (a multiset line diff): the parent's
+ * lines the patch replaced and the revision's lines it wrote. Patches replace whole paragraphs, and every
+ * paragraph is one line (ADR-0081), so a line diff is the patch's footprint.
+ */
+export function changedRanges(texts: { readonly parent: string; readonly child: string }): {
+  parent: { start: number; end: number }[];
+  child: { start: number; end: number }[];
+} {
+  const lines = (t: string) => {
+    const out: { text: string; start: number; end: number }[] = [];
+    let at = 0;
+    for (const line of t.split('\n')) {
+      const len = [...line].length;
+      out.push({ text: line.trim(), start: at, end: at + len });
+      at += len + 1;
+    }
+    return out;
+  };
+  const side = (from: string, against: string) => {
+    const pool = new Map<string, number>();
+    for (const l of lines(against)) pool.set(l.text, (pool.get(l.text) ?? 0) + 1);
+    const out: { start: number; end: number }[] = [];
+    for (const l of lines(from)) {
+      if (!l.text) continue;
+      const n = pool.get(l.text) ?? 0;
+      if (n > 0) pool.set(l.text, n - 1);
+      else out.push({ start: l.start, end: l.end });
+    }
+    return out;
+  };
+  return { parent: side(texts.parent, texts.child), child: side(texts.child, texts.parent) };
+}
+
 function openBlockingMajor(scorecard: Scorecard): readonly Issue[] {
   return scorecard.issues.filter(
     (i) => (i.severity === 'blocking' || i.severity === 'major') && i.status === 'open',
@@ -463,9 +504,20 @@ export function patchRegression(
     dimension: Issue['dimension'];
     /** The blocking/major issues the patch was asked to repair. Defaults to the parent's issues on the dimension. */
     targetedIssueIds?: readonly string[] | undefined;
+    /**
+     * ADR-0086 (V2, G5-3): the parent's and the revision's text. With `revision.convergence.span_attribution` a
+     * finding counts against the patch only where the patch changed the text.
+     */
+    texts?: { readonly parent: string; readonly child: string } | undefined;
   },
 ): RegressionReport {
   const tolerance = policy.revision.regression_tolerance_points ?? 0;
+  const convergence = policy.revision.convergence;
+  const thresholdOf = (d: string) =>
+    (policy.gates.dimensions as Record<string, { min_score?: number } | undefined>)[d]?.min_score;
+  const attribution =
+    convergence?.span_attribution && input.texts ? changedRanges(input.texts) : undefined;
+  const allOpen = convergence?.round_scope === 'all_open';
   const deltas: DimensionDelta[] = [];
   const missing: string[] = [];
   const dropped: string[] = [];
@@ -484,11 +536,33 @@ export function patchRegression(
     if (before === undefined || after === undefined) continue;
     deltas.push({ dimension, before, after, delta: after - before });
   }
-  const regressions = deltas.filter((d) => d.dimension !== input.dimension && d.delta < -tolerance);
+  // ADR-0086 (G5-3a): under threshold protection a passing dimension may move within its passing band; it
+  // regresses only when the fall leaves it below its gate.
+  const belowGate = (d: DimensionDelta) => {
+    const t = thresholdOf(d.dimension);
+    return t === undefined || d.after < t;
+  };
+  const regressions = deltas.filter(
+    (d) =>
+      d.dimension !== input.dimension &&
+      d.delta < -tolerance &&
+      (!convergence?.threshold_protection || belowGate(d)),
+  );
   const targetedDelta = deltas.find((d) => d.dimension === input.dimension);
 
   const beforeOpen = openBlockingMajor(input.before);
-  const afterOpen = openBlockingMajor(input.after);
+  const afterOpenAll = openBlockingMajor(input.after);
+  // ADR-0086 (G5-3b/c): a finding on text the patch did not touch is variance of the judge on text both versions
+  // share — it stays open on the revision (and is a target next round) but is not the patch's doing.
+  const overlaps = (i: Issue, ranges: readonly { start: number; end: number }[]) => {
+    const start = i.chapter_span?.start;
+    const end = i.chapter_span?.end;
+    if (typeof start !== 'number' || typeof end !== 'number') return false;
+    return ranges.some((r) => start < r.end && r.start < end);
+  };
+  const introduced = (i: Issue) => !attribution || overlaps(i, attribution.child);
+  const touchedBefore = (i: Issue) => !attribution || overlaps(i, attribution.parent);
+  const afterOpen = afterOpenAll.filter(introduced);
   const targetedIds =
     input.targetedIssueIds ??
     beforeOpen.filter((i) => i.dimension === input.dimension).map((i) => i.id);
@@ -499,7 +573,7 @@ export function patchRegression(
   // signature — dimension + kind — never on the id, which would read every patch as having resolved
   // everything it targeted.
   const signature = (i: Issue) => `${i.dimension}|${i.kind}`;
-  const afterSignatures = new Set(afterOpen.map(signature));
+  const afterSignatures = new Set(afterOpenAll.map(signature));
   const resolvedIssueIds = targetedIssues
     .filter((i) => !afterSignatures.has(signature(i)))
     .map((i) => i.id);
@@ -507,15 +581,25 @@ export function patchRegression(
     .filter((i) => afterSignatures.has(signature(i)))
     .map((i) => i.id);
   const targetedBlockingBefore = beforeOpen.filter((i) => i.dimension === input.dimension).length;
-  const targetedBlockingAfter = afterOpen.filter((i) => i.dimension === input.dimension).length;
+  const targetedBlockingAfter = afterOpenAll.filter((i) => i.dimension === input.dimension).length;
   const allTargetedResolved = targetedIssues.length > 0 && unresolvedIssueIds.length === 0;
   const scoreRose = (targetedDelta?.delta ?? 0) > 0;
-  const worsened = (targetedDelta?.delta ?? 0) < 0;
+  const worsened =
+    (targetedDelta?.delta ?? 0) < 0 &&
+    // ADR-0086: within tolerance and still passing, a targeted score's wobble is not a worsening.
+    (!convergence?.threshold_protection ||
+      (targetedDelta !== undefined &&
+        (targetedDelta.delta < -tolerance || belowGate(targetedDelta))));
   // "Materially improved" = the targeted issues are gone, or the score rose and no targeted issue remains
   // that the patch was asked to repair. A flat score with unresolved targeted issues is NOT an improvement.
   const materiallyImproved =
     allTargetedResolved ||
-    (scoreRose && targetedBlockingAfter < Math.max(targetedBlockingBefore, 1));
+    (scoreRose && targetedBlockingAfter < Math.max(targetedBlockingBefore, 1)) ||
+    // ADR-0086 (G5-3d): a round over every open finding improves when it resolves some of them and no open
+    // finding was added by the patch itself.
+    (allOpen &&
+      resolvedIssueIds.length > 0 &&
+      afterOpen.length < beforeOpen.filter(touchedBefore).length + 1);
 
   const beforeKinds = new Set(beforeOpen.map((i) => i.kind));
   const newIssueKinds = [...new Set(afterOpen.map((i) => i.kind))]
@@ -546,6 +630,26 @@ export function patchRegression(
       });
       continue;
     }
+    // ADR-0086: a section that fails only on findings in unchanged text was not broken by the patch.
+    if (
+      attribution &&
+      !afterPassed &&
+      !input.after.issues.some(
+        (i) =>
+          i.status === 'open' &&
+          (i.severity === 'blocking' || i.severity === 'major') &&
+          (SECTION_DIMENSIONS[section] ?? [section]).includes(i.dimension) &&
+          introduced(i),
+      )
+    ) {
+      protections.push({
+        protection,
+        applicable: true,
+        passed: true,
+        detail: `${section} fails only on findings in text the patch did not change`,
+      });
+      continue;
+    }
     // ADR-0078: against the parent, a section fails only when the patch turned a pass into a fail.
     if (parentBaseline && !afterPassed && beforePassed === false) {
       protections.push({
@@ -561,9 +665,12 @@ export function patchRegression(
   // ADR-0078: against the parent, a kind guard fails only on MORE open blocking/major issues of its kinds.
   const kindGuard = (protection: ProtectionName, kinds: ReadonlySet<string>): ProtectionOutcome => {
     const found = kindsMatching(input.after, kinds);
-    const passed = parentBaseline
-      ? countMatching(input.after, kinds) <= countMatching(input.before, kinds)
-      : found.length === 0;
+    const passed = attribution
+      ? afterOpen.filter((i) => kinds.has(i.kind)).length <=
+        beforeOpen.filter((i) => kinds.has(i.kind) && touchedBefore(i)).length
+      : parentBaseline
+        ? countMatching(input.after, kinds) <= countMatching(input.before, kinds)
+        : found.length === 0;
     return {
       protection,
       applicable: true,

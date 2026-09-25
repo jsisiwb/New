@@ -17,6 +17,7 @@ import {
   loadSchemas,
   overrideClassFor,
   recordNormalization,
+  uuidFromKey,
   validatorFor,
 } from '@yeonjae/domain';
 import { exemplarsOf } from '@yeonjae/narrative';
@@ -70,7 +71,14 @@ import {
   normalizeDriftFlags,
   normalizeRepair,
 } from './judge-normalize.js';
-import { type ChapterContract, type StoryBible, type StorySpec, compileFor } from './planning.js';
+import {
+  type ChapterContract,
+  type StoryBible,
+  type StorySpec,
+  compileFor,
+  scheduleOf,
+} from './planning.js';
+import { renderRevealSchedule } from './reveal-schedule.js';
 import { modelCall, runStep, saveArtifact, type WorkflowContext } from './runtime.js';
 
 export type Scorecard = Generated.ScorecardSchema.Scorecard;
@@ -512,9 +520,16 @@ export async function evaluateVersion(
     bible?: StoryBible | undefined;
     /** The parent version's evaluation, for a targeted re-evaluation after a patch (ADR-0060). */
     carry?: EvaluationCarry | undefined;
+    /**
+     * ADR-0086: a full re-evaluation that confirms a version found approvable on a targeted one. Its own
+     * checkpoint, calls and scorecard, never a carry.
+     */
+    confirm?: boolean | undefined;
   },
 ): Promise<EvaluationResult> {
   const v = input.version;
+  const tag = input.confirm ? ':full' : '';
+  if (input.confirm) input = { ...input, carry: undefined };
   return runStep(
     ctx,
     'evaluate',
@@ -634,7 +649,9 @@ export async function evaluateVersion(
       const packIn = packCallInput(checker.stored);
       const packVars = checker.stored.variables;
       const packSection = (names: readonly string[]) => packSections(checker.stored, names);
-      const act = (name: string) => `${name}:${input.contract.chapter_number}:r${input.round}`;
+      const act = (name: string) =>
+        `${name}:${input.contract.chapter_number}:r${input.round}${tag}`;
+      const checkerSchedule = scheduleOf(ctx, input.bible);
 
       const optional = policyEval?.optional_evaluators ?? [];
       for (const name of optional)
@@ -668,13 +685,19 @@ export async function evaluateVersion(
         ...(carry && ctx.policy.revision.convergence?.rejudge_open_majors
           ? {
               openMajor: new Set(
-                evaluators.filter((e) =>
-                  carry.scorecard.issues.some(
-                    (i) =>
-                      i.source === SOURCE[e] &&
-                      i.status === 'open' &&
-                      (i.severity === 'blocking' || i.severity === 'major'),
-                  ),
+                evaluators.filter(
+                  (e) =>
+                    carry.scorecard.issues.some(
+                      (i) =>
+                        i.source === SOURCE[e] &&
+                        i.status === 'open' &&
+                        (i.severity === 'blocking' || i.severity === 'major'),
+                    ) ||
+                    // ADR-0086 (G5-3e): a judge whose dimension fails its gate re-runs after every patch.
+                    (ctx.policy.revision.convergence?.score_targets === true &&
+                      carry.scorecard.acceptance.dimension_results.some(
+                        (r) => !r.passed && r.dimension === EVALUATOR_DIMENSION[e],
+                      )),
                 ),
               ),
             }
@@ -755,13 +778,26 @@ export async function evaluateVersion(
                 knowledge_stances: orNone(packSection(['knowledge'])),
                 knowledge_guard_list: orNone(packSection(['knowledge_guards'])),
                 reader_secrets: orNone(
-                  readerSecrets(input.contract.chapter_number, input.bible, lang, {
-                    // ADR-0074 (defect A-3): under a policy that says so, the POV character's own secrets
-                    // are the narrator's knowledge and so the reader's, not a leak.
-                    ...(ctx.policy.evaluation?.pov_secrets_reader_visible
-                      ? { povEntityId: povPlanId(ctx, input.contract.pov.character_id) }
-                      : {}),
-                  }),
+                  // ADR-0086 (U1, G5-1): under a reveal schedule the checker reads what the reader already
+                  // knows (not a leak) beside what it may not learn yet — the writer's and planner's schedule.
+                  (checkerSchedule
+                    ? renderRevealSchedule(
+                        checkerSchedule,
+                        input.contract.chapter_number,
+                        'checker',
+                        {
+                          nameOf: (id) =>
+                            input.bible?.entities.find((e) => e.id === id)?.display_name ?? id,
+                        },
+                      )
+                    : undefined) ??
+                    readerSecrets(input.contract.chapter_number, input.bible, lang, {
+                      // ADR-0074 (defect A-3): under a policy that says so, the POV character's own secrets
+                      // are the narrator's knowledge and so the reader's, not a leak.
+                      ...(ctx.policy.evaluation?.pov_secrets_reader_visible
+                        ? { povEntityId: povPlanId(ctx, input.contract.pov.character_id) }
+                        : {}),
+                    }),
                 ),
               },
               pack: packIn,
@@ -1127,8 +1163,25 @@ export async function evaluateVersion(
             found: t.found === true,
           }))
         : priorSection('promises')?.touches;
+      // ADR-0086 (G5-3e): the judge's weakest passages stay on its section, as score-only revision targets.
+      const weakestOf = (out: unknown): Record<string, unknown> => {
+        if (ctx.policy.revision.convergence?.score_targets !== true) return {};
+        const raw = (out as { weakest_passages?: unknown } | undefined)?.weakest_passages;
+        const list = Array.isArray(raw)
+          ? raw
+              .filter(
+                (w): w is { quote: string; why?: unknown } =>
+                  typeof w === 'object' &&
+                  w !== null &&
+                  typeof (w as { quote?: unknown }).quote === 'string',
+              )
+              .slice(0, 3)
+              .map((w) => ({ quote: w.quote, why: typeof w.why === 'string' ? w.why : '' }))
+          : [];
+        return list.length ? { weakest_passages: list } : {};
+      };
       const scorecard: Scorecard = {
-        id: issueIdFor(ctx, v.id, 'scorecard', input.round),
+        id: issueIdFor(ctx, v.id, input.confirm ? 'scorecard:full' : 'scorecard', input.round),
         manuscript_version_id: v.id,
         canon_version: input.canonVersion,
         quality_tier: ctx.policy.quality_tier,
@@ -1146,6 +1199,7 @@ export async function evaluateVersion(
             dimension_scores: dimensionScores(prose.dimension_scores),
             evaluator_call_id: callId('prose_judge', 'prose'),
             ...basis('prose', prose, 'prose_judge'),
+            ...weakestOf(prose),
           }),
           structure: section('structure', structureScore, dimensionPassed('structure'), {
             judge_score: clamp(structure.judge_score ?? 0),
@@ -1162,6 +1216,7 @@ export async function evaluateVersion(
               : {}),
             evaluator_call_id: callId('structure_judge', 'structure'),
             ...basis('structure', structure, 'structure_judge'),
+            ...weakestOf(structure),
           }),
           genre: section('genre', genreScore, dimensionPassed('genre'), {
             judge_score: clamp(genre.judge_score ?? 0),
@@ -1169,6 +1224,7 @@ export async function evaluateVersion(
             dimension_scores: dimensionScores(genre.dimension_scores),
             evaluator_call_id: callId('genre_judge', 'genre'),
             ...basis('genre', genre, 'genre_judge'),
+            ...weakestOf(genre),
           }),
           voice: section('voice', voiceScore, dimensionPassed('voice'), {
             judge_score: clamp(voice.judge_score ?? 0),
@@ -1176,6 +1232,7 @@ export async function evaluateVersion(
             dimension_scores: dimensionScores(voice.dimension_scores),
             evaluator_call_id: callId('voice_judge', 'voice'),
             ...basis('voice', voice, 'voice_judge'),
+            ...weakestOf(voice),
           }),
           output_language: section(
             'output_language',
@@ -1242,7 +1299,7 @@ export async function evaluateVersion(
       const ref = await saveArtifact(ctx, {
         step: 'evaluate',
         kind: 'scorecard',
-        key: v.id,
+        key: `${v.id}${tag}`,
         schema: 'scorecard.schema.json',
         payload: scorecard,
       });
@@ -1255,7 +1312,7 @@ export async function evaluateVersion(
         ...(policyEval ? { mode: plan.mode, rerun: plan.rerun } : {}),
       };
     },
-    v.id,
+    `${v.id}${tag}`,
   );
 }
 
@@ -1282,6 +1339,55 @@ export function revisionTargets(scorecard: Scorecard): Issue[] {
   return scorecard.issues.filter(
     (i) => (i.severity === 'blocking' || i.severity === 'major') && i.status === 'open',
   );
+}
+
+/**
+ * ADR-0086 (G5-3e): minor revision targets for a gated dimension that fails by score with no open blocking or
+ * major finding — its judge's weakest passages, anchored in the version's text. They never block approval.
+ */
+export function scoreTargets(scorecard: Scorecard, versionText: string): Issue[] {
+  const text = toNfcText(versionText).text;
+  const out: Issue[] = [];
+  for (const r of scorecard.acceptance.dimension_results) {
+    if (r.passed) continue;
+    const dim = r.dimension as Issue['dimension'];
+    const hasMajor = scorecard.issues.some(
+      (i) =>
+        i.dimension === dim &&
+        i.status === 'open' &&
+        (i.severity === 'blocking' || i.severity === 'major'),
+    );
+    if (hasMajor) continue;
+    const section = (scorecard.sections as Record<string, { weakest_passages?: unknown }>)[dim];
+    const passages = Array.isArray(section?.weakest_passages)
+      ? (section.weakest_passages as { quote?: unknown; why?: unknown }[])
+      : [];
+    passages.forEach((w, n) => {
+      if (typeof w.quote !== 'string' || !w.quote.trim()) return;
+      const at = text.indexOf(w.quote.trim());
+      if (at < 0) return;
+      const start = codePointLength(text.slice(0, at));
+      out.push({
+        id: uuidFromKey(`${scorecard.id}:weakest:${dim}:${String(n)}`),
+        kind: 'other',
+        dimension: dim,
+        severity: 'minor',
+        status: 'open',
+        source: `judge:${dim}_judge`,
+        confidence: 0.8,
+        claim: `이 차원의 점수가 기준에 못 미친다. 가장 약한 대목: ${typeof w.why === 'string' && w.why ? w.why : '다듬을 것'}`,
+        chapter_span: {
+          manuscript_version_id: scorecard.manuscript_version_id,
+          start,
+          end: start + codePointLength(w.quote.trim()),
+          quote: w.quote.trim(),
+          paragraph_ids: [],
+        },
+        override_class: 'advisory',
+      } as Issue);
+    });
+  }
+  return out;
 }
 
 const DEVICE_LABEL_KO: Readonly<Record<string, string>> = {

@@ -293,6 +293,16 @@ export interface ChapterContract {
     statement: string;
     evidence?: EvidenceRef[];
   }[];
+  /**
+   * ADR-0086 (U1): secrets the reader may not learn in this chapter, filled by the workflow from the reveal schedule (never by the planner). The writer and the knowledge-leak checker read the same list.
+   */
+  reader_guards?: {
+    /**
+     * UUIDv7
+     */
+    proposition_id: string;
+    reader_from_chapter?: number;
+  }[];
   knowledge_guards: {
     /**
      * UUIDv7

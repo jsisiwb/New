@@ -57,6 +57,26 @@ export interface ProductionPolicy {
     convergence?: {
       rejudge_open_majors?: boolean;
       prefer_failing_dimension?: boolean;
+      /**
+       * ADR-0086 (V2, live defect G5-3b/c): a blocking or major finding on a patched version counts as introduced by the patch only when its quote lies in a paragraph the patch changed (or it quotes nothing and its evaluator re-ran on changed text); a finding on unchanged text is judge variance on text both versions share, so it stays open on the revision without failing the regression check. Absent or false: any new blocking/major issue kind fails the check (ADR-0014).
+       */
+      span_attribution?: boolean;
+      /**
+       * ADR-0086 (G5-3a): a protected gated dimension counts as regressed only when the revision leaves it below its gate threshold and it fell by more than regression_tolerance_points. Absent or false: any fall beyond the tolerance regresses, even far above the threshold.
+       */
+      threshold_protection?: boolean;
+      /**
+       * ADR-0086 (G5-3d): dimension (the default when absent) patches one dimension's findings per round; all_open patches every open blocking and major finding of any dimension — continuity, knowledge, repetition included — in one round, clustered by span, and the regression check measures the union.
+       */
+      round_scope?: 'dimension' | 'all_open';
+      /**
+       * ADR-0086 (G5-3e): a gated dimension that fails by score with no open blocking or major finding gets its judge's weakest passages as minor targets for the round, and its evaluator re-runs after every patch. Absent or false: a score-only failure is never targeted.
+       */
+      score_targets?: boolean;
+      /**
+       * ADR-0086: a version that becomes approvable after a targeted re-evaluation is re-evaluated by every evaluator before approval; it is approved only if the full scorecard passes too. Absent or false: the targeted scorecard decides.
+       */
+      confirm_full?: boolean;
     };
     /**
      * ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.
@@ -153,6 +173,29 @@ export interface ProductionPolicy {
      */
     rhythm_directives?: boolean;
     /**
+     * ADR-0086 (U1, live defect G5-1): every bible secret gets a reader date (the first-person narrator's own secrets from 화 1; others at their reveal chapter, or reader_reveal_chapter when set), a date for the other characters and a knowledge layer (current, prior-life memory, source-work knowledge). The chapter planner, the writer and the knowledge-leak checker read one schedule; the contract lists the chapter's hidden secrets as reader_guards; a contract that reveals a hidden secret is repaired (PLAN-REVEAL-01). Absent: the ADR-0084 reader-secret list only.
+     */
+    reveal_schedule?: {
+      /**
+       * Oblique hints per hidden secret per 화 the planner and writer are allowed.
+       */
+      hint_budget: number;
+    };
+    /**
+     * ADR-0086 (U7, U8): before any drafting call the contract and scene plans are checked deterministically for self-consistency (participants, the final scene ending on the hook, dialogue beats with a partner, length) and by a plan_critic call (reveal safety, repeated exposition, character state against the schedule, the operator's structure targets). Blocking or major findings send the scene plan back to the scene planner with the findings, at most max_repairs times; the findings are recorded with the plan.
+     */
+    plan_critic?: {
+      max_repairs: number;
+    };
+    /**
+     * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
+     */
+    cut_design?: boolean;
+    /**
+     * ADR-0086 (U3, live defect G5-6): bible secrets and character states that become true later carry the 화 they become true (true_from_chapter); packs and checkers read only what is true at the chapter being written, later states marked as planned.
+     */
+    time_frames?: boolean;
+    /**
      * ADR-0084 (U6, live defect G3-2): the scene plan carries enough talk. A scene whose planned dialogue share is below chapter_min is raised to it before drafting (the writer reads the target), and when partner_required and no scene puts anyone beside its POV character on stage, the longest scene gets the contract's first on-page participant who is not the POV character. Both are recorded as plan findings (PLAN-DLG-01, PLAN-PARTNER-01) and normalizations; scene_redraft_below re-drafts a scene that came back far below the band once. Absent: the plan is drafted as planned.
      */
     dialogue_floor?: {
@@ -162,6 +205,27 @@ export interface ProductionPolicy {
        * A drafted scene that has someone beside its POV character on stage and whose measured dialogue-and-속마음 share is below this is re-drafted once, the writer told the measured share and the target; the redraft is kept only when its share is higher (counted as dialogue_redraft). Absent: no redraft.
        */
       scene_redraft_below?: number;
+      /**
+       * ADR-0086 (G5-2): a drafted scene with a partner on stage whose measured talk share is below this fraction of its planned dialogue_density_target is re-drafted once (the redraft is kept only when it talks more). Applies beside scene_redraft_below; absent: only the absolute floor.
+       */
+      scene_redraft_ratio?: number;
+      /**
+       * ADR-0086 (G5-2): the chapter contract must put someone other than the POV character on page. A contract without one is sent back to the chapter planner once with that finding; a second miss is recorded as PLAN-PARTNER-02 and the chapter proceeds.
+       */
+      partner_in_contract?: boolean;
+      /**
+       * ADR-0086 (G5-2): scene must_not lines that forbid talking (e.g. no talk during a fight) are removed from scene plans, recorded as PLAN-DLG-02.
+       */
+      strip_talk_bans?: boolean;
+      /**
+       * ADR-0086 (G5-2): the writer is given countable targets instead of a share: quoted dialogue lines per 1,000자 (median and minimum, the operator's p50 and p10) scaled by the scene's planned share against the operator's median share, and a ceiling of 속마음 lines per 1,000자 (the operator's p90).
+       */
+      line_targets?: {
+        median_per_1k: number;
+        min_per_1k: number;
+        monologue_max_per_1k: number;
+        median_share: number;
+      };
     };
   };
   /**

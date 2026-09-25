@@ -38,6 +38,9 @@ function validateCast(root: RecordValue): void {
         optionalString(s, 'statement', secretPath);
         optionalStringArray(s, 'known_by', secretPath);
         optionalNumber(s, 'reveal_not_before_chapter', secretPath);
+        optionalNumber(s, 'reader_reveal_chapter', secretPath);
+        optionalNumber(s, 'true_from_chapter', secretPath);
+        optionalString(s, 'layer', secretPath);
       },
       path,
     );

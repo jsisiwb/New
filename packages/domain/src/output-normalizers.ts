@@ -32,6 +32,13 @@ export const OUTPUT_NORMALIZERS = [
   'dialogue_partner',
   // A scene with someone to talk to that came back below the talk band, re-drafted once (ADR-0084).
   'dialogue_redraft',
+  // Plan-level prevention (ADR-0086): a contract re-asked for a talk partner, an early reveal removed from the
+  // contract, talk bans stripped and the cut appended to the scene plan, a scene plan re-asked after the critic.
+  'contract_repair',
+  'reveal_repair',
+  'plan_talk_ban',
+  'plan_cut_beat',
+  'plan_repair',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 
