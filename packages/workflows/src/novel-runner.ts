@@ -30,6 +30,8 @@ export interface NovelRunnerOptions {
   readonly makeDeps: (input: { workspaceId: string; projectId: string }) => ChapterProductionDeps;
   /** Called by `wake()`; lets an API process nudge the loop instead of waiting a poll interval. */
   readonly runnerId: string;
+  /** ADR-0091: claim only this project's run (absent: any claimable run, as a shared worker does). */
+  readonly projectId?: string | undefined;
   readonly pollMs?: number | undefined;
   readonly leaseSeconds?: number | undefined;
   /** Injected for tests; defaults to setTimeout-based sleeping. */
@@ -51,7 +53,7 @@ export class NovelRunner {
   /** Claim and advance one run. Returns false when nothing was claimable. Exposed for tests. */
   async tick(): Promise<boolean> {
     const ttl = this.opts.leaseSeconds ?? NOVEL_RUN_LEASE_SECONDS;
-    const run = await claimNovelRun(this.opts.pool, this.opts.runnerId, ttl);
+    const run = await claimNovelRun(this.opts.pool, this.opts.runnerId, ttl, this.opts.projectId);
     if (!run) return false;
     await this.drive(run, ttl);
     return true;
@@ -91,6 +93,7 @@ export class NovelRunner {
         if (this.isStopping() || lost.value) break;
         const outcome = await advanceNovelRun(deps, run, {
           lease: { runner: this.opts.runnerId, fence } satisfies NovelRunLease,
+          leaseLost: () => lost.value,
           isCancelled: async () => {
             if (lost.value) return true;
             try {

@@ -294,11 +294,19 @@ export async function claimNovelRun(
   db: Queryable,
   runner: string,
   ttlSeconds = NOVEL_RUN_LEASE_SECONDS,
+  projectId?: string,
 ): Promise<NovelRunRow | undefined> {
-  const r = await db.query<NovelRunRow>('SELECT * FROM canon.claim_novel_run($1, $2)', [
-    runner,
-    ttlSeconds,
-  ]);
+  // ADR-0091: a runner started for one project (the CLI's `novel:run <project>`) claims only that project's run.
+  const r = projectId
+    ? await db.query<NovelRunRow>('SELECT * FROM canon.claim_novel_run_for_project($1, $2, $3)', [
+        runner,
+        ttlSeconds,
+        projectId,
+      ])
+    : await db.query<NovelRunRow>('SELECT * FROM canon.claim_novel_run($1, $2)', [
+        runner,
+        ttlSeconds,
+      ]);
   return r.rows[0];
 }
 
