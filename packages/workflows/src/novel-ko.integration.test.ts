@@ -2705,6 +2705,132 @@ run(
 );
 
 run(
+  'Korean novel run under standard.v28: a field the extractor repair broke is taken back from the answer it repaired (ADR-0103)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G17a: the first extraction has bare-id participants (as in ADR-0102's run); the repair fixes them and writes
+    // `hypothesis_results` in the shape G17a's second repair invented, where the first answer had an empty list.
+    const drift = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'canon_extractor' || !out || !('json' in out)) return out;
+      const json = out.json as {
+        items?: { type?: string; payload?: { participants?: unknown[] } }[];
+      };
+      if (req.trace.activityId.endsWith(':repair'))
+        return {
+          json: {
+            ...json,
+            hypothesis_results: [
+              {
+                hypothesis_id: 'MH-1',
+                status: 'confirmed',
+                note: 'as designed',
+                evidence_quotes: [],
+              },
+            ],
+          },
+        };
+      return {
+        json: {
+          ...json,
+          items: (json.items ?? []).map((i) =>
+            i.type === 'event' && Array.isArray(i.payload?.participants)
+              ? {
+                  ...i,
+                  payload: {
+                    ...i.payload,
+                    participants: i.payload.participants.map((p) =>
+                      p && typeof p === 'object' ? (p as { entity_id: string }).entity_id : p,
+                    ),
+                  },
+                }
+              : i,
+          ),
+        },
+      };
+    };
+    // The polish run's writer line, so the chapter reaches extraction the same way.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return drift(req, withMarker(req, batchedScript(req, script(req))));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-restore');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('accepts chapter 1 after one repair, with the first answer’s hypothesis results', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-restore-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      expect((await getNovelRun(pool, projectId))?.last_error ?? null).toBeNull();
+      const activities = seen
+        .filter((r) => r.trace?.role === 'canon_extractor')
+        .map((r) => (r.trace?.activityId ?? '').replace(/^.*:(extract:)/u, '$1'));
+      expect(activities.filter((a) => a.includes(':repair'))).toEqual(['extract:1:repair']);
+      const delta = await pool.query<{ payload: { hypothesis_results?: unknown } }>(
+        `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'canon_delta'`,
+        [projectId],
+      );
+      expect(delta.rows.map((r) => r.payload.hypothesis_results)).toEqual([[]]);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);
+
+run(
   'Korean novel run under standard.v20: a quoteless contract finding is rewritten in the scene it names (ADR-0092)',
   () => {
     let pool: Pool;

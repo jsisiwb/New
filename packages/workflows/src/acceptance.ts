@@ -25,7 +25,12 @@ import {
 import { type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
 import { checkOutputLanguage, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { anchorEvidence } from './anchoring.js';
-import { extractionItemErrors, extractionRepairNote } from './extraction-repair.js';
+import {
+  erroredFields,
+  extractionItemErrors,
+  extractionRepairNote,
+  restoreRegressedFields,
+} from './extraction-repair.js';
 import { checkpointPack, packCallInput, type StoredPack } from './drafting.js';
 import { type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
@@ -166,6 +171,7 @@ export async function extractCanon(
           )
         ).rows.map((r) => r.id),
       );
+      const validateDelta = validatorFor<CanonDelta>('canon-delta.schema.json');
       const extractOnce = async (activityId: string, note: string) => {
         const call = await modelCall<Partial<CanonDelta>>(ctx, {
           step: 'extract',
@@ -224,17 +230,16 @@ export async function extractCanon(
               );
           }
         }
-        return {
-          rawItems,
-          v: validatorFor<CanonDelta>('canon-delta.schema.json')(envelope),
-        };
+        return { rawItems, envelope, v: validateDelta(envelope) };
       };
       let attempt = await extractOnce(`extract:${input.contract.chapter_number}`, '');
       // ADR-0102 (G17-2): at most two repairs, as the gateway bounds its own — each with the answer's top-level errors,
       // each item's own errors and the schema's shapes for the types it used; a repaired answer is anchored,
       // envelope-checked and validated exactly like the first.
       for (let repair = 1; repair <= 2 && !attempt.v.ok; repair++) {
-        const topLevel = attempt.v.errors
+        const previous = attempt;
+        const errors = attempt.v.errors;
+        const topLevel = errors
           .filter((e) => !e.path.startsWith('/items'))
           .map((e) => `${e.path} ${e.message}`);
         const types = attempt.rawItems
@@ -246,8 +251,27 @@ export async function extractCanon(
             [...new Set(topLevel), ...extractionItemErrors(attempt.rawItems)],
             types,
             ko,
+            [...erroredFields(errors)],
           ),
         );
+        // ADR-0103 (G17-3): a field that validated in the answer being repaired is taken back from it when the repaired
+        // answer breaks it; a resume replays the recorded answers, so without this the chapter could never be accepted.
+        if (!attempt.v.ok) {
+          const { answer, restored } = restoreRegressedFields(
+            previous.envelope,
+            errors,
+            attempt.envelope,
+            attempt.v.errors,
+          );
+          if (restored.length > 0) {
+            recordNormalization('extraction_field_restore');
+            attempt = {
+              rawItems: restored.includes('items') ? previous.rawItems : attempt.rawItems,
+              envelope: answer,
+              v: validateDelta(answer),
+            };
+          }
+        }
         if (attempt.v.ok) recordNormalization('extraction_repair');
       }
       const v = attempt.v;

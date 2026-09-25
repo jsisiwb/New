@@ -51,6 +51,8 @@ export const OUTPUT_NORMALIZERS = [
   'pronoun_redraft',
   // ADR-0102: an extractor answer that failed the canon-delta schema, repaired once.
   'extraction_repair',
+  // ADR-0103: a top-level field an extractor repair broke, taken back from the answer it repaired.
+  'extraction_field_restore',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

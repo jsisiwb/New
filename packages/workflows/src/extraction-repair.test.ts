@@ -3,7 +3,17 @@
  * item's own errors and the schema's shapes for the types it used.
  */
 import { describe, expect, it } from 'vitest';
-import { extractionItemErrors, extractionRepairNote, proposalShapes } from './extraction-repair.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { validatorFor } from '@yeonjae/domain';
+import {
+  erroredFields,
+  extractionItemErrors,
+  extractionRepairNote,
+  fieldShapes,
+  proposalShapes,
+  restoreRegressedFields,
+} from './extraction-repair.js';
 
 const hero = '018f0000-0000-7000-8000-000000000001';
 const rival = '018f0000-0000-7000-8000-000000000002';
@@ -71,5 +81,119 @@ describe('the extractor repair note (ADR-0102)', () => {
     );
     expect(note).toMatch(/^\n\n다시 쓰기: /u);
     expect(note).toContain('같은 사건과 근거 인용을 그대로 두고');
+  });
+});
+
+/**
+ * ADR-0103 (G17-3): G17a's second repair fixed every item and wrote `hypothesis_results` as
+ * `{hypothesis_id, status, note, evidence_quotes}`; the two answers before it had an empty list.
+ */
+describe('a field an extractor repair broke (ADR-0103)', () => {
+  type Delta = Record<string, unknown> & { items: Record<string, unknown>[] };
+  const validate = validatorFor('canon-delta.schema.json');
+  const example = JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL('../../../examples/fixture/canon-delta.ch09.json', import.meta.url)),
+      'utf8',
+    ),
+  ) as Delta;
+  const bareParticipants = (d: Delta): Delta => ({
+    ...d,
+    items: d.items.map((i) => {
+      const payload = i.payload as { participants?: { entity_id: string }[] };
+      return i.type === 'event' && payload.participants
+        ? {
+            ...i,
+            payload: { ...payload, participants: payload.participants.map((p) => p.entity_id) },
+          }
+        : i;
+    }),
+  });
+  const g17aShape = [
+    {
+      hypothesis_id: 'contract:ch09:MH-1',
+      status: 'confirmed',
+      note: 'as designed',
+      evidence_quotes: [],
+    },
+  ];
+  const errorsOf = (d: unknown) => {
+    const r = validate(d);
+    return r.ok ? [] : r.errors;
+  };
+
+  it('names the top-level fields of the errors, never the envelope the workflow fills', () => {
+    expect(
+      [
+        ...erroredFields([
+          { path: '/hypothesis_results/0', message: 'm', keyword: 'required' },
+          { path: '/items/2/type', message: 'm', keyword: 'const' },
+          { path: '/', message: 'm', keyword: 'required', missingProperty: 'summary_l1' },
+          { path: '/project_id', message: 'm', keyword: 'format' },
+          { path: '/', message: 'm', keyword: 'additionalProperties' },
+        ]),
+      ].sort(),
+    ).toEqual(['hypothesis_results', 'items', 'summary_l1']);
+  });
+
+  it('takes back a field that validated before the repair and fails after it', () => {
+    const previous: Delta = { ...bareParticipants(example), hypothesis_results: [] };
+    const repaired: Delta = { ...example, hypothesis_results: g17aShape };
+    const before = errorsOf(previous);
+    const after = errorsOf(repaired);
+    expect([...erroredFields(before)]).toEqual(['items']);
+    expect([...erroredFields(after)]).toEqual(['hypothesis_results']);
+    const { answer, restored } = restoreRegressedFields(previous, before, repaired, after);
+    expect(restored).toEqual(['hypothesis_results']);
+    expect(answer.hypothesis_results).toEqual([]);
+    expect(answer.items).toBe(repaired.items);
+    expect(validate(answer).ok).toBe(true);
+  });
+
+  it('treats the item list as one field, and restores nothing that was already broken', () => {
+    const previous: Delta = { ...example, hypothesis_results: g17aShape };
+    const repaired: Delta = bareParticipants(example);
+    const back = restoreRegressedFields(previous, errorsOf(previous), repaired, errorsOf(repaired));
+    expect(back.restored).toEqual(['items']);
+    expect(back.answer.items).toBe(previous.items);
+    expect(validate(back.answer).ok).toBe(true);
+    const both: Delta = { ...bareParticipants(example), hypothesis_results: g17aShape };
+    const none = restoreRegressedFields(both, errorsOf(both), repaired, errorsOf(repaired));
+    expect(none.restored).toEqual([]);
+    expect(none.answer).toBe(repaired);
+  });
+
+  it('leaves out a field the repaired answer added broken where the answer before had none', () => {
+    const { hypothesis_results: _dropped, ...previous }: Delta = bareParticipants(example);
+    const repaired: Delta = { ...example, hypothesis_results: g17aShape };
+    const { answer, restored } = restoreRegressedFields(
+      previous,
+      errorsOf(previous),
+      repaired,
+      errorsOf(repaired),
+    );
+    expect(restored).toEqual(['hypothesis_results']);
+    expect('hypothesis_results' in answer).toBe(false);
+    expect(validate(answer).ok).toBe(true);
+  });
+
+  it('renders the shapes of the top-level fields named by errors', () => {
+    const shapes = fieldShapes(['hypothesis_results', 'items', 'summary_l1']);
+    expect(shapes.split('\n')).toHaveLength(2);
+    expect(shapes).toContain(
+      '- hypothesis_results: [{"hypothesis_ref!":"string","result!":"realized|partially_realized|unrealized"',
+    );
+    expect(shapes).toContain('- summary_l1: "string of at most 900 characters"');
+    const note = extractionRepairNote(
+      ['/hypothesis_results/0 must NOT have additional properties'],
+      [],
+      true,
+      ['hypothesis_results'],
+    );
+    expect(note).toContain(
+      '\n최상위 필드 형식:\n- hypothesis_results: [{"hypothesis_ref!":"string"',
+    );
+    expect(note).not.toContain('type별 payload 형식');
+    expect(note).toContain('오류가 없는 필드는 그대로 둔다.');
   });
 });
