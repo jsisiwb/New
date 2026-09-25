@@ -322,6 +322,7 @@
         "active_constraints_cap_tokens": {"type": "integer", "minimum": 100},
         "writer_input_budget_tokens": {"type": "integer", "minimum": 1000},
         "l1_summary_max_words": {"type": "integer", "minimum": 20},
+        "secret_names": {"type": "boolean", "description": "ADR-0094 (live defect G10-5): the canon lines name a secret's owners and knowers from the registry even when they are not in the chapter's cast, instead of their raw ids. Absent or false: names only for the chapter's cast, as before."},
         "story_memory": {
           "type": "object",
           "description": "ADR-0076: hierarchical story memory. With arc_summaries, when a chapter's arc starts, every earlier scheduled arc whose chapters are all accepted gets one arc summary (L2) from its accepted L1 summaries (the arc_summarizer role, at most l2_max_chars), and the story-so-far section gives the writer, the chapter planner and the continuity checker the L1 summaries of the last recent_chapters accepted chapters in blocks of ten and one L2 item for each older arc. Absent: the story so far is every L1 summary in blocks of ten (ADR-0061).",

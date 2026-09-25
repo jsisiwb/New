@@ -15,22 +15,21 @@ named the old owner; the only stale names were in this block, and the corpus rep
 | Order | Step of the operator's plan | Status |
 | --- | --- | --- |
 | 1 | STEP 1 — `standard@19` checkpoint on both projects | done: the recorded G9 pair (ADR-0085 §2, `13-live-run-gemini.md` §9); defects G9-1 … G9-8 |
-| 2 | STEP 2 — remaining prevention gaps | next (G9-1, G9-2, G9-6 first) |
-| 3 | STEP 3 — revision that converges | next (G9-3, G9-4, G9-5, G9-7 first) |
-| 4–12 | STEPS 4–12 | see the reconciliation below |
+| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | done in code: `standard@20` (ADR-0092), live G10 (§10); `standard@21` (ADR-0093) answers G10-1 … G10-4; live G11 in flight |
+| 3 | STEP 4.1 — the corpus in the database | done: `corpus:verify` (3 books, 1,138 spine chapters, 656 Korean main-story chapters, all hashes equal) |
+| 4 | STEP 4.4 — stock phrases refreshed | done: `lang/ko@9` in `standard@21` |
+| 5–12 | the rest | see the reconciliation below |
 
-**Where acceptance stands.** No chapter is accepted yet. G9 (`standard@19`): the regression chapter's first draft
-passed all four dimension gates with 0 blocking and 7 majors, and its r3 reached 0 blocking and 2 majors — then the
-revision rules quarantined r3–r5 for a 5-point genre wobble far above the gate (G9-3), and one contract criterion was
-never targeted (G9-4). The academy chapter was blocked by its own rules: the canon lines and the reveal schedule gave
-one secret two dates (G9-1), and the heroine formula pushed hidden secrets into her entrance (G9-2).
+**Where acceptance stands.** No chapter is accepted yet. G10 (`standard@20`, §10): no reader-secret finding in any round of
+either chapter (G9-1, G9-2 fixed); the academy draft came out on its length with likeness 85; both revision loops ended
+early on ADR-0092's stop rule (G10-4), which `standard@21` replaces with a rung switch and net improvement.
 
-**Open defects.** G9-1 … G9-8 (`13-live-run-gemini.md` §9). Carried: G7-4 (solo scenes raised to the talk floor), G5-8
-(voice metrics partly outside the band), the operator's 3인칭 cutaways (not planned).
+**Open defects.** G10-5 (secret owners outside a pack's registry named by raw id in canon lines); carried: G9-6 (the
+unawakened body), G9-8 (stock figures and world vocabulary; `lang/ko@9` adds eight figures), G7-4, G5-8, the 3인칭
+cutaways.
 
-**Budget.** Bridge credits at this run's start (13:53 UTC): ws1 87.34 %, ws2 unreadable (`rate-limited`; 98.57 % after
-G8), ws3 17.42 %, ws4 6.44 % — about 189 points remain on ws1, ws3 and ws4 (billing period ending 2026-10-09). The G9
-pair cost 12.48 points on those three.
+**Budget.** Bridge credits before G11 (15:52 UTC): ws1 89.67 %, ws2 unreadable (`rate-limited`), ws3 21.70 %, ws4 8.00 % —
+about 181 points remain on ws1, ws3 and ws4. G9 cost 12.48 points, G10 8.17.
 
 **Safety rules.** Tests run against local sandbox databases only (`yeonjae_test` for full suites, `yeonjae_test_b` for
 targeted runs; a wrapper sets `DATABASE_URL` to the sandbox and unsets every provider variable); the inherited
@@ -38,7 +37,8 @@ targeted runs; a wrapper sets `DATABASE_URL` to the sandbox and unsets every pro
 worktree `/tmp/hoplite/live`. Never run the full `pnpm check` while a live run is in flight (G8 incident). The sandbox
 now bursts to 8 GiB.
 
-**Resume point.** STEP 2/3 fixes for G9-1 … G9-8 → `standard@20` → a live checkpoint on both projects.
+**Resume point.** Record G11 (`standard@21`, projects `G11a 아카데미 standard21` / `G11r 회귀 standard21`) with
+`quality:checkpoint`; an accepted chapter 1 goes on to STEP 5 (`novel:resume <project> --stop-after=5`, then `novel:run`).
 
 ## G10 fixes and C7 refresh — `standard.v21` — 2026-09-25
 

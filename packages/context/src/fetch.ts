@@ -160,6 +160,8 @@ interface Ctx {
   readonly lang: 'en' | 'ko';
   /** ADR-0092: the reveal schedule's dates per secret statement, when the policy renders them. */
   readonly secretDates?: ReadonlyMap<string, SecretDates> | undefined;
+  /** ADR-0094 (G10-5): name a secret's owners and knowers even when they are not in the chapter's cast. */
+  readonly secretNames?: boolean | undefined;
 }
 
 const IMPORTANCE: Record<string, number> = { core: 1, major: 0.6, minor: 0.3 };
@@ -448,6 +450,15 @@ async function fetchKnowledge(ctx: Ctx, out: Item[]): Promise<void> {
     const props = [...ctx.propositions.values()]
       .filter((p) => relevant.has(p.id) || ctx.plan.contractPropositionIds.includes(p.id))
       .sort((a, b) => cmp(a.id, b.id));
+    // ADR-0094 (G10-5): a secret's owners and knowers outside the chapter's cast are named, not shown as raw ids.
+    if (ctx.secretNames)
+      await loadNames(
+        ctx,
+        props.flatMap((p) => [
+          ...(p.secret?.owner_ids ?? []),
+          ...(p.secret?.allowed_knower_ids ?? []),
+        ]),
+      );
     for (const p of props) {
       const truth = await truthOnTimeline(
         ctx.db,
@@ -1512,6 +1523,7 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
       propositions: new Map(),
       lang: opts.identity?.outputLanguage.language ?? 'en',
       ...(opts.secretDates ? { secretDates: opts.secretDates } : {}),
+      ...(opts.policy.context.secret_names === true ? { secretNames: true } : {}),
     };
     await loadNames(ctx, plan.allEntityIds);
     await fetchRegistry(ctx, items);
