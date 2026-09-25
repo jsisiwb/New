@@ -4,6 +4,10 @@
  *   corpus:import <dir|git-url> [--source=<label>]   EPUBs + Manifest.csv → corpus.books / corpus.chapters
  *   corpus:list [--json]                             imported books, language, POV, tags, chapter counts
  *   corpus:stats [--json] [--out=<file.md>]          C1 statistics as percentiles, per book, POV and position
+ *   corpus:calibrate [--layer=] [--json] [--out=]    C4 lint calibration: each rule's value on every chapter
+ *   corpus:passages [--dry-run]                      C5 exemplar passages by scene function → corpus.passages
+ *   corpus:likeness (--project=<id>|--file=<path>)   C8 share of style metrics inside the operator's band
+ *   corpus:stock-phrases [--n=] [--min-drafts=]      C7 phrases the pipeline repeats and the operator never uses
  *
  * The import is idempotent (a book is keyed by its file's SHA-256) and resumable (each book commits alone).
  * Once imported, nothing reads the files again: the corpus lives in the permanent database.
@@ -15,7 +19,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   corpusChapters,
+  corpusPassages,
   importCorpusBook,
+  insertCorpusPassages,
   listCorpusBooks,
   type CorpusChapterRow,
   type Pool,
@@ -24,7 +30,15 @@ import { ProfileStore } from '@yeonjae/narrative';
 import {
   chapterMetrics,
   distributions,
+  distributionOf,
+  lintKoreanWebnovel,
   METRIC_KEYS,
+  operatorLikeness,
+  PASSAGE_TAGGER,
+  paragraphPerLine,
+  percentile,
+  stockPhraseCandidates,
+  tagPassages,
   parseManifest,
   readCorpusBook,
   storeIdOf,
@@ -35,7 +49,15 @@ import {
   type MetricKey,
 } from '@yeonjae/prose';
 
-export const CORPUS_COMMANDS = new Set(['corpus:import', 'corpus:list', 'corpus:stats']);
+export const CORPUS_COMMANDS = new Set([
+  'corpus:import',
+  'corpus:list',
+  'corpus:stats',
+  'corpus:calibrate',
+  'corpus:passages',
+  'corpus:likeness',
+  'corpus:stock-phrases',
+]);
 export const CORPUS_IMPORT_VERSION = 'corpus-import@1';
 
 interface Result {
@@ -197,6 +219,101 @@ export function renderStatsMarkdown(r: CorpusStatsReport): string {
   return out.join('\n');
 }
 
+/**
+ * Lint rules whose value is a property of the text alone, so the operator's chapters can calibrate them
+ * (C4, ADR-0083). `inverted`: a low value is the failure (dialogue share). Rules that depend on the project
+ * (names, point of view, exemplars) are not calibrated here.
+ */
+export const CALIBRATED_RULES: readonly { readonly id: string; readonly inverted?: boolean }[] = [
+  { id: 'KO-TRN-RATE' },
+  { id: 'KO-AIT-COUNT' },
+  { id: 'KO-PRN-RATE' },
+  { id: 'KO-SIM-RATE' },
+  { id: 'KO-CONJ-RATE' },
+  { id: 'KO-PARA-LONG' },
+  { id: 'KO-PARA-CHARS' },
+  { id: 'KO-END-02' },
+  { id: 'KO-OVR-01' },
+  { id: 'KO-OVR-02' },
+  { id: 'KO-OVR-03' },
+  { id: 'KO-OVR-04' },
+  { id: 'KO-COMMA-RATE' },
+  { id: 'KO-SENT-LONG' },
+  { id: 'KO-DLG-SHARE', inverted: true },
+  { id: 'KO-PUNCT-ELL' },
+  { id: 'KO-PUNCT-DASH' },
+  { id: 'KO-IDIOM-01' },
+  { id: 'KO-ORDER-01' },
+];
+
+export interface RuleCalibration {
+  readonly id: string;
+  readonly inverted: boolean;
+  readonly current?: { readonly warn: number; readonly fail: number } | undefined;
+  readonly all: Distribution;
+  readonly first_person: Distribution;
+  /** The far tail of all Korean chapters: p99.5 (inverted: p0.5). */
+  readonly tail: number;
+  readonly first_person_tail: number;
+  /**
+   * ADR-0083: warn at p90 and fail at p99.5 of all Korean chapters (inverted: p10 / p0.5), so about one
+   * operator chapter in two hundred fails a rule on its own.
+   */
+  readonly proposed: { readonly warn: number; readonly fail: number };
+}
+
+/** Each calibrated rule's value on every chapter: the lint run with thresholds every value crosses. */
+export function calibrationReport(
+  rows: readonly CorpusChapterRow[],
+  source: KoStyleSource,
+): RuleCalibration[] {
+  const zero: Record<string, { warn: number; fail: number } | undefined> = {
+    ...(source.thresholds ?? {}),
+  };
+  // KO-PARA-CHARS keeps the layer's value: its warn length defines what KO-PARA-LONG counts as long.
+  for (const r of CALIBRATED_RULES)
+    if (r.id !== 'KO-PARA-CHARS')
+      zero[r.id] = r.inverted ? { warn: 2, fail: -1 } : { warn: 0, fail: 1e9 };
+  const values = new Map<string, { all: number[]; first: number[] }>();
+  for (const r of CALIBRATED_RULES) values.set(r.id, { all: [], first: [] });
+  for (const row of rows) {
+    const text = paragraphPerLine(row.text);
+    const report = lintKoreanWebnovel(text, { ...source, thresholds: zero });
+    const perRule = new Map<string, number>();
+    for (const f of report.findings)
+      if (f.value !== undefined && values.has(f.rule_id))
+        perRule.set(f.rule_id, Math.max(perRule.get(f.rule_id) ?? -Infinity, f.value));
+    // Dialogue share counts straight quotes too (defect C-1); the longest paragraph is the metric itself.
+    const metrics = chapterMetrics(row.text, source);
+    perRule.set('KO-DLG-SHARE', metrics.talk_share);
+    perRule.set('KO-PARA-CHARS', metrics.max_paragraph_chars);
+    for (const r of CALIBRATED_RULES) {
+      const v = perRule.get(r.id) ?? 0;
+      const slot = values.get(r.id);
+      slot?.all.push(v);
+      if (row.pov === 'first') slot?.first.push(v);
+    }
+  }
+  return CALIBRATED_RULES.map((r) => {
+    const v = values.get(r.id) ?? { all: [], first: [] };
+    const all = distributionOf(v.all);
+    const sortedAll = [...v.all].sort((a, b) => a - b);
+    const sortedFirst = [...v.first].sort((a, b) => a - b);
+    const q = r.inverted ? 0.5 : 99.5;
+    const tail = Math.round(percentile(sortedAll, q) * 1000) / 1000;
+    return {
+      id: r.id,
+      inverted: r.inverted ?? false,
+      current: source.thresholds?.[r.id],
+      all,
+      first_person: distributionOf(v.first),
+      tail,
+      first_person_tail: Math.round(percentile(sortedFirst, q) * 1000) / 1000,
+      proposed: r.inverted ? { warn: all.p10, fail: tail } : { warn: all.p90, fail: tail },
+    };
+  });
+}
+
 export async function runCorpusCommand(
   pool: Pool,
   cmd: string,
@@ -226,5 +343,149 @@ export async function runCorpusCommand(
     if (out) writeFileSync(out, renderStatsMarkdown(report));
     return { ok: true, output: args.includes('--json') ? report : renderStatsMarkdown(report) };
   }
+  if (cmd === 'corpus:calibrate') {
+    const rows = await corpusChapters(pool);
+    const report = calibrationReport(rows, statsSource(flag(args, 'layer') ?? 'lang/ko@6'));
+    const table = [
+      '| rule | current warn / fail | all p2 / p10 / p50 / p90 / p98 / tail | first-person p2 / p10 / p50 / p90 / p98 / tail | proposed warn / fail |',
+      '| --- | --- | --- | --- | --- |',
+      ...report.map((r) => {
+        const d = (x: Distribution, tail: number) =>
+          `${String(x.p2)} / ${String(x.p10)} / ${String(x.p50)} / ${String(x.p90)} / ${String(x.p98)} / ${String(tail)}`;
+        const cur = r.current ? `${String(r.current.warn)} / ${String(r.current.fail)}` : '—';
+        return `| ${r.id}${r.inverted ? ' (low fails)' : ''} | ${cur} | ${d(r.all, r.tail)} | ${d(r.first_person, r.first_person_tail)} | ${String(r.proposed.warn)} / ${String(r.proposed.fail)} |`;
+      }),
+    ].join('\n');
+    const out = flag(args, 'out');
+    if (out) writeFileSync(out, table);
+    return { ok: true, output: args.includes('--json') ? report : table };
+  }
+  if (cmd === 'corpus:passages') return passagesCmd(pool, args);
+  if (cmd === 'corpus:likeness') return likenessCmd(pool, args);
+  if (cmd === 'corpus:stock-phrases') return stockPhrasesCmd(pool, args);
   return { ok: false, output: { error: 'UNKNOWN_COMMAND', cmd } };
+}
+
+/** C5: tag every voice-eligible main-story chapter and store the passages (idempotent per tagger). */
+async function passagesCmd(pool: Pool, args: readonly string[]): Promise<Result> {
+  const rows = await corpusChapters(pool);
+  const passages = rows.flatMap((row) =>
+    tagPassages(row.text, { position: row.position }).map((p) => ({
+      chapter_id: row.id,
+      start_cp: p.start_cp,
+      end_cp: p.end_cp,
+      text: p.text,
+      scene_type: p.scene_type,
+      tagger: PASSAGE_TAGGER,
+      features: { ...p.features, pov: row.pov, position: row.position },
+    })),
+  );
+  const byType: Record<string, number> = {};
+  for (const p of passages) byType[p.scene_type] = (byType[p.scene_type] ?? 0) + 1;
+  if (args.includes('--dry-run'))
+    return {
+      ok: true,
+      output: { tagger: PASSAGE_TAGGER, chapters: rows.length, candidates: byType },
+    };
+  const { inserted } = await insertCorpusPassages(pool, passages);
+  const stored = await corpusPassages(pool, { tagger: PASSAGE_TAGGER });
+  return {
+    ok: true,
+    output: {
+      tagger: PASSAGE_TAGGER,
+      chapters: rows.length,
+      candidates: byType,
+      inserted,
+      stored: stored.length,
+    },
+  };
+}
+
+/** The operator's style bands (all Korean chapters and first-person ones) and their own likeness scores. */
+function operatorBands(rows: readonly CorpusChapterRow[], source: KoStyleSource) {
+  const metrics = rows.map((r) => ({ pov: r.pov, m: chapterMetrics(r.text, source) }));
+  const all = distributions(metrics.map((x) => x.m));
+  const first = distributions(metrics.filter((x) => x.pov === 'first').map((x) => x.m));
+  const own = distributionOf(metrics.map((x) => operatorLikeness(x.m, all).score));
+  return { all, first, own };
+}
+
+/** C8: the share of a chapter's style metrics inside the operator's p10–p90 band, beside the operator's own. */
+async function likenessCmd(pool: Pool, args: readonly string[]): Promise<Result> {
+  const project = flag(args, 'project');
+  const file = flag(args, 'file');
+  if (!project && !file)
+    return {
+      ok: false,
+      output: { error: 'USAGE', usage: 'corpus:likeness (--project=<id>|--file=<path>)' },
+    };
+  const source = statsSource(flag(args, 'layer') ?? 'lang/ko@7');
+  const bands = operatorBands(await corpusChapters(pool), source);
+  const texts: { label: string; text: string }[] = [];
+  if (file) texts.push({ label: file, text: readFileSync(file, 'utf8') });
+  if (project) {
+    const { rows } = await pool.query<{
+      chapter: number;
+      version_no: number;
+      status: string;
+      text: string;
+    }>(
+      `SELECT c.number AS chapter, v.version_no, v.status, v.text
+         FROM (SELECT chapter_id, version_no, status::text AS status, text FROM manuscript_versions WHERE project_id = $1
+               UNION ALL SELECT chapter_id, version_no, 'quarantined', text FROM quarantine_versions WHERE project_id = $1) v
+         JOIN chapters c ON c.id = v.chapter_id
+        ORDER BY c.number, v.version_no`,
+      [project],
+    );
+    for (const r of rows)
+      texts.push({
+        label: `화 ${String(r.chapter)} v${String(r.version_no)} (${r.status})`,
+        text: r.text,
+      });
+  }
+  const scored = texts.map((t) => {
+    const m = chapterMetrics(t.text, source);
+    const all = operatorLikeness(m, bands.all);
+    const first = operatorLikeness(m, bands.first);
+    return {
+      label: t.label,
+      score: all.score,
+      first_person_score: first.score,
+      outside: all.outside,
+    };
+  });
+  const out = { operator_own_scores: bands.own, versions: scored };
+  if (args.includes('--json')) return { ok: true, output: out };
+  const lines = [
+    `operator chapters (own bands): p10 ${String(bands.own.p10)} / p50 ${String(bands.own.p50)} / p90 ${String(bands.own.p90)}`,
+    ...scored.map(
+      (s) =>
+        `${s.label}: ${String(s.score)} (first-person bands ${String(s.first_person_score)}) — outside: ${s.outside
+          .map((o) => `${o.key} ${String(o.value)} [${String(o.p10)}–${String(o.p90)}]`)
+          .join(', ')}`,
+    ),
+  ];
+  return { ok: true, output: lines.join('\n') };
+}
+
+/** C7: word n-grams the pipeline's first drafts repeat across chapters and the operator's chapters lack. */
+async function stockPhrasesCmd(pool: Pool, args: readonly string[]): Promise<Result> {
+  const n = Number(flag(args, 'n') ?? '2');
+  const minDrafts = Number(flag(args, 'min-drafts') ?? '3');
+  const maxCorpusUses = Number(flag(args, 'max-corpus') ?? '0');
+  const limit = Number(flag(args, 'limit') ?? '80');
+  const { rows } = await pool.query<{ text: string }>(
+    `SELECT v.text FROM manuscript_versions v WHERE v.language = 'ko' AND v.origin = 'assembled'
+     UNION ALL SELECT q.text FROM quarantine_versions q WHERE q.origin = 'assembled'`,
+  );
+  const corpus = (await corpusChapters(pool)).map((r) => r.text);
+  const phrases = stockPhraseCandidates(
+    rows.map((r) => r.text),
+    corpus,
+    { n, minDrafts, maxCorpusUses },
+  ).slice(0, limit);
+  return {
+    ok: true,
+    output: { drafts: rows.length, corpus_chapters: corpus.length, n, minDrafts, phrases },
+  };
 }

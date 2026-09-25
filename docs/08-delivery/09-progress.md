@@ -3,7 +3,7 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
-## Next session — handoff (2026-09-24, Gemini run)
+## Next session — handoff (2026-09-25, Gemini run)
 
 **Where the roadmap stands.** Everything through ADR-0079 / `standard@11` (phases R, P, A, K, L, V, O/W, D) is
 merged into `hoplite/ainos-1ac771f8` (PR #1 of `sigma43web/New`). GitHub Actions runs on every push and is
@@ -18,7 +18,8 @@ one per phase; the agent cannot merge, so a roll-up PR from the top branch close
 | 1 | 0 — state and provider readiness | `hoplite/hipponion-22b29187` | done (ADR-0080) |
 | 2 | G — Gemini baseline and same-model judging | `…--gemini-baseline` | done (ADR-0081, `standard@12`) |
 | 3 | C (part 1) — corpus import, statistics, voice analysis, copy detection | `…--corpus` | done (ADR-0082) |
-| 4+ | C (part 2), U, V2, N, Q, M, I, E, W, B, D | stacked on C1 | pending |
+| 4 | C (part 2) — calibrated lint, voice profile, the operator's passages, likeness | `…--corpus--voice` | done (ADR-0083, `standard@13`) |
+| 5+ | U, V2, N, Q, M, I, E, W, B, D | stacked on C2 | pending |
 
 **Done in Phase 0.** Both model-id names (`YEONJAE_NOTION_MODEL` wins over `YEONJAE_MODEL_NOTION`); split error
 classes and a policy-gated same-route refusal rule; counted gateway JSON recoveries; `bridge:credits`;
@@ -37,13 +38,52 @@ Korean voice.
 sandbox database (the test kit resets what it is given; `RESET_REFUSED` now guards the permanent one). Live
 runs use the permanent `DATABASE_URL` from a separate worktree so a rebuild cannot change a running process.
 
-**Next step.** Phase C part 2: `lang/ko@7` (thresholds from `corpus-stats.md`, the straight-quote fix), the operator
-voice layer, corpus exemplars by scene type, contrast pairs, stock-phrase mining, the C8 metric, the academy intake,
-`standard@13`; then the live checkpoints on both projects. The v12 checkpoint could not start: since 23:50 UTC
-the bridge answers 502 (`Notion AI createAgentThread error (500)`) on both workspaces — retry before any live step.
+**Next step.** The live checkpoint of `standard@13` on both projects (regression:
+`ops/live-runs/phase-a-v7-intake.json`; academy/harem/possession/먼치킨: `ops/live-runs/phase-c-academy-intake.json`),
+then Phase U (dialogue beats and an on-stage counterpart in every chapter plan, the reveal schedule in the chapter
+plan, the device lexicon) and Phase V2 (a structural blocking re-plans and re-drafts the scene and re-judges
+structure, G3-1). The `standard@12` checkpoint (G3b, `13-live-run-gemini.md` §3) was not accepted: the structure
+judge's blocking (a chapter planned with the hero alone, 5 % dialogue) survived every revision round because
+targeted re-evaluation never re-ran the structure judge.
 
-**Open defects carried in.** A-4 (future knowledge vs the reveal schedule), G-1 (genre vocabulary), the bible
-time frame, A5 (dialogue-share floor for first-person openings) — scheduled for Phases C4 and U.
+**Budget.** Credits after G3b: ws1 68.96 %, ws2 80.50 % of the billing period ending 2026-10-09 (about 50 points
+left across both workspaces). A chapter-1 run from a fresh project costs about 3.2 points; a later chapter should
+cost less (no planning). 200 화 on two projects cannot be produced inside this billing period.
+
+**Open defects carried in.** G3-1 (structure never re-judged in revision), G3-2 (chapter planned without a scene
+partner), A-4 / G3-3 (future knowledge recited ahead of the reveal schedule), G-1 (genre vocabulary: the
+`possession` genre maps to the 회빙환 overlay with 원작 vocabulary, wrong for game-빙의), the bible time frame
+(G3-4 skill before the system opens), the operator's POV architecture (1인칭 hero with 3인칭 cutaways) — Phases U
+and V2.
+
+## Phase C (part 2) — calibrated lint, voice profile, the operator's passages, likeness, `standard.v13` — 2026-09-25
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline--corpus--voice` (stacked on Phase C part 1). ADR-0083 records the
+decisions; `docs/10-corpus/voice-calibration.md` the evidence.
+
+**Built:** `lang/ko@7` (corpus-calibrated: warn p90, fail p99.5; `KO-TALK-SHARE` counts straight quotes and replaces
+`KO-DLG-SHARE`/`KO-DLG-LOW`; first-person bands `KO-TALK-SHARE-1P`, `KO-PRN-RATE-1P`; the operator's own conventions
+no longer flagged; `calibration.status: corpus_calibrated`); `corpus:calibrate`; the operator voice profile
+`voice/operator@1` (`voice-profile.schema.json`; writer, planner and judge lines) copied into a new project's identity when
+the policy names it, rendered as the Korean `voice`, `voice_planner` and `voice_judges` sections; the deterministic
+passage tagger `passages@1` and `corpus:passages`; operator exemplars pinned at novel start (`identity.operator_exemplars`,
+point of view first, stable per project) replacing the studio's synthetic exemplars, with the source never shown to
+the model; `corpus:likeness` (C8) and `corpus:stock-phrases` (C7); `standard.v13` (v12 + the three identity
+choices + the corpus copy check at 14 syllables; no gate changes); the academy intake
+`ops/live-runs/phase-c-academy-intake.json` (C9).
+
+**Measured:** the operator's chapters with a major lint finding: 75.9 % under `lang/ko@6`, 11.0 % under `lang/ko@7`.
+1,850 passages stored in the permanent database (hook 6, cliffhanger 640, banter 1,183, status window 21). Likeness:
+the operator's own chapters p10 65 / p50 85 / p90 95; G1 chapter 1 75; G3b chapter 1 50. Stock-phrase candidates
+from the two Gemini drafts: `비릿한 피`, `훅 끼쳤다`, `끔찍한 고통이`, `벌떡 몸을 일으켰다`. Live G3b
+(`standard@12`): chapter 1 not accepted — `13-live-run-gemini.md` §3.
+
+**Tests:** `ko-style-v7.test.ts`, `corpus-voice.test.ts`, `voice.test.ts`, `identity-from-intake.test.ts` (voice and
+exemplars), `corpus-index.integration.test.ts` (passages), `policy.test.ts` (v13), compiler profile inventory.
+
+**Not done (and why):** C2 (LLM structure annotations of the corpus) and C6 (pipeline-made contrast pairs) spend
+model calls on 656 chapters while credits bind; stock-phrase mining waits for more drafts; the POV architecture
+belongs to Phase U.
 
 ## Phase C (part 1) — the operator corpus: import, statistics, voice analysis, copy detection — 2026-09-24
 

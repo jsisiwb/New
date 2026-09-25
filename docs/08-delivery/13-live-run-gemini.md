@@ -84,3 +84,41 @@ the structure judge rated this −25 %, two-scene chapter 90, so the length find
 structure composite and the structure judge's weight moves from 0.65 to 0.5; every judge quotes its three
 weakest passages before scoring against an anchored rubric; any rubric more than 30 points above its
 deterministic composite is capped there.
+
+## 3. G3b — the `standard.v12` checkpoint (00:17–00:36 UTC, 2026-09-25)
+
+Chapter 1 of a fresh regression project (`ops/live-runs/phase-a-v7-intake.json`, first person) on
+`standard@12`, driven by `novel:start` → approve concept 1 of 2 → `novel:run --stop-after=1`. (The first
+attempt, G3, could not start: the bridge answered 502 on both workspaces from 23:50 UTC; it recovered by 00:17.)
+
+| | G3b |
+| --- | --- |
+| Length | **6,008자** against 5,300 (+13 %): `request_ratio` 1.1 now overshoots where 0.8 undershot by 25 % |
+| Rounds | r0 to r3, every revision round the policy allows; r2 and r3 quarantined; run stopped `needs_attention` (not accepted) |
+| r0 gate | overall 60: prose 51.9 ✗ (rubric 62.5, lint 36), structure 68 ✗ (rubric 40, lint 96), genre 85, voice 91.3 |
+| Best round | r1: overall 74, prose 79.6 ✓, structure 68 ✗ |
+| Blocking / major | r0 1 / 11; r1–r3 1 / 7 |
+| The blocking | structure judge: dialogue share 2 %, the only lines are monologue beats, no exchange between characters |
+| Lint (r0) | `KO-DLG-SHARE` (5 % against a 25 % floor), `KO-IDIOM-01` ×3 ("빌어먹을"), `TRN-KO-03` |
+| Other majors | future knowledge and hidden-skill conditions recited for 14 paragraphs (19–32); ending on the hero's own summary; a skill working before the system opens (promise checker); `에러` inside a system message (continuity checker, world rule) |
+| Calls / tokens | 34 (34 attempts, 0 failed) / 124,783 in, 21,587 out; 1,123 s |
+| Credits | ws1 68.16 → 68.96 %, ws2 78.13 → 80.50 % (3.17 points) |
+| Likeness (C8) | 50 (operator p10 65 / p50 85); G1 75 — `docs/10-corpus/voice-calibration.md` §3 |
+
+Excerpt (the pipeline's first three lines):
+
+> 역겨운 곰팡내가 훅 끼쳤다.
+> 심연의 제1군주. 그 빌어먹을 놈의 심장에 창을 박아넣으며 내 몸도 갈가리 찢겨 나갔을 터였다.
+> 그런데 뼈가 숯검정으로 녹아내리는 고통 대신, 등허리에 축축하고 미적지근한 장판의 감각이 닿았다.
+
+**What it shows.**
+
+- **G3-1 (revision loop):** the structure dimension was scored once. `evaluation.reevaluation: targeted` re-runs
+  the judges whose findings a patch touched; the patches were prose patches, so structure stayed 68 with the same
+  blocking in every round. A structural defect cannot be cleared by patching prose — Phase V2.
+- **G3-2 (plan):** the chapter was planned with the hero alone; no revision can add a scene partner. The planner
+  must carry dialogue beats and an on-stage counterpart (U6; the operator's first-person 화 1–25 median is 25 %).
+- **G3-3 (plan):** future knowledge is recited as a block (A-4) — the reveal schedule does not reach the chapter
+  plan (U1).
+- **G3-4 (judges):** the prose judge called "빌어먹을" a translated Western curse; it is one of book 1's tics.
+  `standard@13` gives judges the operator's conventions (ADR-0083).

@@ -10,6 +10,7 @@
  */
 import { lintV5, type V5Metrics } from './ko-style-v5.js';
 import { lintV6, type V6Metrics } from './ko-style-v6.js';
+import { lintV7, type V7Metrics } from './ko-style-v7.js';
 import { codePointLength } from './codepoints.js';
 import { toNfcText } from './nfc.js';
 import { segmentParagraphs } from './paragraphs.js';
@@ -98,6 +99,8 @@ export interface KoStyleMetrics {
   readonly v5?: V5Metrics | undefined;
   /** lang/ko@6 measurements (ADR-0073); present only when the layer carries a v6 threshold. */
   readonly v6?: V6Metrics | undefined;
+  /** lang/ko@7 measurements (ADR-0083); present only when the layer carries a v7 threshold. */
+  readonly v7?: V7Metrics | undefined;
 }
 
 export interface KoStyleReport {
@@ -280,8 +283,9 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
 
   // --- rhythm metrics.
   const pronouns = [...text.matchAll(PRONOUN)].length;
+  // lang/ko@7 (ADR-0083): a first-person chapter is measured against the first-person band when present.
   rate(
-    'KO-PRN-RATE',
+    src.pov === 'first' && src.thresholds?.['KO-PRN-RATE-1P'] ? 'KO-PRN-RATE-1P' : 'KO-PRN-RATE',
     per1k(pronouns),
     'translation_like_english',
     (v, t) =>
@@ -337,8 +341,13 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
 
   const quoted = paragraphs.reduce((a, p) => a + quotedChars(p.text), 0);
   const dialogueRatio = Math.round((quoted / chars) * 1000) / 1000;
-  // lang/ko@5 counts 속마음 (‘…’) with dialogue under KO-DLG-SHARE instead (ADR-0065).
-  if (paragraphs.length >= 12 && !src.thresholds?.['KO-DLG-SHARE'])
+  // lang/ko@5 counts 속마음 (‘…’) with dialogue under KO-DLG-SHARE instead (ADR-0065); lang/ko@7 under
+  // KO-TALK-SHARE (ADR-0083).
+  if (
+    paragraphs.length >= 12 &&
+    !src.thresholds?.['KO-DLG-SHARE'] &&
+    !src.thresholds?.['KO-TALK-SHARE']
+  )
     rate(
       'KO-DLG-LOW',
       dialogueRatio,
@@ -487,6 +496,10 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
   });
   findings.push(...v6.findings);
 
+  // lang/ko@7 rules (ADR-0083): each runs only when the layer carries its threshold.
+  const v7 = lintV7({ text, chars, thresholds: src.thresholds, pov: src.pov });
+  findings.push(...v7.findings);
+
   return {
     metrics: {
       characters: chars,
@@ -504,6 +517,7 @@ export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoSt
         1000,
       ...(v5.metrics ? { v5: v5.metrics } : {}),
       ...(v6.metrics ? { v6: v6.metrics } : {}),
+      ...(v7.metrics ? { v7: v7.metrics } : {}),
     },
     findings,
   };

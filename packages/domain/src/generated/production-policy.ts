@@ -150,6 +150,42 @@ export interface ProductionPolicy {
      * The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches.
      */
     language_layer?: string;
+    /**
+     * ADR-0083 (C3): the operator voice profile (examples/voice-profiles) a new project in the profile's language copies into its composed identity. Absent: no operator voice section.
+     */
+    voice_profile?: string;
+    /**
+     * ADR-0083 (C5): at novel start a new project pins per_function passages of each listed scene function from corpus.passages (tagger), preferring chapters in the project's point of view; they replace the studio's synthetic exemplars. A database without passages pins none. Absent: studio exemplars only.
+     */
+    operator_exemplars?: {
+      tagger: string;
+      /**
+       * @minItems 1
+       */
+      functions: [
+        (
+          | 'hook'
+          | 'action'
+          | 'banter'
+          | 'status_window'
+          | 'emotional_beat'
+          | 'cliffhanger'
+          | 'exposition_in_action'
+          | 'comedy_beat'
+        ),
+        ...(
+          | 'hook'
+          | 'action'
+          | 'banter'
+          | 'status_window'
+          | 'emotional_beat'
+          | 'cliffhanger'
+          | 'exposition_in_action'
+          | 'comedy_beat'
+        )[],
+      ];
+      per_function: number;
+    };
   };
   /**
    * The newest prompt family version this policy's jobs may pin (ADR-0081): the job's prompt set is the newest active version per family at or below max_version. Absent: 4.5.0, the newest version when the field was introduced, so earlier policies keep their prompts when a new version is added.

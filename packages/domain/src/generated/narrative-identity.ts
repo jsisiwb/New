@@ -300,12 +300,42 @@ export type NarrativeIdentityProfile = {
       translated: string;
       webnovel: string;
     }[];
+    /**
+     * ADR-0083 (C3): the operator's voice profile (voice-profile.schema.json), copied at novel start when the project's policy names one (identity.voice_profile).
+     */
+    operator_voice?: {
+      ref: string;
+      /**
+       * @minItems 1
+       */
+      writer: [string, ...string[]];
+      planner: string[];
+      judges: string[];
+    };
+    /**
+     * ADR-0083 (C5): passages of the operator's own published chapters by scene function, pinned at novel start from corpus.passages when the project's policy names identity.operator_exemplars. They replace the studio's synthetic exemplars and are never copied (CORPUS-COPY-01, EXEMPLAR-NEAR).
+     *
+     * @maxItems 24
+     */
+    operator_exemplars?: {
+      id: string;
+      /**
+       * @minItems 1
+       */
+      functions: [ExemplarFunction, ...ExemplarFunction[]];
+      pov?: 'first' | 'third_limited';
+      /**
+       * Book and chapter the passage comes from.
+       */
+      source: string;
+      text: string;
+    }[];
   };
   /**
    * Calibration status for the numeric thresholds in this version (ADR-0029)
    */
   calibration?: {
-    status?: 'uncalibrated' | 'contrast_calibrated' | 'project_calibrated';
+    status?: 'uncalibrated' | 'contrast_calibrated' | 'project_calibrated' | 'corpus_calibrated';
     /**
      * UTC ISO-8601
      */

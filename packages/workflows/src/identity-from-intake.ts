@@ -17,7 +17,13 @@ import {
   type Pool,
 } from '@yeonjae/db';
 import { assertValid, uuidFromKey } from '@yeonjae/domain';
-import { ProfileStore, sha256, type NarrativeProfile } from '@yeonjae/narrative';
+import {
+  ProfileStore,
+  sha256,
+  voiceProfileRef,
+  type NarrativeProfile,
+  type VoiceProfile,
+} from '@yeonjae/narrative';
 import { type StoryIntake } from './planning.js';
 
 const GENRE_PROFILES: Readonly<Record<string, string>> = {
@@ -60,7 +66,15 @@ const AUTO_LAYER_CAP: Readonly<Record<string, number>> = { 'lang/ko': 5 };
 export interface IdentityCompositionOptions {
   /** `policy.identity.language_layer` of the project's pinned policy, when it names one. */
   readonly languageLayer?: string | undefined;
+  /** The voice profile `policy.identity.voice_profile` names (ADR-0083, C3); used when its language matches. */
+  readonly voice?: VoiceProfile | undefined;
+  /** Corpus passages selected under `policy.identity.operator_exemplars` (ADR-0083, C5). */
+  readonly operatorExemplars?: readonly OperatorExemplar[] | undefined;
 }
+
+export type OperatorExemplar = NonNullable<
+  NonNullable<NarrativeProfile['preferences']>['operator_exemplars']
+>[number];
 
 export function composedRefFor(projectId: string): string {
   return `project/${projectId}@1`;
@@ -110,6 +124,8 @@ export function identityProfileFromIntake(
           ? [unique[0] ?? '']
           : [];
   const primary = genres[0];
+  const manuscriptLanguage = intake.manuscript_language === 'ko' ? 'ko' : 'en';
+  const voice = opts.voice?.language === manuscriptLanguage ? opts.voice : undefined;
   const textual = [
     ...(intake.prose_preferences ?? []),
     // The terminology layer has no free-text field; the operator's note must still reach the model.
@@ -154,6 +170,20 @@ export function identityProfileFromIntake(
         ? { style_sample: { text: intake.style_sample.trim() } }
         : {}),
       ...(intake.contrast_pairs?.length ? { contrast_pairs: intake.contrast_pairs } : {}),
+      // ADR-0083: the operator's voice and corpus passages are copied in, so the project reads frozen bytes.
+      ...(voice
+        ? {
+            operator_voice: {
+              ref: voiceProfileRef(voice),
+              writer: [...voice.writer],
+              planner: [...voice.planner],
+              judges: [...voice.judges],
+            },
+          }
+        : {}),
+      ...(isKo && opts.operatorExemplars?.length
+        ? { operator_exemplars: opts.operatorExemplars.map((e) => ({ ...e })) }
+        : {}),
     },
     calibration: { status: 'uncalibrated', notes: 'Composed from the intake at novel start.' },
   };
@@ -182,6 +212,9 @@ export async function ensureProjectIdentity(
     intake: StoryIntake;
     store?: ProfileStore | undefined;
     languageLayer?: string | undefined;
+    voice?: VoiceProfile | undefined;
+    /** Resolved only when the project has no pinned identity yet (it reads the corpus). */
+    operatorExemplars?: (() => Promise<readonly OperatorExemplar[]>) | undefined;
   },
 ): Promise<{ store: ProfileStore; ref: string; versionId: string; created: boolean }> {
   const store = input.store ?? ProfileStore.fromDirectory();
@@ -206,6 +239,8 @@ export async function ensureProjectIdentity(
   if (!doc) {
     const profile = identityProfileFromIntake(input.projectId, input.intake, store, {
       languageLayer: input.languageLayer,
+      voice: input.voice,
+      operatorExemplars: input.operatorExemplars ? await input.operatorExemplars() : undefined,
     });
     const appended = await appendIdentityDocument(pool, {
       workspaceId: input.workspaceId,

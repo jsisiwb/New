@@ -108,7 +108,19 @@
       "description": "Identity choices a policy makes for projects composed under it (ADR-0073). Absent: a Korean project composes the newest Korean language layer up to lang/ko@5, as before.",
       "additionalProperties": false,
       "properties": {
-        "language_layer": {"type": "string", "pattern": "^lang/(en|ko)@[0-9]+$", "description": "The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches."}
+        "language_layer": {"type": "string", "pattern": "^lang/(en|ko)@[0-9]+$", "description": "The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches."},
+        "voice_profile": {"type": "string", "pattern": "^voice/[a-z0-9-]+@[0-9]+$", "description": "ADR-0083 (C3): the operator voice profile (examples/voice-profiles) a new project in the profile's language copies into its composed identity. Absent: no operator voice section."},
+        "operator_exemplars": {
+          "type": "object",
+          "description": "ADR-0083 (C5): at novel start a new project pins per_function passages of each listed scene function from corpus.passages (tagger), preferring chapters in the project's point of view; they replace the studio's synthetic exemplars. A database without passages pins none. Absent: studio exemplars only.",
+          "required": ["tagger", "functions", "per_function"],
+          "additionalProperties": false,
+          "properties": {
+            "tagger": {"type": "string", "pattern": "^passages@[0-9]+$"},
+            "functions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["hook", "action", "banter", "status_window", "emotional_beat", "cliffhanger", "exposition_in_action", "comedy_beat"]}},
+            "per_function": {"type": "integer", "minimum": 1, "maximum": 2}
+          }
+        }
       }
     },
     "prompts": {

@@ -15,6 +15,7 @@
  * that was not accepted (PREVIOUS_CHAPTER_NOT_ACCEPTED remains the chapter loop's own guard).
  */
 import {
+  corpusPassages,
   emitNovelRunEvent,
   ensureNovelRun,
   getArtifactById,
@@ -33,6 +34,8 @@ import {
 } from '@yeonjae/db';
 import { requirePolicy, type PolicyRef } from '@yeonjae/domain';
 import { type Gateway } from '@yeonjae/gateway';
+import { requireVoiceProfile } from '@yeonjae/narrative';
+import { selectOperatorExemplars } from '@yeonjae/prose';
 import { produceChapter } from './chapter-production.js';
 import { WorkflowError } from './errors.js';
 import { ensureProjectIdentity } from './identity-from-intake.js';
@@ -101,6 +104,7 @@ export async function startNovel(
     intake,
     store: deps.profiles,
     languageLayer: pinnedLanguageLayer(project.production_policy_version),
+    ...pinnedVoiceOptions(deps.pool, project.production_policy_version, project.id, intake),
   });
   const retryingPreApproval = run.status === 'failed' && run.approved_concept_id === null;
   if (!['intake', 'suggesting', 'awaiting_approval'].includes(run.status) && !retryingPreApproval)
@@ -677,4 +681,52 @@ function pinnedLanguageLayer(policyRef: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The operator voice profile and corpus exemplars the project's pinned policy names (ADR-0083). The
+ * exemplars are read from `corpus.passages` only when a new identity is composed; a database without
+ * passages composes without them.
+ */
+function pinnedVoiceOptions(
+  pool: Pool,
+  policyRef: string,
+  projectId: string,
+  intake: StoryIntake,
+): Pick<Parameters<typeof ensureProjectIdentity>[1], 'voice' | 'operatorExemplars'> {
+  let identity;
+  try {
+    identity = requirePolicy(policyRef as PolicyRef).identity;
+  } catch {
+    return {};
+  }
+  const pick = identity?.operator_exemplars;
+  return {
+    ...(identity?.voice_profile ? { voice: requireVoiceProfile(identity.voice_profile) } : {}),
+    ...(pick
+      ? {
+          operatorExemplars: async () => {
+            const rows = await corpusPassages(pool, {
+              tagger: pick.tagger,
+              sceneTypes: pick.functions,
+            }).catch(() => []);
+            return selectOperatorExemplars(
+              rows.map((r) => ({
+                id: r.id,
+                scene_type: r.scene_type,
+                text: r.text,
+                pov: r.pov,
+                source: `${r.book_title} ${String(r.position ?? 0)}화`,
+              })),
+              {
+                functions: pick.functions,
+                perFunction: pick.per_function,
+                pov: intake.pov,
+                seed: projectId,
+              },
+            );
+          },
+        }
+      : {}),
+  };
 }

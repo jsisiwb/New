@@ -68,7 +68,8 @@ export function endingClass(sentence: string): EndingClass {
   return 'fragment';
 }
 
-function percentile(sorted: readonly number[], p: number): number {
+/** Nearest-rank percentile of an ascending array (0 when empty). */
+export function percentile(sorted: readonly number[], p: number): number {
   if (sorted.length === 0) return 0;
   const i = Math.min(sorted.length - 1, Math.max(0, Math.round((p / 100) * (sorted.length - 1))));
   return sorted[i] ?? 0;

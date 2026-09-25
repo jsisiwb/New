@@ -1,0 +1,19 @@
+{
+  "title_working": "아카데미 빙의 프로젝트 (가제 미정)",
+  "premise": "직접 공들여 키운 게임 캐릭터의 몸으로 그 게임 속 아카데미에 빙의한 주인공이, 게임 지식과 압도적인 재능을 숨긴 채 아카데미를 평정해 가고, 그를 제멋대로 오해하는 히로인들과 얽힌다.",
+  "premise_language": "ko",
+  "manuscript_language": "ko",
+  "genre": {
+    "primary": "academy",
+    "secondary": ["harem", "possession"]
+  },
+  "target_audience": {
+    "rating": "15"
+  },
+  "target_chapters": 200,
+  "target_characters_per_chapter": 5300,
+  "content_restrictions": ["노골적인 성적 묘사 금지"],
+  "operating_mode": "autopilot",
+  "pov": "first",
+  "protagonist_type": "먼치킨"
+}

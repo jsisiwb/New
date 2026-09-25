@@ -3,7 +3,14 @@
  * main-story chapters only, and the copy index built from the database rather than from files.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { corpusChapters, importCorpusBook, listCorpusBooks, type Pool } from '@yeonjae/db';
+import {
+  corpusChapters,
+  corpusPassages,
+  importCorpusBook,
+  insertCorpusPassages,
+  listCorpusBooks,
+  type Pool,
+} from '@yeonjae/db';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import { corpusCopyIndexFor } from './corpus-index.js';
 
@@ -82,5 +89,29 @@ run('operator corpus in the database (ADR-0082)', () => {
       index?.findCopies('그날 밤. 검은 외투의 사내는 대답 대신 담배를 비벼 껐다.') ?? [];
     expect(copies).toHaveLength(1);
     expect(copies[0]?.source_id).toBe('한국어 작품 2화');
+  });
+
+  it('stores derived passages once per tagger and serves them from voice-eligible books only (ADR-0083)', async () => {
+    const [row] = await corpusChapters(pool);
+    if (!row) throw new Error('no chapter');
+    const passage = {
+      chapter_id: row.id,
+      start_cp: 0,
+      end_cp: 10,
+      text: row.text.slice(0, 10),
+      scene_type: 'hook',
+      tagger: 'passages@1',
+      features: { chars: 10 },
+    };
+    expect(await insertCorpusPassages(pool, [passage])).toEqual({ inserted: 1 });
+    expect(await insertCorpusPassages(pool, [passage])).toEqual({ inserted: 0 });
+    await insertCorpusPassages(pool, [{ ...passage, tagger: 'passages@2' }]);
+    const one = await corpusPassages(pool, { tagger: 'passages@1' });
+    expect(one.map((p) => [p.scene_type, p.book_title, p.position])).toEqual([
+      ['hook', '한국어 작품', 1],
+    ]);
+    expect(await corpusPassages(pool, { tagger: 'passages@1', sceneTypes: ['banter'] })).toEqual(
+      [],
+    );
   });
 });

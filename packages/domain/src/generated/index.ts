@@ -34,3 +34,4 @@ export * as ScorecardSchema from './scorecard.js';
 export * as SeriesBlueprintSchema from './series-blueprint.js';
 export * as StoryIntakeSchema from './story-intake.js';
 export * as StorySpecSchema from './story-spec.js';
+export * as VoiceProfileSchema from './voice-profile.js';

@@ -12,6 +12,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@10',
       'policy/standard@11',
       'policy/standard@12',
+      'policy/standard@13',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -22,6 +23,36 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v13 is standard.v12 with the operator voice, corpus exemplars and the copy check (ADR-0083)', () => {
+    const v12 = requirePolicy('policy/standard@12', policies);
+    const v13 = requirePolicy('policy/standard@13', policies);
+    expect(v13.identity).toEqual({
+      language_layer: 'lang/ko@7',
+      voice_profile: 'voice/operator@1',
+      operator_exemplars: {
+        tagger: 'passages@1',
+        functions: ['hook', 'banter', 'status_window', 'cliffhanger'],
+        per_function: 1,
+      },
+    });
+    expect(v13.evaluation).toEqual({ ...v12.evaluation, corpus_copy: { min_chars: 14 } });
+    const strip = (p: typeof v12) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        calibration: _c,
+        identity: _i,
+        evaluation: _e,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v13)).toEqual(strip(v12));
+    // No gate threshold changes.
+    expect(v13.gates).toEqual(v12.gates);
   });
 
   it('standard.v12 is standard.v11 with the Gemini and same-model judging settings (ADR-0080, ADR-0081)', () => {

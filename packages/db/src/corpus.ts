@@ -164,3 +164,68 @@ export async function corpusChapters(
   );
   return rows;
 }
+
+export interface CorpusPassageInput {
+  readonly chapter_id: string;
+  readonly start_cp: number;
+  readonly end_cp: number;
+  readonly text: string;
+  readonly scene_type: string;
+  readonly tagger: string;
+  readonly features: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Store derived passages (C5, migration 0024). A passage is keyed by chapter, offsets and tagger, so a
+ * second derivation with the same tagger adds nothing and a new tagger adds rows beside the old ones.
+ */
+export async function insertCorpusPassages(
+  pool: Pool,
+  passages: readonly CorpusPassageInput[],
+): Promise<{ readonly inserted: number }> {
+  return withTransaction(pool, async (c) => {
+    let inserted = 0;
+    for (const p of passages) {
+      const r = await c.query(
+        `INSERT INTO corpus.passages (id, chapter_id, start_cp, end_cp, text, scene_type, tagger, features)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (chapter_id, start_cp, end_cp, tagger) DO NOTHING`,
+        [uuidv7(), p.chapter_id, p.start_cp, p.end_cp, p.text, p.scene_type, p.tagger, p.features],
+      );
+      inserted += r.rowCount ?? 0;
+    }
+    return { inserted };
+  });
+}
+
+export interface CorpusPassageRow {
+  readonly id: string;
+  readonly chapter_id: string;
+  readonly book_title: string;
+  readonly position: number | null;
+  readonly pov: 'first' | 'third' | 'mixed' | null;
+  readonly start_cp: number;
+  readonly end_cp: number;
+  readonly text: string;
+  readonly scene_type: string;
+  readonly features: Readonly<Record<string, unknown>>;
+}
+
+/** Passages of one tagger from voice-eligible books, optionally of some scene types, in corpus order. */
+export async function corpusPassages(
+  pool: Pool,
+  opts: { readonly tagger: string; readonly sceneTypes?: readonly string[] | undefined },
+): Promise<CorpusPassageRow[]> {
+  const { rows } = await pool.query<CorpusPassageRow>(
+    `SELECT p.id, p.chapter_id, b.title AS book_title, c.position, c.pov, p.start_cp, p.end_cp, p.text,
+            p.scene_type, p.features
+       FROM corpus.passages p
+       JOIN corpus.chapters c ON c.id = p.chapter_id
+       JOIN corpus.books b ON b.id = c.book_id
+      WHERE p.tagger = $1 AND b.voice_eligible
+        AND ($2::text[] IS NULL OR p.scene_type = ANY($2))
+      ORDER BY b.imported_at, b.title, c.position, p.start_cp`,
+    [opts.tagger, opts.sceneTypes ? [...opts.sceneTypes] : null],
+  );
+  return rows;
+}
