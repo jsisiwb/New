@@ -544,6 +544,83 @@ export function secretMeetingFloors(
   };
 }
 
+const ARC_BEAT_TYPES = new Set([
+  'setup',
+  'escalation',
+  'reversal',
+  'cider',
+  'revelation',
+  'emotional',
+  'progression',
+  'climax',
+  'aftermath',
+  'comedic',
+  'relationship',
+]);
+// A live planner's beat word read as the nearest type the schema knows (G13r wrote `cliffhanger`).
+const ARC_BEAT_ALIASES: Readonly<Record<string, string>> = {
+  cliffhanger: 'escalation',
+  hook: 'escalation',
+  threat: 'escalation',
+  conflict: 'escalation',
+  confrontation: 'escalation',
+  crisis: 'escalation',
+  tension: 'escalation',
+  suspense: 'escalation',
+  battle: 'escalation',
+  fight: 'escalation',
+  action: 'escalation',
+  setback: 'escalation',
+  rising_action: 'escalation',
+  inciting_incident: 'escalation',
+  twist: 'reversal',
+  turning_point: 'reversal',
+  reveal: 'revelation',
+  discovery: 'revelation',
+  foreshadowing: 'setup',
+  payoff: 'cider',
+  reward: 'cider',
+  catharsis: 'cider',
+  saida: 'cider',
+  sida: 'cider',
+  climactic: 'climax',
+  finale: 'climax',
+  romance: 'relationship',
+  bonding: 'relationship',
+  rivalry: 'relationship',
+  comedy: 'comedic',
+  humor: 'comedic',
+  humour: 'comedic',
+  comic: 'comedic',
+  emotion: 'emotional',
+  resolution: 'aftermath',
+  falling_action: 'aftermath',
+  denouement: 'aftermath',
+  epilogue: 'aftermath',
+  growth: 'progression',
+  training: 'progression',
+  power_up: 'progression',
+  level_up: 'progression',
+  introduction: 'setup',
+  intro: 'setup',
+  exposition: 'setup',
+};
+
+/**
+ * ADR-0096 (live defect G13-1): an arc beat's type as the schema knows it — an exact type, or a planner's word read as
+ * its nearest type — else undefined. The type is a label nothing downstream computes with, so the caller keeps an
+ * unreadable beat as `escalation` rather than losing the event it describes.
+ */
+export function arcBeatTypeOf(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const key = v
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/gu, '_');
+  if (ARC_BEAT_TYPES.has(key)) return key;
+  return ARC_BEAT_ALIASES[key];
+}
+
 const ARC_STANCES = new Set([
   'knows',
   'suspects',
@@ -1392,6 +1469,10 @@ export async function planArcFromBlueprint(
         ),
         ...(b.participants ? { participants: onlyKnown(b.participants) } : {}),
         ...(b.promise_refs ? { promise_refs: onlyPromises(b.promise_refs) } : {}),
+        // ADR-0096 (G13-1): a beat's type is one the schema knows; the beat itself is always kept.
+        ...(ctx.policy.planning?.normalize_arc_beats
+          ? { type: arcBeatTypeOf(b.type) ?? 'escalation' }
+          : {}),
         // ADR-0094 (G11-1): a planned knowledge change keeps only the stances the schema knows.
         ...(ctx.policy.planning?.normalize_arc_knowledge &&
         Array.isArray((b as { knowledge_changes_planned?: unknown }).knowledge_changes_planned)

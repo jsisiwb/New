@@ -193,6 +193,10 @@ export interface ProductionPolicy {
      */
     talk_band_cap?: boolean;
     /**
+     * ADR-0096 (live defect G12-1): in a Korean chapter whose measured 그/그녀 rate is below the language layer's pronoun warn threshold (KO-PRN-RATE-1P for a first-person project when the layer has it, else KO-PRN-RATE — the operator's p90), each per-hit pronoun marker (TRN-KO-14) is recorded as a note, which keeps its span and costs the prose lint composite nothing, and the prose judge's lint digest names the band in one line instead of listing the hits; at or above the threshold every hit stays minor and the rate rule's own finding stands. Absent or false: every hit is minor inside the band as well.
+     */
+    pronoun_band_lint?: boolean;
+    /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */
     judge_calibration?: {
@@ -287,6 +291,10 @@ export interface ProductionPolicy {
      * ADR-0094 (live defect G11-1): an arc plan's planned knowledge changes keep only the stances the schema knows — an exact value stays, a planner's alias (believes) becomes its nearest stance (suspects), an unknown one drops that change — instead of failing the arc plan (ARC_PLAN_INVALID, which a resume replays from the recorded answer). Absent or false: the arc plan is validated as written.
      */
     normalize_arc_knowledge?: boolean;
+    /**
+     * ADR-0096 (live defect G13-1): an arc plan's beat types are read as the schema knows them — an exact type stays, a planner's word (cliffhanger, twist, payoff) becomes its nearest type, a beat with an unreadable type is kept as escalation (the type is a label nothing downstream computes with) — instead of failing the arc plan (ARC_PLAN_INVALID, which a resume replays from the recorded answer). Absent or false: the arc plan is validated as written.
+     */
+    normalize_arc_beats?: boolean;
     /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
      */

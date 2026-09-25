@@ -24,6 +24,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@21',
       'policy/standard@22',
       'policy/standard@23',
+      'policy/standard@24',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -33,6 +34,19 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v24 is standard.v23 with arc-plan beat types and the pronoun band lint (ADR-0096)', () => {
+    const v23 = requirePolicy('policy/standard@23', policies);
+    const v24 = requirePolicy('policy/standard@24', policies);
+    expect(v24.planning).toEqual({ ...v23.planning, normalize_arc_beats: true });
+    expect(v24.evaluation).toEqual({ ...v23.evaluation, pronoun_band_lint: true });
+    const strip = (p: typeof v23) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _p, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v24)).toEqual(strip(v23));
+    expect(v24.gates).toEqual(v23.gates);
   });
 
   it('standard.v23 is standard.v22 with the talk band cap and variance-free weights (ADR-0095)', () => {

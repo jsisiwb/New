@@ -1,0 +1,385 @@
+{
+  "project_id": "01a0d956-8001-7df3-a2ce-32ee09e3aefe",
+  "title": "G12a 아카데미 standard22",
+  "policy": "policy/standard@22",
+  "lineage": {
+    "genres": [
+      "genre/academy@3",
+      "genre/harem@2",
+      "genre/regression@4"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/academy@3",
+    "output_language": "lang/ko@9"
+  },
+  "run": {
+    "status": "needs_attention",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "APPROVAL_BLOCKED",
+      "step": "approve",
+      "message": "version 01a0d976-eac2-7f29-904d-4f661699f0dc has 0 blocking and 4 major issues; dimensions: prose 66.9/78 FAIL, structure 90/78 ok, genre 95/72 ok, voice 72/76 FAIL",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "regenerate",
+        "edit_manually",
+        "accept_with_override"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "revising",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 5761,
+    "chars_no_spaces": 4527,
+    "quoted_dialogue_lines": 42,
+    "quoted_inner_lines": 8,
+    "talk_share": 0.24,
+    "first_lines": [
+      "“하아암─.”",
+      "늘어지는 하품이 턱 끝에 매달렸다.",
+      "거대한 제1대연무장 한가운데."
+    ],
+    "deviation_pct": 8.7,
+    "dialogue_lines_per_1k": 7.3
+  },
+  "last_version": {
+    "version_no": 6,
+    "status": "working",
+    "chars": 5723,
+    "chars_no_spaces": 4506,
+    "quoted_dialogue_lines": 43,
+    "quoted_inner_lines": 9,
+    "talk_share": 0.241,
+    "first_lines": [
+      "1만 시간을 갈아 넣은 만렙 캐릭터에 빙의했다.",
+      "“하아암─.”",
+      "늘어지는 하품이 턱 끝에 매달렸다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.5,
+      "measured_share": 0.287,
+      "chars": 3073
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.3,
+      "measured_share": 0.188,
+      "chars": 2688
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "장면 1의 첫 비트를 하품하는 소리 의성어나 귀찮아하는 주인공의 속마음 대사로 열도록 수정합니다.",
+      "kind": "structure_off",
+      "claim": "구조 목표에 따르면 화의 첫 비트는 목소리(소리, 용어, 대사)로 열어야 하나, 장면 1의 첫 비트가 장소 서술('거대한 제1대연무장 한가운데')과 행동('하품을 내뱉는다')으로 시작하도록 설계되어 있습니다.",
+      "target": "장면 1",
+      "severity": "major"
+    },
+    {
+      "fix": "장면 2의 3번 비트에 히든 몬스터의 등장에 경악하여 외치는 엘레노어나 주변 인물들의 대사를 추가합니다.",
+      "kind": "dialogue_missing",
+      "claim": "장면 2의 대사 비중 목표가 30%이고 주요 인물들이 한곳에 모여 위기를 맞음에도 불구하고, 마지막 4번 비트의 짧은 중얼거림 외에는 아무런 대사 비트가 명시되어 있지 않습니다.",
+      "target": "장면 2",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-DLG-03",
+      "target": "장면 2",
+      "message": "상대가 있는 장면에 대사 비트가 없다",
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-DLG-02",
+      "target": "장면 2",
+      "message": "대화를 막는 금지 사항 1줄을 지웠다",
+      "repaired": true,
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 3개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 66,
+      "dimensions": {
+        "prose": {
+          "score": 51.4,
+          "passed": false
+        },
+        "structure": {
+          "score": 80,
+          "passed": true
+        },
+        "genre": {
+          "score": 70,
+          "passed": false
+        },
+        "voice": {
+          "score": 84.1,
+          "passed": true
+        }
+      },
+      "scopes": [],
+      "blocking": 3,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 69,
+      "dimensions": {
+        "prose": {
+          "score": 63.1,
+          "passed": false
+        },
+        "structure": {
+          "score": 75,
+          "passed": false
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 66.2,
+          "passed": false
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 5,
+      "major": 6,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 2,
+      "version_no": 3,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 69,
+      "dimensions": {
+        "prose": {
+          "score": 54.6,
+          "passed": false
+        },
+        "structure": {
+          "score": 82.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 84.1,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 2,
+      "major": 4,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 3,
+      "version_no": 4,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 71,
+      "dimensions": {
+        "prose": {
+          "score": 59.9,
+          "passed": false
+        },
+        "structure": {
+          "score": 82.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 84.3,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 1,
+      "major": 1,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 4,
+      "version_no": 5,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 72,
+      "dimensions": {
+        "prose": {
+          "score": 63.1,
+          "passed": false
+        },
+        "structure": {
+          "score": 80,
+          "passed": true
+        },
+        "genre": {
+          "score": 95,
+          "passed": true
+        },
+        "voice": {
+          "score": 75.5,
+          "passed": false
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 1,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 5,
+      "version_no": 6,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 78,
+      "dimensions": {
+        "prose": {
+          "score": 66.9,
+          "passed": false
+        },
+        "structure": {
+          "score": 90,
+          "passed": true
+        },
+        "genre": {
+          "score": 95,
+          "passed": true
+        },
+        "voice": {
+          "score": 72,
+          "passed": false
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 4,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 70,
+      "first_person": 70
+    },
+    {
+      "version_no": 2,
+      "status": "quarantined",
+      "score": 80,
+      "first_person": 85
+    },
+    {
+      "version_no": 3,
+      "status": "working",
+      "score": 70,
+      "first_person": 65
+    },
+    {
+      "version_no": 4,
+      "status": "working",
+      "score": 70,
+      "first_person": 65
+    },
+    {
+      "version_no": 5,
+      "status": "working",
+      "score": 65,
+      "first_person": 65
+    },
+    {
+      "version_no": 6,
+      "status": "working",
+      "score": 65,
+      "first_person": 65
+    }
+  ],
+  "totals": {
+    "calls": 80,
+    "attempts": 80,
+    "failed_attempts": 0,
+    "tokens": {
+      "input": 363743,
+      "output": 39851
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T16:12:04.111Z",
+    "last_call_at": "2026-09-25T16:48:59.105Z",
+    "seconds": 2215
+  }
+}

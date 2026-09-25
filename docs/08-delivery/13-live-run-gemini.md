@@ -596,3 +596,52 @@ cut the chapter by 38 % (G10-2 fixed); no reader-secret finding again.
 **Defects.** G11-1 (above; ADR-0094). G11-2: the judges' dialogue-amount majors inside the operator's own talk band
 (13 %, 14 % here; 19 % in G9a) send rounds to scene rewrites that write new defects. G11-3: a revision's weight counted
 new-kind findings on lines both versions share. Both fixed by ADR-0095 (`standard@23`).
+
+## 12. G12 and G13 — the academy project on `standard.v22`, the regression project on `standard.v23` (16:12–16:49 UTC)
+
+Chapter 1 of two fresh projects: G12a (academy, `phase-c-academy-intake.json`) on `standard@22` (ADR-0094: secret owners
+named in the canon lines, arc-plan stances normalized) from a second live worktree at `f395ea0`, so the G11r run was not
+disturbed; G13r (regression, `phase-a-v7-intake.json`) on `standard@23` (ADR-0095: the talk band cap, variance-free
+weights) from the live worktree at `35122fa`. Exports: `ops/live-runs/g12-standard22/`, `ops/live-runs/g13-standard23/`.
+
+**G13r (regression) failed at the arc plan** after 10 calls (592 s): the arc planner typed its tenth beat `cliffhanger`,
+a type the arc-plan schema does not know (`/beats/9/type`, `ARC_PLAN_INVALID`), and a resume would replay the recorded
+answer (G13-1, fixed by ADR-0096 in `standard@24`).
+
+| | G12a (academy) |
+| --- | --- |
+| Length (v1) | 5,761자 (+8.7 %), 4,527 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 50 % → 28.7 %, 30 % → 18.8 % |
+| Quoted dialogue / 속마음 lines | 42 (7.3 per 1,000자) / 8 |
+| Plan critic / repairs | two critic majors (the first beat opens on a place, not a voice; a scene with a partner and no dialogue beat); `PLAN-DLG-03`, `PLAN-DLG-02` (a talk ban removed); the plan re-asked once |
+| First line | `“하아암─.”` (a dialogue line) |
+| r0 gate | overall 66: prose 51.4, structure 80, genre 70, voice 84.1 |
+| Rounds (scope) | r0 to r5; r1 a scene rewrite, quarantined (a protected dimension regressed, new blocking findings); r2–r5 paragraph patches, all kept |
+| Blocking / major | r0 3 / 3 → r1 5 / 6 → r2 2 / 4 → r3 1 / 1 → r4 1 / 5 → r5 **0 / 4** |
+| Prose (rubric / lint composite) | 51.4 (56.3 / 44), 63.1 (62.5 / 64), 54.6 (56.3 / 52), 59.9 (62.5 / 56), 63.1 (62.5 / 64), 66.9 (68.8 / 64) |
+| 그/그녀 | 1.5–1.8 per 1,000자 in every round (the operator's first-person median is 1.51, the warn line 2.57); the per-hit marker was 11, 9, 11, 11, 9 and 9 of the round's 14, 9, 12, 11, 9 and 9 lint minors; the prose judge's translation-markers sub-score 1 or 2 in every round |
+| The r5 findings | a heroine's misunderstanding narrated before the scene that starts it (continuity); two word-choice errors (prose); one line mixing 반말 and 존댓말 toward one listener (voice) |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | 0 / 0 / 0 in every round |
+| Likeness (C8) | v1 70 (first-person bands 70); v6 65 |
+| Result | not accepted (`needs_attention` on v6: prose 66.9 / 78 and voice 72 / 76 failing, 4 majors) |
+| Calls / tokens / time | 80 (80 attempts) / 363,743 in, 39,851 out / 2,215 s |
+
+Credits from 16:29 UTC to 17:10 UTC (the rest of G12a and all of G13r): ws1 92.22 → 94.10 %, ws3 27.09 → 29.66 %, ws4
+9.41 → 10.54 % (5.58 points); ws2 still unreadable (`rate-limited`).
+
+Excerpt (the first three lines of G12a's last version, unedited):
+
+> 1만 시간을 갈아 넣은 만렙 캐릭터에 빙의했다.
+> “하아암─.”
+> 늘어지는 하품이 턱 끝에 매달렸다.
+
+**What changed against G11.** The academy project passed the arc plan (G11-1 fixed) and its loop kept four of five
+revisions: blocking findings fell from 3 to 0, the first academy run to end without one. The last version failed on two
+dimension gates and four majors.
+
+**Defects.** G12-1: the per-hit pronoun marker charged 4 lint points for every 그/그녀 in a chapter inside the operator's
+own pronoun band — every lint finding in r1, r4 and r5 — and the prose judge's digest listed those hits as 번역투; without
+them r5's composite is 100 and prose 81.3 (ADR-0096 measures the marker on the operator's 259 first-person chapters:
+median composite 52 with it, 80 without). G12-2: the heroine's misunderstanding narrated as already formed before the
+scene that forms it (an r5 major; the planned-state order inside one chapter, not fixed yet). G13-1 (above). G12-1 and
+G13-1 are fixed by ADR-0096 (`standard@24`).

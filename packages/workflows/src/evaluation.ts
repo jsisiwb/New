@@ -197,6 +197,11 @@ export interface DeterministicChecks {
   readonly contract_shape: { passed: boolean; notes: string[] };
   /** Korean webnovel style lint (ADR-0056); absent for English manuscripts. */
   readonly ko_style?: KoStyleReport | undefined;
+  /**
+   * ADR-0096 (G12-1): set under `evaluation.pronoun_band_lint` when the chapter's 그/그녀 rate is below the language
+   * layer's pronoun warn line; its per-hit pronoun markers are then notes.
+   */
+  readonly pronoun_band?: PronounBand | undefined;
   readonly issues: Issue[];
 }
 
@@ -246,6 +251,7 @@ export function runDeterministicChecks(
   // mobile-serial rhythm. Rate breaches and format drift gate (major); single hits are minor evidence that
   // the prose judge and the targeted reviser receive with their spans.
   let koStyle: KoStyleReport | undefined;
+  let pronounBandIn: PronounBand | undefined;
   if (language === 'ko') {
     const ol = ctx.identity.outputLanguage;
     koStyle = lintKoreanWebnovel(nfc.text, {
@@ -259,6 +265,10 @@ export function runDeterministicChecks(
       personNames,
       displayNames,
     });
+    pronounBandIn =
+      ctx.policy.evaluation?.pronoun_band_lint === true
+        ? pronounBand(koStyle, ol.lint_thresholds, ctx.identity.preferences?.pov)
+        : undefined;
     for (const f of koStyle.findings)
       issues.push(
         toIssue(
@@ -268,7 +278,7 @@ export function runDeterministicChecks(
           f.kind === 'weak_ending' ? 'structure' : 'prose',
           {
             kind: f.kind,
-            severity: f.severity,
+            severity: pronounBandIn && f.rule_id === PRONOUN_MARKER ? 'note' : f.severity,
             confidence: 1,
             claim: f.message,
             chapter_span: {
@@ -452,6 +462,7 @@ export function runDeterministicChecks(
     },
     contract_shape: { passed: shapeOk, notes },
     ...(koStyle ? { ko_style: koStyle } : {}),
+    ...(pronounBandIn ? { pronoun_band: pronounBandIn } : {}),
     issues,
   };
 }
@@ -813,7 +824,7 @@ export async function evaluateVersion(
               variables: {
                 chapter_text: chapterText,
                 prose_lint_report: ko
-                  ? `한국어 출력 언어 검사: 신뢰도 ${det.output_language.english_confidence}; 분량 ${det.length.count}${det.length.unit === 'characters' ? '자' : ` ${det.length.unit}`}.${det.ko_style ? `\n[결정적 문체 검사 — 번역투·AI 상투구·모바일 호흡]\n${koStyleDigest(det.ko_style)}` : ''}`
+                  ? `한국어 출력 언어 검사: 신뢰도 ${det.output_language.english_confidence}; 분량 ${det.length.count}${det.length.unit === 'characters' ? '자' : ` ${det.length.unit}`}.${det.ko_style ? `\n[결정적 문체 검사 — 번역투·AI 상투구·모바일 호흡]\n${proseLintDigest(det.ko_style, det.pronoun_band)}` : ''}`
                   : `English output-language check: confidence ${det.output_language.english_confidence}; length ${det.length.count} ${det.length.unit}.`,
               },
               block: compileFor(ctx, 'judge_rubric_prose'),
@@ -1369,6 +1380,44 @@ function clamp(n: number): number {
 }
 
 const PRONOUN_CLAIM = /대명사|[‘'"“]그녀|[‘'"“]그[’'"”는가의를]|그\/그녀|그·그녀/u;
+
+/** The per-hit 그/그녀 translation marker of lang/ko@3 to @9 (one finding per 그는, 그녀의 …). */
+export const PRONOUN_MARKER = 'TRN-KO-14';
+
+export interface PronounBand {
+  readonly rate: number;
+  readonly warn: number;
+}
+
+/**
+ * ADR-0096 (live defect G12-1): the operator's first-person chapters carry 7 per-hit pronoun markers at the median and 14
+ * at p90, 4 lint points each, so the marker alone holds the operator's own median chapter to a prose composite of 52.
+ * Below the language layer's pronoun warn line — the operator's p90, the same key the lint's rate rule reads — the
+ * chapter is inside the band and its hits are notes; at or above it (or without the threshold) there is no band.
+ */
+export function pronounBand(
+  report: Pick<KoStyleReport, 'metrics'>,
+  thresholds: Readonly<Record<string, { readonly warn: number } | undefined>> | undefined,
+  pov: string | undefined,
+): PronounBand | undefined {
+  const t =
+    thresholds?.[
+      pov === 'first' && thresholds['KO-PRN-RATE-1P'] ? 'KO-PRN-RATE-1P' : 'KO-PRN-RATE'
+    ];
+  if (!t) return undefined;
+  const rate = report.metrics.pronoun_per_1k;
+  return rate < t.warn ? { rate, warn: t.warn } : undefined;
+}
+
+/** The prose judge's lint digest; inside the pronoun band the per-hit markers give way to one line naming the band. */
+export function proseLintDigest(report: KoStyleReport, band: PronounBand | undefined): string {
+  if (!band) return koStyleDigest(report);
+  const digest = koStyleDigest({
+    ...report,
+    findings: report.findings.filter((f) => f.rule_id !== PRONOUN_MARKER),
+  });
+  return `${digest}\n- ‘그/그녀’ ${String(band.rate)}/1,000자는 운영자 원고의 범위 안이다(경고선 ${String(band.warn)}). 범위 안의 ‘그는·그녀의’ 하나하나는 번역투로 세지 않는다.`;
+}
 
 /**
  * ADR-0090 (live defect G8-7): the prose judge raised single 그/그녀 uses as majors in a chapter at 0.33 per 1,000자,

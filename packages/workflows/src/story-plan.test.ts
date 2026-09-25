@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   angleSeeds,
+  arcBeatTypeOf,
   normalizeArcKnowledge,
   secretMeetingFloors,
   worldRulesTerm,
@@ -63,5 +64,22 @@ describe('arc plan knowledge changes (ADR-0094, G11-1)', () => {
       { knower, proposition_ref: 'new:비밀', to_stance: 'knows', channel: '대화' },
       { knower, proposition_ref: 'new:소문', to_stance: 'suspects' },
     ]);
+  });
+});
+
+describe('arc plan beat types (ADR-0096, G13-1)', () => {
+  it('keeps schema types and reads a planner word as its nearest type', () => {
+    expect(arcBeatTypeOf('cider')).toBe('cider');
+    expect(arcBeatTypeOf(' Revelation ')).toBe('revelation');
+    // G13r's arc plan: beats/9/type was `cliffhanger`.
+    expect(arcBeatTypeOf('cliffhanger')).toBe('escalation');
+    expect(arcBeatTypeOf('turning point')).toBe('reversal');
+    expect(arcBeatTypeOf('power-up')).toBe('progression');
+  });
+
+  it('leaves an unreadable word undefined for the caller to label', () => {
+    expect(arcBeatTypeOf('착각')).toBeUndefined();
+    expect(arcBeatTypeOf(3)).toBeUndefined();
+    expect(arcBeatTypeOf(undefined)).toBeUndefined();
   });
 });
