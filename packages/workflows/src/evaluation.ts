@@ -1406,7 +1406,7 @@ export function capTalkFindings(
 ): Issue[] {
   if (talkShare < bandWarn) return [...issues];
   return issues.map((i) =>
-    (i.source ?? '').startsWith('judge:') &&
+    i.source.startsWith('judge:') &&
     (i.severity === 'major' || i.severity === 'blocking') &&
     TALK_CLAIM.test(i.claim)
       ? { ...i, severity: 'minor' as const }
