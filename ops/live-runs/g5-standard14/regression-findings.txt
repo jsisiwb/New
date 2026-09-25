@@ -1,0 +1,178 @@
+=== scorecard r0 key=01a0d658-79ae-770c-805d-021594e0fa19 mv=01a0d658-79ae-770c-805d-021594e0fa19 overall={'score': 80, 'note_count': 0, 'major_count': 7, 'minor_count': 13, 'blocking_count': 2}
+  section genre {"score": 85, "passed": true, "issue_ids": ["1c4599a3-3a48-8fae-8a4e-e91aaf7eef24", "1e73314b-15b4-893d-94a5-329c876f9654"], "drift_flags": ["repetitive_exposition"], "judge_score": 74, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 81.3, "dimension_scores": {"reader_fantasy": 3, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id":
+  section prose {"score": 82.4, "passed": true, "issue_ids": ["fcd74275-be01-8f68-9284-61dba5edc22f", "95405134-b4c8-8973-b5a5-d5501a1ebeee", "a80ecaf0-1351-88aa-9168-0e5080e499e5", "2993b427-ad1b-8795-9bfb-3628c3ff1414", "f5b33621-c497-810e-b36a-0ef4143428ca", "9c1c23ab-c7c7-8c07-86d4-8931fab42375", "e8b3f17c-1d35-89b0-92dd-9a34640ae2c4", "feee55bc-7311-87d9-b61f-5f641b5a3f10", "786fc2f2-c654-80b0-a00d-51ad8aebf
+  section voice {"score": 78.2, "passed": true, "issue_ids": ["bdc6f88d-12b7-83fa-a1f3-dc97f7db1008", "891ac15f-2328-8e83-b9d9-6895f3599054", "012bf6dd-9d52-8d36-bb74-db5a7c4d8a45"], "drift_flags": ["gender_mismatched_slur", "cliche_mob_dialogue"], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 68.8, "dimension_scores": {"verbal_habits": 3, "distinguishability": 3, "reg
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "advance", "promise_id": "c891db7c-7ac2-8bb1-89af-189e8f777eec"}], "issue_ids": [], "evaluator_call_id": "01a0d659-9740-7158-9795-539bf739facf"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["db429d00-4c4d-823f-bd1e-2e34124e3d45"], "evaluator_call_id": "01a0d659-4605-70cb-b991-55a75c7665d4"}
+  section structure {"score": 77.5, "passed": false, "issue_ids": ["38bc1be6-710c-828c-bee4-c33e432ed27b", "628987b4-2a96-8899-afc4-f7eb401fc40a", "e4b20aba-a316-8452-abee-6265cfbc94e8"], "drift_flags": ["exposition", "cadence"], "judge_score": 62, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 55, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff":
+  section continuity {"score": 0, "passed": false, "issue_ids": ["27a7a07c-df1e-8bea-8d00-a9d5ed7a351d"], "evaluator_call_id": "01a0d659-099c-7398-b994-e294ad154beb"}
+  section repetition {"score": 0, "passed": false, "issue_ids": ["4ba0337e-58fd-872f-b7cf-e3d2335404ce", "e1c20f4f-4f84-8abc-8d3d-4082185091e6", "b270a573-9f55-8d6f-8c02-e877f9ec8581"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d659-d591-764b-8de2-d77733876881"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d659-1ba1-72ee-b0c6-e4031eb52262"}
+  [major/open] continuity power_rule_violation judge:continuity_checker 
+     claim: 주인공은 현재 시스템의 각성을 거치지 않아 근력이 보잘것없는 무급의 일반인 상태(p25)로 서술되었습니다. 아무리 살인 기술이 뛰어나더라도 완력 자체가 일반인 수준인데, 두꺼운 철문을 발로 차서 '종잇장처럼 우그러지며' 뜯겨 나가게 하는 것은 설정상 근력 수준과 모순됩니다.
+     quote: 귀를 찢는 굉음과 함께 두꺼운 철문이 종잇장처럼 우그러지며 뜯겨 나갔다.
+  [blocking/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 강태산이 인류가 전멸한 미래에서 돌아온 유일한 회귀자라는 사실은 150화 이전에 독자에게 공개되어서는 안 되는 비밀(secret)로 설정되어 있습니다. 그러나 1화 본문 서술에서 '과거로 튕겨 났나', '기적 같은 회귀' 등 주인공이 회귀자라는 사실이 독자에게 직접적으로 노출되었습니다.
+     quote: 기적 같은 회귀를 겪고도 환희나 안도감 따위는 일지 않았다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 지시에서 금지한 AI 상투구 '정적이 내려앉았다'가 쓰였습니다. 구체적인 소리나 행동 묘사로 대체해야 합니다.
+     quote: 공터에 싸늘한 정적이 내려앉았다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 지시에서 금지한 '공기가 얼어붙었다'라는 상투구가 쓰였습니다.
+     quote: 공장 안의 공기가 싸늘하게 얼어붙었다.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 선행 각성석이 주는 보상(올스탯 10포인트, 특성, 인벤토리)에 대한 설명이 원고 내에서 3번이나 동일하게 반복되며 지면을 낭비합니다.
+     quote: 올스탯 10 포인트의 보너스와 고유 등급 특성 확정 획득. 남들보다 먼저 인벤토리와 레벨업을 열어젖힐 수 있는 그 압도적인 치트키.
+  [blocking/open] structure weak_pacing judge:structure_judge 
+     claim: 결정적 검사 보고가 지적했듯 대사 비중이 6%에 불과하여, 전투와 전개가 지나치게 주인공의 독백과 내면 서술에 의존해 무겁고 단조롭습니다.
+     quote: 나는 굳이 대답할 가치조차 느끼지 못했다.
+
+대신 쇠파이프를 바닥에 긁으며 천천히 한 걸음 다가갔다.
+  [major/open] genre repetitive_arc judge:genre_judge 
+     claim: 독자 판타지를 채워줄 기연(선행 각성석)의 효과를 설명하는 내용이 회차 내내 중복 서술되어 서사의 진행을 늦춥니다. 또한 15년 구른 회귀자라는 설정 어필이 잦습니다.
+     quote: 올스탯 10 포인트의 보너스와 고유 등급 특성 확정 획득. 남들보다 먼저 인벤토리와 레벨업을 열어젖힐 수 있는 그 압도적인 치트키.
+  [major/open] genre payoff_without_setup judge:genre_judge 
+     claim: 조폭 엑스트라와의 액션 씬이 길어져, 정작 이 회차의 핵심 보상이어야 할 기연 획득이 뒤로 밀렸습니다. 사이다를 줘야 할 타이밍에 문 앞 도착으로 끝나는 것은 전개가 늘어진다는 인상을 줍니다.
+     quote: 조폭 보스가 숨어 있는 굳게 닫힌 철문을, 굉음이 나도록 거칠게 걷어차 부수며 안으로 들이닥쳤다.
+  [major/open] repetition other judge:repetition_judge 
+     claim: 선행 각성석의 혜택(올스탯 10포인트, 고유 특성, 인벤토리와 레벨업 등)을 설명하는 내용이 이번 화 안에서만 세 번이나 거의 동일한 형태로 반복 서술되었습니다. 독자에게 지루함을 줄 수 있으므로 한 번만 설명하고 넘어가는 것이 좋습니다.
+     quote: 올스탯 10 포인트의 보너스와 고유 등급 특성 확정 획득. 남들보다 먼저 인벤토리와 레벨업을 열어젖힐 수 있는 그 압도적인 치트키.
+=== scorecard r1 key=01a0d65a-72fe-76dc-886b-1ffde944bf59 mv=01a0d65a-72fe-76dc-886b-1ffde944bf59 overall={'score': 78, 'note_count': 0, 'major_count': 9, 'minor_count': 13, 'blocking_count': 1}
+  section genre {"score": 90, "passed": true, "issue_ids": ["3d57e170-e405-8ebf-b0ef-ec622d329ad8", "a4944591-e341-855b-bc33-f624af816406"], "drift_flags": ["repetitive_monologue"], "judge_score": 80, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": 
+  section prose {"score": 78.6, "passed": true, "issue_ids": ["4b779046-0545-870c-8167-8d9d9c769973", "72a2a0c0-f51f-8e73-bd36-5fc59523fdc3", "23b1c42a-69c1-8ab2-b587-2bb488af975b", "ff4212dd-9e65-8c94-8d69-e0a2293156ea", "13fec06e-fe8d-8bb0-aec3-06d52d15c049", "09877f31-7b81-8bb4-a35d-75ca4734a52e", "4524d8ae-9831-8d0d-ab66-f3a7807ba8c8", "71a4df83-0428-87dd-81a0-a6512ec3582a", "22b2bbe1-61d3-8495-a35f-c5159f6c1
+  section voice {"score": 78.2, "passed": true, "issue_ids": ["0c274e17-318b-8c36-85bd-242dc6519d17", "904c662d-9ee1-8bb3-b030-908ba328e4ac", "602e5703-c292-8b7e-bdbc-b72c0e4b8d9c"], "drift_flags": ["gender_mismatched_slur", "cliche_mob_dialogue"], "judge_score": 75, "score_model": "rubric_subscores", "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "judge_weight": 0.7, "rubric_score": 68.8, "dimension_sco
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "advance", "promise_id": "c891db7c-7ac2-8bb1-89af-189e8f777eec"}], "issue_ids": [], "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "evaluator_call_id": "01a0d659-9740-7158-9795-539bf739facf"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d65a-d17a-7405-9cfe-4b84a461a28d"}
+  section structure {"score": 77.5, "passed": false, "issue_ids": ["3f27cb69-573b-893d-acc2-b9e63841c057", "497c1ac4-2969-8008-a8ff-592a9519efd7", "f6c87701-b61c-8270-a486-6b0d32df3a98", "d0302fb3-daa5-88ec-9d13-8d7128360e74"], "drift_flags": ["serial", "exposition", "cadence"], "judge_score": 62, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 55, "lint_composite": 100, "dimension_scores": {"
+  section continuity {"score": 0, "passed": false, "issue_ids": ["09a54704-b41f-806d-8cfa-139b594a1c9b", "544ee3c1-047a-8cc8-b063-e5d431dba273"], "evaluator_call_id": "01a0d65b-826f-7221-a4e3-fbf126039693"}
+  section repetition {"score": 0, "passed": false, "issue_ids": ["0851cdd4-2991-84e4-9fe0-1212331e96c1", "f9853150-eafa-8b25-90ab-8c89be154b4b", "1df05c1b-ccd5-82ed-bc05-27ee02cc0e7e"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d65b-7cd5-77ae-9474-85286993454a"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d65b-13db-74a0-bc9a-5e03de365361"}
+  [major/open] continuity canon_contradiction judge:continuity_checker 
+     claim: 정사 기록과 원고 앞부분(p25)에서 주인공은 현재 시스템의 각성을 거치지 않은 스탯 0의 무급 상태(일반인)로 명시되어 있습니다. 그러나 일반인의 완력으로 두꺼운 철문을 발차기 한 방에 종잇장처럼 우그러뜨리고 뜯어내는 초인적인 힘을 발휘하는 것은 명백한 설정 오류입니다.
+     quote: 귀를 찢는 굉음과 함께 두꺼운 철문이 종잇장처럼 우그러지며 뜯겨 나갔다.
+  [major/open] continuity other judge:continuity_checker 
+     claim: 앞선 p126에서 외곽의 첫 번째 철문을 보고 '이 문 너머에 보스가 기다리고 있다'고 단정하고 문을 부수고 들어갔으나 그 안에는 20여 명의 졸개들만 있었습니다. 추측이 빗나갔다는 인지 묘사 없이 p166의 두 번째 철문 앞에서 또다시 동일하게 보스의 아지트를 발견한 것처럼 서술하여, 한 장면 안에서 앞뒤 개연성이 충돌하고 묘사가 반복됩니다.
+     quote: 폐공장 보스의 아지트이자, 나의 첫 번째 기연이 잠들어 있는 곳.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: '~에 의해' 수동태 대신 '시스템이 고기반죽으로 만드는' 같은 능동형으로 고쳐야 합니다.
+     quote: 시스템에 의해 그 자리에서 고기반죽이 되는
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 상투구 대신 구체적인 반응이나 소리로 침묵을 묘사해야 합니다.
+     quote: 공터에 싸늘한 정적이 내려앉았다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: '공기가 얼어붙었다'는 상투적인 비유이므로 놈들의 행동 묘사로 바꾸는 것이 좋습니다.
+     quote: 공장 안의 공기가 싸늘하게 얼어붙었다.
+  [blocking/open] structure other judge:structure_judge 
+     claim: 대사 비중이 6%에 불과하여 인물 간의 상호작용 없이 주인공의 혼잣말과 단방향 서술로만 장면이 끌려갑니다.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 독자가 이미 인지한 기연(선행 각성석)의 효과를 똑같은 문장 구조로 재차 설명하여 지면을 낭비합니다.
+     quote: 선행 각성석. 올스탯 10 포인트 보너스와 고유 특성을 얻고, 남들보다 먼저 인벤토리와 레벨업의 혜택을 챙길 수 있는 치트키.
+  [major/open] structure weak_pacing judge:structure_judge 
+     claim: 긴박한 다대일 전투 상황에서 과거 회상과 내면의 독백이 길게 이어져 액션의 속도감이 떨어집니다.
+     quote: 촉수가 사방에서 튀어나오고 맹독이 비처럼 쏟아지던 지옥.
+  [major/open] repetition repeated_paragraph judge:repetition_judge 
+     claim: 이번 화 안에서 주인공의 목적지인 구로동 폐공장의 '선행 각성석'이 주는 보상(올스탯 10 포인트, 고유 특성)에 대한 서술이 중복되어 등장합니다. 앞서 서술한 독백을 불과 몇 페이지 뒤에 똑같은 의미와 유사한 문장으로 되풀이하고 있습니다.
+     quote: 선행 각성석. 올스탯 10 포인트 보너스와 고유 특성을 얻고, 남들보다 먼저 인벤토리와 레벨업의 혜택을 챙길 수 있는 치트키.
+  [major/open] repetition repeated_scene judge:repetition_judge 
+     claim: 회차 내 전투 양상과 독백 패턴이 반복됩니다. 공장 외부의 끄나풀들을 상대로 '15년 전장 경험에 비하면 굼벵이 같은 속도'라며 조소를 보내고 뼈를 부러뜨리는 전개가, 공장 내부 진입 직후에도 '멸망 후의 괴물들에 비하면 아무것도 아니다'라는 동일한 회상과 뼈를 부수는 액션으로 자기 복제되고 있습니다.
+     quote: 이깟 놈들의 몸부림은 멸망 후의 괴물들에 비하면 아무것도 아니다.
+=== scorecard r2 key=01a0d65c-2200-7c10-90bb-a6db2b257277 mv=01a0d65c-2200-7c10-90bb-a6db2b257277 overall={'score': 76, 'note_count': 0, 'major_count': 12, 'minor_count': 11, 'blocking_count': 1}
+  section genre {"score": 75, "passed": true, "issue_ids": ["49a651f5-c9ea-8630-bf54-d0dfb0991ed0", "e958306f-beb4-8645-bebf-16e7d0476925"], "drift_flags": [], "judge_score": 68, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 68.8, "dimension_scores": {"reader_fantasy": 3, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 3}, "evaluator_call_id": "01a0d65d-11d2-749d-ac
+  section prose {"score": 82.4, "passed": true, "issue_ids": ["97ae268a-aa98-8123-b9e4-abc7dddc765b", "b11ce3fc-5be6-8b33-bcda-e31aedced171", "e8a6c76b-4a15-8b12-8dae-58a4e3ba9cf6", "e46c6968-d42c-8fd2-90a3-1acd4004c76c", "5db93481-c949-87b1-8631-37f63d43bfe9", "4d53ffa3-f6a9-8cdc-a998-2ebaca4ddbf0", "07490a96-1760-8160-bcfd-6254546217e8", "dfd0a8b2-73d1-816d-9687-72e00fae0ee9", "a38d5896-841e-8355-9d8a-af07b87ba
+  section voice {"score": 78.2, "passed": true, "issue_ids": ["064d7fc4-8044-8bac-ad97-e17419166c32", "94d9c0ce-cf00-8daa-a116-80fafc32532a", "40858c64-8a96-834e-9d24-da61538c26f5"], "drift_flags": ["gender_mismatched_slur", "cliche_mob_dialogue"], "judge_score": 75, "score_model": "rubric_subscores", "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "judge_weight": 0.7, "rubric_score": 68.8, "dimension_sco
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "advance", "promise_id": "c891db7c-7ac2-8bb1-89af-189e8f777eec"}], "issue_ids": [], "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "evaluator_call_id": "01a0d659-9740-7158-9795-539bf739facf"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["eb213622-c767-88c0-9204-8a208ddf5bc2"], "evaluator_call_id": "01a0d65c-d16b-71e6-8c0e-9d9633316093"}
+  section structure {"score": 70, "passed": false, "issue_ids": ["e71cac8e-c7c5-890b-b009-a636e9c1b485", "c6b4ed63-e060-8fed-b8a3-868f24c04851", "179d92ff-3eff-88cc-af6e-db71c32b2650"], "drift_flags": ["cadence", "serial", "exposition"], "judge_score": 45, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 40, "lint_composite": 100, "dimension_scores": {"ending_pull": 2, "hook_timing": 5, "local_
+  section continuity {"score": 0, "passed": false, "issue_ids": ["366d8a81-3528-892f-aa18-7f948a3c5c2e", "35e1f092-8460-8fbe-add6-8a67635ba85b"], "evaluator_call_id": "01a0d65c-9e21-745a-abc9-87c8dc30da5e"}
+  section repetition {"score": 0, "passed": false, "issue_ids": ["16401795-793b-8604-bed5-b9549e01a45a", "9ab8774e-78b5-8e2c-9727-48807fb35ce8", "bcb987f9-366c-813c-8753-1b25d9149d8a", "93306629-20e1-8343-be61-5c92c38ecbc7"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d65d-1615-75ef-a911-73edd95d5dd7"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "evaluator_call_id": "01a0d659-1ba1-72ee-b0c6-e4031eb52262"}
+  [major/open] continuity power_rule_violation judge:continuity_checker 
+     claim: [p25]에서 시스템 각성을 거치지 않아 근력도 보잘것없는 무급의 몸이라고 명시했음에도, 초인처럼 두꺼운 철문을 발로 차서 종잇장처럼 우그러뜨리는 것은 현재 신체 능력 설정과 모순됩니다.
+     quote: 귀를 찢는 굉음과 함께 두꺼운 철문이 종잇장처럼 우그러지며 뜯겨 나갔다.
+  [major/open] continuity location_error judge:continuity_checker 
+     claim: [p125]에서 철문 너머에 보스가 기다리고 있다고 서술하고 진입했는데, 공터의 조폭 무리를 처리한 뒤 복도 끝에서 다시 보스의 아지트인 두 번째 철문([p165]-[p174])이 등장하여 보스방 철문을 두 번 부수는 동선 모순이 발생합니다.
+     quote: 굳게 닫힌 거대한 철문. 이 문 너머에 진짜 목표물과 거치적거리는 깡패 보스가 기다리고 있다.
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 원문 서술에서 '인류 최후의 1인'이라고 직접 서술함으로써, 150화 이전 공개 금지로 설정된 '[FACT] 인류가 전멸한 미래에서 돌아온 유일한 회귀자다'라는 비밀이 독자에게 너무 일찍 노출되었습니다.
+     quote: 인류 최후의 1인으로 15년을 굴렀다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 영어 수동태 번역투인 '~에 의해'가 쓰였습니다. '시스템이 그 자리에서 고기반죽으로 만드는'과 같이 능동으로 고치는 것이 자연스럽습니다.
+     quote: 시스템에 의해 그 자리에서 고기반죽이 되는
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 영어식 대명사 '그의'가 사용되었습니다. 깡패나 놈 등의 호칭으로 바꾸거나 생략해야 합니다.
+     quote: 그의 시선이 내 손에 들린
+  [blocking/open] prose literary_drift judge:prose_judge 
+     claim: 지침에서 금지한 AI 상투구 '정적이 내려앉았다'가 쓰였습니다. 누가 굳어버렸는지, 어떤 소리조차 멈췄는지 등 구체적인 반응으로 서술해야 합니다.
+     quote: 공터에 싸늘한 정적이 내려앉았다.
+  [major/open] prose other judge:prose_judge 
+     claim: 운영자 원고 대비 대사와 속마음 비중이 8%로 지나치게 낮아 액션 서술이 빡빡하게 이어집니다. 대사와 반응 비트를 늘려 호흡을 조절해야 합니다.
+     quote: 나는 바닥을 구르는 몸통들을 무심하게 밟고 지나가며 복도 끝으로 걸음을 옮겼다.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 주인공의 목적과 기연(선행 각성석)의 구체적인 보상 설정이 불필요하게 세 번 이상 반복 서술되어 피로도를 높인다.
+     quote: 시스템이 강림하기 전, 저 안쪽 보스 방에 숨겨진 선행 각성석을 탈취하는 것.
+  [major/open] structure repeated_scene judge:structure_judge 
+     claim: 동일한 수준의 적대자들을 상대로 긴장감 없는 학살이 두 번 연속 반복되어 호흡이 처진다.
+     quote: 사방에서 각목과 쇠사슬을 든 놈들이 짐승처럼 몰려들기 시작했다.
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 보스와 마주치는 결정적 순간이나 충격적인 대사 없이 단순히 보스방 문을 부수는 장면에서 끝나, 절단의 당김이 매우 약하다.
+     quote: 조폭 보스가 숨어 있는 굳게 닫힌 철문을, 굉음이 나도록 거칠게 걷어차 부수며 안으로 들이닥쳤다.
+  [major/open] genre repetitive_arc judge:genre_judge 
+     claim: 선행 각성석이 주는 보너스(올스탯 10, 인벤토리 등)에 대한 설명이 회차 내에서 완전히 겹치는 형태로 두 번이나 서술되어 분량을 채우는 느낌을 줍니다.
+     quote: 선행 각성석. 올스탯 10 포인트 보너스와 고유 특성을 얻고, 남들보다 먼저 인벤토리와 레벨업의 혜택을 챙길 수 있는 치트키.
+  [major/open] genre other judge:genre_judge 
+     claim: AI 상투구('소름 끼치는 파열음', '차갑게 비틀렸다', '싸늘한 정적이 내려앉았다', '진작에 마모되어')가 반복적으로 쓰여 문장이 기계적이고 뻔합니다.
+     quote: 살의를 머금은 입술이 차갑게 비틀렸다.
+  [major/open] repetition repeated_paragraph judge:repetition_judge 
+     claim: 한 화 안에서 주인공이 노리는 기연인 '선행 각성석'의 효과(올스탯 10 포인트, 고유 특성, 인벤토리와 레벨업 선점 등)를 설명하는 내면 서술이 사실상 동일한 내용과 구조로 반복 서술되어 피로감을 줍니다.
+     quote: 선행 각성석. 올스탯 10 포인트 보너스와 고유 특성을 얻고, 남들보다 먼저 인벤토리와 레벨업의 혜택을 챙길 수 있는 치트키.
+=== scorecard r3 key=01a0d65d-d57e-7452-8275-4d50a7621463 mv=01a0d65d-d57e-7452-8275-4d50a7621463 overall={'score': 77, 'note_count': 0, 'major_count': 8, 'minor_count': 13, 'blocking_count': 3}
+  section genre {"score": 90, "passed": true, "issue_ids": ["8adfe1a2-c280-8f19-9fd7-fd1b20336415", "e9b49d32-c83b-8143-ad56-1f03daf77763"], "drift_flags": [], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 3, "taboo_restraint": 5, "device_correctness": 5, "vocabulary_register": 5}, "evaluator_call_id": "01a0d65e-bdeb-73f9-86
+  section prose {"score": 74.9, "passed": false, "issue_ids": ["078b72e9-5988-8c6b-bdce-18ef240e9047", "4ef3237f-31b0-8ecb-93d9-3de955e5757c", "8ba9191c-5db9-80f6-acc6-9df8a3ec0aab", "40e1528e-f170-8ad8-94e3-a9b08907c6af", "6a87a68a-7a67-813f-9668-d8cd54fcf787", "7406ac99-8b46-86a7-8599-2eb03abad190", "36fa18d2-a1f8-8e2d-a669-6ad584b395e7", "263cf0cd-04a4-8b64-97d2-a0f6af91896e", "d878ae47-0074-8ed8-ab80-57f31db1
+  section voice {"score": 78.2, "passed": true, "issue_ids": ["c1d33f3b-764f-8ef1-a22d-9f8f6332f756", "91d9f640-5aeb-84ec-b8c9-92694ba49bfb", "cf23992d-ccbf-8610-9b2b-e5af9f474573"], "drift_flags": ["gender_mismatched_slur", "cliche_mob_dialogue"], "judge_score": 75, "score_model": "rubric_subscores", "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "judge_weight": 0.7, "rubric_score": 68.8, "dimension_sco
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "advance", "promise_id": "c891db7c-7ac2-8bb1-89af-189e8f777eec"}], "issue_ids": [], "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "evaluator_call_id": "01a0d659-9740-7158-9795-539bf739facf"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["8aa7c408-a716-87a3-9af7-9bfa48ea46b0"], "evaluator_call_id": "01a0d65e-5d74-70a9-8670-f1a64e47ef4d"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["eee95e54-de70-8eb2-a4ed-81bd62733059", "c6e35281-52ac-8eb5-9f94-f0072ce11fdb", "ced53fc4-9372-8f7c-8610-6807d4d81131"], "drift_flags": ["cadence", "exposition", "serial"], "judge_score": 62, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": {"ending_pull": 5, "hook_timing": 5, "local_p
+  section continuity {"score": 0, "passed": false, "issue_ids": ["4fc0a6a8-8267-8218-ab76-095b8755e614", "1dfa605b-4f0e-843d-b821-ef4485affed1"], "evaluator_call_id": "01a0d65e-5d6d-774c-a7d0-7636c1aa2bcb"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["5069d896-d370-8a22-b3c6-f3ecff4619e8", "b0e22641-acb3-86b3-bbde-b6c031d9ef92"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d65e-e3c6-7607-bf73-397e62efa3f1"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "carried_from": "3ad7e84a-6344-8dec-83c0-d82dbd2ed816", "evaluator_call_id": "01a0d659-1ba1-72ee-b0c6-e4031eb52262"}
+  [blocking/open] continuity power_rule_violation judge:continuity_checker 
+     claim: 주인공은 현재 각성을 거치지 않은 '무급' 상태이며 근력이 보잘것없는 일반인(p25)에 불과합니다. 노련한 기술과 경험이 있다 해도, 육체적 스탯이 없는 상태에서 두꺼운 철문을 발로 차 종잇장처럼 우그러뜨리고 뜯어내는 것은 주인공의 현재 등급 및 힘의 규칙에 명백히 위배됩니다.
+     quote: 귀를 찢는 굉음과 함께 두꺼운 철문이 종잇장처럼 우그러지며 뜯겨 나갔다.
+  [major/open] continuity location_error judge:continuity_checker 
+     claim: p126에서 눈앞의 철문 너머에 깡패 보스가 있다고 서술하고 철문을 부수고 진입했으나, 실제로는 공장 안쪽 공터에서 20여 명의 졸개와 싸우게 됩니다. 이후 p166~p167에서 다시 '보스의 아지트'인 육중한 철문이 등장하여 또 문을 부수는 장면(p174)이 반복됩니다. 한 공간 안에서 보스의 방으로 향하는 문과 상황이 모순적으로 중복되었습니다.
+     quote: 굳게 닫힌 거대한 철문. 이 문 너머에 진짜 목표물과 거치적거리는 깡패 보스가 기다리고 있다.
+  [blocking/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 주인공 강태산이 '인류가 전멸한 미래에서 돌아온 유일한 회귀자'라는 사실은 150화 이전까지 독자에게 공개가 금지된 비밀입니다. 하지만 서술에서 인류 최후의 1인으로 15년을 생존하다 기적 같은 회귀를 겪었다는 사실이 명시적으로 드러나 독자에게 설정이 조기 누출되었습니다.
+     quote: 인류 최후의 1인으로 15년을 굴렀다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: '~에 의해'라는 번역투 수동태 표현이 쓰였습니다. '시스템이 ~ 고기반죽으로 만드는'처럼 능동태로 고쳐야 합니다.
+     quote: 시스템에 의해 그 자리에서 고기반죽이 되는 참극의 시작.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 구체적인 소리나 행동 묘사 대신 '정적이 내려앉았다'는 AI 상투구를 사용했습니다.
+     quote: 공터에 싸늘한 정적이 내려앉았다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 인물의 당황한 반응을 직접 묘사하지 않고 '공기가 얼어붙었다'는 금지된 상투적 비유를 썼습니다.
+     quote: 내 모습에 공장 안의 공기가 싸늘하게 얼어붙었다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: '서늘한'이라는 AI 단골 수식어와 함께 얼굴 표정으로 감정을 때우는 전형적인 상투구입니다.
+     quote: 내 입가에 서늘한 투지가 맴돌았다.
+  [major/open] prose format_drift judge:prose_judge 
+     claim: 대사 비중이 지나치게 낮고 속마음과 해설에 의존하여 진행되어 모바일 가독성을 떨어뜨립니다.
+     quote: 인류 최후의 1인으로 15년을 굴렀다.
+  [blocking/open] structure weak_pacing judge:structure_judge 
+     claim: 대사 비중이 6%에 불과하여 인물 간의 날 선 티키타카나 상호작용 없이, 주인공의 일방적인 폭력 행사와 잦은 내면 서술만으로 장면이 채워져 호흡이 단조로움.
+     quote: 나는 바닥을 구르는 몸통들을 무심하게 밟고 지나가며 복도 끝으로 걸음을 옮겼다.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 선행 각성석이라는 아이템의 보상과 효과를 초반 도입부와 공장 내부 진입 직전에 거의 동일한 문장으로 중복 나열하여 지면을 낭비함.
+     quote: 선행 각성석. 올스탯 10 포인트 보너스와 고유 특성을 얻고, 남들보다 먼저 인벤토리와 레벨업의 혜택을 챙길 수 있는 치트키.
+  [major/open] genre repetitive_arc judge:genre_judge 
+     claim: 기연(선행 각성석)에 대한 설명과 멸망 후 괴물과 현실 깡패의 전투력 비교 등 동일한 정보가 회차 내에서 불필요하게 반복되었습니다.
+     quote: 선행 각성석. 올스탯 10 포인트 보너스와 고유 특성을 얻고

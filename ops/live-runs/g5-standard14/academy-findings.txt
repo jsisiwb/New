@@ -1,0 +1,99 @@
+=== scorecard r0 key=01a0d656-879b-7c7f-b529-3505d2bdd99f mv=01a0d656-879b-7c7f-b529-3505d2bdd99f overall={'score': 76, 'note_count': 0, 'major_count': 7, 'minor_count': 18, 'blocking_count': 0}
+  section genre {"score": 100, "passed": true, "issue_ids": ["c838dea6-d9c0-8c91-9af0-0e1da3ebefac", "43fff206-1149-8adb-9660-b56127853397"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 100, "dimension_scores": {"reader_fantasy": 5, "taboo_restraint": 5, "device_correctness": 5, "vocabulary_register": 5}, "evaluator_call_id": "01a0d657-dfe6-7355-ae
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["d96aa9fe-458e-8ca4-ade4-de82bb87d7c8", "d7423e61-00b4-862e-8221-af8864c55d05", "8ef68603-d8b5-86e2-9604-e1da30fda1b6", "6ed665fa-df47-8146-90a2-398e9111b142", "5d0fff23-2a0b-88c0-b023-185d8a4a2d1f", "b74ec9f6-8e70-8c77-bacb-923c3e42ee66", "56834bf2-a7a3-87fe-9eaf-de268caf61ec", "0cc69347-b032-844d-ba93-ce21960e94b6", "2d695349-2406-8f23-bf51-d169a813
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["01863316-a0d9-881a-950f-d53c8a8c3f10", "564f2e47-be79-87fb-ac96-3359748feaeb"], "drift_flags": ["대명사 남용", "어미 혼용"], "judge_score": 88, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 4, "register_naturalness": 4}, "evaluator_call_id"
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 0, "passed": true, "touches": [], "issue_ids": ["b2dcd4c2-1bf1-8e55-8e3e-bbe17b265901"], "evaluator_call_id": "01a0d658-2796-7503-9352-ed9a26fc674c"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["11570798-c19c-8eab-ab46-b760e0c5516f"], "evaluator_call_id": "01a0d657-c94d-72ff-9a3e-88125da76a0f"}
+  section structure {"score": 77.5, "passed": false, "issue_ids": ["72e9e075-aaec-8f5b-84a0-b96c76b32fc9", "2872b23d-1558-89d4-af5e-863fc273cc73", "1815eccf-1bd6-880b-a614-d78aeedd4652"], "drift_flags": ["serial", "cadence"], "judge_score": 62, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 55, "lint_composite": 100, "dimension_scores": {"ending_pull": 2, "hook_timing": 4, "local_payoff": 5, 
+  section continuity {"score": 0, "passed": false, "issue_ids": ["e8f8dba3-191e-8130-b27d-83d34fc9d380", "3293cb10-7ba0-854a-b1c7-79053a3cb93d", "d5e3720c-8d54-87ce-a417-d8583fcd9e12", "8af2debf-6ba2-8a0d-8064-9f4ccddbe041"], "evaluator_call_id": "01a0d657-90de-73e8-a4c6-a94004ceca1f"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["5bf4b201-8380-8fa0-9271-a306f027fec5"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d658-3743-73b2-a713-abfdd2b1fa06"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d657-7c68-7213-b8a6-f2d49d98535c"}
+  [major/open] continuity numeric_inconsistency judge:continuity_checker 
+     claim: 정사 설정에는 이안이 '근력과 민첩 스탯을 99(만렙)까지 찍은' 캐릭터로 명시되어 있으나, 원고에서는 근력이 999로 출력되며 이후에도 999로 서술됩니다.
+     quote: [근력 : 999]
+  [major/open] continuity power_rule_violation judge:continuity_checker 
+     claim: 세계 규칙상 전력의 30% '이상'을 개방하면 쿨타임(경련)이 발생합니다. 30%만 힘을 뺀다면 70%의 힘을 쓰는 것이므로 페널티가 발생해야 합니다.
+     quote: 대충 30퍼센트 정도만 힘을 빼고 쳐야지. 안 그러면 팔뚝에 쿨타임 도니까.
+  [major/open] continuity character_inconsistency judge:continuity_checker 
+     claim: [p26]에서 이안은 F반 배정을 예상하며 '낡은 4인 1실 기숙사'에 만족하기로 다짐했습니다. 자신이 특대생 대우를 받을 줄 모르는 상태이므로 갑자기 '1인실 기숙사'를 언급하는 것은 한 회차 내에서의 독백 모순입니다.
+     quote: ‘내 1인실 기숙사는 무사한 거 맞겠지?’
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 이안이 대마법사나 은둔 고수가 아닌 그저 물리력에 몰빵한 예능 캐릭터 빙의자라는 사실은 200화 이전에 독자에게 공개되어서는 안 되는 비밀이지만, 서술과 독백을 통해 설정이 너무 일찍 노출되었습니다.
+     quote: 망겜 ‘아르카니아’에 1만 시간을 갈아 넣고 도달한, 마력을 0으로 비운 기형적인 예능 캐릭터의 스탯이었다.
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 폭발과 착각이라는 좋은 무대 장치를 마련하고도, 회차 끝을 긴장감 없는 사소한 신변 걱정으로 닫아 다음 화 클릭 유도에 실패함.
+     quote: ‘내 1인실 기숙사는 무사한 거 맞겠지?’
+  [major/open] structure weak_pacing judge:structure_judge 
+     claim: 상대방의 도발에 반응하는 비트가 대부분 속마음과 행동 서술로 처리되어, 대화창구가 닫혀 있고 전개가 정적임.
+     quote: 속으로 가벼운 딴지를 걸며 나는 다시금 늘어지게 기지개를 켰다.
+  [major/open] genre other judge:genre_judge 
+     claim: 기숙사 인원 설정 충돌
+     quote: ‘내 1인실 기숙사는 무사한 거 맞겠지?’
+=== scorecard r1 key=01a0d659-0910-710e-a844-7a894a2f5767 mv=01a0d659-0910-710e-a844-7a894a2f5767 overall={'score': 79, 'note_count': 0, 'major_count': 3, 'minor_count': 18, 'blocking_count': 1}
+  section genre {"score": 90, "passed": true, "issue_ids": ["c7444992-a179-8cb3-a628-94a535862b33", "e028b6f6-5167-8e12-8889-21d1c35b4456"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d659-a474-7609-b4
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["abd93ba9-a533-8594-932b-a07a9d8145e5", "56f85d1e-e65f-8edf-8c5f-4dcd5681cc29", "4c0cde08-6d03-805a-b610-7a3e99b01b5f", "2df80b2b-77b4-8282-8421-e749f93cc935", "b0b2b4a3-e070-8b9c-ab48-394f1cb5e9cd", "13a84a43-e30f-899b-9430-c8a4a58ad51b", "29496300-e804-8d9d-97c6-6acc40043ca2", "c67f8089-40e6-8e46-9b24-2fa4887c374f", "398d08e1-de8b-8246-bf58-1d8ab34c
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["4100b4a6-5eb1-89e4-95e1-0b037dd6b169", "822d1d35-a08f-86c3-866e-6641e2b74e8b"], "drift_flags": ["대명사 남용", "어미 혼용"], "judge_score": 88, "score_model": "rubric_subscores", "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consiste
+  section length {"score": 100, "passed": true, "issue_ids": ["e6effb20-3538-82ba-bd20-b6cfacf283f9"]}
+  section promises {"score": 100, "passed": true, "touches": [], "issue_ids": [], "evaluator_call_id": "01a0d659-d4b6-76cd-b3d0-3f4815c2cf1e"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["125ceeba-dc3a-89a6-a087-a9a679c76b92"], "evaluator_call_id": "01a0d659-bf1e-740a-a09e-d9eedc030f5d"}
+  section structure {"score": 83, "passed": true, "issue_ids": ["120ddf18-2d56-825c-92d5-248c57cbeda1", "eccc98f3-68cd-8137-91a6-b006f8d3432e"], "drift_flags": ["exposition", "cadence"], "judge_score": 76, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 70, "lint_composite": 96, "dimension_scores": {"ending_pull": 5, "hook_timing": 4, "local_payoff": 5, "exposition_control": 3, "dialogue_forwa
+  section continuity {"score": 0, "passed": false, "issue_ids": ["a5688c1e-c7a9-89f9-9833-3c1a51a44ac3", "a9f82750-454b-83d7-bf68-0ef7f9528010"], "evaluator_call_id": "01a0d659-ba7b-7122-bb6c-5bf5c5e945d8"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["a5c6072f-1f26-8154-b173-d00d761386c1"], "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "evaluator_call_id": "01a0d658-3743-73b2-a713-abfdd2b1fa06"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "evaluator_call_id": "01a0d657-7c68-7213-b8a6-f2d49d98535c"}
+  [blocking/open] continuity power_rule_violation judge:continuity_checker 
+     claim: [FACT] 설정(power.rule.stat_penalty_eight)에 따르면 '전력의 30% 이상'을 개방하면 사용한 근육 부위에 확정적인 쿨타임(경련)이 발생합니다. 원문의 '30퍼센트 정도만 힘을 빼고'는 전력의 70%를 사용하겠다는 뜻이 되어 오히려 쿨타임이 확정적으로 발생해야 하는 모순이 생깁니다. 쿨타임을 피하려는 이안의 의도와 맞지 않습니다.
+     quote: 대충 30퍼센트 정도만 힘을 빼고 쳐야지. 안 그러면 팔뚝에 쿨타임 도니까.
+  [major/open] continuity inventory_impossible judge:continuity_checker 
+     claim: 앞선 문단 [p61~p62]에서 이안은 원래 소지하던 '싸구려 나무 지팡이'를 내려놓고 아카데미의 '기본 지급용 지팡이'로 교체하여 타격했습니다. 비록 속으로 그 지급품을 싸구려라 평가하긴 했으나([p63]), 여기서 다시 이안의 트레이드마크인 '싸구려 나무 지팡이'라고 명시하면 마치 교체하기 전의 본인 지팡이를 든 것처럼 혼동을 줍니다.
+     quote: 나는 절반쯤 부러져 나간 싸구려 나무 지팡이를 든 채 식은땀을 삐질 흘렸다.
+  [major/open] knowledge knowledge_ignorance judge:knowledge_leak_checker 
+     claim: 설정상 에드워드 로하스는 0화 시점부터 이미 이안의 전투 방식을 목격하고 감명을 받아 밤마다 기숙사 연무장에서 남몰래 나무 지팡이로 맹연습을 하고 있는 상태입니다. 그러나 본문에서는 이안이 지팡이를 휘두르려는 모습을 마치 생전 처음 보는 '미개한 짓거리'인 것처럼 어이없어하며, 이후에도 '무투파 마법의 재림을 내 두 눈으로 직접 보게 되다니!'라며 처음 겪는 일처럼 반응합니다. 이는 인물이 이미 알고 있는 사실과 과거 행적을 서술이 무시한 오류입니다.
+     quote: 마법의 성지인 아카데미에서, 저런 미개한 짓거리를 눈앞에서 보게 될 줄은 몰랐다는 표정이었다.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 상황과 세계관에 대한 주인공의 내면 설명이 반복되어 대사 비중을 떨어뜨립니다.
+     quote: 마력이 0이든 평민 쓰레기라 욕을 먹든 내 알 바 아니었다.
+=== scorecard r2 key=01a0d65a-cb3f-79dd-8e5b-4a967fcdc4d8 mv=01a0d65a-cb3f-79dd-8e5b-4a967fcdc4d8 overall={'score': 78, 'note_count': 0, 'major_count': 4, 'minor_count': 20, 'blocking_count': 0}
+  section genre {"score": 90, "passed": true, "issue_ids": ["80c9fe76-274e-8387-a16c-7ca9a5a2c7ef", "fc8da655-d664-874c-b2af-fc612e890b20"], "drift_flags": ["cliche_misunderstanding"], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["b9a1afc4-29a0-8a57-8f7a-142b9a9fca32", "8824f45e-39a0-8240-b125-446f7d7496ef", "315a5e6f-3d7e-87d6-9e02-cdfa0415ee21", "1cd7d0fa-d4f4-851b-b60a-6701738fbaa4", "77da4491-5b4b-8fab-9928-70d767623616", "9f3a18e6-e423-87ee-b346-cd97fd9eb256", "2e1edaaf-1fe2-8c8f-9d0f-5edc5df20bc2", "25082ab8-3d0c-88b6-ac31-f09fe10a55f7", "2fc7bc29-e7c2-8249-adc5-7b9c1187
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["9f1780b3-ffa3-88f0-b5b3-6b3126c56e0d", "d5d9e879-1188-8506-8732-9db7d7cbedca"], "drift_flags": ["대명사 남용", "어미 혼용"], "judge_score": 88, "score_model": "rubric_subscores", "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consiste
+  section length {"score": 100, "passed": true, "issue_ids": ["76273d64-e9e1-8ce5-85bc-d890e74e03b5"]}
+  section promises {"score": 100, "passed": true, "touches": [], "issue_ids": [], "evaluator_call_id": "01a0d65b-6a88-72b9-9339-af8a7c429679"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d65b-7691-7700-81d8-bf61a791b28d"}
+  section structure {"score": 80.5, "passed": true, "issue_ids": ["80b7f01a-b3e3-85a7-8c01-a11049b8d396", "56d96a8b-2401-8119-aaa4-9de10746fe08", "29ae645c-52fd-8a69-82f4-812950e275ff"], "drift_flags": ["exposition", "cadence"], "judge_score": 68, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 65, "lint_composite": 96, "dimension_scores": {"ending_pull": 5, "hook_timing": 4, "local_payoff": 5
+  section continuity {"score": 0, "passed": false, "issue_ids": ["e54a5c03-0c97-819e-b21b-5d98f90f3410", "95b7ce48-42e7-845a-a359-40ba4287ca45", "0ec78ba0-698e-87b4-98bd-d1212214e7d1", "e3796375-78af-815e-bdbc-58359dc94d6a"], "evaluator_call_id": "01a0d65b-7ce7-723a-aaa3-69f72526b644"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["9f56ed01-a74d-8b4a-8e84-6d51b421a73c"], "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "evaluator_call_id": "01a0d658-3743-73b2-a713-abfdd2b1fa06"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "evaluator_call_id": "01a0d657-7c68-7213-b8a6-f2d49d98535c"}
+  [major/open] continuity power_rule_violation judge:continuity_checker 
+     claim: 정사 설정상 1회 타격 시 전력의 30% '이상'을 개방하면 근육 경련(쿨타임)이 발생합니다. '30퍼센트 정도만 힘을 빼고' 치면 전력의 70%를 사용하는 셈이 되어 확정적으로 쿨타임이 발생하므로, 쿨타임을 피하려는 이안의 계산과 모순됩니다.
+     quote: 대충 30퍼센트 정도만 힘을 빼고 쳐야지. 안 그러면 팔뚝에 쿨타임 도니까.
+  [major/open] continuity canon_contradiction judge:continuity_checker 
+     claim: 바로 앞의 [p61]에서는 조교가 내민 새 지팡이를 '반듯하게 깎인'이라고 묘사했으나, [p63]에서는 '표면도 매끄럽게 가공되지 않은'이라고 서술하여 동일한 사물에 대한 묘사가 한 장면 안에서 곧바로 충돌합니다.
+     quote: 표면도 매끄럽게 가공되지 않은 기성품.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 배경 설정과 마석에 대한 정보가 행동이나 짤막한 속마음에 녹아들지 못하고 독립된 설명 문단으로 연속 제시됩니다.
+     quote: 수백 년간 아카데미의 실기 평가를 담당해 온 물건이다.
+  [major/open] structure weak_pacing judge:structure_judge 
+     claim: 결정적 린트 보고 기준 대사 비중이 14%에 불과하여, 대사로 이끌어가야 할 장면들이 주인공의 무거운 서술과 관찰 위주로 전개됩니다.
+     quote: 조금 전까지 평가장을 가득 채우던 조롱과 폭소가 거짓말처럼 증발했다.
+=== scorecard r3 key=01a0d65c-302f-76c2-8818-2076d7d3c265 mv=01a0d65c-302f-76c2-8818-2076d7d3c265 overall={'score': 82, 'note_count': 0, 'major_count': 1, 'minor_count': 18, 'blocking_count': 1}
+  section genre {"score": 90, "passed": true, "issue_ids": ["3bad65cb-c6e3-8adb-94fe-56f5efccb5e0", "6479b7af-dc66-80de-8d78-76ebe3c0dd25"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d65d-0bb1-7657-a9
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["e351c395-1327-8e82-bfd3-3804d434a4ad", "329bcee7-47f8-81f5-9a7a-35de53e9dfc1", "c7d8dc94-494e-8299-b256-fd35992f434c", "7ab3b0f3-e143-8eb5-985d-b5b8670ee417", "08b804ed-334b-8d26-a6d7-3ec14fca0969", "4a172bd9-2bf7-87d5-91e0-43d775dca033", "790cab05-54be-85b8-acfe-ab9c9cf83a4a", "fe3ea29d-6b31-8020-ab76-5c2e18dde737", "efbac171-f04a-8e12-83c9-b4feddb3
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["b1d0adce-16fd-8790-aabc-5bc9bbba2803", "902d6c63-a8da-89b1-84a8-54155138f7c3"], "drift_flags": ["대명사 남용", "어미 혼용"], "judge_score": 88, "score_model": "rubric_subscores", "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consiste
+  section length {"score": 100, "passed": true, "issue_ids": ["4d2c99ad-71f0-85e5-ace1-637377bde163"]}
+  section promises {"score": 100, "passed": true, "touches": [], "issue_ids": [], "evaluator_call_id": "01a0d65d-16d0-73cc-9679-46fcd12447c8"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d65d-a41d-765b-92e3-ce3d994bfb8f"}
+  section structure {"score": 88, "passed": true, "issue_ids": ["4aefaaf0-f0f3-8ffa-b8bc-2cbb64e31a67", "c864da38-26b1-8004-adee-b2f0674465e5"], "drift_flags": ["cadence"], "judge_score": 82, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 96, "dimension_scores": {"ending_pull": 5, "hook_timing": 5, "local_payoff": 5, "exposition_control": 4, "dialogue_forwardness": 2}, "
+  section continuity {"score": 0, "passed": false, "issue_ids": ["e6844afc-1234-80c3-a2e1-7ba49a18eac0"], "evaluator_call_id": "01a0d65c-c4d8-72b1-b649-5c6dfcb5c93e"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["7e60f98f-9ae1-8e76-a943-e2d941414585"], "carried_from": "391629f4-5e1a-86ba-9c3b-d739cf484c84", "evaluator_call_id": "01a0d658-3743-73b2-a713-abfdd2b1fa06"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d65c-de85-7738-b0ff-44b3534e9485"}
+  [blocking/open] continuity power_rule_violation judge:continuity_checker 
+     claim: 정해진 세계 규칙에 따르면 1회 타격 시 전력의 30% 이상을 개방하면 쿨타임(경련)이 발생합니다. 쿨타임을 피하려면 힘을 30% 미만으로 제한해야 하는데, '30퍼센트 정도만 힘을 빼고'라고 서술하면 전력의 70%를 사용한다는 뜻이 되어 설정과 정면으로 모순됩니다.
+     quote: ‘대충 30퍼센트 정도만 힘을 빼고 쳐야지. 안 그러면 팔뚝에 쿨타임 도니까.’
+  [major/open] structure weak_pacing judge:structure_judge 
+     claim: 결정적 검사 결과 대사 비중이 14%로 매우 낮습니다. 주인공의 내면 서술과 상황 묘사가 지면을 장악해 인물 간의 주고받는 호흡이 부족합니다.
+     quote: 나는 그저 오른손에 쥔 나무 지팡이를 천천히 어깨 위로 치켜들었다.
