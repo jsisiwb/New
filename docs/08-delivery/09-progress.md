@@ -15,30 +15,44 @@ named the old owner; the only stale names were in this block, and the corpus rep
 | Order | Step of the operator's plan | Status |
 | --- | --- | --- |
 | 1 | STEP 1 — `standard@19` checkpoint on both projects | done: the recorded G9 pair (ADR-0085 §2, `13-live-run-gemini.md` §9); defects G9-1 … G9-8 |
-| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | done in code: `standard@20` (ADR-0092), live G10 (§10); `standard@21` (ADR-0093) answers G10-1 … G10-4; live G11 in flight |
+| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | in progress: `standard@20` … `standard@24` (ADR-0092 … ADR-0096), live G10–G13 recorded (§10–§12); live G14 (`standard@24`) in flight |
 | 3 | STEP 4.1 — the corpus in the database | done: `corpus:verify` (3 books, 1,138 spine chapters, 656 Korean main-story chapters, all hashes equal) |
 | 4 | STEP 4.4 — stock phrases refreshed | done: `lang/ko@9` in `standard@21` |
 | 5–12 | the rest | see the reconciliation below |
 
-**Where acceptance stands.** No chapter is accepted yet. G10 (`standard@20`, §10): no reader-secret finding in any round of
-either chapter (G9-1, G9-2 fixed); the academy draft came out on its length with likeness 85; both revision loops ended
-early on ADR-0092's stop rule (G10-4), which `standard@21` replaces with a rung switch and net improvement.
+**Where acceptance stands.** No chapter is accepted yet. G12a (academy, `standard@22`, §12) ended its five rounds at 0
+blocking and 4 majors with prose 66.9 and voice 72 under their gates; the per-hit pronoun marker was every lint finding in
+three of its rounds although the chapter sat at the operator's median pronoun rate (G12-1). G13r (regression,
+`standard@23`) failed at the arc plan on a beat typed `cliffhanger` (G13-1). ADR-0096 (`standard@24`) fixes both.
 
-**Open defects.** G10-5 (secret owners outside a pack's registry named by raw id in canon lines); carried: G9-6 (the
-unawakened body), G9-8 (stock figures and world vocabulary; `lang/ko@9` adds eight figures), G7-4, G5-8, the 3인칭
-cutaways.
+**Open defects.** G12-2 (a heroine's misunderstanding narrated before the scene that forms it); carried: G9-6 (the
+unawakened body), G9-8 (stock figures and world vocabulary), G7-4, G5-8, the 3인칭 cutaways.
 
-**Budget.** Bridge credits before G11 (15:52 UTC): ws1 89.67 %, ws2 unreadable (`rate-limited`), ws3 21.70 %, ws4 8.00 % —
-about 181 points remain on ws1, ws3 and ws4. G9 cost 12.48 points, G10 8.17.
+**Budget.** Bridge credits at 17:10 UTC: ws1 94.10 %, ws2 unreadable (`rate-limited`), ws3 29.66 %, ws4 10.54 % — about
+166 points remain on ws1, ws3 and ws4. A chapter-1 pair costs 8–12 points (G9 12.48, G10 8.17, G11 9.35).
 
 **Safety rules.** Tests run against local sandbox databases only (`yeonjae_test` for full suites, `yeonjae_test_b` for
 targeted runs; a wrapper sets `DATABASE_URL` to the sandbox and unsets every provider variable); the inherited
 `DATABASE_URL` is the permanent database, used only by live runs, corpus commands and reports, from the separate
-worktree `/tmp/hoplite/live`. Never run the full `pnpm check` while a live run is in flight (G8 incident). The sandbox
-now bursts to 8 GiB.
+worktree `/tmp/hoplite/live` (the second worktree used for G12a is removed). Never run the full `pnpm check` while a live
+run is in flight (G8 incident). The sandbox now bursts to 8 GiB.
 
-**Resume point.** Record G11 (`standard@21`, projects `G11a 아카데미 standard21` / `G11r 회귀 standard21`) with
-`quality:checkpoint`; an accepted chapter 1 goes on to STEP 5 (`novel:resume <project> --stop-after=5`, then `novel:run`).
+**Resume point.** G14 — `G14a 아카데미 standard24` and `G14r 회귀 standard24`, chapter 1 on `standard@24`, started 17:24
+UTC from the live worktree at `96ad254`. Record them with `quality:checkpoint` (§13); an accepted chapter 1 goes on to
+STEP 5 (`novel:resume <project> --stop-after=5`, then `novel:run`).
+
+## G12 and G13 fixes — `standard.v24` — 2026-09-25
+
+**Built (ADR-0096):** `planning.normalize_arc_beats` (`arcBeatTypeOf`: a planner's beat word read as the nearest schema
+type, an unreadable one kept as `escalation`; G13-1); `evaluation.pronoun_band_lint` (`pronounBand`, `proseLintDigest`:
+inside the operator's pronoun band the per-hit marker is a note and the prose judge's digest names the band; G12-1).
+Traceability row `G9FIX-001` covers ADR-0092 … ADR-0096.
+
+**Measured:** G12 / G13 (`13-live-run-gemini.md` §12). On the operator's 259 first-person chapters (`lang/ko@9`) the
+per-hit marker fires 7 times at the median and 14 at p90; the median prose composite is 52 with it and 80 without.
+
+**Tests:** `pronoun-band-lint.test.ts`, `story-plan.test.ts` (`arcBeatTypeOf`), `policy.test.ts` (v24),
+`commands.test.ts`.
 
 ## G11 fixes — `standard.v22`, `standard.v23` — 2026-09-25
 
