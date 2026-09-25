@@ -1,0 +1,232 @@
+=== scorecard r0 v1 overall={"score":79,"note_count":5,"major_count":8,"minor_count":13,"blocking_count":0}
+  section genre: score=80 passed=true issues=2
+  section prose: score=72.6 passed=false issues=16
+  section voice: score=66.3 passed=false issues=2
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=85.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=2
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] prose literary_drift (lint:ko_style, confidence 1)
+      claim: AI 상투구 4회 (기준 4회). 감정은 이름 대신 행동·반응으로 보여 준다.
+  [major/open] continuity power_rule_violation (judge:continuity_checker, confidence 0.95)
+      claim: 주인공 강진우의 현재 육체는 스탯이 초기화된 비각성자(일반인) 상태이며, 회차 계약의 연속성 위험 항목에도 '펀치 한 방에 벽이 부서지는 등 초인적인 완력이 묘사되어서는 안 됨'이라고 명시되어 있습니다. 앙상한 육신으로 육중한 철문을 걷어차 잠금장치를 뜯어내고 문을 벽에 처박히게 하는 것은 설정에 어긋나는 과도한 물리력 묘사입니다.
+      quote: 요란한 파열음과 함께 잠금장치가 맥없이 뜯겨 나갔다. 육중한 철문이 거칠게 안으로 튕겨 나가며 벽에 처박혔다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: 무생물(유리 질감)을 주어로 삼아 행동하게 만드는 영어식 번역투 문장입니다.
+      quote: 스마트폰의 차가운 유리 질감이 이 모든 것이 현실이라고 뚜렷하게 말해주고 있었다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 0.9)
+      claim: 결정적 검사 보고에서 지적된 AI 상투구 표문입니다. 인물의 반응으로 대체해야 합니다.
+      quote: 공기가 얼어붙는 소리가 들렸다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 0.9)
+      claim: 초고마다 반복되는 흔한 피 냄새 묘사 상투구입니다. 장면에 필요한 사실만 간결하게 써야 합니다.
+      quote: 비릿한 피 냄새와 타오르는 잿더미의 매연 대신, 퀴퀴한 먼지 냄새가 폐부를 찔렀다.
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 주인공이 '힘은 없지만 투신의 감각이 있다'는 것을 초반과 후반에 걸쳐 불필요하게 여러 번 독백으로 설명합니다.
+      quote: 마력 따위는 필요 없다. 근력도, 민첩도, 지금의 내게는 아무것도 없지만. 수천 번의 사선에서 빚어낸, 투신의 전투 감각.
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.9)
+      claim: 초반부에서는 비각성자의 앙상한 육신이라 0.1초 거리를 세 걸음이나 디뎌야 하고 급소를 노려야 한다고 철저히 한계를 설정했으나, 후반부에서는 별다른 대가나 기연 없이 단순히 '투신의 살기'만으로 건장한 성인 남성 여럿을 한 번에 기절시킵니다. 이는 앞서 구축한 주인공의 신체적 제약을 스스로 깨버리는 편의적 연출입니다.
+      quote: 압도적인 살기에 뇌가 생명의 위협을 느끼고 스스로 신경을 차단해 버린 것이다.
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 주인공 강진우의 대사에서 하십시오체('아닙니다', '준비하십시오')와 반말('온 거지', '20억이지', '테니까', '있거든')이 명확한 감정 변화나 연출 의도 없이 4곳 이상 불규칙하게 섞여 있습니다.
+      quote: 버리지 않습니다. 앞으로 쓸모가 많을 테니까.
+=== scorecard r1 v2 (quarantined) overall={"score":80,"note_count":6,"major_count":11,"minor_count":14,"blocking_count":1}
+  section genre: score=80 passed=true issues=3
+  section prose: score=74.8 passed=false issues=19
+  section voice: score=79.7 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=85.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=3
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] prose literary_drift (lint:ko_style, confidence 1)
+      claim: AI 상투구 4회 (기준 4회). 감정은 이름 대신 행동·반응으로 보여 준다.
+  [blocking/open] continuity power_rule_violation (judge:continuity_checker, confidence 1)
+      claim: 회차 계약의 '연속성 위험'에 따르면 현재 주인공은 비각성자 상태이므로 펀치 한 방에 벽이 부서지는 등의 초인적인 완력 묘사가 금지되어 있습니다. 잠금장치가 뜯겨 나갈 정도로 육중한 철문을 발로 차 날려버리는 묘사는 일반인 육신의 한계를 넘은 완력 서술입니다.
+      quote: 요란한 파열음과 함께 잠금장치가 맥없이 뜯겨 나갔다. 육중한 철문이 거칠게 안으로 튕겨 나가며 벽에 처박혔다.
+  [major/open] continuity canon_contradiction (judge:continuity_checker, confidence 1)
+      claim: 25문단에서 '단전에서 끓어오르던 거대한 마력은 흔적조차 없다'며 단전이 비어 있음을 확인했으나, 140문단에서 다시 단전에서 무언가를 끌어올린다고 묘사하여 앞뒤가 충돌합니다. 현재 주인공의 감각과 살기는 마력이 아닌 뇌와 신경에서 비롯됩니다.
+      quote: 단전에 잠들어 있던 무언가를 끌어올렸다.
+  [major/open] continuity world_rule_violation (judge:continuity_checker, confidence 0.9)
+      claim: 현재 주인공은 비각성자이며 시스템이 아직 가동되지 않은 상태입니다. 주인공이 뿜어내는 '투신의 기세'는 뇌에 새겨진 전투 경험에 의한 극심한 심리적 살기여야 하는데, 전자기기인 형광등이 빛을 잃게 만드는 초자연적/마법적 물리 현상으로 발현되는 것은 힘의 규칙에 어긋납니다.
+      quote: 순간, 형광등이 지지직거리며 빛을 잃었다.
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '주억거리다'는 고개를 끄덕인다는 뜻이므로 '고민할'이나 '망설일' 등으로 고쳐야 합니다.
+      quote: 이 상황이 꿈인지 주마등인지 주억거릴 시간은 없다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 0.9)
+      claim: 상황을 관조형 해설로 설명하는 AI 상투구입니다. 구체적인 반응으로 보여주는 것이 좋습니다.
+      quote: 인간의 뇌는 스스로 감당할 수 없는 포식자를 마주하면 생존을 위해 기절을 선택한다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 1)
+      claim: 자주 쓰이는 AI 상투구입니다. 장면에 필요한 사실이나 인물의 구체적인 반응 하나로 표현해야 합니다.
+      quote: 순식간에 벌어진 일에 사무실 안의 공기가 얼어붙었다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 1)
+      claim: 자주 쓰이는 AI 정적 상투구입니다. 누가 먼저 입을 여는지 등의 구체적 행동으로 묘사해야 합니다.
+      quote: 일순간 정적이 흘렀다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 1)
+      claim: 자주 쓰이는 AI 감각 상투구입니다. 아픈 곳과 몸의 실제 반응을 구체적으로 쓰는 것이 좋습니다.
+      quote: 끔찍한 고통이 아직 살갗에 들러붙어 있었다.
+  [major/open] structure weak_pacing (judge:structure_judge, confidence 0.9)
+      claim: 대사 비중이 11%로 매우 낮아 장면이 대부분 서술로 처리되며 호흡이 무겁습니다.
+      quote: 나는 액정이 깨진 스마트폰을 주머니에 쑤셔 넣고 천천히 걸음을 옮겼다.
+  [major/open] genre terminology_violation (judge:genre_judge, confidence 1)
+      claim: 절대 규칙인 장치 어휘에서 지정한 '지난 생' 대신 '전생' 표기를 사용함
+      quote: 전생이라면 단 0.1초 만에
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.9)
+      claim: 주인공이 타인에게 건조한 해요체를 쓴다는 기본 설정과 달리, 초면인 마동욱에게 시종일관 무협풍 하오체와 해라체 반말을 사용한다.
+      quote: 시간이 없으니 본론만 말하지.
+=== scorecard r2 v3 overall={"score":83,"note_count":5,"major_count":5,"minor_count":18,"blocking_count":0}
+  section genre: score=80 passed=true issues=3
+  section prose: score=80.2 passed=true issues=14
+  section voice: score=83.8 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=85.5 passed=true issues=3
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=2
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 0.9)
+      claim: 방금 전까지 진우의 살기에 압도되어 생명의 위협을 느끼고 벌벌 기어가며 전 재산을 바친 인물이([p168], [p179], [p183]), 현찰을 넘기자마자 갑자기 여유롭고 넉살 좋은 말투로 돌변하는 것은 감정선과 개연성에 맞지 않습니다. 캐릭터 설정(voice_notes)의 대사를 상황을 고려하지 않고 기계적으로 삽입한 것으로 보입니다.
+      quote: 다, 다행이네요. 이 바닥 생리가 원래 그런 거 아니겠수. 힘 있는 분이 다 가지는 거지.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 초고마다 되풀이된 동작 상투구입니다. 다음 행동으로 바로 넘어가야 합니다.
+      quote: 무기를 고쳐 쥐며
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 초고마다 되풀이된 감각 상투구입니다. 아픈 곳과 몸의 반응으로 구체화해야 합니다.
+      quote: 끔찍한 고통이
+  [major/open] genre forbidden_development (judge:genre_judge, confidence 0.9)
+      claim: 주인공이 브로커의 당일 아침 현금 수금액이라는 극도로 지엽적인 정보까지 아는 것은 '대가 없는 편의적 원작(미래) 지식' 금기에 해당합니다.
+      quote: 그리고 오늘 아침에 이자놀이로 거둬들인 현찰 뭉치가 저기 보이는 금고에 딱 5억.
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 한 대사 안에서 존댓말(합쇼체)과 반말이 섞여 일관성이 흔들립니다.
+      quote: 버리지 않습니다. 앞으로 쓸모가 많을 테니까.
+=== scorecard r3 v4 overall={"score":87,"note_count":5,"major_count":5,"minor_count":13,"blocking_count":1}
+  section genre: score=95 passed=true issues=2
+  section prose: score=88.8 passed=true issues=10
+  section voice: score=80.4 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=85.5 passed=true issues=3
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=2
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity world_rule_violation (judge:continuity_checker, confidence 0.9)
+      claim: 현재 시점은 헌터 시스템과 첫 게이트가 열리기 정확히 10일 전(2026년 4월 4일)으로 아직 평범한 현실 세계입니다. 시스템 가동 전임에도 헌터 조직을 뜻하는 '길드'라는 명칭을 마동욱이 몸담은 조직에 사용하는 것은 세계관 시점(타임라인)과 맞지 않는 용어 사용입니다.
+      quote: 그리고 길드 몰래 이자놀이로 굴리는 비자금이 5억. 정확히 20억이지.
+  [blocking/open] knowledge knowledge_leak (judge:knowledge_leak_checker, confidence 0.9)
+      claim: 마동욱은 강진우와 방금 처음 만나 협박으로 20억을 빼앗긴 상황입니다. 정상적인 브로커라면 목숨을 구걸(예: '살려만 주십시오')해야 하나, 마치 강진우가 다가올 멸망에서 자신을 거두어줄 구원자나 미래를 아는 회귀자임을 이미 알고 있는 것처럼 '버리지 말아 달라'며 맹목적으로 복종하고 있습니다. 이는 마동욱이 강진우의 정체(회귀자)를 아는 것처럼 말하거나 행동해서는 안 된다는 지식 가드를 위반한 것입니다.
+      quote: 형님…… 저 진짜 버리시면 안 됩니다?
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '주억거리다'는 끄덕인다는 뜻이므로 '망설일', '따져볼' 등으로 고쳐야 합니다.
+      quote: 이 상황이 꿈인지 주마등인지 주억거릴 시간은 없다.
+  [major/open] genre other (judge:genre_judge, confidence 0.9)
+      claim: 비각성자의 살기만으로 적들이 단체로 신경을 차단하고 기절하는 묘사는 '마력이 없어도 요령과 감각으로 제압한다'는 앞선 현실적인 전투 묘사와 충돌하며 데우스 엑스 마키나처럼 작용한다.
+      quote: 압도적인 살기에 뇌가 생명의 위협을 느끼고 스스로 신경을 차단해 버린 것이다.
+  [major/open] voice register_error (judge:voice_judge, confidence 1)
+      claim: 강진우의 대사에서 하십시오체와 반말이 일관성 없이 계속 섞여 나옵니다. 타인에게 건조한 존대를 쓴다는 설정이 무너졌습니다.
+      quote: “버리지 않습니다. 앞으로 쓸모가 많을 테니까.”
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.9)
+      claim: 강진우가 상대방에게 갑자기 친근하거나 거드름 피우는 듯한 반말을 사용하여 인물의 냉소적이고 건조한 성격이 흔들립니다.
+      quote: “남산 타워 밑바닥. 거기서 주워야 할 게 있거든.”
+=== scorecard r4 v5 overall={"score":85,"note_count":5,"major_count":6,"minor_count":10,"blocking_count":0}
+  section genre: score=90 passed=true issues=2
+  section prose: score=81.3 passed=true issues=10
+  section voice: score=81.5 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=88 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity inventory_impossible (judge:continuity_checker, confidence 1)
+      claim: 불과 몇 문장 앞인 [p98]에서는 전자담배가 '셔츠 주머니에 꽂혀 있다'고 묘사되었으나, [p104]에서는 아무 행동 묘사 없이 갑자기 입에 물고 있던 것을 뱉어낸다고 서술되어 한 장면 내에서 사물의 위치가 엇갈립니다. 또한 무거운 기기인 전자담배를 연초처럼 입에 물고만 있다가 바닥에 뱉는 행동도 부자연스럽습니다.
+      quote: 마동욱이 입에 물고 있던 전자담배를 툭 뱉어내며 구겨진 인상을 폈다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: AI 상투구인 '서늘한 미소'의 변형으로, 행동이 아닌 진부한 표정 묘사에 의존합니다.
+      quote: 하지만 내 입가에는 서늘한 비웃음이 새어 나왔다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: '공기가 무거워졌다/얼어붙었다' 계열의 금지된 AI 상투구입니다. 인물의 구체적인 반응으로 대체해야 합니다.
+      quote: 순간, 사무실 안의 공기가 기묘하게 멈췄다.
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.9)
+      claim: 주인공이 마력이 증발한 비각성자 육신임을 강조했음에도, 초자연적인 마력에 가까운 '살기' 방출만으로 사람들을 기절시키는 것은 세계관 내 힘의 밸런스와 충돌합니다.
+      quote: 진짜 죽음을 마주한 공포에 놈들의 얄팍한 정신줄이 그대로 끊어져 버린 것이다.
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 타인에게 감정 없는 해요체/하십시오체를 쓴다는 설정과 달리 강진우의 대사에서 이유 없이 반말이 섞인다.
+      quote: “받아 가러 온 거지.”
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 존댓말을 유지하던 강진우가 회차 마지막 대사에서 돌연 반말로 대답하여 일관성이 떨어진다.
+      quote: “남산 타워 밑바닥. 거기서 주워야 할 게 있거든.”
+=== scorecard r5 v6 overall={"score":88,"note_count":5,"major_count":4,"minor_count":13,"blocking_count":0}
+  section genre: score=75 passed=true issues=3
+  section prose: score=87.2 passed=true issues=10
+  section voice: score=77.1 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=88 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity power_rule_violation (judge:continuity_checker, confidence 0.9)
+      claim: 주인공은 현재 비각성자 수준의 일반인 육체를 가지고 있으며, 회차 계약의 연속성 위험 항목에 따라 벽이 부서지는 등의 초인적인 완력 묘사가 금지되어 있습니다. 아무리 낡은 문이라 해도 맨몸의 발차기 한 방에 금속 잠금장치가 비틀려 뜯겨 나가는 파괴력은 설정된 신체 스탯 한계를 넘어섭니다.
+      quote: 요란한 파열음과 함께 잠금장치가 비틀려 뜯겨 나갔다.
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.9)
+      claim: 바이블에 없는 미래 지식을 편의적으로 꺼내어 위기를 돌파함. 주인공의 치밀함보다 작가적 편의가 돋보인다.
+      quote: 그리고 본가 조직 몰래 이자놀이로 굴리는 비자금이 5억. 정확히 20억이지.
+  [major/open] genre forbidden_development (judge:genre_judge, confidence 0.95)
+      claim: 시스템 헌터물에서 시스템이 켜지기 전 비각성자의 육체임에도 살기만으로 적을 거품 물게 하는 등 무협식 먼치킨 과장이 심하다.
+      quote: 진짜 죽음을 마주한 공포에 놈들의 얄팍한 정신줄이 그대로 끊어져 버린 것이다.
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.95)
+      claim: 강진우는 타인에게 건조한 존댓말을 구사해야 하나, 회차의 마지막 대사에서 갑자기 반말을 사용하여 캐릭터 말투의 일관성이 무너졌습니다.
+      quote: 남산 타워 밑바닥. 거기서 주워야 할 게 있거든.
+=== scorecard r6 v7 overall={"score":86,"note_count":5,"major_count":2,"minor_count":14,"blocking_count":0}
+  section genre: score=90 passed=true issues=2
+  section prose: score=83.4 passed=true issues=11
+  section voice: score=90.2 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=88 passed=true issues=2
+  section continuity: score=0 passed=true issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] prose literary_drift (judge:prose_judge, confidence 1)
+      claim: 초고마다 반복되어 금지된 상투구('파르르 떨렸다' 계열) 사용
+      quote: 거품을 문 채 파르르 떨기만 했다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 0.9)
+      claim: AI 특유의 작위적이고 상투적인 비유와 감정 묘사
+      quote: 거대한 포식자 앞에 내던져진 짐승처럼, 그의 눈동자에는 원초적인 공포만이 가득했다.
+=== scorecard r7 v8 overall={"score":86,"note_count":4,"major_count":3,"minor_count":15,"blocking_count":0}
+  section genre: score=85 passed=true issues=3
+  section prose: score=83.4 passed=true issues=10
+  section voice: score=85.8 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=88 passed=true issues=3
+  section continuity: score=0 passed=true issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] structure payoff_without_setup (judge:structure_judge, confidence 0.85)
+      claim: 능력이 없는 비각성자 상태임에도 '투신의 살기'라는 편의적인 장치로 위기를 너무 쉽게 돌파합니다.
+      quote: 내 몸에서 터져 나온 진득하고 기괴한 살기가 좁은 사무실 안을 빽빽하게 채웠다.
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.9)
+      claim: 비각성자 육체의 물리적 한계를 무시한 기합/살기 제압 연출
+      quote: 마나 한 줌 없는 비각성자의 몸이지만, 진짜 죽음을 마주한 삼류들의 얄팍한 정신줄이 지레 겁을 먹고 끊어져 버린 것이다.
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 강진우는 타인에게 건조한 해요체나 하십시오체를 쓴다고 설정되어 있으나, 별다른 심경 변화 없이 대사 중에 반말 투를 섞어 썼습니다.
+      quote: 정확히 20억이지.

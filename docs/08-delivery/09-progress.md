@@ -15,31 +15,51 @@ named the old owner; the only stale names were in this block, and the corpus rep
 | Order | Step of the operator's plan | Status |
 | --- | --- | --- |
 | 1 | STEP 1 — `standard@19` checkpoint on both projects | done: the recorded G9 pair (ADR-0085 §2, `13-live-run-gemini.md` §9); defects G9-1 … G9-8 |
-| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | in progress: `standard@20` … `standard@24` (ADR-0092 … ADR-0096), live G10–G13 recorded (§10–§12); live G14 (`standard@24`) in flight |
+| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | in progress: `standard@20` … `standard@26` (ADR-0092 … ADR-0097, ADR-0099) and `novel:extend` (ADR-0098); live G10–G14 recorded (§10–§13) |
 | 3 | STEP 4.1 — the corpus in the database | done: `corpus:verify` (3 books, 1,138 spine chapters, 656 Korean main-story chapters, all hashes equal) |
 | 4 | STEP 4.4 — stock phrases refreshed | done: `lang/ko@9` in `standard@21` |
 | 5–12 | the rest | see the reconciliation below |
 
-**Where acceptance stands.** No chapter is accepted yet. G12a (academy, `standard@22`, §12) ended its five rounds at 0
-blocking and 4 majors with prose 66.9 and voice 72 under their gates; the per-hit pronoun marker was every lint finding in
-three of its rounds although the chapter sat at the operator's median pronoun rate (G12-1). G13r (regression,
-`standard@23`) failed at the arc plan on a beat typed `cliffhanger` (G13-1). ADR-0096 (`standard@24`) fixes both.
+**Where acceptance stands.** No chapter is accepted yet, but one has passed its gates. G14a (academy, `standard@24`, §13)
+ended its five rounds at overall 87 with all four dimension gates passing and 1 blocking / 1 major. With five granted
+rounds (`novel:extend`, ADR-0098) it reached r9 at 0 / 0, overall 89, gate outcome `approved`. The confirmation
+re-evaluation that precedes approval then lost four judges to the bridge's HTTP 502s, so the run is `failed`
+(retryable) with r9 approved by its scorecard. G14r (regression) ended at 0 blocking / 4 majors with all gates passing;
+its granted rounds reached 0 / 2 at r6 before a bridge 401.
 
 **Open defects.** G12-2 (a heroine's misunderstanding narrated before the scene that forms it); carried: G9-6 (the
-unawakened body), G9-8 (stock figures and world vocabulary), G7-4, G5-8, the 3인칭 cutaways.
+unawakened body; again in G14r), G9-8, G7-4, G5-8, the 3인칭 cutaways.
 
-**Budget.** Bridge credits at 17:10 UTC: ws1 94.10 %, ws2 unreadable (`rate-limited`), ws3 29.66 %, ws4 10.54 % — about
-166 points remain on ws1, ws3 and ws4. A chapter-1 pair costs 8–12 points (G9 12.48, G10 8.17, G11 9.35).
+**Budget.** Bridge credits at 18:58 UTC: ws1 `rate-limited` (97.81 % at 17:59), ws2 unreadable (`rate-limited`), ws3
+39.82 %, ws4 14.85 % — about 145 points remain on ws3 and ws4. From 18:54 UTC every bridge probe failed
+(`retryable_provider`): the Notion bridge was down, not the pipeline.
 
 **Safety rules.** Tests run against local sandbox databases only (`yeonjae_test` for full suites, `yeonjae_test_b` for
 targeted runs; a wrapper sets `DATABASE_URL` to the sandbox and unsets every provider variable); the inherited
-`DATABASE_URL` is the permanent database, used only by live runs, corpus commands and reports, from the separate
-worktree `/tmp/hoplite/live` (the second worktree used for G12a is removed). Never run the full `pnpm check` while a live
-run is in flight (G8 incident). The sandbox now bursts to 8 GiB.
+`DATABASE_URL` is the permanent database, used only by live runs, corpus commands and reports, from the live worktrees:
+`/tmp/hoplite/live` (G15, at `f58e8a8`) and `/tmp/hoplite/live2` (the G14 extensions, at `aba1b7b`). A running project's
+worktree is never checked out to another commit. Never run the full `pnpm check` while a live run is in flight (G8
+incident). The sandbox now bursts to 8 GiB.
 
-**Resume point.** G14 — `G14a 아카데미 standard24` and `G14r 회귀 standard24`, chapter 1 on `standard@24`, started 17:24
-UTC from the live worktree at `96ad254`. Record them with `quality:checkpoint` (§13); an accepted chapter 1 goes on to
-STEP 5 (`novel:resume <project> --stop-after=5`, then `novel:run`).
+**Resume point.** When `provider:check --probe` passes again: `novel:resume` then `novel:run` for `G14a 아카데미
+standard24` from `/tmp/hoplite/live2`. The job replays r0–r9 and repeats only the confirmation; an accepted chapter 1
+goes on to STEP 5 (`novel:resume <project> --stop-after=5`, then `novel:run`). Then G14r the same way, and G15r and G15b
+(`standard@25`, paused) from `/tmp/hoplite/live`. New projects start on `standard@26`.
+
+## G14 fixes — `standard.v25`, `novel:extend`, `standard.v26` — 2026-09-25
+
+**Built:** ADR-0097 (`standard@25`): `drafting.pronoun_redraft` (`pronounThreshold`, `pronounRedraftNote`; G14-1) and
+`identity.device_rules: 3` (G14-2). ADR-0098: `novel:extend` (`extendChapterRevision`, `grantedRounds`; grants in
+`projects.settings.revision_extensions` and `chapter.revision_extended` events), the chapter loop's bound and the revision
+round limit grown by the grant, and the polish round allowed after the last round (G14-3). ADR-0099 (`standard@26`):
+`planning.normalize_spec_categories` (`specCategoryOf`; G15-1). Traceability rows `G9FIX-001` (extended) and
+`N5-EXTEND-001`.
+
+**Measured:** G14 (`13-live-run-gemini.md` §13): G14a r9 at 0 blocking / 0 majors after five granted rounds.
+
+**Tests:** `novel-ko.integration.test.ts` (a simulated v25 run: each pronoun-heavy first draft re-drafted once),
+`identity-from-intake.test.ts` (wording 3), `pronoun-band-lint.test.ts`, `revision-extension.integration.test.ts`,
+`planning.test.ts` (`specCategoryOf`), `policy.test.ts` (v25, v26), `commands.test.ts`, `normalizers.test.ts`.
 
 ## G12 and G13 fixes — `standard.v24` — 2026-09-25
 

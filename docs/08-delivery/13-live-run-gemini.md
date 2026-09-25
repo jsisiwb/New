@@ -645,3 +645,47 @@ them r5's composite is 100 and prose 81.3 (ADR-0096 measures the marker on the o
 median composite 52 with it, 80 without). G12-2: the heroine's misunderstanding narrated as already formed before the
 scene that forms it (an r5 major; the planned-state order inside one chapter, not fixed yet). G13-1 (above). G12-1 and
 G13-1 are fixed by ADR-0096 (`standard@24`).
+
+## 13. G14 — the `standard.v24` checkpoint, and the first chapter to pass its gates (17:18–18:56 UTC)
+
+Chapter 1 of two fresh projects on `standard@24` (ADR-0096: arc-plan beat types, the pronoun band lint), run in
+parallel from the live worktree at `96ad254`; both arc plans used schema types, so the beat normalizer was not exercised.
+After both loops ended one step short, each chapter was granted five more rounds with `novel:extend` (ADR-0098, from a
+second worktree at `aba1b7b`, because G15 was running in the first). Exports: `ops/live-runs/g14-standard24/`.
+
+| | G14a (academy) | G14r (regression) |
+| --- | --- | --- |
+| Length (v1) | 4,984자 (−6.0 %), 3,955 without spaces | 6,022자 (+13.6 %), 4,701 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 40 % → 25.7 %, 20 % → 17.8 % | 2: 20 % → 3.3 %, 45 % → 33.3 % |
+| Quoted dialogue / 속마음 lines | 40 (8.0 per 1,000자) / 7 | 47 (7.8 per 1,000자) / 3 |
+| First line | `와아아아아-!` | `징, 지징.` |
+| r0 | overall 52: prose 18 (4.41 그/그녀 per 1,000자, above the fail line; composite 0), voice 56.3; 2 blocking, 11 majors, two of them in-world characters saying ‘엑스트라’ | overall 79: prose 72.6, voice 66.3; 0 blocking, 8 majors |
+| Rounds r1–r5 | r2 overall 85 with all four gates passing (prose 81.8; the chapter back inside the pronoun band, its 12 hits recorded as notes), 0 / 5; r3 and r4 quarantined; r5 overall 87, all gates passing, **1 / 1** | r1 quarantined; r2–r5 kept; r5 overall 88, all gates passing, **0 / 4** |
+| Why approval was blocked at r5 | a status-window penalty that fixes the stats at 5 where the bible caps them at 99 (continuity, blocking); one line of the heroine's in 해라체 (voice, major) | an unawakened body kicking a lock apart (G9-6 again), money the hero knows without a setup, killing intent that knocks men out in a system-hunter world, the hero's last line in 반말 |
+| Granted rounds (ADR-0098) | r6 85 (1 / 6) → r7 88 (1 / 3) → r8 87 (0 / 1) → **r9 89 (0 / 0)**: prose 90.9, structure 87.5, genre 75, voice 91.3 — gate outcome `approved` | r6 86 (0 / 2) → r7 86 (0 / 3) |
+| How it ended | the confirmation (the full re-evaluation that precedes approval, ADR-0086) lost four judges to the bridge's HTTP 502s at 18:54–18:56; the run is `failed` (retryable) with r9 approved by its scorecard and not yet accepted | the bridge returned HTTP 401 at the r8 evaluation; the run is `failed` (retryable) |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | r0 1 / 1 (the ‘엑스트라’ lines), then 0; 0; 0 | r3 1 blocking, otherwise 0; 0; 0 |
+| Likeness (C8) | v1 60 (first-person 55); v10 65 (60) | v1 80 (70); v8 75 (75) |
+| Calls / attempts / tokens / time | 120 / 166 (51 failed attempts) / 475,527 in, 43,867 out / 5,872 s | 101 / 109 (10 failed) / 387,794 in, 39,074 out / 4,589 s |
+
+Credits: ws1 94.10 % (17:10) → 97.81 % (17:59), then `rate-limited`; ws3 29.66 → 39.82 %; ws4 10.54 → 14.85 % (18:58), for
+G14 with its granted rounds, G15 and the retries. From 18:54 every bridge probe failed (`retryable_provider`), so no
+live call could run until the bridge recovered.
+
+Excerpt (the first three lines of G14a's v1, unedited):
+
+> 와아아아아-!
+> 고막을 찢을 듯한 환호성이 치고 들어왔다.
+> 제1연무장.
+
+**What changed against G12.** In-band pronouns no longer cost the prose composite. G14a's prose rose from 18 to 81.8 by
+r2 once the loop brought the rate back into the band, and it passed every later round. Both chapters ended their five
+rounds with all four dimension gates passing, and G14a's granted rounds reached 0 blocking and 0 majors.
+
+**Defects.** G14-1: a first draft far above the pronoun band spends rounds on pronouns (ADR-0097's redraft, in
+`standard@25`). G14-2: in-world characters saying the possessor's word ‘엑스트라’ (ADR-0097's device rules 3). G14-3: a
+chapter that passes every gate with one or two findings left has no way forward once its rounds are spent. A resume
+replays to the same `APPROVAL_BLOCKED`, and a chapter first approvable in the last round would have stopped with
+`REVISION_LIMIT` in the polish round (both fixed by ADR-0098). G15-1: G15a's requirement interpreter typed a
+requirement `relationship`, failing `novel:start` (ADR-0099, `standard@26`). G15b's cast step lost a call to a bridge 502
+and was resumed; G15r and G15b were paused at 18:35 to leave the degraded bridge to G14.

@@ -1,0 +1,277 @@
+=== scorecard r0 v1 overall={"score":52,"note_count":0,"major_count":11,"minor_count":28,"blocking_count":2}
+  section genre: score=85 passed=true issues=2
+  section prose: score=18 passed=false issues=29
+  section voice: score=56.3 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=2
+  section structure: score=85 passed=true issues=3
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] prose translation_like_english (lint:ko_style, confidence 1)
+      claim: ‘그/그녀’ 밀도 4.41/1,000자 (기준 3.78). 이름·호칭을 쓰거나 주어를 생략한다.
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 0.95)
+      claim: [PLANNED] 아르테미스의 설정(voice_notes)에 따르면 그녀의 말투는 '하십시오체'와 '해요체'를 섞어 쓰는 도도한 귀족 아가씨 말투여야 합니다. 그러나 원고의 대사에서는 '~마라', '~주마', '~군' 등 거친 해라체를 남발하고 있어 캐릭터의 오만하면서도 품위 있는 매력이 훼손되고 일관성이 떨어집니다.
+      quote: 결투를 신청한다. 그 건방진 주둥이와 눈깔을 연무장 바닥에 처박아 주마.
+  [blocking/open] knowledge knowledge_leak (judge:knowledge_leak_checker, confidence 0.9)
+      claim: [지식 가드]에 따라 아르테미스는 이 세계가 '원작 게임'이라는 사실을 몰라야 합니다. 하지만 대사에서 '엑스트라'라는 소설/게임의 메타적인 용어를 직접 사용함으로써, 세계관 밖의 지식(원작 게임의 등장인물 분류)을 아는 것처럼 행동하는 지식 누출이 발생했습니다.
+      quote: 네, 네놈 대체 정체가 뭐야! 평민 엑스트라 주제에 어떻게 이런 힘을……!
+  [major/open] knowledge knowledge_leak (judge:knowledge_leak_checker, confidence 0.85)
+      claim: 작중 엑스트라(군중) 학생의 대사에서 '엑스트라'라는 메타적 용어가 사용되었습니다. 일반 인물들은 자신들이 게임 속에 있다는 사실을 모르므로, 특정 학생을 '엑스트라'라고 지칭하는 것은 인물이 모르는 지식으로 말하는 경우에 해당합니다.
+      quote: 아무리 그래도 엑스트라 상대로 전력을 다하다니, 뼈도 안 남겠어!
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 린트 보고에서 지적되었듯 번역투 대명사인 '그녀'가 20회 이상 남발되었습니다. 생략하거나 이름·직함으로 고쳐야 합니다.
+      quote: 나는 아무 말 없이 그녀를 빤히 바라보았다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 영어식 번역투인 '~에 대한'을 사용했습니다. '이름을 향한' 등으로 직결하는 것이 좋습니다.
+      quote: 라이오넬의 이름에 대한 모욕으로
+  [major/open] prose register_error (judge:prose_judge, confidence 1)
+      claim: 반말로 일관하던 수석 아르테미스가 대결 직전 갑자기 하십시오체로 전환했다가 다시 해라체로 돌아가는 등 화법이 어색하게 흔들립니다.
+      quote: 시작하기 전에 항복할 기회를 주겠습니다.
+  [major/open] structure late_hook (judge:structure_judge, confidence 0.9)
+      claim: 도입부에서 장소와 상황 묘사가 먼저 나와 긴장감 있는 훅이 지연됨
+      quote: 눈을 뜨자마자 가장 먼저 보인 것은 허공에 떠오른 붉은색 반투명 창이었다.
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 캐릭터와 설정에 대한 요약 서술이 장면의 호흡을 끊음
+      quote: 동시에, 게임 후반부에서 악신에게 세뇌당해 주인공 일행 앞을 가로막는 중간 보스였다.
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.8)
+      claim: 아카데미 규칙을 무시한 시스템창의 과도한 편의주의적 개입
+      quote: [F반에서 A반으로 강제 승급됩니다.]
+  [blocking/open] voice character_inconsistency (judge:voice_judge, confidence 1)
+      claim: 아르테미스는 하십시오체와 해요체를 섞어 쓰는 도도한 귀족 아가씨 설정이지만, 실제 원고에서는 '처박아 주마', '보시지', '네놈' 등 전형적인 악당 엑스트라의 어투를 구사하여 심각한 인물 붕괴가 일어났습니다.
+      quote: 그 건방진 주둥이와 눈깔을 연무장 바닥에 처박아 주마.
+  [major/open] voice voice_drift (judge:voice_judge, confidence 1)
+      claim: 같은 전투 씬 안에서 아르테미스의 말높이가 해라체('후회하게 만들어 주마!'), 해체('거짓말하지 마라!'), 하십시오체('기회를 주겠습니다')로 뚜렷한 이유 없이 널뜁니다.
+      quote: 시작하기 전에 항복할 기회를 주겠습니다.
+  [major/open] voice other (judge:voice_judge, confidence 0.9)
+      claim: 대사 덩어리마다 존대와 반말이 제멋대로 섞여 나오며 두 인물 간의 관계에 따른 일관된 말높이가 확립되지 않았습니다.
+      quote: 너, 너 방금 대체 무슨 짓을 한 겁니까!
+=== scorecard r1 v2 overall={"score":65,"note_count":0,"major_count":7,"minor_count":25,"blocking_count":0}
+  section genre: score=80 passed=true issues=3
+  section prose: score=39.1 passed=false issues=21
+  section voice: score=82 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=true issues=1
+  section structure: score=90 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity inventory_impossible (judge:continuity_checker, confidence 1)
+      claim: 127문단에서 이미 아르테미스가 진검을 뽑아 들었음에도 불구하고, 141문단에서 또다시 검집에서 검을 뽑는 묘사가 등장합니다. 한 장면 내에서 검을 두 번 뽑는 연속성 오류입니다.
+      quote: 동시에 아르테미스가 허리춤의 검집에서 검을 뽑아 들었다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 린트 보고에서 지적된 것처럼 3인칭 대명사 '그녀'가 원고 전반에 걸쳐 기계적으로 반복되며 몰입을 깹니다. 이름이나 직함으로 대체하거나 생략해야 합니다.
+      quote: 그녀가 팔짱을 낀 채 나를 꼿꼿이 내려다보고 있었다.
+  [major/open] prose register_error (judge:prose_judge, confidence 1)
+      claim: 아르테미스의 말투가 '하셨습니까', '주겠습니다' 등의 존댓말에서 '베풀어 주지', '주마' 등의 반말로 일관성 없이 오락가락합니다.
+      quote: 시작하기 전에 항복할 기회를 주겠습니다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: '~이 보였다', '~이 느껴졌다' 등 주체의 감각을 수동태로 표현하는 서구식 지각동사 번역투가 자주 쓰였습니다.
+      quote: 그녀의 입꼬리가 호선을 그리는 것이 보였다.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 보상(포인트 획득, 강제 승급)이 주어지고 상황이 너무 깔끔하게 종료되어, 다음 화에 대한 긴급한 궁금증이나 위기가 남지 않습니다.
+      quote: “귀찮게. 다음엔 장갑 던지지 마라.”
+  [major/open] voice voice_drift (judge:voice_judge, confidence 1)
+      claim: 한 대사 안에서 해요체와 반말 혼용
+      quote: 검을 드세요. 아니면 그 자리에서 무릎을 꿇고 공작가의 이름에 사죄하든가.
+  [major/open] voice voice_drift (judge:voice_judge, confidence 1)
+      claim: 존댓말 기조 중 갑작스러운 반말(해체) 어미 사용
+      quote: 가문의 이름으로 자비는 베풀어 주지.
+=== scorecard r2 v3 overall={"score":85,"note_count":12,"major_count":5,"minor_count":15,"blocking_count":0}
+  section genre: score=80 passed=true issues=3
+  section prose: score=81.8 passed=true issues=19
+  section voice: score=82.5 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=2
+  section structure: score=87.5 passed=true issues=3
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity world_rule_violation (judge:continuity_checker, confidence 1)
+      claim: 게임 속 세계의 거주자인 아르테미스가 메타 용어(게임 밖 용어)인 '엑스트라'를 육성으로 내뱉는 것은 세계관의 현실성을 해칩니다. 또한, '하십시오체'와 '해요체'를 섞어 쓴다는 캐릭터 보이스 설정과 다르게 "정체가 뭐야!"라며 반말투를 사용하고 있습니다.
+      quote: 네, 네놈 대체 정체가 뭐야! 평민 엑스트라 주제에 어떻게 이런 힘을……!
+  [major/open] knowledge knowledge_leak (judge:knowledge_leak_checker, confidence 0.95)
+      claim: 원작 게임의 일반 학생 무리가 자신들의 세계가 창작물(게임)임을 인지해야 쓸 수 있는 메타적 어휘인 '엑스트라'를 대사로 직접 사용하고 있습니다. 이는 게임 속 인물이 알 수 없는 세계관 밖의 지식이 누출된 것입니다.
+      quote: 아무리 그래도 엑스트라 상대로 전력을 다하다니, 뼈도 안 남겠어!
+  [major/open] knowledge knowledge_leak (judge:knowledge_leak_checker, confidence 0.95)
+      claim: 아르테미스는 원작 게임 속 인물이므로 자신들이 게임 속에 존재한다는 메타 지식이 없습니다. 인물을 지칭할 때 현실의 작가나 빙의자만 쓰는 용어인 '엑스트라'를 대사로 내뱉는 것은 캐릭터가 알아서는 안 될 창작물 밖 지식이 누출된 작가적 실수입니다.
+      quote: 네, 네놈 대체 정체가 뭐야! 평민 엑스트라 주제에 어떻게 이런 힘을……!
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 결투 승리와 승급이라는 보상 획득 후 상황이 마무리되어, 다음 화에 대한 절박한 궁금증을 유발하는 절단의 힘이 약합니다.
+      quote: “귀찮게. 다음엔 장갑 던지지 마라.”
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 하대하는 호칭인 '너'와 격식체인 '-겁니까'가 한 문장 안에서 충돌하여, 일본 서브컬처 번역투의 어색한 느낌을 줍니다.
+      quote: 너, 너 방금 대체 무슨 짓을 한 겁니까!
+=== scorecard r3 v4 (quarantined) overall={"score":82,"note_count":12,"major_count":4,"minor_count":12,"blocking_count":1}
+  section genre: score=75 passed=true issues=3
+  section prose: score=74.3 passed=false issues=18
+  section voice: score=86.9 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=false issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=90 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 0.95)
+      claim: 아르테미스는 하십시오체와 해요체를 섞어 쓰는 도도한 귀족 아가씨 말투로 설정되어 있으나, 여기서는 반말을 사용하고 있습니다. 이후 당황하는 장면([p222] "대체 무슨 짓을 한 거야!", [p224] "느껴지지 않았어!")과 마지막 장면([p249] "전속 호위 기사가 되어라!")에서도 일관성 없이 반말이 튀어나옵니다.
+      quote: 후회하게 만들어 주마!
+  [blocking/open] prose register_error (judge:prose_judge, confidence 1)
+      claim: 상대방을 '평민'이라 멸시하는 귀족 영애가 존댓말('하셨습니까', '주겠습니다')과 반말('무례한 녀석', '주마', '되어라')을 무작위로 섞어 쓴다.
+  [major/open] genre forbidden_development (judge:genre_judge, confidence 0.9)
+      claim: 아카데미의 서열과 규칙을 무시하는 시스템의 편의주의적 개입
+      quote: [F반에서 A반으로 강제 승급됩니다.]
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.9)
+      claim: 감정적 교류나 납득할 만한 계기 없이 패배 직후 맹목적으로 변하는 히로인의 태도
+      quote: “기다려! 너, 내 전속 호위 기사가 되어라!”
+  [major/open] promise canon_contradiction (judge:promise_checker, confidence 0.9)
+      claim: 장부에는 아르테미스가 패배 후 복수를 다짐하며 비전 마나 심법을 무리하게 개방할 예정이라고 되어 있으나, 원고 말미에서는 복수를 다짐하기보다 전속 호위 기사가 되라고 제안하며 집착하는 전개로 이어져 기존 약속의 방향과 정면으로 충돌합니다.
+      quote: 기다려! 너, 내 전속 호위 기사가 되어라!
+=== scorecard r4 v5 (quarantined) overall={"score":86,"note_count":9,"major_count":4,"minor_count":8,"blocking_count":5}
+  section genre: score=60 passed=false issues=3
+  section prose: score=85 passed=true issues=14
+  section voice: score=82.5 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=87.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=3
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity power_rule_violation (judge:continuity_checker, confidence 0.9)
+      claim: 주인공의 특수 능력인 올 마스터가 발동되어 초월적인 감각을 사용하였으나, 정사 규칙에 명시된 수치화된 제약(쿨타임, 스탯 고정, 골드 지불 등)을 치르는 묘사가 전혀 없습니다.
+      quote: 이 세상의 모든 무기를 내 수족처럼 다루게 해주는 [특성 : 올 마스터(Lv.MAX)]의 감각. 그 초월적인 감각이 눈앞의 아르테미스가 가진 빈틈을 수십 개나 짚어내며 내 머릿속에 최적의 반격 루트를 선명하게 그렸다.
+  [blocking/open] continuity other (judge:continuity_checker, confidence 1)
+      claim: 작품의 서술 시점은 1인칭 주인공 시점이어야 하나, 해당 문단은 작가나 연출자의 지시문처럼 3인칭 관찰자 시점으로 작성되어 하드 요구사항(REQ-014)을 정면으로 위반합니다.
+      quote: 상태창의 알림이 울리는 가운데, 넋이 나간 아르테미스를 향해 이안이 “귀찮게. 다음엔 장갑 던지지 마라.”라고 무심하게 내뱉으며 장면이 끝난다.
+  [blocking/open] prose format_drift (judge:prose_judge, confidence 1)
+      claim: 1인칭 소설 서술에서 갑자기 대본 지문이나 줄거리 요약처럼 시점과 형식이 이탈했습니다. 앞선 호흡을 유지하며 주인공의 구체적인 행동과 절단 신공으로 끝내야 합니다.
+      quote: 상태창의 알림이 울리는 가운데, 넋이 나간 아르테미스를 향해 이안이 “귀찮게. 다음엔 장갑 던지지 마라.”라고 무심하게 내뱉으며 장면이 끝난다.
+  [blocking/open] structure weak_ending (judge:structure_judge, confidence 1)
+      claim: 대본이나 AI의 요약문처럼 '장면이 끝난다'는 서술로 회차를 강제로 닫아버려 절단(엔딩)의 기능이 마비되었습니다.
+      quote: 무심하게 내뱉으며 장면이 끝난다.
+  [blocking/open] genre other (judge:genre_judge, confidence 1)
+      claim: 회차의 마무리를 '장면이 끝난다' 식의 요약 지문으로 처리해 연재 웹소설의 서술 규칙을 심각하게 어겼다.
+      quote: 무심하게 내뱉으며 장면이 끝난다.
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.9)
+      claim: 아카데미물에서 등급 이동은 시험이나 평가의 결과여야 하는데, 개인 간의 결투 직후 시스템이 강제로 등급을 올려버려 무대의 룰을 무너뜨린다.
+      quote: [F반에서 A반으로 강제 승급됩니다.]
+  [blocking/open] voice voice_drift (judge:voice_judge, confidence 1)
+      claim: 마지막 문단이 1인칭 주인공 시점의 서술이 아닌 대본의 지문이나 요약문처럼 작성되어 서사 시점을 완전히 벗어났다.
+      quote: 상태창의 알림이 울리는 가운데, 넋이 나간 아르테미스를 향해 이안이 “귀찮게. 다음엔 장갑 던지지 마라.”라고 무심하게 내뱉으며 장면이 끝난다.
+  [major/open] voice address_term_error (judge:voice_judge, confidence 0.9)
+      claim: 아르테미스가 평민인 이안에게 화를 내고 멸시하는 상황임에도 '당신'이라는 호칭과 존댓말을 고수하여, 관계에 맞는 자연스러운 한국어라기보다 일본/서양 서브컬처 번역체 느낌을 강하게 준다.
+      quote: 당신이 먼저 불쾌한 시선으로 쳐다보지 않았습니까!
+  [major/open] voice register_error (judge:voice_judge, confidence 0.8)
+      claim: 패배한 직후 아르테미스의 대사가 기계적인 악당의 번역투 템플릿처럼 작위적이다.
+      quote: ……이 패배의 수치, 결코 잊지 않겠습니다.
+=== scorecard r5 v6 overall={"score":87,"note_count":12,"major_count":1,"minor_count":14,"blocking_count":1}
+  section genre: score=80 passed=true issues=3
+  section prose: score=81.8 passed=true issues=19
+  section voice: score=78.2 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=92.5 passed=true issues=1
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity power_rule_violation (judge:continuity_checker, confidence 1)
+      claim: 주인공의 특수 능력 발동 페널티가 규칙과 다르게 묘사되었습니다. 세계 규칙에 따르면 스탯은 '24시간 동안 능력치 상한 99 고정'이어야 하는데, 원고에서는 '5'로 고정된다고 서술되었습니다.
+      quote: [24시간 동안 모든 스탯이 ‘5’로 고정됩니다.]
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.9)
+      claim: 아르테미스는 하십시오체와 해요체를 섞어 쓰는 도도한 귀족 영애 설정인데, 분노하거나 폭주할 때 '주마!', '아느냐!' 같은 사극풍/악역풍 해라체를 사용하여 캐릭터 목소리(나이 및 신분)에서 벗어납니다.
+      quote: “후회하게 만들어 주마!”
+=== scorecard r6 v7 overall={"score":85,"note_count":12,"major_count":6,"minor_count":12,"blocking_count":1}
+  section genre: score=85 passed=true issues=2
+  section prose: score=78.1 passed=true issues=21
+  section voice: score=78.2 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=92.5 passed=true issues=1
+  section continuity: score=0 passed=false issues=3
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 아르테미스의 대사 가이드라인(voice_notes)에 따르면 '하십시오체와 해요체를 섞어 쓰는 도도한 귀족 아가씨 말투'를 써야 하지만 반말을 사용했습니다.
+      quote: 너, 너 방금 대체 무슨 짓을 한 거야!
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 마찬가지로 반말을 사용하여 캐릭터 고유의 말투 설정과 어긋납니다.
+      quote: 아무런 마나도 느껴지지 않았어! 그런데 어떻게 나의, 라이오넬의 비전 검술을 고작 그런 나뭇가지로……!
+  [blocking/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: 아르테미스가 비전 마나 심법을 무리하게 개방하는 사건은 20~25화에 회수되어야 할 복선이며, 이번 화에서는 '승부욕을 불태우는 반응'만 묘사하며 복선을 설치(open)해야 합니다. 또한 회차 계약의 '절단(reveal)'에 따르면 이안이 무심하게 대사를 내뱉는 장면에서 끝나야 하므로 이후의 추가 전개는 계약 위반입니다.
+      quote: 패배에 눈이 뒤집힌 공작 영애가 제 목숨을 갉아먹는 금기를 뜯어내고 있었다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: '~은 ~것이었다' 구조의 번역투입니다. '눈을 뜨자마자 화려한 대리석이 깔린 거대한 원형 경기장이 보였다'로 쓰는 것이 자연스럽습니다.
+      quote: 눈을 뜨자마자 보인 것은 화려한 대리석이 깔린 거대한 원형 경기장이었다.
+  [major/open] prose register_error (judge:prose_judge, confidence 0.9)
+      claim: 존댓말(해요체/하십시오체)을 쓰던 인물의 화법이 반말로 갑자기 바뀌었다가 다시 존댓말('후회하게 만들어 드리죠.')로 돌아와 일관성이 떨어집니다.
+      quote: 나를 모욕하는 것도 유분수지!
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.9)
+      claim: 아르테미스가 마지막에 '끝낼 줄 아느냐!'라며 갑자기 사극풍 악당처럼 말해 도도한 귀족 아가씨라는 설정과 어긋난다.
+      quote: “이대로…… 끝낼 줄 아느냐!”
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 아르테미스가 큰 충격을 받아 반말을 내뱉은 직후, 다시 이유 없이 합쇼체로 돌아와 말높이 일관성이 흔들린다.
+      quote: “네, 네놈 대체 정체가 뭡니까! 일개 평민 주제에 어떻게 이런 힘을……!”
+=== scorecard r7 v8 overall={"score":88,"note_count":11,"major_count":3,"minor_count":16,"blocking_count":1}
+  section genre: score=75 passed=true issues=3
+  section prose: score=85.6 passed=true issues=19
+  section voice: score=73.8 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=false issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=90 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: 아르테미스가 비전 마나 심법을 무리하게 개방하는 사건은 20~25화에 회수될 예정인 복선입니다. 이번 1화에서는 아르테미스가 지독한 승부욕을 불태우는 반응까지만 묘사해야 하며, 회차 계약의 '절단(reveal)' 지시에 따라 이안의 대사로 장면이 끝나야 하는데 불필요하게 사건이 앞당겨 전개되었습니다.
+      quote: 패배에 눈이 뒤집힌 공작 영애가 제 목숨을 갉아먹는 금기를 뜯어내고 있었다.
+  [major/open] structure late_hook (judge:structure_judge, confidence 0.9)
+      claim: 빙의 직후 '눈을 떴다' 식으로 시작하며 상황을 파악하느라 긴장과 처지 설명이 늦게 등장한다.
+      quote: 눈을 뜨자마자 화려한 대리석이 깔린 거대한 원형 경기장이 보였다.
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.9)
+      claim: 아르테미스는 해요체와 하십시오체를 섞어 쓰는 도도한 귀족 아가씨 설정이나, 궁지에 몰리자 '끝낼 줄 아느냐!' 같은 전형적인 옛날 악당의 말투로 붕괴됐다.
+      quote: “이대로…… 끝낼 줄 아느냐!”
+  [major/open] promise canon_contradiction (judge:promise_checker, confidence 0.95)
+      claim: 열린 약속 장부상 20~25화에 회수(pay)될 예정이었던 '가문의 비전 마나 심법 개방'이 떡밥을 까는(open) 단계인 이번 회차에서 곧바로 일어나버렸습니다. 향후 예정된 전개 일정과 크게 어긋납니다.
+      quote: 패배에 눈이 뒤집힌 공작 영애가 제 목숨을 갉아먹는 금기를 뜯어내고 있었다.
+=== scorecard r8 v9 overall={"score":87,"note_count":11,"major_count":1,"minor_count":16,"blocking_count":0}
+  section genre: score=75 passed=true issues=3
+  section prose: score=85.6 passed=true issues=18
+  section voice: score=91.3 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=87.5 passed=true issues=2
+  section continuity: score=0 passed=true issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 결정적 린트 보고가 지적한 동작 상투구('고쳐 쥐다')입니다. 의미 없는 행동 묘사 대신 다음 행동으로 바로 넘어가는 것이 좋습니다.
+      quote: 동시에 아르테미스가 검끝을 고쳐 쥐며 자세를 잡았다.
+=== scorecard r9 v10 overall={"score":89,"note_count":11,"major_count":0,"minor_count":15,"blocking_count":0}
+  section genre: score=75 passed=true issues=3
+  section prose: score=90.9 passed=true issues=16
+  section voice: score=91.3 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=87.5 passed=true issues=2
+  section continuity: score=0 passed=true issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
