@@ -17,7 +17,8 @@ one per phase; the agent cannot merge, so a roll-up PR from the top branch close
 | --- | --- | --- | --- |
 | 1 | 0 — state and provider readiness | `hoplite/hipponion-22b29187` | done (ADR-0080) |
 | 2 | G — Gemini baseline and same-model judging | `…--gemini-baseline` | done (ADR-0081, `standard@12`) |
-| 3+ | C, U, V2, N, Q, M, I, E, W, B, D | stacked on G | pending |
+| 3 | C (part 1) — corpus import, statistics, voice analysis, copy detection | `…--corpus` | done (ADR-0082) |
+| 4+ | C (part 2), U, V2, N, Q, M, I, E, W, B, D | stacked on C1 | pending |
 
 **Done in Phase 0.** Both model-id names (`YEONJAE_NOTION_MODEL` wins over `YEONJAE_MODEL_NOTION`); split error
 classes and a policy-gated same-route refusal rule; counted gateway JSON recoveries; `bridge:credits`;
@@ -36,12 +37,43 @@ Korean voice.
 sandbox database (the test kit resets what it is given; `RESET_REFUSED` now guards the permanent one). Live
 runs use the permanent `DATABASE_URL` from a separate worktree so a rebuild cannot change a running process.
 
-**Next step.** Phase C: import the operator corpus into the permanent database (`corpus` schema), corpus
-statistics, the voice analysis, the copy index, the calibrated `lang/ko@7`, the operator voice layer, exemplars and
-contrast pairs, the C8 metric and the academy intake (`13-live-run-gemini.md` §3 holds the v12 checkpoint).
+**Next step.** Phase C part 2: `lang/ko@7` (thresholds from `corpus-stats.md`, the straight-quote fix), the operator
+voice layer, corpus exemplars by scene type, contrast pairs, stock-phrase mining, the C8 metric, the academy intake,
+`standard@13`; then the live checkpoints on both projects. The v12 checkpoint could not start: since 23:50 UTC
+the bridge answers 502 (`Notion AI createAgentThread error (500)`) on both workspaces — retry before any live step.
 
 **Open defects carried in.** A-4 (future knowledge vs the reveal schedule), G-1 (genre vocabulary), the bible
 time frame, A5 (dialogue-share floor for first-person openings) — scheduled for Phases C4 and U.
+
+## Phase C (part 1) — the operator corpus: import, statistics, voice analysis, copy detection — 2026-09-24
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline--corpus` (stacked on Phase G). ADR-0082 records the decisions.
+
+**Built:** migrations 0023 (`corpus.books`, `corpus.chapters`) and 0024 (`annotations`, `passages`,
+`contrast_pairs`); a dependency-free EPUB reader (`readEpub`, `readZipEntries`); `parseManifest`, `titleKey`,
+`classifyDocument`, POV inference, `corpusBookFrom`; `importCorpusBook`, `listCorpusBooks`, `corpusChapters`;
+CLI `corpus:import <dir|git-url>`, `corpus:list`, `corpus:stats [--json] [--out=]`; `chapterMetrics` (the lint's
+metrics one paragraph per line, plus ending classes) and percentile distributions; `CorpusCopyIndex`
+(14 Hangul syllables/letters/digits, spaces and punctuation ignored) wired as blocking `CORPUS-COPY-01` under
+`evaluation.corpus_copy` (no policy enables it yet); `resetDatabase` also drops `corpus`.
+
+**Measured (permanent database):** 3 books imported (1,138 chapter rows, 8.5 M characters); re-import creates
+nothing. Book 3 is an English machine translation (0 of 364 documents Korean-majority): imported, flagged,
+excluded from every voice use. 656 Korean main-story chapters: length p10/p50/p90 4,489 / 5,493 / 7,313자;
+dialogue + 속마음 median 23.4 % (first-person 화 1–25: median 25 %, p10 9.9 %, p2 7.6 %); paragraph median 30자; em
+dashes 0. Copy index: 2.95 M windows in 0.7 s; the G1 draft has 0 copies; a corpus excerpt is found with its
+source. Defect C-1: `KO-DLG-SHARE` ignores straight quotes (book 2's dialogue).
+
+**Written:** `docs/10-corpus/operator-voice-analysis.md` (C0.3: both Korean books read — prologue/화 1–25 in full,
+ten middle and four final chapters each — openings, possession and status windows, dialogue and inner voice,
+호칭, rhythm, 만담 and 착각, heroines, 사이다/절단, pacing, strengths, and what the live drafts do differently);
+`docs/10-corpus/corpus-stats.md` (C1).
+
+**Tests:** `corpus.test.ts` 11/11, `corpus-index.integration.test.ts` 2/2, migration replay 4/4, RLS inventory.
+
+**Not done yet (Phase C part 2):** `lang/ko@7` calibrated thresholds and the C-1 fix (C4), the operator voice layer
+(C3), exemplars and contrast pairs (C5, C6), stock-phrase mining (C7), the C8 metric, structure annotations (C2),
+the academy intake (C9) and `standard@13`.
 
 ## Phase G — Gemini baseline and same-model judging, `standard.v12` — 2026-09-24
 

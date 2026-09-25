@@ -100,6 +100,12 @@ export interface ProductionPolicy {
      */
     length_in_structure?: boolean;
     /**
+     * ADR-0082 (C0.4): every evaluated version (draft, patch, polish) is checked against the operator corpus in the permanent database; a span sharing at least min_chars consecutive Hangul syllables, letters or digits with it (spaces and punctuation ignored) is a blocking corpus_copy finding. Absent: no corpus check.
+     */
+    corpus_copy?: {
+      min_chars: number;
+    };
+    /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */
     judge_calibration?: {

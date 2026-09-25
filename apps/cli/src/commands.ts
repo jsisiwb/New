@@ -124,6 +124,7 @@ import { PgAuditStore } from '@yeonjae/db';
 import { ArtifactLlmOutputStore } from '@yeonjae/workflows';
 import { WorkflowError } from '@yeonjae/workflows';
 import { NOVEL_COMMANDS, NOVEL_USAGE, runNovelCommand } from './novel.js';
+import { CORPUS_COMMANDS, runCorpusCommand } from './corpus.js';
 
 /** Chapter-1 fixture paths and identity pins (mirrors packages/workflows/src/testkit.ts, the test-only harness). */
 const FIXTURE_ROOT = new URL('../../../', import.meta.url);
@@ -1254,6 +1255,7 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
       default:
         if (NOVEL_COMMANDS.has(cmd ?? ''))
           return await runNovelCommand(pool, cmd ?? '', rest, USAGE);
+        if (CORPUS_COMMANDS.has(cmd ?? '')) return await runCorpusCommand(pool, cmd ?? '', rest);
         return { ok: false, output: USAGE };
     }
   } finally {
@@ -1661,6 +1663,7 @@ async function projectForJob(pool: Pool, jobId: string): Promise<string | undefi
 
 export const DB_COMMANDS = new Set([
   ...NOVEL_COMMANDS,
+  ...CORPUS_COMMANDS,
   'db:migrate',
   'project:create',
   'series:audit',

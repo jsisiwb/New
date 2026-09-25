@@ -89,6 +89,6 @@ export async function resetDatabase(pool: Pool): Promise<void> {
       `RESET_REFUSED: database "${name}" is not a test database; set YEONJAE_ALLOW_DB_RESET=1 to reset it deliberately`,
     );
   await pool.query(
-    'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS canon CASCADE;',
+    'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS canon CASCADE; DROP SCHEMA IF EXISTS corpus CASCADE;',
   );
 }

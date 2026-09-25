@@ -9,6 +9,7 @@
  * major_count ≤ major_max, every deterministic criterion passed and every gated dimension at or above its
  * pinned threshold. Numbers come from the pinned Production Policy only.
  */
+import { corpusCopyIndexFor } from './corpus-index.js';
 import { createHash } from 'node:crypto';
 import { type ManuscriptVersionRow } from '@yeonjae/db';
 import {
@@ -561,6 +562,37 @@ export async function evaluateVersion(
                 chapter_span: { paragraph_ids: [...f.paragraph_ids] },
               },
               i,
+            ),
+          ),
+        );
+      }
+
+      // ADR-0082 (C0.4): no span of a draft, patch or polish may reuse the operator's published sentences.
+      const copyRule = policyEval?.corpus_copy;
+      if (copyRule) {
+        const index = await corpusCopyIndexFor(ctx.pool, copyRule.min_chars);
+        (index?.findCopies(nfc.text) ?? []).forEach((c, i) =>
+          issues.push(
+            toIssue(
+              ctx,
+              v.id,
+              'lint:corpus_copy',
+              'prose',
+              {
+                kind: 'corpus_copy',
+                severity: 'blocking',
+                confidence: 1,
+                claim: ko
+                  ? `운영자 작품(${c.source_id})의 문장과 공백·문장부호를 빼고 ${String(c.chars)}자가 그대로 겹친다. 이 대목을 새 문장으로 다시 쓴다.`
+                  : `${String(c.chars)} characters match the operator corpus (${c.source_id}) verbatim; rewrite the passage.`,
+                chapter_span: { start: c.start, end: c.end, quote: c.quote },
+                metric: {
+                  rule_id: 'CORPUS-COPY-01',
+                  value: c.chars,
+                  threshold: copyRule.min_chars,
+                },
+              },
+              1000 + i,
             ),
           ),
         );

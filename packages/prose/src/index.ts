@@ -16,3 +16,7 @@ export * from './status-window.js';
 export * from './address-register.js';
 export * from './ko-style-v5.js';
 export * from './ko-style-v6.js';
+export * from './epub.js';
+export * from './corpus.js';
+export * from './corpus-stats.js';
+export * from './corpus-copy.js';

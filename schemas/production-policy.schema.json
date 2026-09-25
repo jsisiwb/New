@@ -67,6 +67,13 @@
         "ledger_checks": {"type": "boolean", "description": "ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs."},
         "pov_secrets_reader_visible": {"type": "boolean", "description": "ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed."},
         "length_in_structure": {"type": "boolean", "description": "ADR-0081: the chapter length finding (LEN-01) counts against the structure dimension's deterministic composite, so a judge cannot rate the structure of a chapter far off its length target as if it were complete. Absent or false: length gates only through its own major finding, as before."},
+        "corpus_copy": {
+          "type": "object",
+          "description": "ADR-0082 (C0.4): every evaluated version (draft, patch, polish) is checked against the operator corpus in the permanent database; a span sharing at least min_chars consecutive Hangul syllables, letters or digits with it (spaces and punctuation ignored) is a blocking corpus_copy finding. Absent: no corpus check.",
+          "required": ["min_chars"],
+          "additionalProperties": false,
+          "properties": {"min_chars": {"type": "integer", "minimum": 8, "maximum": 60}}
+        },
         "judge_calibration": {
           "type": "object",
           "description": "ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.",
