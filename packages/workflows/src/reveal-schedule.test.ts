@@ -122,4 +122,53 @@ describe('reveal schedule (U1, G5-1)', () => {
     // An explicit reader date still wins (P3 is source-work knowledge the bible dates for the reader).
     expect(s.find((x) => x.localId === 'P3')).toMatchObject({ readerFrom: 4 });
   });
+
+  it("with current knowledge too, a present secret the narrator knows at the start is the reader's (ADR-0090, G8-1)", () => {
+    // G8a: a rival's drug habit the hero knows from the game carried no game words, so it read as `current`.
+    const habit = {
+      propositions: [
+        {
+          local_id: 'H1',
+          statement: '카이엔은 수석을 차지하려고 약물을 몰래 복용한다.',
+          kind: 'secret',
+          entity_ids: ['rival'],
+          secret: {
+            owner_ids: ['rival'],
+            allowed_knower_ids: ['rival', 'hero'],
+            reveal_not_before_chapter: 8,
+          },
+          truth: 'true',
+        },
+        {
+          local_id: 'H2',
+          statement: '실비아는 마력의 흐름을 보지 못한다.',
+          kind: 'secret',
+          entity_ids: ['mage'],
+          secret: {
+            owner_ids: ['mage'],
+            allowed_knower_ids: ['mage'],
+            reveal_not_before_chapter: 40,
+          },
+          truth: 'true',
+        },
+      ],
+    } as unknown as Parameters<typeof revealSchedule>[0];
+    const before = revealSchedule(habit, { narratorId: 'hero', narratorKnowledge: true });
+    expect(before.find((x) => x.localId === 'H1')).toMatchObject({
+      layer: 'current',
+      readerFrom: 8,
+    });
+    const after = revealSchedule(habit, {
+      narratorId: 'hero',
+      narratorKnowledge: true,
+      narratorCurrentKnowledge: true,
+    });
+    expect(after.find((x) => x.localId === 'H1')).toMatchObject({
+      readerFrom: 1,
+      othersFrom: 8,
+      narratorKnows: true,
+    });
+    // A secret the narrator does not know keeps its date.
+    expect(after.find((x) => x.localId === 'H2')).toMatchObject({ readerFrom: 40 });
+  });
 });

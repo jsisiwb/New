@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { lintKoreanWebnovel } from './ko-style.js';
+import { thirdPersonDrift } from './ko-style-v6.js';
 
 const V6 = {
   'KO-PUNCT-ELL': { warn: 6, fail: 12 },
@@ -112,5 +113,35 @@ describe('Korean lint v6 (ADR-0073)', () => {
     expect(rule('강진은 웃었다. “나는 간다.” ‘내가 옳다.’'.repeat(30), 'third_limited')).toEqual(
       [],
     );
+  });
+});
+
+describe('third-person drift in a first-person scene (ADR-0090, G8-5)', () => {
+  it('flags narration that names the narrator and hardly says 나', () => {
+    const drifted = [
+      '진혁은 소파에 털썩 주저앉았다.',
+      '“왔어?”',
+      '진혁이 고개를 들었다. 진혁의 눈이 가늘어졌다.',
+      '내 몫은 아니었다.',
+    ].join('\n');
+    expect(thirdPersonDrift(drifted, ['강진혁', '진혁'])).toEqual({
+      firstPerson: 1,
+      named: 3,
+      drifted: true,
+    });
+  });
+
+  it('keeps a first-person scene, names inside dialogue and 속마음, and other characters', () => {
+    const first = [
+      '나는 소파에 주저앉았다.',
+      '“진혁아, 진혁이 너 왔냐?”',
+      '‘진혁은 무슨.’',
+      '내가 먼저 일어섰다.',
+    ].join('\n');
+    expect(thirdPersonDrift(first, ['강진혁', '진혁']).drifted).toBe(false);
+    expect(
+      thirdPersonDrift('서유리는 웃었다. 서유리가 떠났다. 서유리의 잔.', ['강진혁', '진혁'])
+        .drifted,
+    ).toBe(false);
   });
 });

@@ -146,6 +146,10 @@ export interface ProductionPolicy {
       min_chars: number;
     };
     /**
+     * ADR-0090 (live defect G8-7): in a Korean chapter whose measured 그/그녀 rate is below the language layer's pronoun warn threshold (KO-PRN-RATE-1P for a first-person project, else KO-PRN-RATE — the operator's p90), a prose-judge finding about those pronouns is recorded as minor; at or above it the judge's severity stands. G8a's last round had two such majors at 0.33 per 1,000자, below the operator's first-person p10. Absent or false: the judge's severity always stands.
+     */
+    pronoun_band_cap?: boolean;
+    /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */
     judge_calibration?: {
@@ -160,6 +164,10 @@ export interface ProductionPolicy {
      * Every line break of a prose draft becomes a paragraph break (one paragraph per line, as serial platforms render it); words are untouched. Counted as the paragraph_per_line normalizer. Absent or false: drafts keep the model's own line layout.
      */
     paragraph_per_line?: boolean;
+    /**
+     * ADR-0090 (live defect G8-5): in a Korean first-person project, a scene whose narration names the POV character as subject or object at least three times and says ‘나’ at most once was narrated in the third person; it is re-drafted once with that measure and the redraft is kept only when it no longer drifts, counted as pov_redraft. KO-POV-01 reads the whole chapter, so one first-person scene hid two third-person ones. Absent or false: no per-scene check.
+     */
+    pov_redraft?: boolean;
     /**
      * ADR-0088 (live defect G6-3): an assembled chapter's line that repeats the line right before it word for word, and is at least ten characters with a space in it, is dropped (a generation glitch; short sound lines such as '덜컹 덜컹.' may repeat on purpose), counted as repeated_line.
      */
@@ -205,6 +213,10 @@ export interface ProductionPolicy {
        * ADR-0088 (live defect G6-1): a secret the first-person narrator knows from a prior life or the source work (knowledge layer prior_loop or source_work, the narrator among its knowers) is the reader's from 화 1 unless the bible dates it for the reader; the other characters keep the bible's date. Absent: only the narrator's own secrets are.
        */
       narrator_knowledge?: boolean;
+      /**
+       * ADR-0090 (live defect G8-1): with narrator_knowledge, a present-timeline secret (knowledge layer current) the first-person narrator knows at the start — a rival's habit or a classmate's side business he knows from the game or a prior life — is the reader's from 화 1 as well, unless the bible gives it a reader date; the other characters keep the bible's date. Absent: only prior-life and source-work secrets are.
+       */
+      narrator_current_knowledge?: boolean;
     };
     /**
      * ADR-0086 (U7, U8): before any drafting call the contract and scene plans are checked deterministically for self-consistency (participants, the final scene ending on the hook, dialogue beats with a partner, length) and by a plan_critic call (reveal safety, repeated exposition, character state against the schedule, the operator's structure targets). Blocking or major findings send the scene plan back to the scene planner with the findings, at most max_repairs times; the findings are recorded with the plan.
@@ -273,6 +285,14 @@ export interface ProductionPolicy {
      * ADR-0084 (U2, live defect G-1): a new project records its premise device from the intake (regression, reincarnation, game or novel possession); writers, editors, planners and the genre judge get that device's vocabulary, and every evaluated version is checked for the other devices' words (KO-DEVICE-01, a major genre finding). Absent or false: the genre overlay's vocabulary alone, as before.
      */
     device_lexicon?: boolean;
+    /**
+     * ADR-0090 (live defect G8-4): a new Korean project records the intake's protagonist type when it names one the compiler knows (먼치킨 → munchkin); writers, planners and the genre and structure judges read that the hero is overwhelming from the start by design. Absent or false: the intake's protagonist type reaches no prompt.
+     */
+    protagonist_type?: boolean;
+    /**
+     * ADR-0090 (live defect G8-2): under device_lexicon a new project records story_device_rules 2 — a game-possession serial may call the game itself the 원작, as the operator does; the other devices' wording is unchanged. Absent: the ADR-0084 wording, which forbids 원작 outright in a game-possession serial.
+     */
+    device_rules?: 2;
     /**
      * ADR-0089 (live defect G7-2): genre overlay versions a new Korean project composes instead of the newest one it would take without asking, e.g. genre/regression@4 (the 회빙환 overlay with device variants, read in the words of the premise device identity.device_lexicon records). A listed overlay applies only when the intake selects its genre. Absent: genre/regression up to @3, as before.
      */

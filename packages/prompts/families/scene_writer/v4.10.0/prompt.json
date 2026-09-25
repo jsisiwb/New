@@ -1,0 +1,41 @@
+{
+  "family": "scene_writer",
+  "version": "4.10.0",
+  "role": "scene_writer",
+  "purpose": "Korean webnovel prompt for a writer who keeps voices without copying example lines and names no stranger (ADR-0090), 4.10.0.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "writer_full",
+  "model_class": "P",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plan",
+    "scene_no",
+    "scene_total",
+    "scene_role",
+    "previous_text",
+    "canon_state",
+    "knowledge_lists",
+    "register_digests",
+    "open_promises",
+    "length_target_words"
+  ],
+  "output_schema": "scene-draft.schema.json",
+  "output_mode": "text",
+  "params": {
+    "temperature": 0.85,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.10.0 — voices without copied example lines, no stranger named, bodies within their level (ADR-0090): the cast bible's 대사 예 show the voice and are never reused; a first meeting names nobody before an introduction; an unawakened body wins by experience and tools, not strength.",
+  "regression_cases": [
+    "scene_writer.fixture.smoke"
+  ],
+  "content_hash": "sha256:b2b45fd3d2bb1aefb05d40ffde949ba7dd98d78582e6cb2262dec2dcd277ac79"
+}

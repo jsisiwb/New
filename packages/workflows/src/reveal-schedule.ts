@@ -72,6 +72,11 @@ export function revealSchedule(
   opts: {
     readonly narratorId?: string | undefined;
     readonly narratorKnowledge?: boolean | undefined;
+    /**
+     * ADR-0090 (G8-1): a present-timeline secret the narrator knows at the start (a rival's habit he read in the
+     * game) is the reader's too — the operator tells it at the character's entrance.
+     */
+    readonly narratorCurrentKnowledge?: boolean | undefined;
   } = {},
 ): ScheduledSecret[] {
   const out: ScheduledSecret[] = [];
@@ -89,7 +94,7 @@ export function revealSchedule(
       opts.narratorId !== undefined &&
       !narratorOwn &&
       knowerIds.includes(opts.narratorId) &&
-      layer !== 'current';
+      (layer !== 'current' || opts.narratorCurrentKnowledge === true);
     // U3: a secret that becomes true later cannot reach the reader before it is true.
     const trueFrom = chapterOf(s.true_from_chapter);
     const base = explicitReader ?? (narratorOwn || narratorKnows ? 1 : othersFrom);

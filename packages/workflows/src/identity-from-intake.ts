@@ -78,6 +78,17 @@ export interface IdentityCompositionOptions {
   readonly operatorExemplars?: readonly OperatorExemplar[] | undefined;
   /** `policy.identity.device_lexicon` (ADR-0084, U2): record the premise device from the intake. */
   readonly deviceLexicon?: boolean | undefined;
+  /** `policy.identity.device_rules` (ADR-0090): the device rule's wording the identity records. */
+  readonly deviceRules?: 2 | undefined;
+  /** `policy.identity.protagonist_type` (ADR-0090): record the intake's protagonist type. */
+  readonly protagonistType?: boolean | undefined;
+}
+
+/** The protagonist type an intake names, when the compiler has a line for it (ADR-0090, G8-4). */
+export function protagonistTypeOf(intake: StoryIntake): 'munchkin' | undefined {
+  return /먼치킨|munchkin|사기캐|오버파워/iu.test(intake.protagonist_type ?? '')
+    ? 'munchkin'
+    : undefined;
 }
 
 export type StoryDevice = NonNullable<NonNullable<NarrativeProfile['preferences']>['story_device']>;
@@ -221,6 +232,12 @@ export function identityProfileFromIntake(
         ? { operator_exemplars: opts.operatorExemplars.map((e) => ({ ...e })) }
         : {}),
       ...(isKo && opts.deviceLexicon && device ? { story_device: device } : {}),
+      ...(isKo && opts.deviceLexicon && device && opts.deviceRules === 2
+        ? { story_device_rules: 2 as const }
+        : {}),
+      ...(isKo && opts.protagonistType && protagonistTypeOf(intake)
+        ? { protagonist_type: 'munchkin' as const }
+        : {}),
     },
     calibration: { status: 'uncalibrated', notes: 'Composed from the intake at novel start.' },
   };
@@ -252,6 +269,8 @@ export async function ensureProjectIdentity(
     genreLayers?: readonly string[] | undefined;
     voice?: VoiceProfile | undefined;
     deviceLexicon?: boolean | undefined;
+    deviceRules?: 2 | undefined;
+    protagonistType?: boolean | undefined;
     /** Resolved only when the project has no pinned identity yet (it reads the corpus). */
     operatorExemplars?: (() => Promise<readonly OperatorExemplar[]>) | undefined;
   },
@@ -282,6 +301,8 @@ export async function ensureProjectIdentity(
       voice: input.voice,
       operatorExemplars: input.operatorExemplars ? await input.operatorExemplars() : undefined,
       deviceLexicon: input.deviceLexicon,
+      deviceRules: input.deviceRules,
+      protagonistType: input.protagonistType,
     });
     const appended = await appendIdentityDocument(pool, {
       workspaceId: input.workspaceId,

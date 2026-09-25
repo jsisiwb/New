@@ -5,7 +5,11 @@ import {
   ProfileStore,
   requireVoiceProfile,
 } from '@yeonjae/narrative';
-import { identityProfileFromIntake, storyDeviceOf } from './identity-from-intake.js';
+import {
+  identityProfileFromIntake,
+  protagonistTypeOf,
+  storyDeviceOf,
+} from './identity-from-intake.js';
 import { type StoryIntake } from './planning.js';
 
 const BASE: StoryIntake = {
@@ -446,5 +450,63 @@ describe('the 회빙환 overlay in the premise device’s own words (ADR-0089, G
     }).identity;
     for (const role of ['writer_full', 'planner_compact', 'judge_rubric_genre'] as const)
       expect(block(v4NoDevice, role).replace('p-nodev4', 'p-nodev3')).toBe(block(v3, role));
+  });
+});
+
+describe('the device rule as the operator writes it, and the protagonist type (ADR-0090)', () => {
+  const koStore = ProfileStore.fromDirectory();
+  const compose = (id: string, opts: Parameters<typeof identityProfileFromIntake>[3]) => {
+    const profile = identityProfileFromIntake(
+      id,
+      {
+        ...BASE,
+        manuscript_language: 'ko',
+        genre: { primary: 'academy', secondary: ['possession'] },
+        premise: '게임 속 아카데미의 엑스트라에 빙의한다.',
+        protagonist_type: '먼치킨',
+      },
+      koStore,
+      opts,
+    );
+    koStore.add(profile);
+    return composeIdentity(koStore, `project/${id}@1`, 'v');
+  };
+  const block = (
+    identity: ReturnType<typeof composeIdentity>,
+    role: Parameters<typeof compileBlock>[1]['role'],
+  ) => compileBlock(identity, { role, budgetTokens: 12000 }).text;
+
+  it('lets a game-possession serial call the game the 원작 under device rules 2 (G8-2)', () => {
+    const before = block(compose('p-dr1', { deviceLexicon: true }), 'judge_rubric_genre');
+    expect(before).toContain('‘원작’, ‘원작 주인공’ 같은 소설 빙의 어휘는 쓰지 않는다');
+    const identity = compose('p-dr2', { deviceLexicon: true, deviceRules: 2 });
+    expect(identity.preferences?.story_device_rules).toBe(2);
+    const genre = block(identity, 'judge_rubric_genre');
+    expect(genre).toContain('게임 자체를 ‘원작’이라 부를 수는 있다');
+    expect(genre).toContain(
+      '‘원작 주인공’, ‘원작 소설’처럼 소설 속으로 들어간 이야기의 어휘는 쓰지 않는다',
+    );
+    // Without the device lexicon no rule is recorded at all.
+    expect(compose('p-dr3', { deviceRules: 2 }).preferences?.story_device_rules).toBeUndefined();
+  });
+
+  it('tells writers, planners and the genre and structure judges that the 먼치킨 hero is the premise (G8-4)', () => {
+    expect(protagonistTypeOf({ ...BASE, protagonist_type: '먼치킨' })).toBe('munchkin');
+    expect(protagonistTypeOf({ ...BASE, protagonist_type: '평범한 대학생' })).toBeUndefined();
+    const off = compose('p-pt0', { deviceLexicon: true });
+    expect(off.preferences?.protagonist_type).toBeUndefined();
+    const on = compose('p-pt1', { deviceLexicon: true, protagonistType: true });
+    expect(on.preferences?.protagonist_type).toBe('munchkin');
+    for (const role of [
+      'writer_full',
+      'planner_compact',
+      'judge_rubric_genre',
+      'judge_rubric_structure',
+    ] as const) {
+      expect(block(on, role)).toContain('## 주인공 유형');
+      expect(block(off, role)).not.toContain('주인공 유형');
+    }
+    expect(block(on, 'judge_rubric_genre')).toContain('힘에 대가나 제약이 없다는 이유만으로');
+    expect(block(on, 'judge_rubric_prose')).not.toContain('주인공 유형');
   });
 });

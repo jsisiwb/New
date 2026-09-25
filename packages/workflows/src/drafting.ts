@@ -31,6 +31,7 @@ import {
   sliceCodePoints,
   talkShareOf,
   targetCount,
+  thirdPersonDrift,
   toNfcText,
 } from '@yeonjae/prose';
 import { type Issue } from './evaluation.js';
@@ -713,6 +714,36 @@ export async function draftScenes(
             }
           }
         }
+        // ADR-0090 (G8-5): a first-person scene that came back narrated in the third person is re-drafted once
+        // with its measure; the redraft is kept only when it no longer drifts.
+        const povNames =
+          ko && scene.pov.person === 'first'
+            ? povNamesOf(input.bible, ctx, scene.pov.character_id)
+            : [];
+        if (
+          ctx.policy.drafting?.pov_redraft === true &&
+          typeof prose === 'string' &&
+          povNames.length > 0
+        ) {
+          const drift = thirdPersonDrift(prose, povNames);
+          if (drift.drifted) {
+            const retry = await writeScene(
+              {
+                ...variables,
+                scene_plan: variables.scene_plan + povRedraftNote(drift, povNames[0] ?? ''),
+              },
+              `scene_draft:${ch}:${scene.scene_no}:pov`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (typeof again === 'string' && !thirdPersonDrift(again, povNames).drifted) {
+              prose = again;
+              call = retry;
+              recordNormalization('pov_redraft');
+            }
+          }
+        }
         const draft =
           typeof prose === 'string'
             ? validateSceneDraft(
@@ -1032,6 +1063,27 @@ export function sceneTalkShare(prose: string): number {
 }
 
 /** The note a scene redraft carries (ADR-0084): the measured share, the target, and what to change. */
+/** The POV character's registry names (display name, short forms, aliases), by bible or bound canon id. */
+export function povNamesOf(
+  bible: StoryBible | undefined,
+  ctx: Pick<WorkflowContext, 'bindings'>,
+  characterId: string,
+): string[] {
+  const e = bible?.entities.find((x) => x.id === characterId || ctx.bindings[x.id] === characterId);
+  if (!e) return [];
+  return [e.display_name, ...(e.short_forms ?? []), ...(e.aliases ?? [])].filter(
+    (n): n is string => typeof n === 'string' && n.trim() !== '',
+  );
+}
+
+/** ADR-0090 (G8-5): the POV redraft instruction, with the measure that triggered it. */
+export function povRedraftNote(
+  drift: { firstPerson: number; named: number },
+  name: string,
+): string {
+  return `\n\n시점 다시 쓰기: 이 장면은 1인칭이다. 서술자는 ${name} 자신이고 서술에서 자신을 ‘나’로 부른다. 직전 초고는 서술에서 ‘${name}’을 ${String(drift.named)}번 3인칭으로 불렀고 ‘나’는 ${String(drift.firstPerson)}번뿐이었다. 사건·비트·대사는 그대로 두고 서술만 1인칭으로 쓴다.`;
+}
+
 export function talkRedraftNote(measured: number, target: number, ko: boolean): string {
   const pct = (x: number) => String(Math.round(x * 100));
   return ko

@@ -316,6 +316,14 @@ export type NarrativeIdentityProfile = {
       judges: string[];
     };
     /**
+     * ADR-0090 (live defect G8-4): the protagonist type the intake names, recorded when the policy names identity.protagonist_type. munchkin: overwhelming from the start (먼치킨) — writers and planners build tension from misunderstanding, relationships and stakes, and the genre and structure judges do not treat cost-free power itself as a defect. Absent: no such line.
+     */
+    protagonist_type?: 'munchkin';
+    /**
+     * ADR-0090 (live defect G8-2): the wording of the device rule this identity was composed with. 2: a game-possession serial may call the game itself the 원작 (‘원작 게임에서는’, ‘원작대로라면’), as the operator's game-possession book does 17 times; 원작 주인공 and 원작 소설 stay the other device's words. Absent: the ADR-0084 wording.
+     */
+    story_device_rules?: 2;
+    /**
      * ADR-0084 (U2, live defect G-1): the premise device, derived from the intake when the policy names identity.device_lexicon. It selects the device vocabulary writers, planners and the genre judge are given, and the words a deterministic check flags (a regression serial does not call its past the 원작).
      */
     story_device?:

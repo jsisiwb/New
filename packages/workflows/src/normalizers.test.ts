@@ -54,6 +54,8 @@ const DESIGNED_PATHS = [
   'scene_rewrite',
   // ADR-0088: a line repeated word for word right after itself, dropped at assembly.
   'repeated_line',
+  // ADR-0090: a first-person scene drafted in the third person, re-drafted once.
+  'pov_redraft',
 ] as const;
 
 describe('output normalizer inventory (ADR-0057)', () => {

@@ -2315,3 +2315,107 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v19: a first-person scene drafted in the third person is re-drafted (ADR-0090)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G8r: the writer narrated a first-person scene as “진혁은 …”. The live writer answers in prose (text mode), the
+    // form the redrafts inspect. Each first draft opens with three narration lines naming the POV hero (the simulated
+    // scene may name another character), and the POV redraft answers in the first person.
+    const hero = INTAKE.main_character.name;
+    const thirdThenFirst = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      const lines = req.user.includes('시점 다시 쓰기')
+        ? [
+            '나는 창가에서 숨을 골랐다.',
+            '내가 장부를 덮었다.',
+            '내 손끝이 떨렸다.',
+            text.replaceAll(`${hero}은(는)`, '나는'),
+          ]
+        : [
+            `${hero}은 창가에서 숨을 골랐다.`,
+            `${hero}이 장부를 덮었다.`,
+            `${hero}의 손끝이 떨렸다.`,
+            text,
+          ];
+      return { text: lines.join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return thirdThenFirst(req, batchedScript(req, script(req)));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v19-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@19',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('re-drafts each drifted scene once, keeps the first-person redraft and tells every role the 먼치킨 premise', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v19-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+      const redrafts = writers.filter((r) => (r.trace?.activityId ?? '').endsWith(':pov'));
+      expect(redrafts.length).toBeGreaterThan(0);
+      for (const r of redrafts) expect(r.user).toContain('시점 다시 쓰기: 이 장면은 1인칭이다.');
+      const drafts = await pool.query<{ text: string }>(
+        "SELECT payload->>'text' AS text FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scene_draft'",
+        [projectId],
+      );
+      expect(drafts.rows.length).toBeGreaterThan(0);
+      for (const d of drafts.rows) {
+        expect(d.text).toContain('나는');
+        expect(d.text).not.toContain(`${hero}은 창가에서 숨을 골랐다`);
+      }
+      // G8-4: the intake's 먼치킨 hero reaches writers, planners and the genre judge as the premise.
+      for (const role of ['scene_writer', 'chapter_planner', 'genre_judge'])
+        expect(
+          seen.some((r) => r.trace?.role === role && r.system.includes('## 주인공 유형')),
+        ).toBe(true);
+    }, 300_000);
+  },
+);

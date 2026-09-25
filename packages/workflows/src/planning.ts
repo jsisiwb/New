@@ -463,6 +463,7 @@ export function scheduleOf(
   return revealSchedule(bible, {
     narratorId: narratorIdOf(ctx, bible),
     narratorKnowledge: ctx.policy.planning.reveal_schedule.narrator_knowledge,
+    narratorCurrentKnowledge: ctx.policy.planning.reveal_schedule.narrator_current_knowledge,
   });
 }
 

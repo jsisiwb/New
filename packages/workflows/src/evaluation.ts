@@ -1015,6 +1015,19 @@ export async function evaluateVersion(
           issues.push(toIssue(ctx, v.id, SOURCE[e], EVALUATOR_DIMENSION[e], raw, i, anchor)),
         );
       }
+      // ADR-0090 (G8-7): pronoun findings in a chapter inside the operator's own pronoun band are minor.
+      if (policyEval?.pronoun_band_cap === true && det.ko_style) {
+        const band =
+          ctx.identity.outputLanguage.lint_thresholds?.[
+            ctx.identity.preferences?.pov === 'first' ? 'KO-PRN-RATE-1P' : 'KO-PRN-RATE'
+          ];
+        if (band)
+          issues.splice(
+            0,
+            issues.length,
+            ...capPronounFindings(issues, det.ko_style.metrics.pronoun_per_1k, band.warn),
+          );
+      }
 
       const callId = (e: EvaluatorName, key: string): string | undefined =>
         results.get(e)?.llmCallId ?? (priorSection(key)?.evaluator_call_id as string | undefined);
@@ -1336,6 +1349,28 @@ function dimensionScores(raw: unknown): Record<string, number> {
 
 function clamp(n: number): number {
   return Math.max(0, Math.min(100, Number.isFinite(n) ? n : 0));
+}
+
+const PRONOUN_CLAIM = /대명사|[‘'"“]그녀|[‘'"“]그[’'"”는가의를]|그\/그녀|그·그녀/u;
+
+/**
+ * ADR-0090 (live defect G8-7): the prose judge raised single 그/그녀 uses as majors in a chapter at 0.33 per 1,000자,
+ * below the operator's first-person p10 (0.66). Below the band's upper edge (the lint's warn threshold, the operator's
+ * p90) such a finding is recorded as minor; above it the judge's severity stands, so stacked pronouns still block.
+ */
+export function capPronounFindings(
+  issues: readonly Issue[],
+  ratePer1k: number,
+  bandMax: number,
+): Issue[] {
+  if (ratePer1k >= bandMax) return [...issues];
+  return issues.map((i) =>
+    i.source === 'judge:prose_judge' &&
+    (i.severity === 'major' || i.severity === 'blocking') &&
+    PRONOUN_CLAIM.test(i.claim)
+      ? { ...i, severity: 'minor' as const }
+      : i,
+  );
 }
 
 /** Issues that block approval and are candidates for the one targeted revision (dimension-targeted). */
