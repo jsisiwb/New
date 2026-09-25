@@ -49,6 +49,8 @@ export const OUTPUT_NORMALIZERS = [
   'pov_redraft',
   // ADR-0097: a Korean scene at or above the pronoun warn line, re-drafted once.
   'pronoun_redraft',
+  // ADR-0102: an extractor answer that failed the canon-delta schema, repaired once.
+  'extraction_repair',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

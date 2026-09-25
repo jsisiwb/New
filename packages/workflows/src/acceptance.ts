@@ -25,6 +25,7 @@ import {
 import { type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
 import { checkOutputLanguage, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { anchorEvidence } from './anchoring.js';
+import { extractionItemErrors, extractionRepairNote } from './extraction-repair.js';
 import { checkpointPack, packCallInput, type StoredPack } from './drafting.js';
 import { type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
@@ -152,27 +153,11 @@ export async function extractCanon(
       const project = await getProject(ctx.pool, ctx.projectId);
       await bind(ctx, { canon_version: String(project.canon_version) });
       const paragraphs = segmentParagraphs(toNfcText(version.text));
-      const call = await modelCall<Partial<CanonDelta>>(ctx, {
-        step: 'extract',
-        family: 'canon_extractor',
-        activityId: `extract:${input.contract.chapter_number}`,
-        variables: {
-          // `event-first` names the extraction sweep (an identifier the prompt defines).
-          sweep: 'event-first',
-          pre_pass:
-            ctx.identity.outputLanguage.language === 'ko'
-              ? `문단 ${paragraphs.length}개; 등록부 언급은 팩에서 해소됨.`
-              : `${paragraphs.length} paragraphs; registry mentions resolved by the pack.`,
-        },
-        pack: packCallInput(pack.stored),
-      });
-      // Live extractors quote text reliably and count code points unreliably; each span is re-anchored
-      // to where its quote actually is before verification (policy fuzzy_anchor_min_ratio governs the
-      // verifier; anchoring never changes a quote that is not in the text). The extractor is shown ONE
-      // version and never its id, so a missing or non-UUID id is filled with that version; a different
-      // real id is left alone and rejected below as an envelope mismatch.
+      const ko = ctx.identity.outputLanguage.language === 'ko';
+      const prePass = ko
+        ? `문단 ${paragraphs.length}개; 등록부 언급은 팩에서 해소됨.`
+        : `${paragraphs.length} paragraphs; registry mentions resolved by the pack.`;
       const nfcVersion = toNfcText(version.text);
-      const rawItems = Array.isArray(call.output.items) ? call.output.items : [];
       const knownVersionIds = new Set(
         (
           await ctx.pool.query<{ id: string }>(
@@ -181,47 +166,90 @@ export async function extractCanon(
           )
         ).rows.map((r) => r.id),
       );
-      const anchoredItems = anchorEvidence(
-        nfcVersion,
-        version.id,
-        rawItems.map((item) => ({
-          ...item,
-          evidence: Array.isArray(item.evidence)
-            ? item.evidence.map((ev) => ({
-                ...ev,
-                manuscript_version_id:
-                  typeof ev.manuscript_version_id === 'string' &&
-                  knownVersionIds.has(ev.manuscript_version_id)
-                    ? ev.manuscript_version_id
-                    : version.id,
-              }))
-            : [],
-        })),
-      );
-      const envelope: CanonDelta = {
-        ...(call.output as CanonDelta),
-        items: anchoredItems as CanonDelta['items'],
-        project_id: ctx.projectId,
-        chapter_id: input.chapterId,
-        manuscript_version_id: version.id,
-        base_canon_version: project.canon_version,
-        stage: 'extracted_a',
-        extractor_call_id: call.llmCallId,
-      };
-      if (JSON.stringify(anchoredItems) !== JSON.stringify(rawItems))
-        recordNormalization('evidence_anchor');
-      // The extractor may only cite the version it was given: any other manuscript_version_id is rejected.
-      for (const item of anchoredItems) {
-        for (const ev of item.evidence) {
-          if (ev.manuscript_version_id !== version.id)
-            throw new WorkflowError(
-              'EXTRACTION_ENVELOPE_MISMATCH',
-              `item ${item.local_id} cites manuscript ${ev.manuscript_version_id}; only the approved ${version.id} may be cited`,
-              { step: 'extract', recommendedActions: ['regenerate'] },
-            );
+      const extractOnce = async (activityId: string, note: string) => {
+        const call = await modelCall<Partial<CanonDelta>>(ctx, {
+          step: 'extract',
+          family: 'canon_extractor',
+          activityId,
+          variables: {
+            // `event-first` names the extraction sweep (an identifier the prompt defines).
+            sweep: 'event-first',
+            pre_pass: prePass + note,
+          },
+          pack: packCallInput(pack.stored),
+        });
+        // Live extractors quote text reliably and count code points unreliably; each span is re-anchored
+        // to where its quote actually is before verification (policy fuzzy_anchor_min_ratio governs the
+        // verifier; anchoring never changes a quote that is not in the text). The extractor is shown ONE
+        // version and never its id, so a missing or non-UUID id is filled with that version; a different
+        // real id is left alone and rejected below as an envelope mismatch.
+        const rawItems = Array.isArray(call.output.items) ? call.output.items : [];
+        const anchoredItems = anchorEvidence(
+          nfcVersion,
+          version.id,
+          rawItems.map((item) => ({
+            ...item,
+            evidence: Array.isArray(item.evidence)
+              ? item.evidence.map((ev) => ({
+                  ...ev,
+                  manuscript_version_id:
+                    typeof ev.manuscript_version_id === 'string' &&
+                    knownVersionIds.has(ev.manuscript_version_id)
+                      ? ev.manuscript_version_id
+                      : version.id,
+                }))
+              : [],
+          })),
+        );
+        const envelope: CanonDelta = {
+          ...(call.output as CanonDelta),
+          items: anchoredItems as CanonDelta['items'],
+          project_id: ctx.projectId,
+          chapter_id: input.chapterId,
+          manuscript_version_id: version.id,
+          base_canon_version: project.canon_version,
+          stage: 'extracted_a',
+          extractor_call_id: call.llmCallId,
+        };
+        if (JSON.stringify(anchoredItems) !== JSON.stringify(rawItems))
+          recordNormalization('evidence_anchor');
+        // The extractor may only cite the version it was given: any other manuscript_version_id is rejected.
+        for (const item of anchoredItems) {
+          for (const ev of item.evidence) {
+            if (ev.manuscript_version_id !== version.id)
+              throw new WorkflowError(
+                'EXTRACTION_ENVELOPE_MISMATCH',
+                `item ${item.local_id} cites manuscript ${ev.manuscript_version_id}; only the approved ${version.id} may be cited`,
+                { step: 'extract', recommendedActions: ['regenerate'] },
+              );
+          }
         }
+        return {
+          rawItems,
+          v: validatorFor<CanonDelta>('canon-delta.schema.json')(envelope),
+        };
+      };
+      let attempt = await extractOnce(`extract:${input.contract.chapter_number}`, '');
+      if (!attempt.v.ok) {
+        // ADR-0102 (G17-2): one repair — each item's own errors and the schema's shapes for the types it used; the
+        // repaired answer is anchored, envelope-checked and validated exactly like the first.
+        const topLevel = attempt.v.errors
+          .filter((e) => !e.path.startsWith('/items'))
+          .map((e) => `${e.path} ${e.message}`);
+        const types = attempt.rawItems
+          .map((i) => (i as { type?: unknown }).type)
+          .filter((t): t is string => typeof t === 'string');
+        attempt = await extractOnce(
+          `extract:${input.contract.chapter_number}:repair`,
+          extractionRepairNote(
+            [...new Set(topLevel), ...extractionItemErrors(attempt.rawItems)],
+            types,
+            ko,
+          ),
+        );
+        if (attempt.v.ok) recordNormalization('extraction_repair');
       }
-      const v = validatorFor<CanonDelta>('canon-delta.schema.json')(envelope);
+      const v = attempt.v;
       if (!v.ok)
         throw new WorkflowError(
           'EXTRACTION_REJECTED',

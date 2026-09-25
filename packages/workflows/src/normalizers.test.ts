@@ -58,6 +58,8 @@ const DESIGNED_PATHS = [
   'pov_redraft',
   // ADR-0097: a Korean scene at or above the pronoun warn line, re-drafted once.
   'pronoun_redraft',
+  // ADR-0102: an extractor answer that failed the canon-delta schema, repaired once.
+  'extraction_repair',
 ] as const;
 
 describe('output normalizer inventory (ADR-0057)', () => {

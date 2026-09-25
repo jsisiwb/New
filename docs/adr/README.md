@@ -108,6 +108,7 @@
 | [0099](0099-story-spec-categories.md) | `standard.v26`: a story spec's requirement categories are read as the schema knows them (`planning.normalize_spec_categories`) |
 | [0100](0100-major-agreement.md) | `standard.v27`: a taste judge's reviewer-class major blocks only when a second reading of the same text reproduces it (`evaluation.major_agreement`) |
 | [0101](0101-pack-budgets.md) | `standard.v28`: the continuity checker's and the extractor's pack budgets raised to 48,000 and 44,000 tokens |
+| [0102](0102-polish-targets-and-extraction-repair.md) | The polish round names the lint findings as its targets; an extractor answer that fails the canon-delta schema is repaired once with its own errors and the schema's shapes |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
