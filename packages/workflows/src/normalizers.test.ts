@@ -36,6 +36,9 @@ const DESIGNED_PATHS = [
   'patch_quote_anchor',
   'judge_quote_anchor',
   'scene_draft',
+  // ADR-0080: the gateway's JSON recoveries.
+  'json_fence_stripped',
+  'json_object_extracted',
 ] as const;
 
 describe('output normalizer inventory (ADR-0057)', () => {
