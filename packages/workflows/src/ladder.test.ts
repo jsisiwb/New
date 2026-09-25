@@ -4,6 +4,7 @@ import {
   findingInRange,
   isSpanlessJudgeFinding,
   claimForKoreanNote,
+  nextRung,
   rejectionReasons,
   repeatDecision,
   targetsKey,
@@ -83,5 +84,13 @@ describe('the escalation ladder helpers (ADR-0092)', () => {
       '계약 기준 AC-3 미충족',
     );
     expect(claimForKoreanNote('절단이 약하다.')).toBe('절단이 약하다.');
+  });
+
+  it('takes the untried rung, then stops only when both failed (ADR-0093, G10-4)', () => {
+    expect(nextRung(new Set(), 'scene', true)).toBe('scene');
+    expect(nextRung(new Set(['scene']), 'scene', true)).toBe('patch');
+    expect(nextRung(new Set(['patch']), 'patch', true)).toBe('scene');
+    expect(nextRung(new Set(['patch']), 'patch', false)).toBe('stop');
+    expect(nextRung(new Set(['patch', 'scene']), 'patch', true)).toBe('stop');
   });
 });

@@ -11,6 +11,7 @@ const V14 = requirePolicy('policy/standard@14');
 const V15 = requirePolicy('policy/standard@15');
 const V19 = requirePolicy('policy/standard@19');
 const V20 = requirePolicy('policy/standard@20');
+const V21 = requirePolicy('policy/standard@21');
 
 interface IssueIn {
   id: string;
@@ -356,6 +357,95 @@ describe('score attribution (ADR-0092, G9-3)', () => {
     expect(v20.failures).toEqual([]);
     // Without the texts nothing is attributed, so nothing is carried either.
     expect(patchRegression(V20, { ...input, texts: undefined }).passed).toBe(false);
+  });
+});
+
+describe('net improvement and the length band (ADR-0093, G10-2, G10-4)', () => {
+  const U = (n: number) => `01930000-0000-7000-8000-${String(n).padStart(12, '0')}`;
+  it('keeps a revision that removed a blocking finding while it wrote one new major (G10r r2)', () => {
+    const before = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [
+        {
+          id: U(1),
+          dimension: 'promise',
+          kind: 'other',
+          severity: 'blocking',
+          span: { start: 7, end: 14 },
+        },
+        { id: U(2), dimension: 'continuity', kind: 'timeline_error', span: { start: 7, end: 14 } },
+      ],
+    });
+    const after = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [
+        { id: U(3), dimension: 'genre', kind: 'repetitive_arc', span: { start: 8, end: 12 } },
+        { id: U(4), dimension: 'continuity', kind: 'timeline_error', span: { start: 18, end: 25 } },
+      ],
+    });
+    const input = {
+      before,
+      after,
+      dimension: 'continuity' as const,
+      targetedIssueIds: [U(1), U(2)],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    expect(patchRegression(V20, input).failures).toContain('new_blocking_or_major_issue');
+    expect(patchRegression(V21, input).passed).toBe(true);
+    // Heavier after the patch: the new finding is not paid for, so it fails as before.
+    const worse = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [
+        {
+          id: U(5),
+          dimension: 'genre',
+          kind: 'repetitive_arc',
+          severity: 'blocking',
+          span: { start: 8, end: 12 },
+        },
+        { id: U(6), dimension: 'continuity', kind: 'timeline_error', span: { start: 18, end: 25 } },
+      ],
+    });
+    expect(patchRegression(V21, { ...input, after: worse }).passed).toBe(false);
+    // A new register-kind finding stays a hard failure (the ADR-0014 kind guard).
+    const register = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [{ id: U(8), dimension: 'voice', kind: 'voice_drift', span: { start: 8, end: 12 } }],
+    });
+    expect(patchRegression(V21, { ...input, after: register }).passed).toBe(false);
+  });
+
+  it('fails a revision that took the length out of its band, whatever else it fixed (G10r r1)', () => {
+    const before = card({
+      prose: 89.3,
+      structure: 80.5,
+      issues: [
+        {
+          id: U(7),
+          dimension: 'structure',
+          kind: 'excessive_exposition',
+          span: { start: 7, end: 14 },
+        },
+      ],
+    });
+    const shortened = card({ prose: 90.9, structure: 82.5 });
+    (shortened.sections as Record<string, unknown>).length = { score: 0, passed: false };
+    (before.sections as Record<string, unknown>).length = { score: 100, passed: true };
+    const input = {
+      before,
+      after: shortened,
+      dimension: 'structure' as const,
+      targetedIssueIds: [U(7)],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    expect(patchRegression(V20, input).passed).toBe(true);
+    const v21 = patchRegression(V21, input);
+    expect(v21.passed).toBe(false);
+    expect(v21.protections.find((p) => p.protection === 'length')?.passed).toBe(false);
   });
 });
 

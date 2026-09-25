@@ -341,7 +341,8 @@ export type ProtectionName =
   | 'structure'
   | 'westernization'
   | 'translation_like'
-  | 'no_new_blocking_major';
+  | 'no_new_blocking_major'
+  | 'length';
 
 export interface ProtectionOutcome {
   readonly protection: ProtectionName;
@@ -706,16 +707,61 @@ export function patchRegression(
     ...(newIssueKinds.length ? { issueKinds: newIssueKinds } : {}),
   });
 
+  // ADR-0093 (live defect G10-2): a revision may not take the chapter's length out of its band — a finding without a
+  // quote is never "introduced", so a rewrite that cut a quarter of the chapter passed every other check.
+  if (convergence?.length_protection) {
+    const beforeLength = sectionPassed(input.before, 'length');
+    const afterLength = sectionPassed(input.after, 'length');
+    if (beforeLength === true)
+      protections.push({
+        protection: 'length',
+        applicable: true,
+        passed: afterLength !== false,
+        ...(afterLength === false
+          ? { detail: 'the revision took the length out of its band' }
+          : {}),
+      });
+  }
+  // ADR-0093 (live defects G10-4, G9a r2, G10r r2): a revision whose open blocking/major findings weigh less than its
+  // parent's moved the chapter toward approval even if it wrote one new finding — that finding is next round's target.
+  // Hard protections still hold: output language, the 번역투/Westernization/register kind guards, the length band and
+  // every gated dimension (a regression fails as before).
+  const weights = convergence?.net_improvement;
+  const weigh = (issues: readonly Issue[]) =>
+    weights
+      ? issues.reduce(
+          (n, i) =>
+            n + (i.severity === 'blocking' ? weights.blocking_weight : weights.major_weight),
+          0,
+        )
+      : 0;
+  const HARD: ReadonlySet<ProtectionName> = new Set([
+    'output_language',
+    'westernization',
+    'translation_like',
+    'register',
+    'length',
+  ]);
+  const netImproved =
+    weights !== undefined &&
+    weigh(afterOpenAll) < weigh(beforeOpen) &&
+    regressions.length === 0 &&
+    missing.length === 0 &&
+    dropped.length === 0 &&
+    !protections.some((p) => p.applicable && !p.passed && HARD.has(p.protection));
   const failures: RegressionFailure[] = [];
-  if (!materiallyImproved) failures.push('targeted_not_improved');
-  if (worsened) failures.push('targeted_worsened');
-  // Required policy-gated evidence that no scorecard carries fails the report rather than only being
-  // recorded: a gate whose judge is unwired must never let a patch through (ADR-0041).
-  if (missing.length > 0) failures.push('gated_dimension_missing');
-  if (dropped.length > 0) failures.push('dimension_dropped');
-  if (regressions.length > 0) failures.push('protected_dimension_regressed');
-  if (newIssueKinds.length > 0) failures.push('new_blocking_or_major_issue');
-  if (protections.some((p) => p.applicable && !p.passed)) failures.push('protection_failed');
+  // Under net improvement (above) the soft failures are waived; the hard ones cannot occur by construction.
+  if (!netImproved) {
+    if (!materiallyImproved) failures.push('targeted_not_improved');
+    if (worsened) failures.push('targeted_worsened');
+    // Required policy-gated evidence that no scorecard carries fails the report rather than only being
+    // recorded: a gate whose judge is unwired must never let a patch through (ADR-0041).
+    if (missing.length > 0) failures.push('gated_dimension_missing');
+    if (dropped.length > 0) failures.push('dimension_dropped');
+    if (regressions.length > 0) failures.push('protected_dimension_regressed');
+    if (newIssueKinds.length > 0) failures.push('new_blocking_or_major_issue');
+    if (protections.some((p) => p.applicable && !p.passed)) failures.push('protection_failed');
+  }
 
   return {
     targetedDimension: input.dimension,

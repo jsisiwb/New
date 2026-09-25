@@ -21,6 +21,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@19',
       'policy/standard@2',
       'policy/standard@20',
+      'policy/standard@21',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -30,6 +31,36 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v21 is standard.v20 with the G10 fixes (ADR-0093)', () => {
+    const v20 = requirePolicy('policy/standard@20', policies);
+    const v21 = requirePolicy('policy/standard@21', policies);
+    expect(v21.planning).toEqual({ ...v20.planning, meeting_time_frames: true });
+    expect(v21.identity).toEqual({ ...v20.identity, language_layer: 'lang/ko@9' });
+    expect(v21.revision).toEqual({
+      ...v20.revision,
+      convergence: {
+        ...v20.revision.convergence,
+        length_protection: true,
+        net_improvement: { blocking_weight: 2, major_weight: 1 },
+      },
+      ladder: { ...v20.revision.ladder, switch_rung: true, length_to_scene: true },
+    });
+    const strip = (p: typeof v20) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        identity: _i,
+        revision: _r,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v21)).toEqual(strip(v20));
+    expect(v21.gates).toEqual(v20.gates);
   });
 
   it('standard.v20 is standard.v19 with the G9 fixes (ADR-0092)', () => {

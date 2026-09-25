@@ -52,6 +52,14 @@ export interface ProductionPolicy {
        * ADR-0092 (live defect G9-7): a scene rewrite gets the drafting pass's deterministic checks before any judge reads it — quote marks folded as in drafting, lines repeating a line elsewhere in the chapter dropped, and in a first-person Korean project a third-person drift (thirdPersonDrift) re-drafted once, the redraft kept only when it no longer drifts. The rewritten scene's own text also replaces the old one for locating scene ranges in later rounds. Absent or false: the rewrite is used as returned.
        */
       rewrite_checks?: boolean;
+      /**
+       * ADR-0093 (live defect G10-4): with no_repeat, a round on the parent and targets of a quarantined attempt takes the rung not yet tried there — a patch round after a failed scene rewrite, a scene rewrite after a failed patch round while max_scene_rewrites allows — and once both failed it retries the rung with the fewest introduced findings, the rejected attempts' reasons in the note, instead of ending the loop; rounds end at max_rounds. Absent or false: no_repeat as ADR-0092 decides it.
+       */
+      switch_rung?: boolean;
+      /**
+       * ADR-0093 (live defect G10-3): an open length finding (the chapter outside its length band) is answered by rewriting the scene furthest from its planned length, told its target in 자, while max_scene_rewrites allows. Absent or false: the finding stays untargeted while quoted findings exist.
+       */
+      length_to_scene?: boolean;
     };
     /**
      * ADR-0087 (STEP 3): patches drafted per cluster of a multi-patch round; the one that brings the fewest new lint pattern hits (번역투 markers, AI stock phrases, calques) into its span is kept before any judge runs, the first on a tie. Absent or 1: one patch per cluster, as before.
@@ -106,6 +114,17 @@ export interface ProductionPolicy {
        * ADR-0092 (live defect G9-3): with span_attribution, a blocking or major finding whose dimension and kind stood open on the parent is carried, not introduced, even where the patch rewrote the passage it now quotes; and a gated dimension whose score fell with no blocking/major finding introduced on it, ending no more than regression_tolerance_points below its gate, moved by judge variance on shared text — it is neither a protected regression nor a targeted worsening. Absent or false: score changes are read as ADR-0086 reads them.
        */
       score_attribution?: boolean;
+      /**
+       * ADR-0093 (live defect G10-2): a revision whose parent's length section passed fails its regression check (protection `length`) when the revision's length section fails — a length finding carries no quote, so no other check sees a rewrite that cuts a quarter of the chapter. Absent or false: length is judged only at approval.
+       */
+      length_protection?: boolean;
+      /**
+       * ADR-0093 (live defects G10-4, G9a r2, G10r r2): a revision whose open blocking and major findings weigh less than its parent's (blocking_weight per blocking finding, major_weight per major) is kept even when it wrote a new finding, which becomes a target of the next round; the hard protections still fail it — output language, the translation, Westernization and register kind guards, the length band, a gated dimension that regressed, a missing or dropped gated dimension. Absent: every new blocking/major kind fails the check (ADR-0014).
+       */
+      net_improvement?: {
+        blocking_weight: number;
+        major_weight: number;
+      };
     };
     /**
      * ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.
@@ -252,6 +271,10 @@ export interface ProductionPolicy {
      * ADR-0089 (live defect G7-3): a cast register whose since_chapter is N ≥ 1 (the 화 in which the relationship begins — a first meeting, becoming a disciple or a subordinate) is planned, not seeded as canon: the voice judge's 호칭 matrix leaves it out before 화 N and marks it as beginning in 화 N, and canon records the relationship from the accepted text. Absent or false: every register is canon from before 화 1, so a checker demands the settled register (사부님, 형님) from the first line of the chapter in which the relationship forms.
      */
     register_time_frames?: boolean;
+    /**
+     * ADR-0093 (live defect G10-1): with time_frames, a bible secret whose statement names a character its owner first meets in 화 N (the relationship's since_chapter, ADR-0089) becomes true no earlier than 화 N + 1 unless the designer dated it later, so the packs of 화 N do not present the aftermath of that meeting as already known. Absent or false: only the designer's true_from_chapter dates a secret.
+     */
+    meeting_time_frames?: boolean;
     /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
      */

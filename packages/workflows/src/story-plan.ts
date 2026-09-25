@@ -495,6 +495,55 @@ const REL_TYPES = new Set([
  * Generate the complete bible for the approved concept. Idempotent: every model call is checkpointed and
  * the assembled bible is a content-addressed artifact keyed by spec version + concept id.
  */
+/**
+ * ADR-0093 (live defect G10-1): the 화 before which a character's secret cannot be true because it names someone the
+ * owner first meets in 화 N (a dated register, ADR-0089): N + 1. Undefined when it names nobody met later.
+ */
+export function secretMeetingFloors(
+  characters: readonly {
+    readonly display_name?: string | undefined;
+    readonly short_forms?: readonly string[] | undefined;
+    readonly aliases?: readonly string[] | undefined;
+    readonly registers?:
+      | readonly {
+          readonly toward?: string | undefined;
+          readonly since_chapter?: number | undefined;
+        }[]
+      | undefined;
+  }[],
+  resolve: (name: string | undefined) => string | undefined,
+): (ownerId: string, statement: string | undefined) => number | undefined {
+  const meetings = new Map<string, number>();
+  const namesOf = new Map<string, string[]>();
+  for (const c of characters) {
+    const from = resolve(c.display_name);
+    if (!from) continue;
+    namesOf.set(
+      from,
+      [c.display_name, ...(c.short_forms ?? []), ...(c.aliases ?? [])].filter(
+        (n): n is string => typeof n === 'string' && n.trim().length >= 2,
+      ),
+    );
+    for (const r of c.registers ?? []) {
+      const to = resolve(r.toward);
+      if (!to || to === from || typeof r.since_chapter !== 'number' || r.since_chapter < 1)
+        continue;
+      for (const key of [`${from}|${to}`, `${to}|${from}`])
+        meetings.set(key, Math.min(meetings.get(key) ?? r.since_chapter, r.since_chapter));
+    }
+  }
+  return (ownerId, statement) => {
+    if (!statement) return undefined;
+    let floor: number | undefined;
+    for (const [other, names] of namesOf) {
+      if (other === ownerId || !names.some((n) => statement.includes(n))) continue;
+      const met = meetings.get(`${ownerId}|${other}`);
+      if (met !== undefined) floor = Math.max(floor ?? 0, met + 1);
+    }
+    return floor;
+  };
+}
+
 export async function buildFullBible(
   ctx: WorkflowContext,
   input: { intake: StoryIntake; spec: StorySpec; concept: Concept; mainTimelineId: string },
@@ -754,6 +803,11 @@ export async function buildFullBible(
   const secretHolders: { knowerId: string; localId: string; fromChapter?: number }[] = [];
   const chapterAtLeast1 = (v: unknown): number | undefined =>
     typeof v === 'number' && Number.isInteger(v) && v >= 1 ? v : undefined;
+  // ADR-0093 (G10-1): a secret about someone its owner has not met yet is not true before that meeting.
+  const meetingFloor =
+    ctx.policy.planning?.time_frames === true && ctx.policy.planning.meeting_time_frames === true
+      ? secretMeetingFloors(characters, resolve)
+      : () => undefined;
   for (const c of characters) {
     const ownerId = resolve(c.display_name);
     if (!ownerId) continue;
@@ -766,7 +820,9 @@ export async function buildFullBible(
       // (4.7.0); older designer answers carry none, so their bibles are unchanged.
       const readerFrom =
         typeof s === 'string' ? undefined : chapterAtLeast1(s.reader_reveal_chapter);
-      const trueFrom = typeof s === 'string' ? undefined : chapterAtLeast1(s.true_from_chapter);
+      const designed = typeof s === 'string' ? undefined : chapterAtLeast1(s.true_from_chapter);
+      const floor = meetingFloor(ownerId, statement);
+      const trueFrom = floor !== undefined ? Math.max(designed ?? 0, floor) : designed;
       const layer =
         typeof s !== 'string' &&
         (s.layer === 'current' || s.layer === 'prior_loop' || s.layer === 'source_work')

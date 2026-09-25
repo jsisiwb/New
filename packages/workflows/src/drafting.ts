@@ -1123,6 +1123,8 @@ export async function rewriteScene(
     rejected?: readonly string[] | undefined;
     /** ADR-0092 (G9-7): run the drafting pass's deterministic checks on the rewrite (`ladder.rewrite_checks`). */
     checks?: { readonly bible?: StoryBible | undefined } | undefined;
+    /** ADR-0093 (G10-3): the scene is rewritten for the chapter's length — its target and its current length in 자. */
+    lengthTarget?: { readonly target: number; readonly previous: number } | undefined;
   },
 ): Promise<{
   version: ManuscriptVersionRow;
@@ -1157,7 +1159,12 @@ export async function rewriteScene(
         ...(input.rejected?.length
           ? [
               '앞선 수정안은 다음 이유로 기각됐다. 같은 방식으로 고치지 않는다.',
-              ...input.rejected.map((r) => `- ${r}`),
+              ...input.rejected.map((r) => `- ${claimForKoreanNote(r)}`),
+            ]
+          : []),
+        ...(input.lengthTarget
+          ? [
+              `이 장면의 분량 목표는 ${String(input.lengthTarget.target)}자 안팎이다. 앞선 원고는 ${String(input.lengthTarget.previous)}자였다. 장면 설계의 비트를 빠짐없이 지면에서 보여 주어 목표 분량을 채운다.`,
             ]
           : []),
       ].join('\n');

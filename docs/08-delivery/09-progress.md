@@ -40,6 +40,22 @@ now bursts to 8 GiB.
 
 **Resume point.** STEP 2/3 fixes for G9-1 … G9-8 → `standard@20` → a live checkpoint on both projects.
 
+## G10 fixes and C7 refresh — `standard.v21` — 2026-09-25
+
+**Built (ADR-0093):** `revision.ladder.switch_rung` (the untried rung before any stop, then retries with the rejection
+reasons; `nextRung`); `revision.convergence.net_improvement` (a revision lighter in weighted open findings is kept,
+hard protections aside) and `length_protection`; `revision.ladder.length_to_scene` (the scene furthest from its planned
+length rewritten with its target); `planning.meeting_time_frames` (`secretMeetingFloors`); `lang/ko@9` (eight stock
+figures from `corpus:stock-phrases` over the drafts through G9).
+
+**Measured:** G10 (`13-live-run-gemini.md` §10) — no reader-secret finding in any round of either chapter; academy v1 on
+length with likeness 85; both loops ended early on ADR-0092's stop (G10-4). 8.17 credit points for the pair.
+
+**Tests:** `convergence.test.ts` (net improvement, the length band), `ladder.test.ts`, `story-plan.test.ts`, `policy.test.ts`
+(v21), `compiler.test.ts`, `commands.test.ts`; the simulated runs of `novel-ko.integration.test.ts` unchanged.
+
+**Not done (and why):** G10-5 (owner names in canon lines) — cosmetic for the model, fixed with the next context change.
+
 ## STEP 2 / STEP 3 (G9 fixes) and STEP 4.1 — `standard.v20`, `corpus:verify` — 2026-09-25
 
 **Built (ADR-0092):** `planning.reveal_schedule.canon_lines` (every Korean pack's canon lines carry the schedule's two

@@ -41,15 +41,18 @@ import {
 import { type Gateway } from '@yeonjae/gateway';
 import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/narrative';
 import { PromptRegistry } from '@yeonjae/prompts';
-import { sliceCodePoints, toNfcText } from '@yeonjae/prose';
+import { codePointLength, sliceCodePoints, toNfcText } from '@yeonjae/prose';
 import {
   claimAnchor,
   findingInRange,
   isSpanlessJudgeFinding,
   rejectionReasons,
+  claimForKoreanNote,
+  nextRung,
   repeatDecision,
   targetsKey,
   type QuarantinedAttempt,
+  type Rung,
 } from './ladder.js';
 import { resolveWorkflowPins } from './workflow-pins.js';
 import {
@@ -615,6 +618,15 @@ export async function produceChapter(
     let sceneRewrites = 0;
     // ADR-0092 (G9-5): the last quarantined attempt, so that no round repeats it unchanged.
     let lastQuarantined: QuarantinedAttempt | undefined;
+    // ADR-0093 (G10-4): the rungs quarantined on one parent and target set, with the findings each introduced.
+    let tried:
+      | {
+          parentId: string;
+          targets: string;
+          introduced: Map<Rung, number>;
+          reasons: string[];
+        }
+      | undefined;
     let stopped: string | undefined;
     // ADR-0092 (G9-7): the scenes' current texts, so a kept rewrite keeps its range in later rounds.
     const sceneTexts = [...drafted.texts];
@@ -653,9 +665,59 @@ export async function produceChapter(
               ladder?.spanless_to_scene === true,
             )
           : undefined;
-      // ADR-0092 (G9-5): a round that would resend a quarantined attempt's targets to the same parent at the same
-      // rung escalates a patch to a scene rewrite, and otherwise ends the loop.
-      if (ladder?.no_repeat) {
+      // ADR-0093 (G10-3): a chapter outside its length band gets the scene furthest from its planned length rewritten.
+      let lengthTarget: { target: number; previous: number } | undefined;
+      const lengthFinding = ladder?.length_to_scene
+        ? targets.find((i) => i.dimension === 'length')
+        : undefined;
+      if (lengthFinding && !rewriteAt && rewritesLeft) {
+        const short =
+          codePointLength(toNfcText(current.text).text) < contract.contract.length_target.value;
+        const at = sceneByLength(ranges, plan.scenes, short);
+        if (at) {
+          rewriteAt = at;
+          rewriteFindings = [
+            lengthFinding,
+            ...targets.filter(
+              (i) => i !== lengthFinding && findingInRange(i, at.range, current.text, false),
+            ),
+          ];
+          lengthTarget = {
+            target: at.scene.length_target.value,
+            previous: at.range.end - at.range.start,
+          };
+        }
+      }
+      let retryReasons: readonly string[] | undefined;
+      // ADR-0093 (G10-4): on a quarantined attempt's parent and targets, take the untried rung; once both failed,
+      // retry the one that introduced fewer findings with every rejection reason — never end the loop early.
+      if (ladder?.no_repeat && ladder.switch_rung) {
+        const key = targetsKey(targets);
+        if (tried?.parentId === current.id && tried.targets === key) {
+          const planned: Rung = rewriteAt ? 'scene' : 'patch';
+          const sceneAt =
+            rewriteAt ??
+            (rewritesLeft
+              ? sceneToRewrite(targets, ranges, plan.scenes, current.text, true)
+              : undefined);
+          let rung = nextRung(new Set(tried.introduced.keys()), planned, sceneAt !== undefined);
+          if (rung === 'stop') {
+            const scene = tried.introduced.get('scene') ?? Number.POSITIVE_INFINITY;
+            const patch = tried.introduced.get('patch') ?? Number.POSITIVE_INFINITY;
+            rung = scene < patch && sceneAt ? 'scene' : 'patch';
+          }
+          if (rung === 'patch') {
+            rewriteAt = undefined;
+            lengthTarget = undefined;
+          } else if (!rewriteAt && sceneAt) {
+            rewriteAt = sceneAt;
+            rewriteFindings = targets.filter((i) =>
+              findingInRange(i, sceneAt.range, current.text, ladder.spanless_to_scene === true),
+            );
+          }
+          retryReasons = tried.reasons;
+        }
+      } else if (ladder?.no_repeat) {
         const decision = repeatDecision(lastQuarantined, {
           parentId: current.id,
           targets: targetsKey(targets),
@@ -698,16 +760,22 @@ export async function produceChapter(
             findings: rewriteFindings,
             dimension: rewriteFindings[0]?.dimension ?? dimension,
             nameOf: (id: string) => registryNames.get(id) ?? id,
-            ...(lastQuarantined?.parentId === current.id && lastQuarantined.reasons.length
-              ? { rejected: lastQuarantined.reasons }
-              : {}),
+            ...(retryReasons?.length
+              ? { rejected: retryReasons }
+              : lastQuarantined?.parentId === current.id && lastQuarantined.reasons.length
+                ? { rejected: lastQuarantined.reasons }
+                : {}),
             ...(ladder?.rewrite_checks ? { checks: { bible: input.bible } } : {}),
+            ...(lengthTarget ? { lengthTarget } : {}),
           })
         : await reviseVersionMulti(ctx, {
             version: current,
             chapterId: contract.chapterId,
             chapterNo,
-            issues: scoreOnly.length ? [...targets, ...scoreOnly] : targets,
+            issues: withRejections(
+              scoreOnly.length ? [...targets, ...scoreOnly] : targets,
+              retryReasons,
+            ),
             dimension,
             round,
             registerDigests: writerBuilt.variables.register_digests ?? '(none)',
@@ -811,6 +879,19 @@ export async function produceChapter(
           rung: rewriteAt ? 'scene' : 'patch',
           reasons: rejectionReasons(report.failures, introducedClaims),
         };
+        if (ladder?.switch_rung) {
+          const rung: Rung = rewriteAt ? 'scene' : 'patch';
+          if (tried?.parentId !== parent.id || tried.targets !== lastQuarantined.targets)
+            tried = {
+              parentId: parent.id,
+              targets: lastQuarantined.targets,
+              introduced: new Map(),
+              reasons: [],
+            };
+          tried.introduced.set(rung, introducedClaims.length);
+          for (const r of lastQuarantined.reasons)
+            if (!tried.reasons.includes(r) && tried.reasons.length < 6) tried.reasons.push(r);
+        }
         current = parent;
         evaluation = beforeEvaluation;
         patchesSinceFull = Math.max(0, patchesSinceFull - 1);
@@ -1424,6 +1505,35 @@ export function polishTargets(scorecard: Scorecard): Scorecard['issues'] {
       i.source === 'lint:ko_style' &&
       POLISH_RULE.test(i.metric?.rule_id ?? ''),
   );
+}
+
+/**
+ * ADR-0093 (G10-3): the scene furthest below (for a short chapter) or above (for a long one) its planned length.
+ */
+function sceneByLength(
+  ranges: readonly ({ start: number; end: number } | undefined)[],
+  scenes: readonly ScenePlan[],
+  short: boolean,
+): { scene: ScenePlan; range: { start: number; end: number } } | undefined {
+  let best: { scene: ScenePlan; range: { start: number; end: number }; ratio: number } | undefined;
+  ranges.forEach((r, i) => {
+    const scene = scenes[i];
+    if (!r || !scene) return;
+    const ratio = (r.end - r.start) / Math.max(1, scene.length_target.value);
+    if (!best || (short ? ratio < best.ratio : ratio > best.ratio))
+      best = { scene, range: r, ratio };
+  });
+  return best ? { scene: best.scene, range: best.range } : undefined;
+}
+
+/**
+ * ADR-0093 (G10-4): a retried patch round tells the reviser why the earlier attempts were rejected, on each target's
+ * claim (Korean only: a criterion's English prefix is rendered in Korean).
+ */
+function withRejections(issues: readonly Issue[], reasons: readonly string[] | undefined): Issue[] {
+  if (!reasons?.length) return [...issues];
+  const note = ` (앞선 수정안은 다음 이유로 기각됐다: ${reasons.map(claimForKoreanNote).join(' / ')})`;
+  return issues.map((i) => ({ ...i, claim: `${claimForKoreanNote(i.claim)}${note}` }));
 }
 
 /**

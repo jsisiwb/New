@@ -499,3 +499,56 @@ draft passed all four dimension gates with no blocking finding — the best r0 o
   rejected before any judge call.
 - **G9-8 — stock figures and world vocabulary.** `서늘한 미소가 입가에 번졌다`, `정적이 내려앉았다` (one stock figure raised
   by two judges as two majors); `오러` for a mage; a 상태창 without the world rule's lines and trait name.
+
+## 10. G10 — the `standard.v20` checkpoint on both projects (STEP 2/3; 15:09–15:37 UTC)
+
+Chapter 1 of two fresh projects on `standard@20` (ADR-0092: the schedule's dates in every canon line, `voice/operator@3`,
+score attribution, quoteless findings to a scene, no repeated round, checked rewrites), run in parallel from the live
+worktree at `75439a9`. Metrics from `quality:checkpoint`; exports in `ops/live-runs/g10-standard20/`. (A launcher bug
+first created three empty projects with no run — `G10 아카데미 standard20`, `G10 회귀 standard20`, `probe-shape-only`; the
+runs are `G10a …` and `G10r …`.)
+
+| | G10a (academy) | G10r (regression) |
+| --- | --- | --- |
+| ADR-0092 on live data | the writer's canon lines carry `독자는 이미 안다(서술해도 됨)` / `다른 인물에게 N화 이전 공개 금지`; no reader-secret finding in any round | the same; no reader-secret finding in any round |
+| Length (v1) | 5,319자 (+0.4 %), 4,175 without spaces | 4,528자 (−14.6 %), 3,567 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 40 % → 28.3 %, 40 % → 28.5 % | 2: 20 % → 7.7 %, 40 % → 27.8 % |
+| Quoted dialogue lines | 47 (8.8 per 1,000자) | 35 (7.7 per 1,000자) |
+| Quoted 속마음 lines | 12 | 5 |
+| Plan critic / repairs | one critic finding (a character knowing what he cannot); `PLAN-DLG-02`, `PLAN-DLG-03`; the plan re-asked once | one critic finding (state contradiction); the plan re-asked once |
+| First line | `“신입생들! 똑바로 서라!”` (a dialogue line) | `“크아아악!”` (a dialogue line) |
+| r0 gate | overall 80: prose 74.4 ✗, structure 85, genre 95, voice 81.7; knowledge ✗ | overall 85: prose 89.3, structure 80.5, genre 90, voice 87.5 — all four gates passing |
+| Rounds (scope) | r0, r1 (scene rewrite, quarantined: one new terminology major, `KO-DEVICE-01` 1) — then stopped | r0, r1 (scene rewrite, kept), r2 (dialogue patch, quarantined), r3 (scene rewrite, quarantined) — then stopped |
+| Blocking / major | r0 1 / 3 → r1 1 / 5 | r0 2 / 3 → r1 **1 / 2** → r2 0 / 3 → r3 1 / 7 |
+| Why the loop ended | `no_repeat`: after a quarantined rewrite the next round stopped instead of patching (G10-4) | `no_repeat`: both rungs tried once on the same parent, two rounds left (G10-4); r1 had cut the chapter to 3,966자 (−25 %) and passed (G10-2) |
+| The last blockers | a secret dated before its meeting — the TA "already lost to the hero" (knowledge, blocking); exposition; a TA who knows the hero's family on hearing his name | length −25 % (untargeted, G10-3); the hero blackmailing with a mana-stone ledger before the first gate (promise, blocking; continuity) |
+| Reader-secret findings | 0 in both rounds (G9a: 3 blocking + 1 major at r0) | 0 in every round |
+| `KO-DEVICE-01` | r0 0, r1 1 | 0 |
+| Corpus copy check (14 syllables) | no `corpus_copy` finding | no `corpus_copy` finding |
+| Likeness (C8) | v1 **85** (first-person bands 80); G9a 70 | v1 65 (first-person bands 65); G9r 70 |
+| Result | not accepted (`needs_attention`) | not accepted (`needs_attention`) |
+| Calls / tokens / time | 37 (37 attempts) / 181,957 in, 28,512 out / 1,434 s | 49 (49 attempts) / 199,787 in, 26,106 out / 1,640 s |
+
+Credits for the pair: ws1 87.34 → 89.67 %, ws3 17.42 → 21.70 %, ws4 6.44 → 8.00 % (8.17 points); ws2 still unreadable.
+
+Excerpts (the first three lines of each chapter, unedited):
+
+> “신입생들! 똑바로 서라!”
+> 쩌렁쩌렁한 목소리가 제3연무장의 낡은 대리석 바닥을 쾅쾅 울렸다.
+> 은빛이 도는 회색 머리. 먹잇감을 노리는 듯한 날카로운 삼백안.
+
+> “크아아악!”
+> 비명이 목구멍을 찢고 터져 나왔다.
+> 침대에서 용수철처럼 튕겨 오른 몸이 바닥으로 사정없이 처박혔다.
+
+**What changed against G9.** G9-1 and G9-2 are fixed on live data: no reader-secret finding in any round of either chapter
+(G9a had three blocking at r0). The academy draft came out on its length with the best likeness of any live draft (85).
+
+**Defects (fixed by ADR-0093, `standard@21`, except G10-5).**
+
+- **G10-1:** a secret describing the aftermath of a 화-1 meeting was known from before 화 1 (knowledge blocking at G10a r0).
+- **G10-2:** a scene rewrite cut the chapter by a quarter and passed its regression check (a length finding has no quote).
+- **G10-3:** the length finding was untargeted afterwards; no rung could lengthen the chapter.
+- **G10-4:** ADR-0092's `no_repeat` stopped both loops early — after one quarantined rewrite (G10a) and after one patch
+  and one rewrite (G10r); both quarantines were for a single new finding while G10r r2 had removed a blocking one.
+- **G10-5 (open):** a secret's owner outside the pack's registry appears in the canon lines as a raw id.

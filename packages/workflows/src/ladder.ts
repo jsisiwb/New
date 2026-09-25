@@ -78,8 +78,8 @@ export interface QuarantinedAttempt {
 }
 
 /**
- * What a round does when the last quarantined attempt had the same parent and targets: repeat (nothing matched),
- * escalate a patch round to a scene rewrite, or stop the loop.
+ * ADR-0092 (`no_repeat`): what a round does when the last quarantined attempt had the same parent and targets: repeat
+ * (nothing matched), escalate a patch round to a scene rewrite, or stop the loop.
  */
 export function repeatDecision(
   last: QuarantinedAttempt | undefined,
@@ -127,4 +127,21 @@ export function claimForKoreanNote(claim: string): string {
         colon ? `계약 기준 ${id} 미충족: ` : `계약 기준 ${id} 미충족`,
     )
     .trim();
+}
+
+/**
+ * ADR-0093 (live defect G10-4, `ladder.switch_rung`): the rungs already quarantined on one parent and one target set
+ * decide the next rung — the planned one while it is untried, else the other one (a patch after a failed scene
+ * rewrite, a scene rewrite after a failed patch round while rewrites remain); the loop stops only when both failed.
+ */
+export function nextRung(
+  tried: ReadonlySet<Rung>,
+  planned: Rung,
+  sceneFeasible: boolean,
+): Rung | 'stop' {
+  if (!tried.has(planned)) return planned;
+  const other: Rung = planned === 'scene' ? 'patch' : 'scene';
+  if (tried.has(other)) return 'stop';
+  if (other === 'scene' && !sceneFeasible) return 'stop';
+  return other;
 }
