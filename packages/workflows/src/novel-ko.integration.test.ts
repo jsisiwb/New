@@ -2831,12 +2831,13 @@ run(
 );
 
 run(
-  'Korean novel run under standard.v28: a contract window of 1.0 → 1.1 does not reject a fact dated 1.2 by paragraph order (ADR-0104)',
+  'Korean novel run under standard.v28: G17a’s delta shapes — a 1.0 → 1.1 window, a fact dated 1.2, a fact dated only by its item — commit (ADR-0104, ADR-0105)',
   () => {
     let pool: Pool;
     let workspaceId: string;
     let projectId: string;
-    // G17a: the planner wrote story time 1.0 → 1.1 and the extractor dated a relationship from 1.2.
+    // G17a: the planner wrote story time 1.0 → 1.1, the extractor dated a relationship from 1.2 and gave two facts only
+    // their items' clocks.
     const narrowWindow = (req: ProviderRequest, out: ReturnType<typeof script>) => {
       if (!out || !('json' in out)) return out;
       if (req.trace?.role === 'chapter_planner') {
@@ -2867,7 +2868,14 @@ run(
         payload: { entity_id: hero, attribute: 'status.seat', value: 'front_row', valid_from: at },
         evidence: event.evidence,
       };
-      return { json: { ...json, items: [...json.items, fact] } };
+      const later = { chapter_no: 1, ordinal: 3, precision: 'exact' };
+      const undated = {
+        ...fact,
+        local_id: 'f-class',
+        story_clock: later,
+        payload: { entity_id: hero, attribute: 'status.class', value_text: 'F' },
+      };
+      return { json: { ...json, items: [...json.items, fact, undated] } };
     };
     // The polish run's writer line, so the chapter reaches extraction the same way.
     const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
@@ -2910,7 +2918,7 @@ run(
       }),
     });
 
-    it('commits the fact from 1.2 and accepts chapter 1', async () => {
+    it('commits the fact from 1.2 and the undated fact at its item’s clock, and accepts chapter 1', async () => {
       const started = await startNovel(makeDeps(), { projectId, intake });
       await approveConcept(pool, {
         projectId,
@@ -2934,11 +2942,15 @@ run(
         [projectId],
       );
       expect(contract.rows.map((r) => r.payload.story_time.end.ordinal)).toEqual([1]);
-      const facts = await pool.query<{ ord: string }>(
-        `SELECT valid_from_ord::text AS ord FROM facts WHERE project_id = $1 AND attribute = 'status.seat'`,
+      const facts = await pool.query<{ attribute: string; ord: string }>(
+        `SELECT attribute, valid_from_ord::text AS ord FROM facts
+          WHERE project_id = $1 AND attribute IN ('status.seat', 'status.class') ORDER BY attribute`,
         [projectId],
       );
-      expect(facts.rows).toEqual([{ ord: '1000002' }]);
+      expect(facts.rows).toEqual([
+        { attribute: 'status.class', ord: '1000003' },
+        { attribute: 'status.seat', ord: '1000002' },
+      ]);
       const chapter = await pool.query<{ status: string }>(
         'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
         [projectId],

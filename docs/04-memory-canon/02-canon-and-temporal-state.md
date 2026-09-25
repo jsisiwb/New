@@ -45,6 +45,8 @@ formality/address terms/titles per pair).
 chapter 14" still returns the ch.10 injury after it heals in ch.18). Facts are never deleted; only
 corrections, retcons, rollbacks and system-time retractions set `retracted_at_version` (system time) so "as
 of canon version v" queries work. Extraction may never emit a retraction for an in-story change.
+An extracted fact asserted without its own `valid_from` is valid from its item's `story_clock`, the clock a
+`close` uses; a fact with neither is rejected by the verifier (ADR-0105).
 
 ### 1.4 Story clock (ADR-0040)
 `StoryClock { chapter_no: int, ordinal: int (< 1,000,000), calendar?: gregorian|relative_days|era:<name>,

@@ -146,6 +146,17 @@ export function verifyDelta(input: unknown, ctx: VerifyContext): VerificationRes
         });
       }
     }
+    // ADR-0105: a stored fact needs its clock; acceptance fills it from the item's, so only a fact with neither lands here.
+    if (
+      item.type === 'fact' &&
+      (item.op === 'assert' || item.op === 'supersede') &&
+      payload.valid_from === undefined
+    )
+      issues.push({
+        code: 'SCHEMA_INVALID',
+        item: id,
+        detail: 'an asserted fact needs valid_from (or a story_clock to take it from)',
+      });
     if (item.type === 'entity' && item.op === 'create') introduced.add(id);
     if (ctx.knownEntityIds) {
       for (const key of ['entity_id', 'from_entity_id', 'to_entity_id', 'location_id']) {

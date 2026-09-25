@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { toNfcText } from '@yeonjae/prose';
 import { verifyDelta } from './verify.js';
+import { withFactClocks } from './accept.js';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const text = toNfcText(
@@ -35,6 +36,24 @@ describe('deterministic delta verification', () => {
     const r = verifyDelta({ ...delta, items: [{ local_id: 'x' }] }, ctx);
     expect(r.ok).toBe(false);
     expect(r.issues[0]?.code).toBe('SCHEMA_INVALID');
+  });
+
+  it('dates an asserted fact without valid_from at its item’s clock, and rejects one with neither (ADR-0105)', () => {
+    const fact = delta.items.find((i) => i.type === 'fact' && i.op === 'assert');
+    if (!fact) throw new Error('fixture has no asserted fact');
+    const { valid_from: _vf, ...payload } = fact.payload as Record<string, unknown>;
+    const clock = { chapter_no: 9, ordinal: 50, precision: 'exact' };
+    const undated = { ...delta, items: [{ ...fact, story_clock: clock, payload }] };
+    const filled = withFactClocks(undated) as typeof delta;
+    expect((filled.items[0]?.payload as { valid_from?: unknown }).valid_from).toEqual(clock);
+    expect(verifyDelta(filled, ctx)).toEqual({ ok: true, issues: [] });
+    // Nothing to fill: the same object back.
+    expect(withFactClocks(delta)).toBe(delta);
+    const { story_clock: _sc, ...clockless } = { ...fact, payload };
+    const neither = withFactClocks({ ...delta, items: [clockless] });
+    expect(verifyDelta(neither, ctx).issues).toEqual([
+      expect.objectContaining({ code: 'SCHEMA_INVALID', item: fact.local_id }),
+    ]);
   });
 
   it('rejects a paraphrased quote and an off-by-one span with item-level detail', () => {

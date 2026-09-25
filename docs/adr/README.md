@@ -111,6 +111,7 @@
 | [0102](0102-polish-targets-and-extraction-repair.md) | The polish round names the lint findings as its targets; an extractor answer that fails the canon-delta schema is repaired, at most twice, with its own errors and the schema's shapes |
 | [0103](0103-extraction-repair-keeps-valid-fields.md) | A top-level field that validated in the extractor answer being repaired and fails in the repaired one is taken back from that answer; the repair note renders the shapes of the top-level fields errors name |
 | [0104](0104-story-present-reaches-last-paragraph.md) | For future validity at chapter acceptance, a contract window inside its own chapter ends no earlier than the chapter's last paragraph, because in-chapter ordinals follow paragraph order |
+| [0105](0105-asserted-fact-takes-its-item-clock.md) | At chapter acceptance, an asserted fact without its own `valid_from` is valid from its item's `story_clock`; a fact with neither clock is rejected by the verifier |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
