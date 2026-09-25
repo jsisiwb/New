@@ -22,6 +22,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@2',
       'policy/standard@20',
       'policy/standard@21',
+      'policy/standard@22',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -31,6 +32,19 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v22 is standard.v21 with owner names and arc-plan stances (ADR-0094)', () => {
+    const v21 = requirePolicy('policy/standard@21', policies);
+    const v22 = requirePolicy('policy/standard@22', policies);
+    expect(v22.context).toEqual({ ...v21.context, secret_names: true });
+    expect(v22.planning).toEqual({ ...v21.planning, normalize_arc_knowledge: true });
+    const strip = (p: typeof v21) => {
+      const { version: _v, name: _n, content_hash: _h, context: _c, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v22)).toEqual(strip(v21));
+    expect(v22.gates).toEqual(v21.gates);
   });
 
   it('standard.v21 is standard.v20 with the G10 fixes (ADR-0093)', () => {

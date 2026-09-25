@@ -16,7 +16,7 @@ names only).
 ```bash
 pnpm install && pnpm build && pnpm cli db:migrate
 export YEONJAE_PROVIDER_MODE=notion          # or live / genspark / simulated / replay
-pnpm cli project:create "제목" --policy=policy/standard@20
+pnpm cli project:create "제목" --policy=policy/standard@22
 pnpm cli novel:start <project> intake.json    # intake → story spec → two story directions
 pnpm cli novel:approve <project> <concept-id> --stop-after=3
 pnpm cli novel:run <project> --status-file=run.json
@@ -49,6 +49,8 @@ version. For a new Korean project use the newest `standard`:
 | `standard@18` | relationships dated and not canon before they begin, the 회빙환 overlay in the device's own words, provenance tags stripped, `lang/ko@8` | 0089 |
 | `standard@19` | the narrator's present knowledge, the operator's device words, the 먼치킨 premise, a per-scene point-of-view redraft, pronouns inside the operator's band | 0090 |
 | `standard@20` | the reveal schedule in every canon line, the heroine formula inside it (`voice/operator@3`), score attribution, quoteless findings rewritten in their scene, no repeated round, checked scene rewrites | 0092 |
+| `standard@21` | the untried rung before any stop, net improvement with hard protections, the length band protected and length findings rewritten in their scene, secrets dated by the meeting they presuppose, `lang/ko@9` | 0093 |
+| `standard@22` | secret owners named in the canon lines, arc-plan stances normalized | 0094 |
 
 **Watching a run.**
 

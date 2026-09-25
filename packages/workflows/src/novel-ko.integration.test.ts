@@ -2528,3 +2528,116 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v22: secret owners are named in every canon line (ADR-0094)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // G9r: the contract checker failed an opening criterion with no quote in every scorecard, and no round could
+    // target it. Here the first evaluation fails it (the claim names [p1] and the opening); later ones pass it.
+    let failedOnce = false;
+    const openingCriterion = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'contract_checker' || failedOnce) return out;
+      failedOnce = true;
+      return {
+        json: {
+          criteria: [
+            {
+              criterion_id: 'AC-MH-1',
+              passed: false,
+              evidence_paragraph_ids: ['p1'],
+              note: '첫 문장([p1])이 회차의 사건으로 바로 들어가지 않는다.',
+            },
+          ],
+        },
+      };
+    };
+    const sentencePerLine = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !('json' in out)) return out;
+      const draft = out.json as { text?: unknown };
+      return typeof draft.text === 'string'
+        ? { ...out, json: { ...draft, text: draft.text.replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') } }
+        : out;
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = sentencePerLine(req, openingCriterion(req, batchedScript(req, script(req))));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v22-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@22',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('names every secret owner, sends the failed criterion to scene 1 and completes', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v22-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+      const rewrites = seen.filter((r) =>
+        (r.trace?.activityId ?? '').startsWith('scene_rewrite:1:1:'),
+      );
+      expect(rewrites.length).toBe(1);
+      expect(rewrites[0]?.user).toContain('첫 문장');
+      // G9-1: no pack renders a secret with the bible's single reveal chapter any more.
+      for (const r of seen) expect(`${r.system}\n${r.user}`).not.toMatch(/; \d+화 이전 공개 금지/);
+      // G10-5: every secret's owner is a name, never a raw id.
+      for (const r of seen)
+        expect(`${r.system}\n${r.user}`).not.toMatch(/소유자: [0-9a-f]{8}-[0-9a-f]{4}-/);
+      expect(seen.some((r) => r.user.includes('비밀 (소유자: '))).toBe(true);
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);

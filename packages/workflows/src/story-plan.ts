@@ -544,6 +544,65 @@ export function secretMeetingFloors(
   };
 }
 
+const ARC_STANCES = new Set([
+  'knows',
+  'suspects',
+  'believes_false',
+  'pretends',
+  'unaware',
+  'forgot',
+  'doubts',
+]);
+// A live planner's free-text stance, read as the nearest one the schema knows; anything else is dropped.
+const ARC_STANCE_ALIASES: Readonly<Record<string, string>> = {
+  believes: 'suspects',
+  believe: 'suspects',
+  thinks: 'suspects',
+  suspect: 'suspects',
+  know: 'knows',
+  learns: 'knows',
+  learned: 'knows',
+  knew: 'knows',
+  misbelieves: 'believes_false',
+  believes_wrongly: 'believes_false',
+  false_belief: 'believes_false',
+  forgets: 'forgot',
+  doubt: 'doubts',
+  pretend: 'pretends',
+};
+
+/**
+ * ADR-0094 (live defect G11-1): an arc plan's planned knowledge changes with the stances the schema knows — an exact
+ * value is kept, a planner's alias (`believes`) becomes its nearest stance, an unknown one drops the change rather
+ * than failing the arc plan.
+ */
+export function normalizeArcKnowledge(changes: readonly unknown[]): Record<string, unknown>[] {
+  const stanceOf = (v: unknown): string | undefined => {
+    if (typeof v !== 'string') return undefined;
+    const key = v
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/gu, '_');
+    if (ARC_STANCES.has(key)) return key;
+    return ARC_STANCE_ALIASES[key];
+  };
+  return changes.flatMap((c): Record<string, unknown>[] => {
+    if (typeof c !== 'object' || c === null) return [];
+    const r = c as Record<string, unknown>;
+    const to = stanceOf(r.to_stance);
+    if (!to || r.knower === undefined || typeof r.proposition_ref !== 'string') return [];
+    // The schema allows exactly these fields; a planner's extras (a from_stance) would fail it as well.
+    return [
+      {
+        knower: r.knower,
+        proposition_ref: r.proposition_ref,
+        to_stance: to,
+        ...(typeof r.channel === 'string' ? { channel: r.channel } : {}),
+      },
+    ];
+  });
+}
+
 export async function buildFullBible(
   ctx: WorkflowContext,
   input: { intake: StoryIntake; spec: StorySpec; concept: Concept; mainTimelineId: string },
@@ -1333,6 +1392,15 @@ export async function planArcFromBlueprint(
         ),
         ...(b.participants ? { participants: onlyKnown(b.participants) } : {}),
         ...(b.promise_refs ? { promise_refs: onlyPromises(b.promise_refs) } : {}),
+        // ADR-0094 (G11-1): a planned knowledge change keeps only the stances the schema knows.
+        ...(ctx.policy.planning?.normalize_arc_knowledge &&
+        Array.isArray((b as { knowledge_changes_planned?: unknown }).knowledge_changes_planned)
+          ? {
+              knowledge_changes_planned: normalizeArcKnowledge(
+                (b as { knowledge_changes_planned: unknown[] }).knowledge_changes_planned,
+              ),
+            }
+          : {}),
       }));
       // Live planners write the two check objects as prose; keep the prose in their notes fields.
       const repetition: unknown = raw.repetition_check;

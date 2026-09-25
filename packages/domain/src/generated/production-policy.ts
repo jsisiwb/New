@@ -276,6 +276,10 @@ export interface ProductionPolicy {
      */
     meeting_time_frames?: boolean;
     /**
+     * ADR-0094 (live defect G11-1): an arc plan's planned knowledge changes keep only the stances the schema knows — an exact value stays, a planner's alias (believes) becomes its nearest stance (suspects), an unknown one drops that change — instead of failing the arc plan (ARC_PLAN_INVALID, which a resume replays from the recorded answer). Absent or false: the arc plan is validated as written.
+     */
+    normalize_arc_knowledge?: boolean;
+    /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
      */
     cut_design?: boolean;
