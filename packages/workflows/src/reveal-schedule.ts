@@ -115,6 +115,25 @@ export function revealSchedule(
   return out;
 }
 
+/**
+ * ADR-0092 (G9-1): the schedule's two dates per secret, keyed by the NFC statement, for the canon lines of every
+ * Korean pack (`planning.reveal_schedule.canon_lines`).
+ */
+export function secretDatesOf(
+  schedule: readonly ScheduledSecret[],
+): Map<
+  string,
+  { readonly readerFrom?: number | undefined; readonly othersFrom?: number | undefined }
+> {
+  const out = new Map<
+    string,
+    { readonly readerFrom?: number | undefined; readonly othersFrom?: number | undefined }
+  >();
+  for (const s of schedule)
+    out.set(s.statement.normalize('NFC'), { readerFrom: s.readerFrom, othersFrom: s.othersFrom });
+  return out;
+}
+
 export function readerStatus(s: ScheduledSecret, chapterNo: number): ReaderStatus {
   if (s.readerFrom === undefined || s.readerFrom > chapterNo) return 'hidden';
   return s.readerFrom === chapterNo && !s.narratorOwn && s.narratorKnows !== true

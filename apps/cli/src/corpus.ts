@@ -76,6 +76,7 @@ export const CORPUS_COMMANDS = new Set([
   'corpus:stock-phrases',
   'corpus:blind-packet',
   'corpus:reveal',
+  'corpus:verify',
 ]);
 export const CORPUS_IMPORT_VERSION = 'corpus-import@1';
 
@@ -106,6 +107,96 @@ export function statsSource(layer = 'lang/ko@6'): KoStyleSource {
     thresholds: ol.lint_thresholds,
     calquePhrases: ol.calque_phrases,
   };
+}
+
+/**
+ * `corpus:verify <dir|git-url> [--json]` (STEP 4.1): re-read every EPUB with the importer's own parser, write nothing,
+ * and compare it with the database copy — the book by its file's SHA-256, then every chapter by spine index (kind,
+ * title, 자 with and without spaces, content SHA-256). `complete` is true only when every file's book and every
+ * chapter match, so the source files can be retired once it holds.
+ */
+async function verifyCmd(pool: Pool, args: readonly string[]): Promise<Result> {
+  const [target] = args;
+  if (!target || target.startsWith('--'))
+    return { ok: false, output: { error: 'USAGE', usage: 'corpus:verify <dir|git-url> [--json]' } };
+  const { dir } = sourceDir(target);
+  const files = readdirSync(dir)
+    .filter((f) => f.toLowerCase().endsWith('.epub'))
+    .sort();
+  const books: Record<string, unknown>[] = [];
+  let complete = true;
+  const seen = new Set<string>();
+  for (const file of files) {
+    const buf = readFileSync(join(dir, file));
+    const sha = createHash('sha256').update(buf).digest('hex');
+    const parsed = readCorpusBook(buf, file);
+    const db = await pool.query<{ id: string; title: string; chapter_count: number }>(
+      'SELECT id, title, chapter_count FROM corpus.books WHERE source_sha256 = $1',
+      [sha],
+    );
+    const row = db.rows[0];
+    if (!row) {
+      complete = false;
+      books.push({ file, sha256: sha, in_database: false });
+      continue;
+    }
+    seen.add(row.id);
+    const stored = await pool.query<{
+      spine_index: number;
+      kind: string;
+      title: string;
+      chars_with_spaces: number;
+      chars_without_spaces: number;
+      content_sha256: string;
+    }>(
+      `SELECT spine_index, kind, title, chars_with_spaces, chars_without_spaces, content_sha256
+         FROM corpus.chapters WHERE book_id = $1 ORDER BY spine_index`,
+      [row.id],
+    );
+    const bySpine = new Map(stored.rows.map((r) => [r.spine_index, r]));
+    const mismatches: Record<string, unknown>[] = [];
+    let chars = 0;
+    for (const c of parsed.chapters) {
+      const r = bySpine.get(c.spine_index);
+      const hash = createHash('sha256').update(c.text).digest('hex');
+      chars += c.chars_with_spaces;
+      const fields = r
+        ? (['kind', 'title', 'chars_with_spaces', 'chars_without_spaces'] as const).filter(
+            (k) => r[k] !== c[k],
+          )
+        : ['missing'];
+      if (r && r.content_sha256 !== hash) fields.push('content_sha256');
+      if (fields.length) mismatches.push({ spine_index: c.spine_index, fields });
+    }
+    const extra = stored.rows.filter(
+      (r) => !parsed.chapters.some((c) => c.spine_index === r.spine_index),
+    ).length;
+    const ok =
+      mismatches.length === 0 && extra === 0 && stored.rows.length === parsed.chapters.length;
+    if (!ok) complete = false;
+    books.push({
+      file,
+      sha256: sha,
+      in_database: true,
+      title: row.title,
+      chapters_file: parsed.chapters.length,
+      chapters_database: stored.rows.length,
+      main_chapters: parsed.chapters.filter((c) => c.kind === 'chapter' || c.kind === 'prologue')
+        .length,
+      chars_with_spaces: chars,
+      voice_eligible: parsed.voice_eligible,
+      is_translation: parsed.is_translation,
+      mismatches: mismatches.slice(0, 20),
+      mismatch_count: mismatches.length,
+      extra_in_database: extra,
+      matches: ok,
+    });
+  }
+  const others = await pool.query<{ id: string; title: string }>(
+    'SELECT id, title FROM corpus.books ORDER BY imported_at',
+  );
+  const notInSource = others.rows.filter((b) => !seen.has(b.id)).map((b) => b.title);
+  return { ok: true, output: { source: target, complete, books, database_only: notInSource } };
 }
 
 async function importCmd(pool: Pool, args: readonly string[]): Promise<Result> {
@@ -384,6 +475,7 @@ export async function runCorpusCommand(
   if (cmd === 'corpus:stock-phrases') return stockPhrasesCmd(pool, args);
   if (cmd === 'corpus:blind-packet') return blindPacketCmd(pool, args);
   if (cmd === 'corpus:reveal') return revealCmd(args);
+  if (cmd === 'corpus:verify') return verifyCmd(pool, args);
   return { ok: false, output: { error: 'UNKNOWN_COMMAND', cmd } };
 }
 

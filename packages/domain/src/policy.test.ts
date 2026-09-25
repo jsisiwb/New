@@ -20,6 +20,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@18',
       'policy/standard@19',
       'policy/standard@2',
+      'policy/standard@20',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -29,6 +30,40 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v20 is standard.v19 with the G9 fixes (ADR-0092)', () => {
+    const v19 = requirePolicy('policy/standard@19', policies);
+    const v20 = requirePolicy('policy/standard@20', policies);
+    expect(v20.planning).toEqual({
+      ...v19.planning,
+      reveal_schedule: { ...v19.planning?.reveal_schedule, canon_lines: true },
+    });
+    expect(v20.identity).toEqual({ ...v19.identity, voice_profile: 'voice/operator@3' });
+    expect(v20.revision).toEqual({
+      ...v19.revision,
+      convergence: { ...v19.revision.convergence, score_attribution: true },
+      ladder: {
+        ...v19.revision.ladder,
+        spanless_to_scene: true,
+        no_repeat: true,
+        rewrite_checks: true,
+      },
+    });
+    const strip = (p: typeof v19) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        identity: _i,
+        revision: _r,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v20)).toEqual(strip(v19));
+    expect(v20.gates).toEqual(v19.gates);
   });
 
   it('standard.v19 is standard.v18 with the G8 fixes (ADR-0090)', () => {

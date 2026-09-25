@@ -543,14 +543,6 @@ export function patchRegression(
     const t = thresholdOf(d.dimension);
     return t === undefined || d.after < t;
   };
-  const regressions = deltas.filter(
-    (d) =>
-      d.dimension !== input.dimension &&
-      d.delta < -tolerance &&
-      (!convergence?.threshold_protection || belowGate(d)),
-  );
-  const targetedDelta = deltas.find((d) => d.dimension === input.dimension);
-
   const beforeOpen = openBlockingMajor(input.before);
   const afterOpenAll = openBlockingMajor(input.after);
   // ADR-0086 (G5-3b/c): a finding on text the patch did not touch is variance of the judge on text both versions
@@ -561,9 +553,33 @@ export function patchRegression(
     if (typeof start !== 'number' || typeof end !== 'number') return false;
     return ranges.some((r) => start < r.end && r.start < end);
   };
-  const introduced = (i: Issue) => !attribution || overlaps(i, attribution.child);
+  // ADR-0092 (G9-3): with score attribution a finding whose dimension and kind already stood open on the parent is
+  // carried, not introduced, even where the patch rewrote the text it now quotes (judges re-anchor a chapter-level
+  // complaint to whichever passage they read last).
+  const scoreAttribution = convergence?.score_attribution === true && attribution !== undefined;
+  const parentSignatures = new Set(beforeOpen.map((i) => `${i.dimension}|${i.kind}`));
+  const carried = (i: Issue) =>
+    scoreAttribution && parentSignatures.has(`${i.dimension}|${i.kind}`);
+  const introduced = (i: Issue) => !attribution || (overlaps(i, attribution.child) && !carried(i));
   const touchedBefore = (i: Issue) => !attribution || overlaps(i, attribution.parent);
   const afterOpen = afterOpenAll.filter(introduced);
+  // ADR-0092 (G9-3): a judge's score moves in rubric steps larger than the tolerance. Under score attribution a
+  // dimension that fell with no blocking/major finding introduced on it, and ends no more than the tolerance below
+  // its gate, moved by judge variance on text both versions share: it is neither a regression nor a worsening.
+  const varianceOnly = (d: DimensionDelta) => {
+    if (!scoreAttribution) return false;
+    const t = thresholdOf(d.dimension);
+    if (t === undefined || d.after < t - tolerance) return false;
+    return !afterOpenAll.some((i) => i.dimension === d.dimension && introduced(i));
+  };
+  const regressions = deltas.filter(
+    (d) =>
+      d.dimension !== input.dimension &&
+      d.delta < -tolerance &&
+      (!convergence?.threshold_protection || belowGate(d)) &&
+      !varianceOnly(d),
+  );
+  const targetedDelta = deltas.find((d) => d.dimension === input.dimension);
   const targetedIds =
     input.targetedIssueIds ??
     beforeOpen.filter((i) => i.dimension === input.dimension).map((i) => i.id);
@@ -590,7 +606,8 @@ export function patchRegression(
     // ADR-0086: within tolerance and still passing, a targeted score's wobble is not a worsening.
     (!convergence?.threshold_protection ||
       (targetedDelta !== undefined &&
-        (targetedDelta.delta < -tolerance || belowGate(targetedDelta))));
+        (targetedDelta.delta < -tolerance || belowGate(targetedDelta)))) &&
+    !(targetedDelta !== undefined && varianceOnly(targetedDelta));
   // "Materially improved" = the targeted issues are gone, or the score rose and no targeted issue remains
   // that the patch was asked to repair. A flat score with unresolved targeted issues is NOT an improvement.
   const materiallyImproved =

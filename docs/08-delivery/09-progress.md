@@ -40,6 +40,32 @@ now bursts to 8 GiB.
 
 **Resume point.** STEP 2/3 fixes for G9-1 … G9-8 → `standard@20` → a live checkpoint on both projects.
 
+## STEP 2 / STEP 3 (G9 fixes) and STEP 4.1 — `standard.v20`, `corpus:verify` — 2026-09-25
+
+**Built (ADR-0092):** `planning.reveal_schedule.canon_lines` (every Korean pack's canon lines carry the schedule's two
+dates, `secretDatesOf` / `secretDatesKo`; G9-1); `voice/operator@3` (the heroine formula bounded by the schedule;
+G9-2); `revision.convergence.score_attribution` (a finding the parent already had is carried; a score step with no
+finding introduced, ending within the tolerance of its gate, is judge variance; G9-3); `revision.ladder`
+`spanless_to_scene` (a quoteless judge finding is rewritten in the scene its claim names, `claimAnchor`; G9-4),
+`no_repeat` (a quarantined attempt is never resent unchanged: escalate a patch to a scene rewrite with the rejection
+reasons, else stop; G9-5), `rewrite_checks` (quote marks, repeated lines and the POV redraft on every scene rewrite;
+the kept rewrite keeps its scene range; G9-7); a failed criterion's claim reaches a Korean writer without the
+evaluator's English prefix (`claimForKoreanNote`). `quality:checkpoint` (STEP 1) and `corpus:verify` (STEP 4.1).
+
+**Measured:** `corpus:verify` against `sigma43web/ko-corpus` (read 2026-09-25): all three EPUBs are in the permanent
+database under their file SHA-256; 415 + 360 + 363 = 1,138 spine chapters with identical kind, title, 자 with and
+without spaces and content SHA-256; 335 + 321 = 656 Korean main-story chapters (ADR-0082); the English machine
+translation is `is_translation`, not `voice_eligible`, so no voice measure reads it; no database-only book.
+
+**Tests:** `convergence.test.ts` (G9r r3, G9a r3 and a carried finding replayed: quarantined under v19, kept under v20;
+a fall beyond the tolerance still regresses), `ladder.test.ts`, `reveal-schedule.test.ts` (the two dates rendered),
+`voice.test.ts` (v3), `policy.test.ts` (v20), `commands.test.ts` (v20 listed), `novel-ko.integration.test.ts` (a
+simulated v20 run: a quoteless opening criterion rewritten in scene 1, no bare "N화 이전 공개 금지" in any prompt, no
+English in any prompt).
+
+**Not done (and why):** G9-6 and G9-8 are left to the patch rungs that G9-3 frees (ADR-0092 §Consequences); the live
+checkpoint G10 on `standard@20` is next.
+
 ## Operator-voice run 2 — reconciliation of the operator's plan (2026-09-25)
 
 Status of every item of this run's plan against the repository and the permanent database at the start of the run
@@ -56,7 +82,7 @@ Status of every item of this run's plan against the repository and the permanent
 | 2.5 Dialogue: floor, partner, structural redraft, cutaways | partly | partner and countable targets (ADR-0084, ADR-0086), one talk redraft; no 3인칭 cutaways (G7-4 open) |
 | 2.6 Contract/scene-plan consistency, plan critic | done | `checkPlanConsistency`, `plan_critic` on contract and scene plans (ADR-0086, ADR-0088) |
 | STEP 3 — the ladder | partly | patch → scene rewrite (ADR-0087), two candidates per cluster chosen by lint, `quality:fix-rates`; no chapter regeneration or re-plan rung; G9-3 … G9-5, G9-7 |
-| 4.1 DB corpus complete against the EPUBs | not started | 3 books / 656 Korean chapters imported (ADR-0082); not re-verified against the files |
+| 4.1 DB corpus complete against the EPUBs | done | `corpus:verify`: 3 books, 1,138 spine chapters, 656 Korean main-story chapters, every content SHA-256 equal; the translation carries no voice |
 | 4.2 Structure profiles (C2) | partly | a reading (`operator-voice-analysis.md` §8–§10) used as planner targets; no per-chapter profiles |
 | 4.3 Contrast pairs (C6) | not started | `corpus.contrast_pairs` empty |
 | 4.4 Stock-phrase mining refresh | partly | `lang/ko@8` (C7, ADR-0089); not refreshed with G8/G9 drafts |

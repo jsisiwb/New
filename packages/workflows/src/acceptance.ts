@@ -118,7 +118,14 @@ export interface ExtractionResult {
 /** Extract from the APPROVED version only; the pack template refuses working text and the DB refuses non-approved. */
 export async function extractCanon(
   ctx: WorkflowContext,
-  input: { versionId: string; chapterId: string; contract: ChapterContract; spec: StorySpec },
+  input: {
+    versionId: string;
+    chapterId: string;
+    contract: ChapterContract;
+    spec: StorySpec;
+    /** ADR-0092 (G9-1): the reveal schedule's dates for the canon lines, as every other pack reads them. */
+    secretDates?: Parameters<typeof checkpointPack>[1]['secretDates'];
+  },
 ): Promise<ExtractionResult> {
   return runStep(
     ctx,
@@ -140,6 +147,7 @@ export async function extractCanon(
         spec: input.spec,
         chapterText: { versionId: version.id },
         lexical: false,
+        ...(input.secretDates ? { secretDates: input.secretDates } : {}),
       });
       const project = await getProject(ctx.pool, ctx.projectId);
       await bind(ctx, { canon_version: String(project.canon_version) });

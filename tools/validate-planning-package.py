@@ -85,6 +85,7 @@ EXAMPLES = [
     ("examples/narrative-profiles/genre-regression.v4.json", "narrative-identity.schema.json"),
     ("examples/voice-profiles/operator.v1.json", "voice-profile.schema.json"),
     ("examples/voice-profiles/operator.v2.json", "voice-profile.schema.json"),
+    ("examples/voice-profiles/operator.v3.json", "voice-profile.schema.json"),
     ("examples/production-policies/standard.v1.json", "production-policy.schema.json"),
     ("examples/production-policies/economy.v1.json", "production-policy.schema.json"),
     ("examples/production-policies/premium.v1.json", "production-policy.schema.json"),
@@ -108,6 +109,7 @@ EXAMPLES = [
     ("examples/production-policies/standard.v17.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v18.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v19.json", "production-policy.schema.json"),
+    ("examples/production-policies/standard.v20.json", "production-policy.schema.json"),
 ]
 # Bundles: JSON files whose top-level arrays hold instances of stored schemas (key → schema).
 BUNDLES = {

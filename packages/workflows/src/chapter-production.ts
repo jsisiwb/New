@@ -42,6 +42,15 @@ import { type Gateway } from '@yeonjae/gateway';
 import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/narrative';
 import { PromptRegistry } from '@yeonjae/prompts';
 import { sliceCodePoints, toNfcText } from '@yeonjae/prose';
+import {
+  claimAnchor,
+  findingInRange,
+  isSpanlessJudgeFinding,
+  rejectionReasons,
+  repeatDecision,
+  targetsKey,
+  type QuarantinedAttempt,
+} from './ladder.js';
 import { resolveWorkflowPins } from './workflow-pins.js';
 import {
   acceptDelta,
@@ -76,6 +85,7 @@ import { ensureArcSummary } from './arc-summary.js';
 import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
 import {
   buildStoryBible,
+  canonSecretDates,
   ensureChapter,
   generateContract,
   interpretRequirements,
@@ -220,6 +230,8 @@ export interface ChapterProductionResult {
         discarded?: readonly DiscardedPatch[] | undefined;
         /** ADR-0073: the lint-driven polish round was kept. */
         polished?: boolean | undefined;
+        /** ADR-0092 (G9-5): why the loop ended before max_rounds (a round would have repeated a quarantined one). */
+        stopped?: string | undefined;
       }
     | undefined;
   readonly accepted:
@@ -485,11 +497,14 @@ export async function produceChapter(
     guard('chapter_contract');
 
     // ---- drafting
+    // ADR-0092 (G9-1): the canon lines carry the reveal schedule's dates when the policy says so.
+    const secretDates = canonSecretDates(ctx, input.bible);
     const writerPack = await checkpointPack(ctx, {
       label: 'scene_writer',
       role: 'scene_writer',
       contract: contract.contract,
       spec: spec.spec,
+      ...(secretDates ? { secretDates } : {}),
     });
     const writer = writerPack.ref;
     const writerBuilt = writerPack.stored;
@@ -598,6 +613,11 @@ export async function produceChapter(
     // ADR-0087: the scene-rewrite rung — kinds patches rarely repair are answered by drafting the scene again.
     const ladder = ctx.policy.revision.ladder;
     let sceneRewrites = 0;
+    // ADR-0092 (G9-5): the last quarantined attempt, so that no round repeats it unchanged.
+    let lastQuarantined: QuarantinedAttempt | undefined;
+    let stopped: string | undefined;
+    // ADR-0092 (G9-7): the scenes' current texts, so a kept rewrite keeps its range in later rounds.
+    const sceneTexts = [...drafted.texts];
     while (!evaluation.approvable && round < maxRounds) {
       const targets = revisionTargets(evaluation.scorecard);
       // ADR-0086 (G5-3e): a dimension failing by score alone gets its judge's weakest passages as targets.
@@ -612,26 +632,54 @@ export async function produceChapter(
             : undefined,
         ) ?? scoreOnly[0]?.dimension;
       if (!dimension) break;
-      round++;
-      const parent = current;
-      const beforeEvaluation = evaluation;
-      const beforeScorecard = evaluation.scorecard;
       // ADR-0086 (G5-3d): under all_open every open blocking/major finding is a target of the round.
       const targetedIssueIds = (
         allOpen ? targets : targets.filter((i) => i.dimension === dimension)
       ).map((i) => i.id);
-      const rewriteFindings = ladder
-        ? targets.filter((i) => ladder.scene_rewrite_kinds.includes(i.kind))
+      // ADR-0092 (G9-4): a judge's quoteless finding (a failed contract criterion) goes to the scene its claim names.
+      const spanless = ladder?.spanless_to_scene ? targets.filter(isSpanlessJudgeFinding) : [];
+      let rewriteFindings: readonly Issue[] = ladder
+        ? targets.filter((i) => ladder.scene_rewrite_kinds.includes(i.kind) || spanless.includes(i))
         : [];
-      const rewriteAt =
-        rewriteFindings.length > 0 && sceneRewrites < ctx.policy.revision.max_scene_rewrites
+      const rewritesLeft = sceneRewrites < ctx.policy.revision.max_scene_rewrites;
+      const ranges = sceneRangesIn(current.text, sceneTexts);
+      let rewriteAt =
+        rewriteFindings.length > 0 && rewritesLeft
           ? sceneToRewrite(
               rewriteFindings,
-              sceneRangesIn(current.text, drafted.texts),
+              ranges,
               plan.scenes,
               current.text,
+              ladder?.spanless_to_scene === true,
             )
           : undefined;
+      // ADR-0092 (G9-5): a round that would resend a quarantined attempt's targets to the same parent at the same
+      // rung escalates a patch to a scene rewrite, and otherwise ends the loop.
+      if (ladder?.no_repeat) {
+        const decision = repeatDecision(lastQuarantined, {
+          parentId: current.id,
+          targets: targetsKey(targets),
+          rung: rewriteAt ? 'scene' : 'patch',
+          rewritesLeft,
+        });
+        if (decision === 'escalate' && !rewriteAt) {
+          rewriteAt = sceneToRewrite(targets, ranges, plan.scenes, current.text, true);
+          if (rewriteAt) {
+            const at = rewriteAt.range;
+            rewriteFindings = targets.filter((i) =>
+              findingInRange(i, at, current.text, ladder.spanless_to_scene === true),
+            );
+          }
+        }
+        if (decision === 'stop' || (decision === 'escalate' && !rewriteAt)) {
+          stopped = 'repeat_after_quarantine';
+          break;
+        }
+      }
+      round++;
+      const parent = current;
+      const beforeEvaluation = evaluation;
+      const beforeScorecard = evaluation.scorecard;
       if (rewriteAt) {
         sceneRewrites++;
         targetedIssueIds.splice(0, targetedIssueIds.length, ...rewriteFindings.map((i) => i.id));
@@ -650,6 +698,10 @@ export async function produceChapter(
             findings: rewriteFindings,
             dimension: rewriteFindings[0]?.dimension ?? dimension,
             nameOf: (id: string) => registryNames.get(id) ?? id,
+            ...(lastQuarantined?.parentId === current.id && lastQuarantined.reasons.length
+              ? { rejected: lastQuarantined.reasons }
+              : {}),
+            ...(ladder?.rewrite_checks ? { checks: { bible: input.bible } } : {}),
           })
         : await reviseVersionMulti(ctx, {
             version: current,
@@ -745,12 +797,31 @@ export async function produceChapter(
           regression_artifact_id: regressionRef.artifact_id,
           failures: report.failures,
         });
+        const introducedClaims = evaluation.scorecard.issues
+          .filter(
+            (i) =>
+              i.status === 'open' &&
+              (i.severity === 'blocking' || i.severity === 'major') &&
+              report.newIssueKinds.includes(i.kind),
+          )
+          .map((i) => i.claim);
+        lastQuarantined = {
+          parentId: parent.id,
+          targets: targetsKey(targets),
+          rung: rewriteAt ? 'scene' : 'patch',
+          reasons: rejectionReasons(report.failures, introducedClaims),
+        };
         current = parent;
         evaluation = beforeEvaluation;
         patchesSinceFull = Math.max(0, patchesSinceFull - 1);
         revision = { ...revision, discarded: [...discarded] };
         if (singleRound) break;
         continue;
+      }
+      // ADR-0092 (G9-7): a kept scene rewrite is that scene's text from now on.
+      if (rewriteAt && ladder?.rewrite_checks) {
+        const k = plan.scenes.indexOf(rewriteAt.scene);
+        if (k >= 0) sceneTexts[k] = revised.patch.new_text;
       }
       // A failed regression stops the run before the approval lock, so it can never reach canon acceptance.
       if (!report.passed)
@@ -796,6 +867,7 @@ export async function produceChapter(
     }
     revision ??= { rounds: 0 };
     if (discarded.length) revision = { ...revision, discarded };
+    if (stopped) revision = { ...revision, stopped };
 
     // ---- ADR-0073 (K1): one lint-driven polish round for a Korean chapter that already passes its gates.
     // The editor gets only the lint's 번역투 / ending / dialogue-share / paragraph findings; the polished
@@ -890,6 +962,7 @@ export async function produceChapter(
       chapterId: contract.chapterId,
       contract: contract.contract,
       spec: spec.spec,
+      ...(secretDates ? { secretDates } : {}),
     });
     guard('extract');
     const accepted = await acceptDelta(ctx, {
@@ -918,6 +991,7 @@ export async function produceChapter(
         spec: spec.spec,
         chapterText: { versionId: current.id },
         lexical: false,
+        ...(secretDates ? { secretDates } : {}),
       });
       usedPacks.push(p.stored);
     }
@@ -1363,10 +1437,12 @@ function sceneToRewrite(
   ranges: readonly ({ start: number; end: number } | undefined)[],
   scenes: readonly ScenePlan[],
   text: string,
+  anchorSpanless = false,
 ): { scene: ScenePlan; range: { start: number; end: number } } | undefined {
   const counts = ranges.map(() => 0);
   for (const f of findings) {
-    const at = f.chapter_span?.start;
+    // ADR-0092 (G9-4): a quoteless finding counts where its claim points (a named paragraph, the opening, the cut).
+    const at = f.chapter_span?.start ?? (anchorSpanless ? claimAnchor(f.claim, text) : undefined);
     if (typeof at !== 'number') continue;
     const k = ranges.findIndex((r) => r !== undefined && at >= r.start && at < r.end);
     if (k >= 0) counts[k] = (counts[k] ?? 0) + 1;

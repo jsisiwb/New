@@ -40,6 +40,18 @@ export interface ProductionPolicy {
        * @minItems 1
        */
       scene_rewrite_kinds: [string, ...string[]];
+      /**
+       * ADR-0092 (live defect G9-4): a judge's blocking or major finding with no quote (a failed contract criterion such as an opening requirement) joins the scene-rewrite findings; its scene is the one holding the paragraph its claim names ([pN]), else the first scene for an opening claim and the last for a cut or ending claim. Absent or false: such a finding stays untargeted while quoted findings exist.
+       */
+      spanless_to_scene?: boolean;
+      /**
+       * ADR-0092 (live defect G9-5): after a quarantined round, a round that would send the same targets to the same parent at the same rung escalates instead — a patch round to a scene rewrite of the scene holding most targets (while max_scene_rewrites allows), with the rejected attempt's reasons in the writer's note; a scene rewrite, or a patch with no rewrite left, ends the revision loop (needs_attention with the closest version). Absent or false: the round repeats.
+       */
+      no_repeat?: boolean;
+      /**
+       * ADR-0092 (live defect G9-7): a scene rewrite gets the drafting pass's deterministic checks before any judge reads it — quote marks folded as in drafting, lines repeating a line elsewhere in the chapter dropped, and in a first-person Korean project a third-person drift (thirdPersonDrift) re-drafted once, the redraft kept only when it no longer drifts. The rewritten scene's own text also replaces the old one for locating scene ranges in later rounds. Absent or false: the rewrite is used as returned.
+       */
+      rewrite_checks?: boolean;
     };
     /**
      * ADR-0087 (STEP 3): patches drafted per cluster of a multi-patch round; the one that brings the fewest new lint pattern hits (번역투 markers, AI stock phrases, calques) into its span is kept before any judge runs, the first on a tie. Absent or 1: one patch per cluster, as before.
@@ -90,6 +102,10 @@ export interface ProductionPolicy {
        * ADR-0086: a version that becomes approvable after a targeted re-evaluation is re-evaluated by every evaluator before approval; it is approved only if the full scorecard passes too. Absent or false: the targeted scorecard decides.
        */
       confirm_full?: boolean;
+      /**
+       * ADR-0092 (live defect G9-3): with span_attribution, a blocking or major finding whose dimension and kind stood open on the parent is carried, not introduced, even where the patch rewrote the passage it now quotes; and a gated dimension whose score fell with no blocking/major finding introduced on it, ending no more than regression_tolerance_points below its gate, moved by judge variance on shared text — it is neither a protected regression nor a targeted worsening. Absent or false: score changes are read as ADR-0086 reads them.
+       */
+      score_attribution?: boolean;
     };
     /**
      * ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.
@@ -217,6 +233,10 @@ export interface ProductionPolicy {
        * ADR-0090 (live defect G8-1): with narrator_knowledge, a present-timeline secret (knowledge layer current) the first-person narrator knows at the start — a rival's habit or a classmate's side business he knows from the game or a prior life — is the reader's from 화 1 as well, unless the bible gives it a reader date; the other characters keep the bible's date. Absent: only prior-life and source-work secrets are.
        */
       narrator_current_knowledge?: boolean;
+      /**
+       * ADR-0092 (live defect G9-1): a Korean pack's canon lines render each secret with the schedule's two dates (whether the reader already knows it or from which 화; from which 화 the other characters may learn it) instead of the bible's single reveal chapter, so the writer and every checker read one schedule. Absent or false: the bible's reveal chapter, as before.
+       */
+      canon_lines?: boolean;
     };
     /**
      * ADR-0086 (U7, U8): before any drafting call the contract and scene plans are checked deterministically for self-consistency (participants, the final scene ending on the hook, dialogue beats with a partner, length) and by a plan_critic call (reveal safety, repeated exposition, character state against the schedule, the operator's structure targets). Blocking or major findings send the scene plan back to the scene planner with the findings, at most max_repairs times; the findings are recorded with the plan.

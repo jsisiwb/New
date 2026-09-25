@@ -110,6 +110,32 @@ export interface FetchOptions {
   readonly identityBlockBudgetTokens?: number | undefined;
   /** Override the input budget (tests); production uses the pinned policy. */
   readonly budgetTokens?: number | undefined;
+  /**
+   * ADR-0092 (live defect G9-1): the reveal schedule's two dates per secret, keyed by the NFC statement. With it a
+   * Korean pack's canon lines give the reader's date and the other characters' date instead of the bible's single
+   * reveal chapter, so the writer and every checker read the same schedule.
+   */
+  readonly secretDates?: ReadonlyMap<string, SecretDates> | undefined;
+}
+
+export interface SecretDates {
+  /** The 화 from which the reader may learn it; undefined = hidden from the reader. */
+  readonly readerFrom?: number | undefined;
+  /** The 화 from which characters outside its knowers may learn it. */
+  readonly othersFrom?: number | undefined;
+}
+
+/** The Korean visibility clause of a scheduled secret for chapter `chapterNo` (ADR-0092). */
+export function secretDatesKo(d: SecretDates, chapterNo: number): string {
+  const reader =
+    d.readerFrom === undefined
+      ? '독자에게 공개 일정 없음'
+      : d.readerFrom <= chapterNo
+        ? '독자는 이미 안다(서술해도 됨)'
+        : `독자에게 ${String(d.readerFrom)}화 이전 공개 금지`;
+  const others =
+    d.othersFrom === undefined ? '' : `; 다른 인물에게 ${String(d.othersFrom)}화 이전 공개 금지`;
+  return `; ${reader}${others}`;
 }
 
 export interface FetchResult {
@@ -132,6 +158,8 @@ interface Ctx {
   readonly propositions: Map<string, PropositionRow>;
   /** Manuscript language of the pack (ADR-0055): Korean projects get Korean canon renderings. */
   readonly lang: 'en' | 'ko';
+  /** ADR-0092: the reveal schedule's dates per secret statement, when the policy renders them. */
+  readonly secretDates?: ReadonlyMap<string, SecretDates> | undefined;
 }
 
 const IMPORTANCE: Record<string, number> = { core: 1, major: 0.6, minor: 0.3 };
@@ -297,11 +325,14 @@ function propositionLine(ctx: Ctx, p: PropositionRow, truth: string): string {
       })`
     : '';
   if (ctx.lang === 'ko') {
+    const dates = ctx.secretDates?.get(p.statement);
     const secretKo = p.secret
       ? ` — 비밀 (소유자: ${(p.secret.owner_ids ?? []).map(n).join(', ') || '—'}; 알아도 되는 인물: ${(p.secret.allowed_knower_ids ?? []).map(n).join(', ') || '없음'}${
-          p.secret.reveal_not_before_chapter
-            ? `; ${p.secret.reveal_not_before_chapter}화 이전 공개 금지`
-            : ''
+          dates
+            ? secretDatesKo(dates, ctx.plan.chapterNo)
+            : p.secret.reveal_not_before_chapter
+              ? `; ${p.secret.reveal_not_before_chapter}화 이전 공개 금지`
+              : ''
         })`
       : '';
     return `명제 ${p.id}: “${p.statement}” (${p.kind}) — ${clockLabelKo(ctx.plan.clockStart)} 기준 이 타임라인에서 객관적으로 ${truthKo(truth)}${secretKo}`;
@@ -1480,6 +1511,7 @@ export async function fetchContext(db: Queryable, opts: FetchOptions): Promise<F
       names: new Map(),
       propositions: new Map(),
       lang: opts.identity?.outputLanguage.language ?? 'en',
+      ...(opts.secretDates ? { secretDates: opts.secretDates } : {}),
     };
     await loadNames(ctx, plan.allEntityIds);
     await fetchRegistry(ctx, items);

@@ -9,6 +9,7 @@ import {
   PgLexicalRetriever,
   renderScenePlanKo,
   type ContextPack,
+  type FetchOptions,
 } from '@yeonjae/context';
 import {
   createManuscriptVersion,
@@ -71,6 +72,7 @@ import {
   type PlanFinding,
 } from './plan-prevention.js';
 import { renderRevealSchedule } from './reveal-schedule.js';
+import { claimForKoreanNote } from './ladder.js';
 
 export type ScenePlan = Generated.ScenePlanSchema.ScenePlan;
 export type SceneDraft = Generated.SceneDraftSchema.SceneDraftWriterOutputEnvelope;
@@ -157,6 +159,8 @@ export async function buildRolePack(
     spec: StorySpec;
     chapterText?: { versionId: string } | undefined;
     lexical?: boolean | undefined;
+    /** ADR-0092 (G9-1): the reveal schedule's dates for the canon lines (`reveal_schedule.canon_lines`). */
+    secretDates?: FetchOptions['secretDates'];
   },
 ): Promise<BuiltPack> {
   try {
@@ -175,6 +179,7 @@ export async function buildRolePack(
           ? undefined
           : new PgLexicalRetriever(ctx.pool, ctx.identity.outputLanguage.language ?? 'en'),
       persist: true,
+      ...(input.secretDates ? { secretDates: input.secretDates } : {}),
     });
     return { pack, ref: packRef(pack, stored), stored: storedPack(pack) };
   } catch (err) {
@@ -214,6 +219,7 @@ export async function checkpointPack(
     spec: StorySpec;
     chapterText?: { versionId: string } | undefined;
     lexical?: boolean | undefined;
+    secretDates?: FetchOptions['secretDates'];
   },
 ): Promise<{ stored: StoredPack; ref: PackRef }> {
   const ch = input.contract.chapter_number;
@@ -1113,6 +1119,10 @@ export async function rewriteScene(
     findings: readonly { id: string; claim: string; dimension: Issue['dimension'] }[];
     dimension: Issue['dimension'];
     nameOf?: ((id: string) => string) | undefined;
+    /** ADR-0092 (G9-5): why the previous attempt on this parent was quarantined, for the writer's note. */
+    rejected?: readonly string[] | undefined;
+    /** ADR-0092 (G9-7): run the drafting pass's deterministic checks on the rewrite (`ladder.rewrite_checks`). */
+    checks?: { readonly bible?: StoryBible | undefined } | undefined;
   },
 ): Promise<{
   version: ManuscriptVersionRow;
@@ -1142,8 +1152,14 @@ export async function rewriteScene(
         '',
         '',
         '다시 쓰기: 이 장면의 앞선 원고는 아래 결함 때문에 통과하지 못했다. 같은 장면 설계로 장면 전체를 새로 쓴다.',
-        ...input.findings.map((f) => `- ${f.claim}`),
+        ...input.findings.map((f) => `- ${ko ? claimForKoreanNote(f.claim) : f.claim}`),
         `앞선 원고의 대사·속마음 비중은 ${String(Math.round(measured * 100))}%였다.`,
+        ...(input.rejected?.length
+          ? [
+              '앞선 수정안은 다음 이유로 기각됐다. 같은 방식으로 고치지 않는다.',
+              ...input.rejected.map((r) => `- ${r}`),
+            ]
+          : []),
       ].join('\n');
       const targetsNote = lineTargets
         ? lineTargetNote(
@@ -1158,31 +1174,64 @@ export async function rewriteScene(
         ctx.policy.planning?.cut_design && input.scene.scene_no === input.sceneTotal
           ? cutNote(input.contract)
           : '';
-      const call = await modelCall<SceneDraft | string>(ctx, {
-        step: 'revise',
-        family: 'scene_writer',
-        activityId: `scene_rewrite:${String(ch)}:${String(input.scene.scene_no)}:r${String(input.round)}`,
-        variables: {
-          scene_plan: planText + targetsNote + cut + note,
-          scene_no: String(input.scene.scene_no),
-          previous_text:
-            before.trim() ||
-            (input.pack.variables.previous_text ??
-              (ko
-                ? `(${String(ch)}화가 연재를 연다. 앞에 이어지는 원고가 없다.)`
-                : `(Chapter ${String(ch)} opens the series; nothing precedes it.)`)),
-          length_target_words: String(input.scene.length_target.value),
-          scene_total: String(input.sceneTotal),
-          scene_role: sceneRole(input.scene.scene_no, input.sceneTotal, ko ? 'ko' : 'en'),
-        },
-        pack: packCallInput(input.pack),
-      });
-      let prose =
-        typeof call.output === 'string'
-          ? call.output
-          : (((call.output as { text?: unknown }).text as string | undefined) ?? '');
-      if (ctx.policy.drafting?.paragraph_per_line) prose = paragraphPerLine(prose);
-      prose = stripProseChatter(prose).trim();
+      const variables = {
+        scene_plan: planText + targetsNote + cut + note,
+        scene_no: String(input.scene.scene_no),
+        previous_text:
+          before.trim() ||
+          (input.pack.variables.previous_text ??
+            (ko
+              ? `(${String(ch)}화가 연재를 연다. 앞에 이어지는 원고가 없다.)`
+              : `(Chapter ${String(ch)} opens the series; nothing precedes it.)`)),
+        length_target_words: String(input.scene.length_target.value),
+        scene_total: String(input.sceneTotal),
+        scene_role: sceneRole(input.scene.scene_no, input.sceneTotal, ko ? 'ko' : 'en'),
+      };
+      const write = async (vars: typeof variables, activityId: string) => {
+        const c = await modelCall<SceneDraft | string>(ctx, {
+          step: 'revise',
+          family: 'scene_writer',
+          activityId,
+          variables: vars,
+          pack: packCallInput(input.pack),
+        });
+        let text =
+          typeof c.output === 'string'
+            ? c.output
+            : (((c.output as { text?: unknown }).text as string | undefined) ?? '');
+        if (ctx.policy.drafting?.paragraph_per_line) text = paragraphPerLine(text);
+        text = stripProseChatter(text).trim();
+        // ADR-0092 (G9-7): the drafting pass's quote marks and repeated-line rule, before any judge reads it.
+        if (input.checks && ko) text = koQuoteMarks(text);
+        if (input.checks && ctx.policy.drafting?.dedupe_repeated_lines)
+          text = dedupeRepeatedLines(text).text;
+        return { call: c, text };
+      };
+      const activity = `scene_rewrite:${String(ch)}:${String(input.scene.scene_no)}:r${String(input.round)}`;
+      let { call, text: prose } = await write(variables, activity);
+      // ADR-0092 (G9-7): a first-person rewrite that drifted into the third person is re-drafted once with its
+      // measure; the redraft is kept only when it no longer drifts.
+      const povNames =
+        input.checks && ko && input.scene.pov.person === 'first'
+          ? povNamesOf(input.checks.bible, ctx, input.scene.pov.character_id)
+          : [];
+      if (povNames.length > 0 && prose) {
+        const drift = thirdPersonDrift(prose, povNames);
+        if (drift.drifted) {
+          const retry = await write(
+            {
+              ...variables,
+              scene_plan: variables.scene_plan + povRedraftNote(drift, povNames[0] ?? ''),
+            },
+            `${activity}:pov`,
+          );
+          if (retry.text && !thirdPersonDrift(retry.text, povNames).drifted) {
+            call = retry.call;
+            prose = retry.text;
+            recordNormalization('pov_redraft');
+          }
+        }
+      }
       if (!prose)
         throw new WorkflowError('SCENE_DRAFT_INVALID', 'the scene rewrite came back empty', {
           step: 'revise',

@@ -35,6 +35,7 @@ import {
   readerGuardsFor,
   renderRevealSchedule,
   revealSchedule,
+  secretDatesOf,
   type ScheduledSecret,
 } from './reveal-schedule.js';
 import {
@@ -452,6 +453,16 @@ export function narratorIdOf(
       (e.design as { role?: unknown } | undefined)?.role === 'protagonist',
   );
   return hero?.id;
+}
+
+/** ADR-0092 (G9-1): the schedule's dates for the packs' canon lines, when the policy renders them there. */
+export function canonSecretDates(
+  ctx: Pick<WorkflowContext, 'identity' | 'policy'>,
+  bible: StoryBible | undefined,
+): ReturnType<typeof secretDatesOf> | undefined {
+  if (!ctx.policy.planning?.reveal_schedule?.canon_lines) return undefined;
+  const schedule = scheduleOf(ctx, bible);
+  return schedule ? secretDatesOf(schedule) : undefined;
 }
 
 /** The reveal schedule a policy with `planning.reveal_schedule` gives this project (undefined otherwise). */

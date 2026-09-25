@@ -75,6 +75,7 @@ import {
   type ChapterContract,
   type StoryBible,
   type StorySpec,
+  canonSecretDates,
   compileFor,
   scheduleOf,
 } from './planning.js';
@@ -638,6 +639,7 @@ export async function evaluateVersion(
       }
 
       // Checker pack: the working version enters only as job-scoped chapter_text (status recorded in the manifest).
+      const checkerDates = canonSecretDates(ctx, input.bible);
       const checker = await checkpointPack(ctx, {
         label: `continuity_checker:r${input.round}`,
         role: 'continuity_checker',
@@ -645,6 +647,7 @@ export async function evaluateVersion(
         spec: input.spec,
         chapterText: { versionId: v.id },
         lexical: false,
+        ...(checkerDates ? { secretDates: checkerDates } : {}),
       });
       const packIn = packCallInput(checker.stored);
       const packVars = checker.stored.variables;
