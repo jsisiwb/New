@@ -269,11 +269,62 @@ const EXEMPLAR_FUNCTION_KO: Readonly<Record<string, string>> = {
   comedy_beat: '웃음 포인트',
 };
 
-type Exemplar = NonNullable<NonNullable<ComposedIdentity['tradition']['style_exemplars']>[number]>;
+type StudioExemplar = NonNullable<
+  NonNullable<ComposedIdentity['tradition']['style_exemplars']>[number]
+>;
+/** A studio exemplar, the operator's style sample (ADR-0073), or a pinned corpus passage (ADR-0083). */
+export type Exemplar = Omit<StudioExemplar, 'provenance'> & {
+  readonly provenance: StudioExemplar['provenance'] | 'user_supplied' | 'operator_corpus';
+  /** Book and chapter of a corpus passage; provenance only, never rendered to the model. */
+  readonly source?: string;
+};
 
-/** At most three: genre layers first (primary, then secondary), then the tradition's own. */
+/** The id the operator's style sample carries among the exemplars (ADR-0073). */
+export const USER_STYLE_SAMPLE_ID = 'user-style-sample';
+
+/**
+ * The operator's style sample as an exemplar (ADR-0073), unless the identity refuses user exemplars. It is
+ * the top-priority rhythm reference; like the studio's, its sentences are never copied (EXEMPLAR-COPY).
+ */
+function userSampleOf(id: ComposedIdentity): Exemplar | undefined {
+  const sample = id.preferences?.style_sample;
+  if (!sample?.text.trim() || id.preferences?.exemplar_policy?.allow_user_exemplars === false)
+    return undefined;
+  return {
+    id: USER_STYLE_SAMPLE_ID,
+    functions: ['action'],
+    provenance: 'user_supplied',
+    text: sample.text.trim(),
+    ...(sample.note ? { note: sample.note } : {}),
+  };
+}
+
+/**
+ * The operator's own published passages pinned by the project (ADR-0083, C5), in pinned order.
+ */
+function operatorExemplarsOf(id: ComposedIdentity): Exemplar[] {
+  if (id.preferences?.exemplar_policy?.allow_user_exemplars === false) return [];
+  return (id.preferences?.operator_exemplars ?? []).map((e) => ({
+    id: e.id,
+    functions: e.functions,
+    provenance: 'operator_corpus' as const,
+    text: e.text.trim(),
+    source: e.source,
+    ...(e.pov ? { pov: e.pov } : {}),
+  }));
+}
+
+/**
+ * At most three: the operator's style sample first (ADR-0073), then genre layers (primary, then
+ * secondary), then the tradition's own. A project that pins the operator's corpus passages (ADR-0083)
+ * reads the style sample and those passages instead of any studio-written exemplar.
+ */
 export function exemplarsOf(id: ComposedIdentity): Exemplar[] {
+  const user = userSampleOf(id);
+  const operator = operatorExemplarsOf(id);
+  if (operator.length > 0) return [...(user ? [user] : []), ...operator];
   const all = [
+    ...(user ? [user] : []),
     ...id.genres.flatMap((g) => g.style_exemplars ?? []),
     ...(id.tradition.style_exemplars ?? []),
   ];
@@ -287,17 +338,98 @@ export function exemplarsOf(id: ComposedIdentity): Exemplar[] {
  * references whose names, events and sentences must never be reused.
  */
 export function renderExemplarsKo(id: ComposedIdentity): string {
-  const xs = exemplarsOf(id);
-  if (xs.length === 0) return '';
-  const head =
-    '아래 견본은 이 스튜디오가 직접 쓴 합성 문장이다. 문단 길이, 대사와 반응의 간격, 속마음 한 줄, 한 줄 강조 문단, 절단의 리듬만 몸에 익힌다. 견본의 이름·설정·사건·문장은 이 작품에 절대 가져다 쓰지 않고, 시점과 인물은 회차 계약을 따른다.';
+  const all = exemplarsOf(id);
+  const user = all.find((e) => e.id === USER_STYLE_SAMPLE_ID);
+  const xs = all.filter((e) => e.id !== USER_STYLE_SAMPLE_ID);
+  const userBlock = user
+    ? `〔작가 문체 견본 — 최우선〕\n이 작품의 작가가 준 문장이다. 문단 길이, 어미, 대사와 서술의 비율, 속마음의 결을 이 견본에 가장 먼저 맞춘다. 견본의 문장과 표현은 그대로 옮기지 않는다.\n${user.text}\n〔작가 문체 견본 끝〕`
+    : '';
+  if (xs.length === 0) return userBlock;
+  const head = xs.some((e) => e.provenance === 'operator_corpus')
+    ? '아래 견본은 이 작품을 쓰는 작가가 이전 작품에서 직접 쓴 문장이다. 문단 길이, 대사와 반응의 간격, 속마음의 결, 절단의 리듬을 이 견본에 가장 먼저 맞춘다. 견본의 인물 이름·호칭·설정·사건·문장은 이 작품에 절대 가져다 쓰지 않고(열네 글자 넘게 겹치는 문장은 원고 반려 사유다), 시점과 인물은 회차 계약을 따른다.'
+    : '아래 견본은 이 스튜디오가 직접 쓴 합성 문장이다. 문단 길이, 대사와 반응의 간격, 속마음 한 줄, 한 줄 강조 문단, 절단의 리듬만 몸에 익힌다. 견본의 이름·설정·사건·문장은 이 작품에 절대 가져다 쓰지 않고, 시점과 인물은 회차 계약을 따른다.';
   const body = xs.map((e, i) => {
     const fns = e.functions.map((f) => EXEMPLAR_FUNCTION_KO[f] ?? f).join('·');
     const pov = e.pov === 'first' ? '1인칭' : e.pov === 'third_limited' ? '밀착 3인칭' : '';
     const label = [fns, pov].filter(Boolean).join(' | ');
     return `〔견본 ${String(i + 1)} — ${label}〕${e.note ? `\n(${e.note})` : ''}\n${e.text}\n〔견본 ${String(i + 1)} 끝〕`;
   });
-  return [head, ...body].join('\n\n');
+  return [...(userBlock ? [userBlock] : []), head, ...body].join('\n\n');
+}
+
+/**
+ * The premise device's vocabulary (ADR-0084, U2; live defect G-1): the operator's game-possession serials
+ * speak of the game, a regression serial of the hero's last life, and neither of a 원작.
+ */
+const DEVICE_KO: Readonly<Record<string, string>> = {
+  regression:
+    '이 작품의 장치는 회귀다. 주인공은 자기가 살았던 지난 생을 기억한다. 지난 생의 일은 ‘지난 생’, ‘회귀 전’, ‘그때’ 같은 말로 부른다. ‘원작’, ‘원작 주인공’, ‘빙의’처럼 소설 속으로 들어간 이야기의 어휘는 쓰지 않는다.',
+  reincarnation:
+    '이 작품의 장치는 환생이다. 주인공은 전생의 기억을 가지고 다시 태어났다. 전생의 일은 ‘전생’으로 부른다. ‘원작’, ‘원작 주인공’, ‘빙의’ 같은 어휘는 쓰지 않는다.',
+  game_possession:
+    '이 작품의 장치는 게임 빙의다. 주인공은 자기가 하던 게임 속 인물의 몸에 들어왔다. 앞날의 지식은 ‘게임’, ‘공략’, ‘회차’, ‘퀘스트’, ‘특성’, ‘플레이어’ 같은 게임 어휘로 말한다. ‘원작’, ‘원작 주인공’ 같은 소설 빙의 어휘는 쓰지 않는다.',
+  novel_possession:
+    '이 작품의 장치는 소설 빙의다. 주인공은 읽던 소설 속 인물의 몸에 들어왔다. 앞날의 지식은 ‘원작’, ‘원작 주인공’, ‘작가’로 말한다. ‘회귀’, ‘지난 생’ 같은 회귀 어휘는 쓰지 않는다.',
+  possession:
+    '이 작품의 장치는 빙의다. 주인공이 들어온 세계가 게임인지 소설인지는 첫 화에서 정하고, 그 뒤로는 그 한 가지 어휘만 쓴다.',
+};
+
+/** The project's premise device as a rule (ADR-0084); empty unless the identity records one. */
+export function renderDeviceKo(id: ComposedIdentity): string {
+  const d = id.preferences?.story_device;
+  return d ? (DEVICE_KO[d] ?? '') : '';
+}
+
+const VOICE_HEAD_KO: Readonly<Record<'writer' | 'planner' | 'judges', string>> = {
+  writer: '이 작품의 작가가 자기 원고에서 지키는 문체다. 숫자는 작가의 원고에서 잰 값이다.',
+  planner: '이 작품의 작가가 화를 짜는 방식이다.',
+  judges: '아래는 이 작품 작가의 문체다. 결함으로 지적하지 않는다.',
+};
+
+/**
+ * The operator's voice lines for one audience (ADR-0083, C3); empty unless the project pinned a voice
+ * profile, so every identity without one compiles to the same bytes as before.
+ */
+export function renderOperatorVoiceKo(
+  id: ComposedIdentity,
+  audience: 'writer' | 'planner' | 'judges',
+): string {
+  const lines = id.preferences?.operator_voice?.[audience] ?? [];
+  if (lines.length === 0) return '';
+  return [VOICE_HEAD_KO[audience], bullet(lines)].join('\n');
+}
+
+const POV_KO: Readonly<Record<string, string>> = {
+  first:
+    '1인칭 — 서술자는 시점 인물 자신이고 서술에서 자신을 ‘나’로 부른다. 시점 인물의 이름이나 ‘그/그녀’로 자신을 가리키지 않는다.',
+  third_limited:
+    '밀착 3인칭 — 서술은 시점 인물의 이름과 호칭으로 그를 가리키고, 서술에 ‘나’를 쓰지 않는다. 시점 인물이 모르는 것은 쓰지 않는다.',
+  third_omniscient:
+    '전지적 3인칭 — 서술은 인물을 이름과 호칭으로 가리키고, 서술에 ‘나’를 쓰지 않는다.',
+};
+
+/** The project's point of view as a writer/editor rule (ADR-0073); empty when the intake chose none. */
+export function renderPovKo(id: ComposedIdentity): string {
+  const pov = id.preferences?.pov;
+  return pov ? `시점: ${POV_KO[pov] ?? pov}` : '';
+}
+
+/**
+ * A rotating few of the operator's translated → webnovel contrast pairs (ADR-0073): `rotation` (the
+ * chapter number) picks a different window each chapter so the writer does not overfit three sentences.
+ */
+export function renderContrastPairsKo(id: ComposedIdentity, rotation: number, count = 3): string {
+  const pairs = id.preferences?.contrast_pairs ?? [];
+  if (pairs.length === 0) return '';
+  const n = Math.min(count, pairs.length);
+  const start = ((Math.max(1, Math.floor(rotation)) - 1) * n) % pairs.length;
+  const picked = Array.from({ length: n }, (_, i) => pairs[(start + i) % pairs.length]).filter(
+    (p): p is NonNullable<typeof p> => p !== undefined,
+  );
+  return [
+    '아래는 작가가 준 대조 예문이다. 왼쪽처럼 쓰지 않고 오른쪽의 호흡으로 쓴다. 문장 자체는 옮기지 않는다.',
+    ...picked.map((p) => `- 번역체: ${p.translated}\n  웹소설체: ${p.webnovel}`),
+  ].join('\n');
 }
 
 /**
@@ -329,6 +461,12 @@ export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
   preferences: '프로젝트 문체 선호',
   avoid: '쓰지 않는 문장 (번역투·AI 상투구)',
   exemplars: '문체 견본 (리듬 참고용, 베끼기 금지)',
+  device: '장치 어휘 (절대)',
+  voice: '작가 문체 (작가 원고에서 잰 기준)',
+  voice_planner: '작가의 구성 습관',
+  voice_judges: '이 작가의 문체 (결함 아님)',
+  pov: '시점 (절대)',
+  contrast: '대조 예문 (번역체 → 웹소설체)',
   restrictions: '콘텐츠 제한 (절대)',
   prose_rubric: '채점 기준',
   structure_rubric: '채점 기준',

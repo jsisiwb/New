@@ -3,6 +3,390 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Next session — handoff (2026-09-25, Gemini run)
+
+**Where the roadmap stands.** Everything through ADR-0079 / `standard@11` (phases R, P, A, K, L, V, O/W, D) is
+merged into `hoplite/ainos-1ac771f8` (PR #1 of `sigma43web/New`). GitHub Actions runs on every push and is
+green on the default branch (`ci` 18 min 46 s, `planning-validation` 19 s, 2026-09-24 20:54 UTC).
+
+This run (2026-09-24 →) moves every role to Gemini through the Notion bridge, learns the operator's voice
+from their own novels (`sigma43web/ko-corpus`), and targets accepted chapters. It is one chain of stacked PRs,
+one per phase; the agent cannot merge, so a roll-up PR from the top branch closes the chain.
+
+| Order | Phase | Branch | Status |
+| --- | --- | --- | --- |
+| 1 | 0 — state and provider readiness | `hoplite/hipponion-22b29187` | done (ADR-0080) |
+| 2 | G — Gemini baseline and same-model judging | `…--gemini-baseline` | done (ADR-0081, `standard@12`) |
+| 3 | C (part 1) — corpus import, statistics, voice analysis, copy detection | `…--corpus` | done (ADR-0082) |
+| 4 | C (part 2) — calibrated lint, voice profile, the operator's passages, likeness | `…--corpus--voice` | done (ADR-0083, `standard@13`) |
+| 5 | U + V2 — upstream prevention and revision convergence | `…--voice--upstream` | done (ADR-0084, `standard@14`) |
+| 6+ | N, Q, M, I, E, W, B, D | stacked on U | pending |
+
+**Done in Phase 0.** Both model-id names (`YEONJAE_NOTION_MODEL` wins over `YEONJAE_MODEL_NOTION`); split error
+classes and a policy-gated same-route refusal rule; counted gateway JSON recoveries; `bridge:credits`;
+`provider:check --probe --deep`; libpq `sslmode` semantics for the permanent database; a reset guard so a test
+run can never drop it. The permanent database is migrated (0001–0022, 68 tables); `story:state` on a fresh
+project answers (0 accepted, canon version 0).
+
+**Live facts to keep.** The reply to the identity probe names Gemini; JSON comes back unfenced; long
+structured output is not truncated (1,500 items, 7,894 characters). A tiny call costs 0.05–0.08 billing-period
+points; the bridge serializes per workspace, so parallel calls fail fast and are retried. Credits at the start:
+66.07 % / 76.68 % (period ends 2026-10-09). Book 3 of the corpus (`아카데미 사기 룬을 얻었다.epub`) is an **English
+machine translation**, not Korean (0 of 364 files Korean-majority); only books 1 and 2 carry the operator's
+Korean voice.
+
+**Safety rules for the next session.** Run every test and `pnpm check` with `DATABASE_URL` pointing at a local
+sandbox database (the test kit resets what it is given; `RESET_REFUSED` now guards the permanent one). Live
+runs use the permanent `DATABASE_URL` from a separate worktree so a rebuild cannot change a running process.
+
+**Next step.** The live checkpoint of `standard@14` on both projects (the regression intake
+`ops/live-runs/phase-a-v7-intake.json` and the academy intake `ops/live-runs/phase-c-academy-intake.json`), then
+Phase N (chapters 2–5, 6–15) on whichever project accepts chapter 1. The `standard@13` checkpoint (G4,
+`13-live-run-gemini.md` §4) accepted neither chapter: dialogue 6–7 % (structure blocking in both, even where the plan
+asked for 30–40 %), reader secrets revealed ahead of their chapters, and 원작 in the regression serial — the inputs
+to ADR-0084.
+
+**Budget.** Credits after G4: ws1 71.57 %, ws2 86.16 % of the billing period ending 2026-10-09 (about 42 points
+left across both workspaces). A chapter-1 run from a fresh project costs about 3.2–4.1 points. 200 화 on two
+projects cannot be produced inside this billing period.
+
+**Open defects carried in.** The writer's talk share (5–7 % in three live runs; `standard@14` adds the plan floor
+and one scene redraft), the operator's POV architecture (1인칭 hero with 3인칭 cutaways), structural re-drafting of a
+scene after the plan meets the floor, the bible time frame (G3-4), contract criteria that fight the voice profile's
+openings (G4r AC-1).
+
+## Phase U + V2 — upstream prevention and revision convergence, `standard.v14` — 2026-09-25
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline--corpus--voice--upstream` (stacked on Phase C part 2). ADR-0084
+records the decisions; `13-live-run-gemini.md` §3–§4 the evidence.
+
+**Built:** `revision.convergence` — evaluators with an open blocking/major finding on the parent re-run after every
+patch (G3-1), a round targets a failing dimension first; `planning.dialogue_floor` — scene plans below `chapter_min`
+talk are raised to it, the longest scene gets the contract's on-page partner when no scene has one (`PLAN-DLG-01`,
+`PLAN-PARTNER-01`, G3-2), and a scene with a partner that comes back below `scene_redraft_below` is re-drafted once
+with its measured share (kept only when it talks more); `drafting.reader_secrets_in_plan` — every scene plan ends
+with the knowledge-leak checker's reader-secret list (A-4, G3-3); `identity.device_lexicon` — the premise device
+(`preferences.story_device`) from the intake, its vocabulary in writer, editor, planner and genre-judge blocks, and
+`KO-DEVICE-01` (G-1); counters `dialogue_floor`, `dialogue_partner`, `dialogue_redraft`; `standard.v14`.
+
+**Measured (live, `standard@13`, G4 §4):** neither chapter 1 accepted; r0 overall 74 (regression) and 81 (academy);
+both blocked on dialogue (6 %, 7 %); reader secrets revealed early in both; 8.27 credit points for the pair.
+
+**Tests:** `dialogue-floor.test.ts` (floor, partner, device words, redraft note), `evaluation-plan.test.ts`
+(re-judging open majors), `identity-from-intake.test.ts` (device), `policy.test.ts` (v14), `novel-ko.integration.test.ts`
+(v14: voice sections, raised targets, reader secrets in the plan, no English in any prompt), `normalizers.test.ts`.
+
+**Not done (and why):** the chapter planner still does not read the reveal schedule (the writer and the checker now
+share one list); structural scene re-drafting and the POV cutaways wait for a live run that meets the floor.
+
+## Phase C (part 2) — calibrated lint, voice profile, the operator's passages, likeness, `standard.v13` — 2026-09-25
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline--corpus--voice` (stacked on Phase C part 1). ADR-0083 records the
+decisions; `docs/10-corpus/voice-calibration.md` the evidence.
+
+**Built:** `lang/ko@7` (corpus-calibrated: warn p90, fail p99.5; `KO-TALK-SHARE` counts straight quotes and replaces
+`KO-DLG-SHARE`/`KO-DLG-LOW`; first-person bands `KO-TALK-SHARE-1P`, `KO-PRN-RATE-1P`; the operator's own conventions
+no longer flagged; `calibration.status: corpus_calibrated`); `corpus:calibrate`; the operator voice profile
+`voice/operator@1` (`voice-profile.schema.json`; writer, planner and judge lines) copied into a new project's identity when
+the policy names it, rendered as the Korean `voice`, `voice_planner` and `voice_judges` sections; the deterministic
+passage tagger `passages@1` and `corpus:passages`; operator exemplars pinned at novel start (`identity.operator_exemplars`,
+point of view first, stable per project) replacing the studio's synthetic exemplars, with the source never shown to
+the model; `corpus:likeness` (C8) and `corpus:stock-phrases` (C7); `standard.v13` (v12 + the three identity
+choices + the corpus copy check at 14 syllables; no gate changes); the academy intake
+`ops/live-runs/phase-c-academy-intake.json` (C9).
+
+**Measured:** the operator's chapters with a major lint finding: 75.9 % under `lang/ko@6`, 11.0 % under `lang/ko@7`.
+1,850 passages stored in the permanent database (hook 6, cliffhanger 640, banter 1,183, status window 21). Likeness:
+the operator's own chapters p10 65 / p50 85 / p90 95; G1 chapter 1 75; G3b chapter 1 50. Stock-phrase candidates
+from the two Gemini drafts: `비릿한 피`, `훅 끼쳤다`, `끔찍한 고통이`, `벌떡 몸을 일으켰다`. Live G3b
+(`standard@12`): chapter 1 not accepted — `13-live-run-gemini.md` §3.
+
+**Tests:** `ko-style-v7.test.ts`, `corpus-voice.test.ts`, `voice.test.ts`, `identity-from-intake.test.ts` (voice and
+exemplars), `corpus-index.integration.test.ts` (passages), `policy.test.ts` (v13), compiler profile inventory.
+
+**Not done (and why):** C2 (LLM structure annotations of the corpus) and C6 (pipeline-made contrast pairs) spend
+model calls on 656 chapters while credits bind; stock-phrase mining waits for more drafts; the POV architecture
+belongs to Phase U.
+
+## Phase C (part 1) — the operator corpus: import, statistics, voice analysis, copy detection — 2026-09-24
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline--corpus` (stacked on Phase G). ADR-0082 records the decisions.
+
+**Built:** migrations 0023 (`corpus.books`, `corpus.chapters`) and 0024 (`annotations`, `passages`,
+`contrast_pairs`); a dependency-free EPUB reader (`readEpub`, `readZipEntries`); `parseManifest`, `titleKey`,
+`classifyDocument`, POV inference, `corpusBookFrom`; `importCorpusBook`, `listCorpusBooks`, `corpusChapters`;
+CLI `corpus:import <dir|git-url>`, `corpus:list`, `corpus:stats [--json] [--out=]`; `chapterMetrics` (the lint's
+metrics one paragraph per line, plus ending classes) and percentile distributions; `CorpusCopyIndex`
+(14 Hangul syllables/letters/digits, spaces and punctuation ignored) wired as blocking `CORPUS-COPY-01` under
+`evaluation.corpus_copy` (no policy enables it yet); `resetDatabase` also drops `corpus`.
+
+**Measured (permanent database):** 3 books imported (1,138 chapter rows, 8.5 M characters); re-import creates
+nothing. Book 3 is an English machine translation (0 of 364 documents Korean-majority): imported, flagged,
+excluded from every voice use. 656 Korean main-story chapters: length p10/p50/p90 4,489 / 5,493 / 7,313자;
+dialogue + 속마음 median 23.4 % (first-person 화 1–25: median 25 %, p10 9.9 %, p2 7.6 %); paragraph median 30자; em
+dashes 0. Copy index: 2.95 M windows in 0.7 s; the G1 draft has 0 copies; a corpus excerpt is found with its
+source. Defect C-1: `KO-DLG-SHARE` ignores straight quotes (book 2's dialogue).
+
+**Written:** `docs/10-corpus/operator-voice-analysis.md` (C0.3: both Korean books read — prologue/화 1–25 in full,
+ten middle and four final chapters each — openings, possession and status windows, dialogue and inner voice,
+호칭, rhythm, 만담 and 착각, heroines, 사이다/절단, pacing, strengths, and what the live drafts do differently);
+`docs/10-corpus/corpus-stats.md` (C1).
+
+**Tests:** `corpus.test.ts` 11/11, `corpus-index.integration.test.ts` 2/2, migration replay 4/4, RLS inventory.
+
+**Not done yet (Phase C part 2):** `lang/ko@7` calibrated thresholds and the C-1 fix (C4), the operator voice layer
+(C3), exemplars and contrast pairs (C5, C6), stock-phrase mining (C7), the C8 metric, structure annotations (C2),
+the academy intake (C9) and `standard@13`.
+
+## Phase G — Gemini baseline and same-model judging, `standard.v12` — 2026-09-24
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline` (stacked on Phase 0). ADR-0081 records the decisions;
+`13-live-run-gemini.md` §1–§2 the evidence.
+
+**Measured (G1, live, `standard@11` unchanged on Gemini):** chapter 1 at 3,965자 (−25 %), two scenes; r0 prose
+34.2/78 (rubric 56.3, lint 1), structure 93.5, genre 90, voice 86.9; 3 blocking / 12 major; every patched round
+quarantined; 47 calls (75 attempts), 150,428 / 24,748 tokens, 3.29 credit points, 31 min. Four majors were a
+line-layout artifact (Gemini breaks lines inside blank-line blocks); three were 속마음 in 존댓말; the blockings
+repeat A-4 and add two bible contradictions.
+
+**Built:** `production-policy.prompts.max_version` and `PromptRegistry.activeSet(maxVersion)` — a job pins the
+newest active prompt at or below its policy's ceiling; policies without the field keep the 4.5.0 set
+(`LEGACY_PROMPT_CEILING`), so a new prompt version never changes an older policy. Prompt family 4.6.0: the four
+gated judges quote their three weakest passages first (`weakest_passages`, optional in the answer schema) and
+score against anchored Korean rubrics with caps; the scene writer keeps 속마음 in 반말 and one paragraph per line.
+`drafting.paragraph_per_line` (deterministic, `paragraphPerLine`, counted), `evaluation.length_in_structure`,
+`evaluation.judge_calibration.max_gap_points` (rubric capped at composite + gap, recorded per section). Korean
+claims for length, output-language and fallback findings (the English length claim reached the reviser).
+`standard.v12` = v11 + all of the above + the refusal rule (ADR-0080) + scene `request_ratio` 1.1 + structure
+`judge_weight` 0.5; thresholds unchanged.
+
+**Tests:** `registry.test.ts` (legacy set at 4.5.0; 4.6.0 adds exactly five families), `policy.test.ts` (v12 = v11 +
+the listed changes, no threshold moved), `paragraph-per-line.test.ts` 3/3, `output-shapes.test.ts` (4.6.0 shapes
+are schema-generated), `workflow-pins.integration.test.ts` (a release below the ceiling reaches new jobs, one
+above it does not), `normalizers.test.ts`, and a Korean simulated run under v12 in `novel-ko.integration.test.ts`
+(4.6.0 judges and writer pinned, line-broken drafts stored one paragraph per line, Latin-leak scan clean).
+
+**Not done:** the v12 live checkpoint is recorded in `13-live-run-gemini.md` §3 when it has run; a judge-calibration
+report across projects waits for more scorecards (C8 supplies the operator-corpus side).
+
+## Phase 0 — state and provider readiness — 2026-09-24
+
+Branch `hoplite/hipponion-22b29187` (base `hoplite/ainos-1ac771f8`). ADR-0080 records the decisions.
+
+**Built:** `notionModelFromEnv` (both model-id names, `YEONJAE_NOTION_MODEL` wins, conflict reported without
+values); failure class `refused` and `ProviderFailure.reason` → audit `error_class` (`EMPTY_REPLY`, `HTTP_5XX`,
+`THROTTLED`, `HTTP_4XX`, `REFUSED`, `TRANSPORT`; a cut-off JSON answer flagged `truncated_json`); finish reasons mapped by meaning
+(`MAX_TOKENS` → `length`, `SAFETY` → `content_filter`); `provider_retry.refusal { max_retries, detect_text }`
+(same route, same request, then `MODEL_REFUSED`; absent → counted only); `json_fence_stripped` /
+`json_object_extracted` counted and listed per attempt; `bridge:credits`; `provider:check --probe --deep
+--credits`; `withLibpqSslSemantics`; `resetAllowed` / `RESET_REFUSED`.
+
+**Measured:** `refusal.test.ts` 11/11, `bridge-credits.test.ts` 4/4, `db-safety.test.ts` 2/2; the retry, failure,
+notion-provider and capability suites unchanged (28/28). Live: see `13-live-run-gemini.md` §0. The permanent
+database migrated 0001–0022 through `pnpm cli db:migrate` (after the sslmode fix); `story:state` on an empty
+project answered.
+
+**Not done:** the refusal rule is not on in any policy yet (`standard@12`, Phase G); no live refusal has been
+observed, so the detector is tested on synthetic replies only.
+
+## Phase D — documentation; Phase B — blocked — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--docs` (stacked on the operator tools).
+
+**Built (D):** `README.md` rewritten around the current product: a Korean-serial quick start, the policy ladder
+`standard@6`–`@11`, and the operator commands. `docs/HOW-A-KOREAN-NOVEL-IS-MADE.md` walks one serial from intake
+to 화 200 with the policy knob behind each step. `.env.example` now lists every variable the code reads (names
+only): the genspark bridge, enforcement mode, rate wait, runner poll and identity, drain and telemetry timing,
+worker health port, the Temporal task queue override, and the development-only insecure-cookie switch.
+
+**Decided (D):** the progress log is not split. ADR-0043 makes this file the single record of status, so an
+archive file would be a second one. It stays newest-first.
+
+**BLOCKED (B):** the gold-set and A/B benchmark needs operator-supplied material: rated Korean chapters (a gold
+set) and a blinded human rating of paired outputs. Existing pieces a harness would build on are
+`packages/eval/src/review-packet.ts` (blinded review packets) and `validate:contrast` (the deterministic contrast
+corpus). No harness was added without data to calibrate it.
+
+## Phases O and W (tooling) — operator tools and prompt sizes — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--operator-tools` (stacked on Phase V). ADR-0079 records the decisions.
+
+**Built:** `pack:inspect`, `story:state`, `cost:project`, `contract:show` (I, read-only), `prompts:size` — read-only;
+none calls a model, writes canon or creates a job.
+
+**Measured:** `ops-tools.test.ts` 3/3, `ops-tools.integration.test.ts` 2/2. On live data: `pack:inspect` reproduces
+the v7 overflow (20,928 / 20,000) and fits it under the v8 budget (21,288 / 34,000); `cost:project` on the v8
+project projects 200 chapters to ≈ 7,800 calls, 27.9M / 3.1M tokens, ≈ 76 model-hours (one chapter observed,
+three revision rounds); `prompts:size` ranks the chapter planner first (6,781 estimator tokens).
+
+**Not done:** prompt pruning (W — a pruned prompt is a new version and needs A/B evidence); rendered prompts
+of recorded calls (inputs are not stored, `input_ref` is empty); an `edit-chapter` command and contract editing
+(I — editing a checkpointed contract needs a re-plan path); Korean chapter titles (I — the contract has no
+title field; needs a planner output and prompt version); a separate `export` command (`export:accepted` and
+`export:package` exist).
+
+## Phase V — multi-patch revision rounds, opt-in through `standard.v10` — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--revision-eval` (stacked on Phase L). ADR-0077 records the decisions.
+
+**Built:** `revision.multi_patch`: a round clusters the targeted spans (`clusterIssueSpans`), makes one reviser
+call per cluster (at most `max_patches`, never more than `max_patches_per_round`), keeps a sub-patch only if it
+anchors inside its own window and validates, merges the usable ones into one revision (`mergePatches`) recorded
+as an envelope patch plus a `patch_set` artifact, and fails only when none is usable. The polish round uses the
+same path. `standard.v10` = `standard.v9` + `multi_patch { max_patches: 4, merge_gap_chars: 120 }`.
+
+**Measured:** `multi-patch.test.ts` 5/5; `policy.test.ts` (v10 = v9 + the block); two Korean `standard.v10`
+simulated runs — two findings far apart get two reviser calls per chapter (`…:r1:p1`, `…:r1:p2`), one revision
+whose envelope patch reproduces it from the parent; an unanchored sub-patch is dropped and the other applied;
+0 Latin-script leaks. Live `standard.v8` evidence that motivates it: `docs/08-delivery/12-live-run-ws1-7.md` §8.2.
+
+**Built (V-1, ADR-0078):** `revision.regression_baseline: parent` — a patch's protections are measured against its
+parent (a section fails only on pass → fail; a kind guard only on more open majors of its kinds);
+`standard.v11` = `standard.v10` + `regression_baseline: parent`.
+
+**Measured (live, Notion bridge, `standard.v10`):** chapter 1 at 4,799자; three multi-patch rounds of one cluster
+each; r1 cut blockings from 4 to 1; every round quarantined, r2/r3 only for `protection_failed` on sections and
+kinds r0 already failed — defect V-1, found in the regression reports of all three live runs (v6, v8, v10);
+stopped `APPROVAL_BLOCKED` (4 blocking: A-4 ×2, a bible rank dated after chapter 1, a voice-card violation).
+35 calls, 121,708 / 20,862 tokens, ≈ 1.0 / 2.1 points of bridge credits (`12-live-run-ws1-7.md` §8.3).
+Unit: `comparison.test.ts` 44/44 (the live defect fails absolute and passes parent; pass → fail and an extra
+guarded major still fail).
+
+**Not done:** the reader-panel evaluator and cross-judge score normalization (V2, V3) — not started; per-sub-patch
+regression checks (rejected for now, ADR-0077); A-4 (future knowledge) still open.
+
+## Phase L — long-story context, opt-in through `standard.v9` — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--long-context` (stacked on Phase K). ADR-0076 records the decisions.
+
+**Built:**
+
+- L1 hierarchical story memory: `arc_summarizer` (prompt family 4.5.0, Korean) writes one arc summary (L2) per
+  accepted arc from its accepted L1 summaries; `ensureArcSummary` runs before an arc is planned, once per
+  chapter range (`insertArcSummaryOnce`); the story so far keeps the last 20 accepted chapters as L1 blocks and
+  one item per older arc (`storySoFarItems`, pure; ADR-0061's output unchanged without the block); the previous
+  arc's summary joins the next arc planner's brief.
+- L2 200-화 simulation of the story-so-far section (`story-memory.test.ts`).
+- L3 Korean retrieval fixture 26 → 60 queries with recall@1 / MRR floors.
+- Live defect L-1: a reviser patch without a valid `scope` gets one inferred from its text.
+- `standard.v9` = `standard.v8` + `context.story_memory`.
+
+**Measured (deterministic):** 200-화 simulation — story-so-far tokens (Korean estimator) flat 19,611 / 39,641 /
+59,782 / 79,922 vs hierarchical 12,634 / 15,179 / 17,798 / 20,363 at 50/100/150/200화, every chapter represented
+once. Retrieval on 60 queries: Korean recall@5 1.00, recall@1 0.82, MRR 0.88; English FTS 0.85 / 0.67 / 0.74.
+Korean `standard.v9` simulated run: an arc boundary makes one summarizer call, one L2 row and the next arc
+planner's brief; 0 Latin-script leaks. Unit: `story-memory.test.ts` 5/5, `revision.test.ts` 8/8, prompt
+registry 15/15 and output shapes 98/98 with the new family; the context, Korean novel and story-plan suites
+(85 tests) pass unchanged.
+
+**Not done:** season summaries (L3); writer voice cards from accepted utterances (speaker annotations are not
+persisted for accepted versions); a character-state table beyond ADR-0063's ledgers; live evidence of an arc
+boundary (a live run would need ten accepted chapters).
+
+## Phase K — prose quality for Korean manuscripts, opt-in through `standard.v7` — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--korean-prose` (stacked on Phase A). ADR-0073 records the decisions; ADR-0074
+the two Phase A fixes that ship here.
+
+**Built:**
+
+- K5: `lang/ko@6` (`KO-PUNCT-ELL`, `KO-PUNCT-DASH`, `KO-IDIOM-01` with 19 calque phrases, `KO-ORDER-01`, `KO-NAME-03`,
+  `KO-NAME-04` replacing `KO-NAME-02`, `KO-POV-01`); the lint receives display names separately (A-2); a v6 digest
+  line. New projects stay on `lang/ko@5` unless the policy names a layer (`identity.language_layer`).
+- K4, K7, K6: intake `pov`, `style_sample`, `contrast_pairs` → identity preferences; writer/editor/voice-judge
+  blocks carry a hard POV section, the operator's sample as the top exemplar (EXEMPLAR-COPY applies), three
+  rotating contrast pairs; contracts and scene plans are held to the POV. Intake also takes `platform`,
+  `desired_saida_scenes`, `taboo_overrides`, `protagonist_type` (I1).
+- K8: serial-rhythm directives in the chapter planner's hard constraints and a `rhythm_check` artifact
+  (PLAN-RHYTHM-01..03).
+- K1: a Korean polish round after the gates, kept only when it still passes with fewer lint findings
+  (`polish_report`; `polish_rejected` quarantine).
+- A-3: `evaluation.pov_secrets_reader_visible` drops the POV character's own secrets from the knowledge-leak
+  checker's reader-secret list.
+- `standard.v7` = `standard.v6` + the opt-ins above.
+- `standard.v8` = `standard.v7` + Korean-calibrated pack budgets (writer 36k, continuity checker 34k, extractor 30k,
+  chapter planner 20k) and `length.scene_calibration` (K3: the writer is asked for 0.8 × the scene target, the
+  remaining budget redistributed across the chapter's later scenes; plans and gates keep the target), ADR-0075 —
+  the two defects the live `standard.v7` run hit (K-1 `PACK_FAILED` at the continuity pack, 20,928 against
+  20,000; K-2 scenes +27 % over target).
+
+**Measured (deterministic):** `ko-style-v6.test.ts` 8/8 (including the six live `KO-NAME-02` false positives, now
+clean, and real misspellings still caught); `identity-from-intake.test.ts` 13/13 (layer opt-in, preferences, POV
+and pairs in blocks, unchanged bytes without them); `rhythm.test.ts` 3/3; `evaluator-inputs.test.ts` 2/2;
+`policy.test.ts` (v7 = v6 + the opt-ins); Korean `standard.v7` simulated run: `lang/ko@6` composed, every writer
+prompt with the POV section, the operator sample and the pairs, every planner prompt with the rhythm
+directives, contracts held to the POV, a rhythm check per chapter, 0 Latin-script leaks.
+
+**Measured (live, Notion bridge, `standard.v7`):** intake → concepts 1 min 59 s; bible (7 cast, 15 propositions,
+10 promises); chapter 1 contract with its rhythm check, three scenes drafted and assembled; stopped
+`failed: PACK_FAILED` (K-1) with the scenes at 6,717자 against 5,300 (K-2). 15 calls, none failed, 66,390 /
+17,273 tokens, 0¢ recorded, ≈ 0.5 / 1.6 points of the bridge's billing-period credits
+(`docs/08-delivery/12-live-run-ws1-7.md` §8.1). Unit: `length-calibration.test.ts` 6/6; `policy.test.ts`
+(v8 = v7 + the two changes); Korean `standard.v8` simulated run: every scene writer asked for the calibrated
+length, plans at the planner's target, no pack needing a ladder step, 0 Latin-script leaks.
+
+**Not done:** K2 best-of-N in the autopilot path (doubles calls; the winner-only guard is not wired into
+production); K3's trim/continuation call after assembly (the request calibration replaces it for now;
+ADR-0075); pipeline-generated contrast pairs.
+
+## Phase A — live Korean run on `standard.v6` through chapter 1 — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--phase-a-live` (stacked on Phase P). ADR-0074 records the defects;
+`docs/08-delivery/12-live-run-ws1-7.md` §7 the run.
+
+**Built:** a contract that names no location gets the registered location its own text mentions (else the
+first), with a continuity risk and the `contract_location_fallback` counter; scene planning applies the same
+fallback to contracts locked before the fix (defect A-1).
+
+**Measured (live, Notion bridge):** intake → spec → concepts in 3 min 20 s; bible in 7 min 17 s; chapter 1
+drafted at 5,621자 (target 5,300 ± 12%) and evaluated; after three revision rounds it stopped
+`needs_attention: APPROVAL_BLOCKED` — prose 38.3/78 with six `KO-NAME-02` false positives (A-2) and two
+knowledge-leak blockings on the narrator's own regression (A-3) and the regressor's future knowledge (A-4).
+36 calls, 139,655 / 30,238 tokens, 0¢ recorded, ≈ 4.3 points of the bridge's billing-period credits.
+Unit: `plan-normalize.test.ts` 5/5 (fallback location).
+
+**Not done:** chapters 2–5 on this project (its pinned `lang/ko@5` keeps the A-2 false positives); A-2 and A-3
+are fixed on the opt-in Korean-prose path (next change); A-4 needs a knowledge-model design; A4/A5 decisions
+wait for accepted live chapters on that path.
+
+## Phase P — provider readiness — 2026-09-24
+
+Branch `hoplite/stagiros-7cb92f92--provider-readiness` (stacked on Phase R). ADR-0072 records the decisions.
+
+**Built:**
+
+- `production-policy.provider_retry` (P1): retryable faults (429, 5xx incl. 502/503/504, transport) and empty
+  replies are retried with exponential backoff and full jitter, wrapping over the class's routes, up to
+  `max_attempts`; each attempt's `backoff_ms` is on the audit row; a 4xx is never retried. Without the block the
+  gateway behaves as before.
+- `planning.design_batches` (P2): the bible cast in three checkpointed `character_designer` batches (protagonist,
+  core cast, supporting cast) with Korean briefs for Korean projects; the merge folds the protagonist's
+  register-only entries into its design. `world_builder`, `power_system_designer` and `story_architect` keep one
+  call each (they succeeded live; see below). `faction_designer` / `naming_registry_compiler` do not exist here.
+- `standard.v6` = `standard.v5` + both opt-ins. `pnpm policy:rehash` also validates every policy against the
+  schema.
+- `novel:run --status-file=<f> [--stuck-after-min=N]` (P3): an atomic heartbeat every 30 s; a run with no call,
+  step or event past the threshold (default 150 min) ends `failed: RUN_STUCK` with the reason;
+  `quality:run-report --status-file=<f>` shows the beat.
+- `provider:check [--probe] [--json]` (P4): the R/P/M/C capability matrix derived from the active prompts
+  against the configured routes (missing route, context, native JSON, fallback, judge on the writer's model);
+  notion mode is reported as `SINGLE_POOLED_MODEL` — judges share the writer's model (known limitation). Model
+  ids are never printed. Live per-class routing is tested with fakes only.
+
+**Measured:**
+
+- Unit/integration (Postgres 16): `retry-backoff.test.ts` 6/6, `capabilities.test.ts` 5/5,
+  `cast-batches.test.ts` 5/5, `run-heartbeat.integration.test.ts` 2/2, the Korean `standard.v6` simulated run
+  (three batches, one merged cast with the supplied names, four completed `cast*` checkpoints, 0 Latin-script
+  leaks).
+- Live (Notion bridge, `standard.v6`, Phase A project): intake → Story Spec → two concepts in 3 min 20 s; the
+  bible (three cast batches, world, progression, blueprint) in 7 min 17 s after approval; 9 calls, 11 attempts —
+  one `concept_generator` and one `character_designer` attempt failed `retryable_provider` and were retried after
+  jittered backoffs of 7.3 s and 11.5 s, then succeeded. `provider:check` in notion mode: routing OK, one
+  `SINGLE_POOLED_MODEL` warning.
+
+**Not done:** splitting `world_builder` / `story_architect` (not needed by the live evidence); per-class sampling in
+the policy; a live run in `live` mode (no credentials; fakes only).
 ## Phase R — hygiene: deterministic suites, policy-hash check, lexed migrations — 2026-09-24
 
 Branch `hoplite/stagiros-7cb92f92` (base `070dfa9`). ADR-0071 records the decisions.

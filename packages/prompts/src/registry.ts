@@ -209,12 +209,21 @@ export class PromptRegistry {
     return [...new Set(this.list().map((v) => v.family))].sort();
   }
 
-  /** Latest `active` version per family — the default prompt set. */
-  activeSet(): PromptSet {
+  /**
+   * Latest `active` version per family — the default prompt set. With `maxVersion`, only versions at or
+   * below it count (ADR-0081): a production policy pins the newest prompt version its jobs may use, so a
+   * new prompt version is a new policy's behaviour and never changes an older policy's new jobs.
+   */
+  activeSet(maxVersion?: string): PromptSet {
     const mapping: Record<string, string> = {};
     for (const fam of this.families()) {
       const active = this.list()
-        .filter((v) => v.family === fam && v.status === 'active')
+        .filter(
+          (v) =>
+            v.family === fam &&
+            v.status === 'active' &&
+            (maxVersion === undefined || compareSemver(v.version, maxVersion) <= 0),
+        )
         .sort((a, b) => compareSemver(b.version, a.version));
       const first = active[0];
       if (first) mapping[fam] = first.id;

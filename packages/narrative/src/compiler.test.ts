@@ -32,6 +32,8 @@ describe('profile store and composition', () => {
       'lang/ko@3',
       'lang/ko@4',
       'lang/ko@5',
+      'lang/ko@6',
+      'lang/ko@7',
       COMPOSED,
       'tradition/kr-webnovel@1',
       'tradition/kr-webnovel@2',

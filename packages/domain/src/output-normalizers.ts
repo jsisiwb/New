@@ -11,6 +11,7 @@ import { METRIC, METRIC_HELP, Metrics } from './metrics.js';
  */
 export const OUTPUT_NORMALIZERS = [
   'contract_output',
+  'contract_location_fallback',
   'scene_plans',
   'scene_draft',
   'evidence_anchor',
@@ -21,6 +22,16 @@ export const OUTPUT_NORMALIZERS = [
   'judge_dimension_scores',
   'judge_repair',
   'judge_quote_anchor',
+  // Gateway-level JSON recovery (ADR-0080): a fenced answer, or JSON inside chatty text.
+  'json_fence_stripped',
+  'json_object_extracted',
+  // One paragraph per line in a text-mode scene draft (ADR-0081).
+  'paragraph_per_line',
+  // A scene plan below the policy's dialogue floor, or without anyone beside the POV character (ADR-0084).
+  'dialogue_floor',
+  'dialogue_partner',
+  // A scene with someone to talk to that came back below the talk band, re-drafted once (ADR-0084).
+  'dialogue_redraft',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

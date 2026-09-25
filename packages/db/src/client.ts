@@ -13,7 +13,21 @@ export interface DbConfig {
 }
 
 export function createPool(config: DbConfig): Pool {
-  return new pg.Pool({ connectionString: config.connectionString, max: config.max ?? 8 });
+  return new pg.Pool({
+    connectionString: withLibpqSslSemantics(config.connectionString),
+    max: config.max ?? 8,
+  });
+}
+
+/**
+ * `sslmode` with libpq's meaning (ADR-0080). node-postgres reads `sslmode=require` as `verify-full`, so a
+ * URL that psql accepts (encrypted, certificate not verified) fails with DEPTH_ZERO_SELF_SIGNED_CERT
+ * against a server with a self-signed certificate. `uselibpqcompat=true` restores libpq's semantics;
+ * an explicit `uselibpqcompat` in the URL is left alone, and a URL without `sslmode` is unchanged.
+ */
+export function withLibpqSslSemantics(url: string): string {
+  if (!/[?&]sslmode=/i.test(url) || /[?&]uselibpqcompat=/i.test(url)) return url;
+  return `${url}&uselibpqcompat=true`;
 }
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): DbConfig {

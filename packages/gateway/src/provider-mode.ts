@@ -96,8 +96,31 @@ export function gensparkRouting(env: NodeJS.ProcessEnv = process.env): RoutingTa
  * on the next route instead of failing the call. On the bridge's round-robin pool the next attempt lands
  * on another workspace; `YEONJAE_NOTION_FALLBACK_MODELS` (comma-separated) may pin workspace models.
  */
+/**
+ * The bridge model id and where it came from (ADR-0080). Two names are accepted: `YEONJAE_NOTION_MODEL`
+ * (the name the adapter has read since ADR-0056) and `YEONJAE_MODEL_NOTION` (the operator's name, in the
+ * `YEONJAE_MODEL_<class>` style). `YEONJAE_NOTION_MODEL` wins when both are set; `conflict` reports that
+ * the two disagree, without either value.
+ */
+export function notionModelFromEnv(env: NodeJS.ProcessEnv = process.env): {
+  readonly model: string;
+  readonly source: 'YEONJAE_NOTION_MODEL' | 'YEONJAE_MODEL_NOTION' | 'default';
+  readonly conflict: boolean;
+} {
+  const nonEmpty = (v: string | undefined): string | undefined => {
+    const t = v?.trim();
+    return t === undefined || t === '' ? undefined : t;
+  };
+  const primary = nonEmpty(env.YEONJAE_NOTION_MODEL);
+  const alias = nonEmpty(env.YEONJAE_MODEL_NOTION);
+  const conflict = primary !== undefined && alias !== undefined && primary !== alias;
+  if (primary !== undefined) return { model: primary, source: 'YEONJAE_NOTION_MODEL', conflict };
+  if (alias !== undefined) return { model: alias, source: 'YEONJAE_MODEL_NOTION', conflict };
+  return { model: DEFAULT_NOTION_MODEL, source: 'default', conflict: false };
+}
+
 export function notionRouting(env: NodeJS.ProcessEnv = process.env): RoutingTable {
-  const base = env.YEONJAE_NOTION_MODEL ?? DEFAULT_NOTION_MODEL;
+  const base = notionModelFromEnv(env).model;
   const fallbacks = (env.YEONJAE_NOTION_FALLBACK_MODELS ?? '')
     .split(',')
     .map((m) => m.trim())

@@ -21,6 +21,8 @@ import { normalizePatchFields } from './revision.js';
 /** Shape repairs: remove once the counter reads zero across live runs with generated shapes. */
 const SHAPE_REPAIRS = [
   'contract_output',
+  // ADR-0074 (A-1): a contract that names no location gets a registered one.
+  'contract_location_fallback',
   'scene_plans',
   'patch_fields',
   'judge_drift_flags',
@@ -34,6 +36,14 @@ const DESIGNED_PATHS = [
   'patch_quote_anchor',
   'judge_quote_anchor',
   'scene_draft',
+  // ADR-0080: the gateway's JSON recoveries; ADR-0081: one paragraph per line in a prose draft.
+  'json_fence_stripped',
+  'json_object_extracted',
+  'paragraph_per_line',
+  // ADR-0084: the plan's dialogue floor and scene partner, and the one scene redraft below the talk band.
+  'dialogue_floor',
+  'dialogue_partner',
+  'dialogue_redraft',
 ] as const;
 
 describe('output normalizer inventory (ADR-0057)', () => {

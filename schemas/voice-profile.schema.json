@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yeonjae.studio/schemas/voice-profile.schema.json",
+  "title": "Operator voice profile",
+  "description": "ADR-0083 (C3): the operator's measured voice as rule lines in the manuscript language, derived from their own published chapters (docs/10-corpus). A policy names a profile (identity.voice_profile); at novel start its lines are copied into the project's composed identity (preferences.operator_voice), so a project reads frozen bytes. Writers and editors read `writer`, planners `planner`, judges `judges` (the operator's conventions that are not defects). Versions are immutable.",
+  "type": "object",
+  "required": ["id", "version", "language", "name", "evidence", "writer", "planner", "judges"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^voice/[a-z0-9-]+$" },
+    "version": { "type": "integer", "minimum": 1 },
+    "language": { "$ref": "common.schema.json#/$defs/manuscriptLanguage" },
+    "name": { "type": "string" },
+    "evidence": { "type": "string", "description": "Where the numbers and conventions come from (documents, corpus scope)." },
+    "writer": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 10 } },
+    "planner": { "type": "array", "items": { "type": "string", "minLength": 10 } },
+    "judges": { "type": "array", "items": { "type": "string", "minLength": 10 } },
+    "content_hash": { "type": "string" }
+  }
+}

@@ -12,3 +12,4 @@ export * from './retrievers.js';
 export * from './fetch.js';
 export * from './build.js';
 export * from './ledgers.js';
+export * from './story-memory.js';

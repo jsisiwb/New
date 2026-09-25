@@ -53,6 +53,37 @@ export interface GatewayRequest {
     { readonly name: string; readonly schema: Readonly<Record<string, unknown>> } | undefined;
   readonly params?: Partial<ModelParams> | undefined;
   readonly modelClass: ModelClass;
+  /**
+   * Retry and backoff for retryable provider failures, from the pinned Production Policy's
+   * `provider_retry` block (ADR-0072). Absent: the historical behaviour (the next route immediately, at
+   * most four attempts, an empty reply judged by the adapter), so earlier pins replay unchanged.
+   */
+  readonly retry?: ProviderRetryPolicy | undefined;
+}
+
+/** `production-policy.provider_retry` (ADR-0072). */
+export interface ProviderRetryPolicy {
+  /** Provider attempts per call, repairs and regenerations included; clamped to 1–8. */
+  readonly max_attempts: number;
+  readonly base_delay_ms: number;
+  readonly max_delay_ms: number;
+  readonly multiplier: number;
+  /** `full`: wait a uniform random share of the exponential delay; `none`: the delay itself. */
+  readonly jitter: 'full' | 'none';
+  /** An empty completion (no text, no JSON, not a content filter) is a retryable provider fault. */
+  readonly retry_empty_reply: boolean;
+  /**
+   * A declined request (ADR-0080): a `content_filter` finish, a safety block, or (with `detect_text`) a
+   * short reply that is a refusal instead of the requested output. Retried on the SAME route with the
+   * same request, at most `max_retries` times, then the call fails `MODEL_REFUSED`. Absent: refusals are
+   * counted and recorded, and the call proceeds as before.
+   */
+  readonly refusal?:
+    | {
+        readonly max_retries: number;
+        readonly detect_text: boolean;
+      }
+    | undefined;
 }
 
 export interface ModelParams {
@@ -134,7 +165,8 @@ export class GatewayError extends Error {
       | 'RATE_LIMITED'
       | 'PROVIDER_FAILED'
       | 'SCHEMA_INVALID'
-      | 'TRUNCATED',
+      | 'TRUNCATED'
+      | 'MODEL_REFUSED',
     message: string,
   ) {
     super(`${code}: ${message}`);

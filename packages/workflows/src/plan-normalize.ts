@@ -127,6 +127,39 @@ export interface ContractNormalizeInput {
   readonly knownPromiseIds: ReadonlySet<string>;
 }
 
+export interface RegisteredLocation {
+  readonly id: string;
+  readonly display_name: string;
+  readonly aliases?: readonly string[] | undefined;
+  readonly short_forms?: readonly string[] | undefined;
+}
+
+/**
+ * A location for a contract that names none (live defect A-1, ADR-0074). Every scene must stand in one of
+ * the contract's locations, so a contract with `locations: []` failed its scene plan without exception.
+ * The registered location the contract's own text mentions most (display name, alias, short form or the
+ * name's first word) is chosen; with no mention, the first registered location, reported as unmatched so
+ * the caller records the fallback as a continuity risk.
+ */
+export function chooseFallbackLocation(
+  locations: readonly RegisteredLocation[],
+  contractText: string,
+): { readonly id: string; readonly name: string; readonly matched: boolean } | undefined {
+  let best: { id: string; name: string; score: number } | undefined;
+  for (const l of locations) {
+    const first = l.display_name.split(/\s+/u)[0] ?? '';
+    const terms = [
+      l.display_name,
+      ...(l.aliases ?? []),
+      ...(l.short_forms ?? []),
+      ...(Array.from(first).length >= 2 ? [first] : []),
+    ].filter((t) => t.trim().length > 0);
+    const score = terms.reduce((n, t) => n + contractText.split(t).length - 1, 0);
+    if (!best || score > best.score) best = { id: l.id, name: l.display_name, score };
+  }
+  return best ? { id: best.id, name: best.name, matched: best.score > 0 } : undefined;
+}
+
 function clock(raw: unknown, chapterNo: number, ordinal: number, precision: 'exact' | 'approx') {
   const r = isRec(raw) ? raw : {};
   const ord =

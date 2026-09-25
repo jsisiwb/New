@@ -17,6 +17,7 @@ terminology source terms and optional native-script names.
 | `concept.schema.json` | concept candidate | FR-2.1 |
 | `narrative-identity.schema.json` | output-language / tradition / genre / setting / naming / register-policy / terminology / preferences profiles and composed identity | 02-narrative-identity/02 |
 | `register-profile.schema.json` | per-character dialogue-register & voice baseline | FR-2.6 |
+| `voice-profile.schema.json` | the operator's measured voice as writer, planner and judge rule lines, copied into a project's identity (ADR-0083) | VOICE-001 |
 | `entity.schema.json` | bible entity identity (display / native-script / romanized names) + descriptive version | 04-memory-canon/02 §1.2 |
 | `fact.schema.json` | bitemporal fact with evidence; `frame` ∈ fact-bearing frames per timeline kind | ADR-0006, ADR-0038, ADR-0039 |
 | `event.schema.json` | canonical event with frame, `clock_start` (happened) and `narrated_at` (told) | ADR-0007, ADR-0040 |

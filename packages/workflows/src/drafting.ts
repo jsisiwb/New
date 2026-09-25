@@ -17,9 +17,18 @@ import {
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
 import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
-import { codePointLength, measure, segmentParagraphs, toNfcText } from '@yeonjae/prose';
+import {
+  codePointLength,
+  measure,
+  paragraphPerLine,
+  segmentParagraphs,
+  talkShareOf,
+  targetCount,
+  toNfcText,
+} from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
-import { normalizeScenePlans } from './plan-normalize.js';
+import { calibrateSceneTarget } from './length-calibration.js';
+import { chooseFallbackLocation, normalizeScenePlans } from './plan-normalize.js';
 import { normalizeSceneDraft } from './anchoring.js';
 import { type ChapterContract, type StorySpec, compileFor } from './planning.js';
 import {
@@ -30,6 +39,7 @@ import {
   saveArtifact,
   type WorkflowContext,
 } from './runtime.js';
+import { applyDialogueFloor } from './dialogue-floor.js';
 
 export type ScenePlan = Generated.ScenePlanSchema.ScenePlan;
 export type SceneDraft = Generated.SceneDraftSchema.SceneDraftWriterOutputEnvelope;
@@ -210,6 +220,27 @@ export function packCallInput(pack: StoredPack) {
   };
 }
 
+async function withFallbackLocation(
+  ctx: WorkflowContext,
+  contract: ChapterContract,
+): Promise<ChapterContract> {
+  if (contract.locations.length > 0) return contract;
+  const registered = await ctx.pool.query<{
+    id: string;
+    display_name: string;
+    aliases: string[];
+    short_forms: string[];
+  }>(
+    `SELECT id, display_name, aliases, short_forms FROM entities
+      WHERE project_id = $1 AND type = 'location' AND status = 'active' ORDER BY created_at, id`,
+    [ctx.projectId],
+  );
+  const fallback = chooseFallbackLocation(registered.rows, JSON.stringify(contract));
+  if (!fallback) return contract;
+  recordNormalization('contract_location_fallback');
+  return { ...contract, locations: [fallback.id] };
+}
+
 export async function planScenes(
   ctx: WorkflowContext,
   input: { contract: ChapterContract; pack: StoredPack },
@@ -219,6 +250,10 @@ export async function planScenes(
     ctx,
     'scene_plan',
     async () => {
+      // Live defect A-1 (ADR-0074): a contract locked before the contract-time fallback existed may name
+      // no location; the scene plan then grounds its scenes in the registered location the contract's text
+      // mentions (else the first one) instead of failing every scene.
+      const contract = await withFallbackLocation(ctx, input.contract);
       const call = await modelCall<{ scenes?: unknown }>(ctx, {
         step: 'scene_plan',
         family: 'scene_planner',
@@ -256,40 +291,44 @@ export async function planScenes(
       let { scenes, issues } = check(raw);
       const lengthsOff = () => {
         const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
-        return Math.abs(total / input.contract.length_target.value - 1) > tol;
+        const tol = contract.length_target.tolerance_ratio ?? 0.12;
+        return Math.abs(total / contract.length_target.value - 1) > tol;
       };
       // A live plan with near-miss shapes or unsummed lengths is grounded in the contract; a plan that
       // already validates (recorded fixtures) keeps its exact bytes.
       if (raw.length > 0 && (issues.length > 0 || lengthsOff())) {
-        const retry = check(normalizeScenePlans(raw, { contract: input.contract }));
+        const retry = check(normalizeScenePlans(raw, { contract }));
         if (retry.issues.length === 0) {
           ({ scenes, issues } = retry);
           recordNormalization('scene_plans');
         }
       }
+      // ADR-0073: a project with a chosen point of view writes every scene in it.
+      const projectPov = ctx.identity.preferences?.pov;
+      if (projectPov && issues.length === 0)
+        scenes = scenes.map((s) =>
+          s.pov.person === projectPov ? s : { ...s, pov: { ...s.pov, person: projectPov } },
+        );
       if (issues.length === 0) {
         // The contract's scene count is a plan, not a gate: 1–5 grounded scenes are accepted.
         if (scenes.length < 1 || scenes.length > 5)
-          issues.push(
-            `contract wants ${input.contract.scene_count} scenes, plan has ${scenes.length}`,
-          );
+          issues.push(`contract wants ${contract.scene_count} scenes, plan has ${scenes.length}`);
         scenes.forEach((s, i) => {
           if (s.scene_no !== i + 1) issues.push(`scene ${i + 1} is numbered ${s.scene_no}`);
-          if (!input.contract.participants.some((p) => p.character_id === s.pov.character_id))
+          if (!contract.participants.some((p) => p.character_id === s.pov.character_id))
             issues.push(`scene ${s.scene_no} POV is not a contract participant`);
           for (const p of s.participants)
-            if (!input.contract.participants.some((c) => c.character_id === p))
+            if (!contract.participants.some((c) => c.character_id === p))
               issues.push(`scene ${s.scene_no} participant ${p} is not in the contract`);
-          if (!input.contract.locations.includes(s.location_id))
+          if (!contract.locations.includes(s.location_id))
             issues.push(`scene ${s.scene_no} location is not in the contract`);
         });
         const total = scenes.reduce((a, s) => a + s.length_target.value, 0);
-        const target = input.contract.length_target.value;
-        const tol = input.contract.length_target.tolerance_ratio ?? 0.12;
+        const target = contract.length_target.value;
+        const tol = contract.length_target.tolerance_ratio ?? 0.12;
         if (Math.abs(total / target - 1) > tol)
           issues.push(
-            `scene length targets sum to ${total}, chapter target is ${target} ${input.contract.length_target.unit} (±${tol * 100}%)`,
+            `scene length targets sum to ${total}, chapter target is ${target} ${contract.length_target.unit} (±${tol * 100}%)`,
           );
       }
       if (issues.length > 0)
@@ -298,11 +337,25 @@ export async function planScenes(
           data: { issues },
           recommendedActions: ['regenerate'],
         });
+      // ADR-0084 (U6): enough planned talk and someone to talk to, under a policy that opts in.
+      const floor = ctx.policy.planning?.dialogue_floor;
+      const floored = floor ? applyDialogueFloor(scenes, contract, floor) : undefined;
+      if (floored) {
+        scenes = floored.scenes;
+        for (const f of floored.findings)
+          if (f.repaired)
+            recordNormalization(f.rule === 'PLAN-DLG-01' ? 'dialogue_floor' : 'dialogue_partner');
+      }
       const ref = await saveArtifact(ctx, {
         step: 'scene_plan',
         kind: 'scene_plan',
-        key: `${ch}:v${input.contract.version}`,
-        payload: { chapter_no: ch, contract_id: input.contract.id, scenes },
+        key: `${ch}:v${contract.version}`,
+        payload: {
+          chapter_no: ch,
+          contract_id: contract.id,
+          scenes,
+          ...(floored?.findings.length ? { dialogue_floor: floored.findings } : {}),
+        },
       });
       return { scenes, artifactId: ref.artifact_id };
     },
@@ -321,6 +374,11 @@ export interface SceneDraftRef {
    * checkpoints written before ADR-0059.
    */
   readonly characters?: number;
+  /**
+   * ADR-0075 (K3): the length the writer was asked for under `length.scene_calibration`, in the plan's unit.
+   * Absent when the policy does not calibrate (the writer was asked for the plan's target).
+   */
+  readonly requested_length?: number;
   /** The manuscript-language check's confidence, whatever the language. */
   readonly language_confidence: number | undefined;
   /** @deprecated Kept for checkpoints written before ADR-0059; read `language_confidence`. */
@@ -336,20 +394,46 @@ export async function draftScenes(
     scenes: readonly ScenePlan[];
     /** Registry names; with them a Korean writer under `scene_plan_format: labelled` reads the plan as text. */
     nameOf?: ((id: string) => string) | undefined;
+    /**
+     * ADR-0084 (U1): the secrets the reader must not learn yet, as the knowledge-leak checker lists them;
+     * appended to every scene plan the writer reads under `drafting.reader_secrets_in_plan`.
+     */
+    readerSecrets?: string | undefined;
   },
 ): Promise<{ drafts: SceneDraftRef[]; texts: string[] }> {
   const ch = input.contract.chapter_number;
   // ADR-0068: labelled Korean text instead of the plan object, only where the pinned policy says so.
   const nameOf = input.nameOf;
+  const ko = ctx.identity.outputLanguage.language === 'ko';
+  const secretsNote = input.readerSecrets?.trim()
+    ? ko
+      ? `\n\n독자에게 아직 밝히지 않는 비밀 (서술, 속마음, 대사 어디에서도 말하거나 암시하지 않는다):\n${input.readerSecrets.trim()}`
+      : `\n\nSecrets the reader must not learn yet (never state or hint them in narration, thought or dialogue):\n${input.readerSecrets.trim()}`
+    : '';
   const renderPlan = (scene: ScenePlan) =>
-    ctx.policy.planning?.scene_plan_format === 'labelled' &&
-    ctx.identity.outputLanguage.language === 'ko' &&
-    nameOf
+    (ctx.policy.planning?.scene_plan_format === 'labelled' && ko && nameOf
       ? renderScenePlanKo(scene, nameOf)
-      : JSON.stringify(scene);
+      : JSON.stringify(scene)) + secretsNote;
   const texts: string[] = [];
   const drafts: SceneDraftRef[] = [];
-  for (const scene of input.scenes) {
+  const calibration = ctx.policy.length.scene_calibration;
+  const targets = input.scenes.map((s) => s.length_target.value);
+  for (const [index, planned] of input.scenes.entries()) {
+    // ADR-0075: only what the writer is asked for changes; the stored plan and the gate keep the target.
+    const requested = calibration
+      ? calibrateSceneTarget(
+          targets,
+          index,
+          texts.map((t, i) =>
+            targetCount(measure(toNfcText(t)), input.scenes[i]?.length_target.unit ?? 'words'),
+          ),
+          calibration,
+        ).requested
+      : undefined;
+    const scene: ScenePlan =
+      requested === undefined
+        ? planned
+        : { ...planned, length_target: { ...planned.length_target, value: requested } };
     const previous = texts.length
       ? texts.join('\n\n')
       : (input.pack.variables.previous_text ??
@@ -360,41 +444,80 @@ export async function draftScenes(
       ctx,
       'scene_draft',
       async () => {
-        const call = await modelCall<SceneDraft | string>(ctx, {
-          step: 'scene_draft',
-          family: 'scene_writer',
-          activityId: `scene_draft:${ch}:${scene.scene_no}`,
-          variables: {
-            scene_plan: renderPlan(scene),
-            scene_no: String(scene.scene_no),
-            previous_text: previous,
-            length_target_words: String(scene.length_target.value),
-            // Where this scene sits in the episode curve (v4 writers close only the LAST scene on the 절단).
-            scene_total: String(input.scenes.length),
-            scene_role: sceneRole(
-              scene.scene_no,
-              input.scenes.length,
-              ctx.identity.outputLanguage.language ?? 'en',
-            ),
-          },
-          pack: packCallInput(input.pack),
-        });
+        const variables = {
+          scene_plan: renderPlan(scene),
+          scene_no: String(scene.scene_no),
+          previous_text: previous,
+          length_target_words: String(scene.length_target.value),
+          // Where this scene sits in the episode curve (v4 writers close only the LAST scene on the 절단).
+          scene_total: String(input.scenes.length),
+          scene_role: sceneRole(
+            scene.scene_no,
+            input.scenes.length,
+            ctx.identity.outputLanguage.language ?? 'en',
+          ),
+        };
+        const writeScene = (vars: typeof variables, activityId: string) =>
+          modelCall<SceneDraft | string>(ctx, {
+            step: 'scene_draft',
+            family: 'scene_writer',
+            activityId,
+            variables: vars,
+            pack: packCallInput(input.pack),
+          });
+        let call = await writeScene(variables, `scene_draft:${ch}:${scene.scene_no}`);
         // A prose-only (text-mode) writer answers with the manuscript itself; the envelope is built here
         // deterministically. A recorded (or well-formed) JSON draft is taken verbatim; a live draft whose
         // offsets or paragraph table disagree with its own prose is normalized from the prose.
+        // ADR-0081: under `drafting.paragraph_per_line` every line of a prose draft is its own paragraph.
+        let prose = call.output;
+        if (typeof prose === 'string' && ctx.policy.drafting?.paragraph_per_line) {
+          const perLine = paragraphPerLine(prose);
+          if (perLine !== prose.trim()) recordNormalization('paragraph_per_line');
+          prose = perLine;
+        }
+        // ADR-0084 (U6): a scene with someone to talk to that came back far below the talk band is
+        // re-drafted once with its measured share; the redraft is kept only when it talks more.
+        const redraftBelow = ctx.policy.planning?.dialogue_floor?.scene_redraft_below;
+        if (
+          redraftBelow !== undefined &&
+          typeof prose === 'string' &&
+          scene.participants.some((p) => p !== scene.pov.character_id)
+        ) {
+          const measured = sceneTalkShare(prose);
+          if (measured < redraftBelow) {
+            const retry = await writeScene(
+              {
+                ...variables,
+                scene_plan:
+                  variables.scene_plan +
+                  talkRedraftNote(measured, scene.dialogue_density_target ?? redraftBelow, ko),
+              },
+              `scene_draft:${ch}:${scene.scene_no}:talk`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting?.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (typeof again === 'string' && sceneTalkShare(again) > measured) {
+              prose = again;
+              call = retry;
+              recordNormalization('dialogue_redraft');
+            }
+          }
+        }
         const draft =
-          typeof call.output === 'string'
+          typeof prose === 'string'
             ? validateSceneDraft(
                 normalizeSceneDraft(
                   proseEnvelope(
-                    call.output,
+                    prose,
                     scene.scene_no,
                     ctx.identity.outputLanguage.language ?? 'en',
                   ),
                 ),
                 scene.scene_no,
               )
-            : validateOrNormalizeSceneDraft(call.output, scene.scene_no);
+            : validateOrNormalizeSceneDraft(prose, scene.scene_no);
         const ref = await saveArtifact(ctx, {
           step: 'scene_draft',
           kind: 'scene_draft',
@@ -409,6 +532,7 @@ export async function draftScenes(
           llm_call_id: call.llmCallId,
           words: toNfcText(draft.text).text.split(/\s+/).filter(Boolean).length,
           characters: measure(toNfcText(draft.text)).characters,
+          ...(requested !== undefined ? { requested_length: requested } : {}),
           language_confidence: call.outputLanguageCheck?.performed
             ? call.outputLanguageCheck.englishConfidence
             : undefined,
@@ -684,4 +808,17 @@ export async function assembleChapter(
 
 export function contentHashOf(text: string): string {
   return `sha256:${createHash('sha256').update(toNfcText(text).text, 'utf8').digest('hex')}`;
+}
+
+/** Dialogue plus 속마음 as a share of a scene's characters (line breaks not counted), as the lint measures. */
+export function sceneTalkShare(prose: string): number {
+  return talkShareOf(prose, codePointLength(prose.replace(/\n/g, '')));
+}
+
+/** The note a scene redraft carries (ADR-0084): the measured share, the target, and what to change. */
+export function talkRedraftNote(measured: number, target: number, ko: boolean): string {
+  const pct = (x: number) => String(Math.round(x * 100));
+  return ko
+    ? `\n\n다시 쓰기: 직전 초고는 대사와 속마음이 글자 수의 ${pct(measured)}%뿐이었다(목표 약 ${pct(target)}%). 같은 사건과 비트를 지키되, 무대에 있는 인물끼리 주고받는 대사로 장면을 밀고, 서술은 대사 사이의 한 줄 비트로 줄인다.`
+    : `\n\nRewrite: the previous draft had only ${pct(measured)}% dialogue and thought (target about ${pct(target)}%). Keep the same events and beats; drive the scene with lines between the characters on stage and cut narration to one-line beats between them.`;
 }

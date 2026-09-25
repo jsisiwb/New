@@ -432,6 +432,10 @@ function kindsMatching(scorecard: Scorecard, kinds: ReadonlySet<string>): readon
   return [...new Set(openBlockingMajor(scorecard).map((i) => i.kind))].filter((k) => kinds.has(k));
 }
 
+function countMatching(scorecard: Scorecard, kinds: ReadonlySet<string>): number {
+  return openBlockingMajor(scorecard).filter((i) => kinds.has(i.kind)).length;
+}
+
 /**
  * ADR-0014 regression check. A patch targeting one dimension must earn its approval: it must actually repair
  * what it targeted, must not pay for that repair with another dimension, and must not smuggle in new damage.
@@ -519,6 +523,7 @@ export function patchRegression(
     .sort();
 
   const protections: ProtectionOutcome[] = [];
+  const parentBaseline = policy.revision.regression_baseline === 'parent';
   const missingGated = new Set(missing);
   for (const [protection, section] of PROTECTION_SECTIONS) {
     const beforePassed = sectionPassed(input.before, section);
@@ -541,29 +546,34 @@ export function patchRegression(
       });
       continue;
     }
+    // ADR-0078: against the parent, a section fails only when the patch turned a pass into a fail.
+    if (parentBaseline && !afterPassed && beforePassed === false) {
+      protections.push({
+        protection,
+        applicable: true,
+        passed: true,
+        detail: `${section} fails on the parent too; the patch did not break it`,
+      });
+      continue;
+    }
     protections.push({ protection, applicable: true, passed: afterPassed });
   }
-  const westernization = kindsMatching(input.after, WESTERNIZATION_KINDS);
-  protections.push({
-    protection: 'westernization',
-    applicable: true,
-    passed: westernization.length === 0,
-    ...(westernization.length ? { issueKinds: westernization } : {}),
-  });
-  const translationLike = kindsMatching(input.after, TRANSLATION_KINDS);
-  protections.push({
-    protection: 'translation_like',
-    applicable: true,
-    passed: translationLike.length === 0,
-    ...(translationLike.length ? { issueKinds: translationLike } : {}),
-  });
-  const registerKinds = kindsMatching(input.after, REGISTER_KINDS);
-  protections.push({
-    protection: 'register',
-    applicable: true,
-    passed: registerKinds.length === 0,
-    ...(registerKinds.length ? { issueKinds: registerKinds } : {}),
-  });
+  // ADR-0078: against the parent, a kind guard fails only on MORE open blocking/major issues of its kinds.
+  const kindGuard = (protection: ProtectionName, kinds: ReadonlySet<string>): ProtectionOutcome => {
+    const found = kindsMatching(input.after, kinds);
+    const passed = parentBaseline
+      ? countMatching(input.after, kinds) <= countMatching(input.before, kinds)
+      : found.length === 0;
+    return {
+      protection,
+      applicable: true,
+      passed,
+      ...(found.length ? { issueKinds: found } : {}),
+    };
+  };
+  protections.push(kindGuard('westernization', WESTERNIZATION_KINDS));
+  protections.push(kindGuard('translation_like', TRANSLATION_KINDS));
+  protections.push(kindGuard('register', REGISTER_KINDS));
   protections.push({
     protection: 'no_new_blocking_major',
     applicable: true,

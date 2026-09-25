@@ -13,7 +13,11 @@ import {
   renderNamingKo,
   renderParticipantsKo,
   renderAvoidKo,
+  renderContrastPairsKo,
+  renderDeviceKo,
   renderExemplarsKo,
+  renderOperatorVoiceKo,
+  renderPovKo,
   renderPreferencesKo,
   renderRegisterKo,
   renderRubricKo,
@@ -48,6 +52,8 @@ export interface CompileOptions {
   readonly budgetTokens: number;
   readonly participants?: readonly ParticipantDigest[] | undefined;
   readonly contentRestrictions?: readonly string[] | undefined;
+  /** The chapter a writer/editor block is for; rotates the operator's contrast pairs (ADR-0073). */
+  readonly rotation?: number | undefined;
 }
 
 export interface CompiledBlock {
@@ -280,6 +286,8 @@ function renderRubric(rubric: Rubric | undefined, title: string): string {
 
 const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
   writer_full: [
+    'pov',
+    'device',
     'structure',
     'cadence',
     'genres',
@@ -290,10 +298,14 @@ const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
     'terminology',
     'preferences',
     'avoid',
+    'voice',
     'exemplars',
+    'contrast',
     'restrictions',
   ],
   editor_full: [
+    'pov',
+    'device',
     'structure',
     'cadence',
     'genres',
@@ -303,15 +315,32 @@ const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
     'terminology',
     'preferences',
     'avoid',
+    'voice',
     'exemplars',
+    'contrast',
     'restrictions',
   ],
-  planner_compact: ['structure', 'cadence', 'genres', 'setting', 'restrictions'],
-  judge_rubric_prose: ['prose_rubric', 'avoid', 'register', 'terminology', 'naming'],
-  judge_rubric_structure: ['structure', 'cadence', 'structure_rubric', 'genres'],
-  judge_rubric_genre: ['genres', 'genre_rubric', 'terminology'],
+  planner_compact: [
+    'device',
+    'structure',
+    'cadence',
+    'genres',
+    'setting',
+    'voice_planner',
+    'restrictions',
+  ],
+  judge_rubric_prose: [
+    'prose_rubric',
+    'avoid',
+    'register',
+    'terminology',
+    'naming',
+    'voice_judges',
+  ],
+  judge_rubric_structure: ['structure', 'cadence', 'structure_rubric', 'genres', 'voice_judges'],
+  judge_rubric_genre: ['device', 'genres', 'genre_rubric', 'terminology'],
   // ADR-0060: voice is judged against register rules, the participants' voice cards and naming.
-  judge_rubric_voice: ['register', 'participants', 'naming', 'avoid'],
+  judge_rubric_voice: ['pov', 'register', 'participants', 'naming', 'avoid', 'voice_judges'],
   summarizer_min: ['naming', 'terminology'],
 };
 
@@ -381,6 +410,28 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     // ADR-0062: exemplars are the most direct lever against 번역투, so they outrank everything but the
     // participants' voice cards; setting, preferences and cadence go first when a Korean block is tight.
     exemplars: { name: 'exemplars', text: isKo ? renderExemplarsKo(id) : '', priority: 86 },
+    // ADR-0084 (U2): the premise device's vocabulary; empty unless the identity records a device.
+    device: { name: 'device', text: isKo ? renderDeviceKo(id) : '', priority: Infinity },
+    // ADR-0083 (C3): the operator's measured voice; empty unless the project pinned a voice profile.
+    voice: { name: 'voice', text: isKo ? renderOperatorVoiceKo(id, 'writer') : '', priority: 83 },
+    voice_planner: {
+      name: 'voice_planner',
+      text: isKo ? renderOperatorVoiceKo(id, 'planner') : '',
+      priority: 65,
+    },
+    voice_judges: {
+      name: 'voice_judges',
+      text: isKo ? renderOperatorVoiceKo(id, 'judges') : '',
+      priority: 95,
+    },
+    // ADR-0073: the project's point of view is a hard rule for writers, editors and the voice judge;
+    // the operator's contrast pairs rotate by chapter. Both are empty unless the intake supplied them.
+    pov: { name: 'pov', text: isKo ? renderPovKo(id) : '', priority: Infinity },
+    contrast: {
+      name: 'contrast',
+      text: isKo ? renderContrastPairsKo(id, opts.rotation ?? 1) : '',
+      priority: 84,
+    },
     restrictions: {
       name: 'restrictions',
       text: opts.contentRestrictions?.length ? bullet(opts.contentRestrictions) : '',
@@ -460,6 +511,12 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     preferences: 'Project prose preferences',
     avoid: 'Diction to avoid',
     exemplars: 'Style exemplars',
+    device: 'Premise device',
+    voice: 'Operator voice',
+    voice_planner: 'Operator chapter habits',
+    voice_judges: 'Operator conventions (not defects)',
+    pov: 'Point of view',
+    contrast: 'Contrast pairs',
     restrictions: 'Content restrictions (hard)',
     prose_rubric: 'Rubric',
     structure_rubric: 'Rubric',

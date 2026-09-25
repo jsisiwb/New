@@ -88,6 +88,7 @@ export class NotionProvider implements Provider {
         {
           ...(res.providerRequestId ? { providerRequestId: res.providerRequestId } : {}),
           possiblyCompleted: true,
+          reason: 'empty_reply',
         },
       );
     return res;

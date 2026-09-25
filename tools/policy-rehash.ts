@@ -15,6 +15,7 @@ import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { canonicalPolicyHash } from '../packages/domain/src/policy.js';
+import { validatorFor } from '../packages/domain/src/schemas.js';
 import { type ProductionPolicy } from '../packages/domain/src/generated/production-policy.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -47,6 +48,8 @@ const allowSemantic = args.has('--allow-semantic');
 
 let stale = 0;
 let refused = 0;
+let invalid = 0;
+const validate = validatorFor('production-policy.schema.json');
 const files = readdirSync(DIR)
   .filter((f) => f.endsWith('.json'))
   .sort();
@@ -54,6 +57,11 @@ for (const f of files) {
   const path = join(DIR, f);
   const raw = readFileSync(path, 'utf8');
   const policy = JSON.parse(raw) as ProductionPolicy & Record<string, unknown>;
+  const valid = validate(policy);
+  if (!valid.ok) {
+    invalid += 1;
+    console.error(`invalid: ${f} ${valid.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`);
+  }
   const expected = canonicalPolicyHash(policy);
   if (policy.content_hash === expected) continue;
   stale += 1;
@@ -78,6 +86,10 @@ for (const f of files) {
   console.log(`rehashed: ${f}`);
 }
 
+if (invalid > 0) {
+  console.error(`${String(invalid)} policies fail production-policy.schema.json`);
+  process.exit(1);
+}
 if (check && stale > 0) {
   console.error(
     `${String(stale)} of ${String(files.length)} policies have stale content hashes; run pnpm policy:rehash`,

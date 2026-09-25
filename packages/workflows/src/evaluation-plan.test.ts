@@ -154,6 +154,14 @@ describe('planReevaluation (ADR-0060, drift-detection §4)', () => {
     expect(p.rerun).toEqual(['prose_judge', 'genre_judge', 'repetition_judge']);
   });
 
+  it('re-runs every evaluator that carried an open blocking or major finding (ADR-0084, G3-1)', () => {
+    const p = plan(carry(), {
+      openMajor: new Set<EvaluatorName>(['structure_judge', 'promise_checker']),
+    });
+    expect(p.rerun).toEqual(['prose_judge', 'structure_judge', 'promise_checker']);
+    expect(p.carried).not.toContain('structure_judge');
+  });
+
   it('runs everything when the policy says full, without a parent, or after smoke_after_patches patches', () => {
     expect(plan(carry(), { reevaluation: 'full' })).toMatchObject({ mode: 'full', carried: [] });
     expect(plan(undefined)).toMatchObject({ mode: 'full', rerun: ALL });

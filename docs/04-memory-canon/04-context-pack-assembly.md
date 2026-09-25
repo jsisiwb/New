@@ -72,6 +72,12 @@ for POV + top-4 participants and compact rows for others), T2 fill by rank, T3 i
 the target model's tokenizer when available, else a calibrated English estimator (words × 1.3 ± margin);
 the manifest records both counts and the estimator used.
 
+**Korean budgets (ADR-0075).** A Korean pack is measured with the Korean estimator, one token per 자
+(ADR-0059), about 1.4 times the o200k count; budgets sized for English packs overflow on a Korean chapter's
+text plus a full bible's canon (live: 20,928 against the continuity checker's 20,000 at chapter 1). The
+`standard.v8` budgets are sized for that estimator (starting values, `standard.v8`: writer 36k;
+chapter_planner 20k; continuity_checker 34k; extractor 30k); older policies keep theirs.
+
 **Why T0 cannot grow unboundedly (ADR-0033):** hard requirements are never rendered as the raw
 requirement list. `PlanningHorizonWorkflow` compiles, per chapter, an **Active Constraint Set**: requirements
 whose scope covers this chapter (series-wide, this season/arc, this chapter range, these participants), with
@@ -174,6 +180,13 @@ Chapter k−1 is not the only memory. Beyond it:
   every accepted chapter before k−1, in blocks of ten chapters, one item per block. The newest block ranks
   first, so a tight budget sheds the oldest. The digest is deterministic: accepted summaries only, never a
   model call and never a draft.
+- **Arc summaries (ADR-0076).** Under `context.story_memory.arc_summaries`, every earlier arc whose chapters
+  are all accepted gets one arc summary (L2) before the next arc is planned, written by `arc_summarizer` from
+  the arc's accepted L1 summaries and its last ending hook; the first stored summary of a range wins. The
+  story so far then keeps the L1 lines of the last `recent_chapters` accepted chapters (starting value 20,
+  `standard.v9`) in blocks of ten and gives each older summarized arc one item, ranked above chapter blocks
+  of the same age. A summary is read only while every chapter it covers is accepted. The previous arc's
+  summary also joins the next arc planner's brief.
 - **First meetings** (`first_meetings`, T1; same templates). For each pair of on-page participants, this
   gives the accepted chapter in which both first took part in a canonical event, or states that they
   never have. Pairs related from before the story are marked as related. A pair that has not met must not

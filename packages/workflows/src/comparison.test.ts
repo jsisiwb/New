@@ -292,6 +292,100 @@ describe('patch regression (ADR-0014)', () => {
     expect(report.tolerancePoints).toBe(tolerance);
   });
 
+  describe('regression_baseline: parent (ADR-0078, live defect V-1)', () => {
+    const PARENT: ProductionPolicy = {
+      ...POLICY,
+      revision: { ...POLICY.revision, regression_baseline: 'parent' },
+    };
+    const ISSUE_C = '00000000-0000-4000-8000-00000000000c';
+    const ISSUE_D = '00000000-0000-4000-8000-00000000000d';
+
+    it('THE LIVE DEFECT: a patch that fixes its target and breaks nothing still failed on what the parent already failed', () => {
+      // Live standard.v10, chapter 1: voice failed on the parent and a translation-like major sat elsewhere;
+      // every patched round was quarantined with protection_failed although it introduced nothing new.
+      const before = card({
+        prose: 70,
+        structure: 88,
+        voice: 60,
+        issues: [
+          { id: ISSUE_A, dimension: 'prose', kind: 'paragraph_length' },
+          { id: ISSUE_B, dimension: 'prose', kind: 'translation_like_english' },
+          { id: ISSUE_C, dimension: 'voice', kind: 'register_error' },
+        ],
+      });
+      const after = card({
+        prose: 84,
+        structure: 88,
+        voice: 60,
+        issues: [
+          { id: ISSUE_B, dimension: 'prose', kind: 'translation_like_english' },
+          { id: ISSUE_C, dimension: 'voice', kind: 'register_error' },
+        ],
+      });
+      const input = { before, after, dimension: 'prose' as const, targetedIssueIds: [ISSUE_A] };
+      const absolute = patchRegression(POLICY, input);
+      expect(absolute.failures).toEqual(['protection_failed']);
+      expect(
+        absolute.protections
+          .filter((p) => !p.passed)
+          .map((p) => p.protection)
+          .sort(),
+      ).toEqual(['register', 'translation_like', 'voice']);
+      const parent = patchRegression(PARENT, input);
+      expect(parent.failures).toEqual([]);
+      expect(parent.passed).toBe(true);
+      expect(parent.protections.find((p) => p.protection === 'voice')?.detail).toMatch(
+        /fails on the parent too/,
+      );
+    });
+
+    it('still fails a section the patch turned from a pass into a fail', () => {
+      const report = patchRegression(PARENT, {
+        before: card({
+          prose: 70,
+          structure: 88,
+          voice: 85,
+          issues: [{ id: ISSUE_A, dimension: 'prose', kind: 'paragraph_length' }],
+        }),
+        after: card({ prose: 84, structure: 88, voice: 70 }),
+        dimension: 'prose',
+        targetedIssueIds: [ISSUE_A],
+      });
+      expect(report.passed).toBe(false);
+      expect(report.failures).toContain('protection_failed');
+      expect(report.protections.find((p) => p.protection === 'voice')?.passed).toBe(false);
+    });
+
+    it('still fails a patch that adds a translation-like major of a kind the parent already had', () => {
+      const report = patchRegression(PARENT, {
+        before: card({
+          prose: 80,
+          structure: 70,
+          issues: [
+            { id: ISSUE_A, dimension: 'structure', kind: 'late_hook' },
+            { id: ISSUE_B, dimension: 'prose', kind: 'translation_like_english' },
+          ],
+        }),
+        after: card({
+          prose: 80,
+          structure: 86,
+          issues: [
+            { id: ISSUE_B, dimension: 'prose', kind: 'translation_like_english' },
+            { id: ISSUE_D, dimension: 'prose', kind: 'translation_like_english' },
+          ],
+        }),
+        dimension: 'structure',
+        targetedIssueIds: [ISSUE_A],
+      });
+      // Same kind, so no new issue kind: only the count-based guard catches it.
+      expect(report.newIssueKinds).toEqual([]);
+      expect(report.failures).toEqual(['protection_failed']);
+      expect(report.protections.find((p) => p.protection === 'translation_like')?.passed).toBe(
+        false,
+      );
+    });
+  });
+
   it('THE DEFECT: a patch whose targeted dimension did not improve can no longer pass', () => {
     // Before this fix `passed` was `regressions.length === 0`, so a patch that dropped its own targeted
     // dimension 30 points while leaving every other dimension untouched reported passed: true.

@@ -31,12 +31,16 @@ import {
   approveConcept,
   ArtifactLlmOutputStore,
   cancelNovelRun,
+  collectRunProgress,
+  failStuckRun,
+  heartbeatOf,
   NovelRunner,
   pauseNovelRun,
   resumeNovelRun,
   simulatedProvider,
   startNovel,
   WorkflowError,
+  writeHeartbeatFile,
   type NovelDeps,
 } from '@yeonjae/workflows';
 
@@ -197,6 +201,36 @@ export async function runNovelCommand(
         // Normalizer counters are process-wide and in memory (ADR-0057); a long live run appends a cumulative
         // snapshot after every tick so a crash or a resume in a new process loses none of them.
         const metricsLog = flag(args, 'metrics-log');
+        // ADR-0072: a status file for unattended runs, and a stuck run ends as failed with its reason.
+        const statusFile = flag(args, 'status-file');
+        const stuckMin = flag(args, 'stuck-after-min');
+        const stuckAfterMs = stuckMin ? Number(stuckMin) * 60_000 : undefined;
+        const beatState = { busy: false };
+        const beat = async (): Promise<void> => {
+          if (!statusFile || beatState.busy) return;
+          beatState.busy = true;
+          try {
+            const hb = heartbeatOf(await collectRunProgress(pool, projectId), new Date(), {
+              pid: process.pid,
+              stuckAfterMs,
+            });
+            writeHeartbeatFile(statusFile, hb);
+            if (hb.stuck) {
+              await failStuckRun(pool, projectId, hb);
+              writeHeartbeatFile(statusFile, { ...hb, run_status: 'failed' });
+              console.error(`run stuck: ${hb.reason ?? 'no progress'}`);
+              process.exit(3);
+            }
+          } catch (err) {
+            // A failed beat must not stop the run it reports on.
+            console.error(`heartbeat failed: ${err instanceof Error ? err.message : String(err)}`);
+          } finally {
+            beatState.busy = false;
+          }
+        };
+        await beat();
+        const beatTimer = statusFile ? setInterval(() => void beat(), 30_000) : undefined;
+        beatTimer?.unref();
         let tick = 0;
         // Drive until nothing is claimable: the run rests (completed, paused, needs_attention, failed).
         while (await runner.tick()) {
@@ -207,6 +241,8 @@ export async function runNovelCommand(
               `${JSON.stringify({ at: new Date().toISOString(), pid: process.pid, tick, normalizations: normalizationCounts() })}\n`,
             );
         }
+        if (beatTimer) clearInterval(beatTimer);
+        await beat();
         const run = await getNovelRun(pool, projectId);
         return {
           ok: run?.status !== 'failed',
@@ -284,9 +320,11 @@ Novel lifecycle (DATABASE_URL + YEONJAE_PROVIDER_MODE required; live mode needs 
                                                interpret the intake and propose story directions (spends R-class calls)
   novel:approve <project> <concept-id> [--one-chapter-at-a-time] [--stop-after=N]
                                                approve a direction; queues full-bible planning then production
-  novel:run <project> [--once] [--metrics-log=<file>]
+  novel:run <project> [--once] [--metrics-log=<file>] [--status-file=<file>] [--stuck-after-min=<n>]
                                                drive the run: build the bible, then write chapters until it rests;
                                                --metrics-log appends cumulative normalizer counters after each step
+                                               --status-file rewrites a heartbeat every 30 s; a run with no call, step
+                                               or event for --stuck-after-min (default 150) ends failed: RUN_STUCK
   novel:status <project>                       run state, chapter progress, recent events
   novel:pause <project> | novel:resume <project> [--stop-after=N] | novel:cancel <project>
 `;

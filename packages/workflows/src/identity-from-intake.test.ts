@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { compileBlock, composeIdentity, ProfileStore } from '@yeonjae/narrative';
-import { identityProfileFromIntake } from './identity-from-intake.js';
+import {
+  compileBlock,
+  composeIdentity,
+  ProfileStore,
+  requireVoiceProfile,
+} from '@yeonjae/narrative';
+import { identityProfileFromIntake, storyDeviceOf } from './identity-from-intake.js';
 import { type StoryIntake } from './planning.js';
 
 const BASE: StoryIntake = {
@@ -145,5 +150,221 @@ describe('Korean webnovel craft layers (ADR-0056)', () => {
     const block = compileBlock(identity, { role: 'writer_full', budgetTokens: 2600 });
     expect(block.droppedSections).toContain('exemplars');
     expect(block.sections).toContain('structure');
+  });
+});
+
+describe('opt-in language layer, point of view, style sample and contrast pairs (ADR-0073)', () => {
+  const koStore = ProfileStore.fromDirectory();
+  const intake: StoryIntake = {
+    ...BASE,
+    manuscript_language: 'ko',
+    genre: { primary: 'regression' },
+    main_character: { name: '차강진', role: 'protagonist', description: '회귀자' },
+    pov: 'first',
+    // Synthetic test strings (two short sentences each), not manuscript prose.
+    style_sample: '문이 열렸다. 나는 숨을 삼켰다.',
+    contrast_pairs: [
+      { translated: '그는 그녀에게 그것에 대해 말했다.', webnovel: '말했다. 짧게.' },
+      { translated: '그것은 그의 것이었다.', webnovel: '내 거다.' },
+      { translated: '그녀는 미소를 지었다.', webnovel: '웃었다.' },
+      { translated: '그는 문을 통해 들어왔다.', webnovel: '문으로 들어왔다.' },
+    ],
+  };
+
+  it('keeps new projects on lang/ko@5 unless the policy names a newer layer', () => {
+    expect(identityProfileFromIntake('p-default', intake, koStore).lineage?.output_language).toBe(
+      'lang/ko@5',
+    );
+    expect(
+      identityProfileFromIntake('p-v7', intake, koStore, { languageLayer: 'lang/ko@6' }).lineage
+        ?.output_language,
+    ).toBe('lang/ko@6');
+    // A layer of the other language, or an unknown one, is ignored.
+    expect(
+      identityProfileFromIntake('p-bad', intake, koStore, { languageLayer: 'lang/en@1' }).lineage
+        ?.output_language,
+    ).toBe('lang/ko@5');
+  });
+
+  const profile = identityProfileFromIntake('p-pov', intake, koStore, {
+    languageLayer: 'lang/ko@6',
+  });
+  koStore.add(profile);
+  const identity = composeIdentity(koStore, 'project/p-pov@1', 'version-1');
+
+  it('carries the intake’s point of view, style sample and pairs in the preferences', () => {
+    expect(profile.preferences?.pov).toBe('first');
+    expect(profile.preferences?.style_sample?.text).toBe('문이 열렸다. 나는 숨을 삼켰다.');
+    expect(profile.preferences?.contrast_pairs).toHaveLength(4);
+  });
+
+  it('puts the point of view, the operator’s sample first and a rotating window of pairs in writer blocks', () => {
+    const ch1 = compileBlock(identity, {
+      role: 'writer_full',
+      budgetTokens: 12000,
+      rotation: 1,
+    }).text;
+    const ch2 = compileBlock(identity, {
+      role: 'writer_full',
+      budgetTokens: 12000,
+      rotation: 2,
+    }).text;
+    expect(ch1).toContain('## 시점 (절대)');
+    expect(ch1).toContain('1인칭');
+    expect(ch1).toContain('〔작가 문체 견본 — 최우선〕');
+    expect(ch1.indexOf('〔작가 문체 견본')).toBeLessThan(ch1.indexOf('〔견본 1'));
+    expect(ch1).toContain('번역체: 그는 그녀에게 그것에 대해 말했다.');
+    // Four pairs, three per chapter: chapter 1 shows pairs 1–3, chapter 2 pairs 4, 1, 2.
+    expect(ch1).toContain('번역체: 그녀는 미소를 지었다.');
+    expect(ch2).not.toContain('번역체: 그녀는 미소를 지었다.');
+    expect(ch2).toContain('번역체: 그는 문을 통해 들어왔다.');
+    // The voice judge is told the point of view; planners are not given the pairs.
+    expect(
+      compileBlock(identity, { role: 'judge_rubric_voice', budgetTokens: 6000 }).text,
+    ).toContain('## 시점 (절대)');
+    expect(
+      compileBlock(identity, { role: 'planner_compact', budgetTokens: 6000 }).text,
+    ).not.toContain('대조 예문');
+  });
+
+  it('leaves blocks of identities without these preferences byte for byte as before', () => {
+    const plain = identityProfileFromIntake(
+      'p-plain',
+      { ...intake, pov: undefined, style_sample: undefined, contrast_pairs: undefined },
+      koStore,
+    );
+    koStore.add(plain);
+    const text = compileBlock(composeIdentity(koStore, 'project/p-plain@1', 'v'), {
+      role: 'writer_full',
+      budgetTokens: 12000,
+      rotation: 5,
+    }).text;
+    expect(text).not.toContain('시점 (절대)');
+    expect(text).not.toContain('작가 문체 견본');
+    expect(text).not.toContain('대조 예문');
+  });
+});
+
+describe('operator voice profile and corpus exemplars (ADR-0083)', () => {
+  const koStore = ProfileStore.fromDirectory();
+  const voice = requireVoiceProfile('voice/operator@1');
+  const intake: StoryIntake = {
+    ...BASE,
+    manuscript_language: 'ko',
+    genre: { primary: 'academy' },
+    main_character: { name: '이도윤', role: 'protagonist', description: '빙의자' },
+    pov: 'first',
+  };
+  // Synthetic passages (short lines), standing in for pinned corpus passages.
+  const exemplars = [
+    {
+      id: 'p-hook',
+      functions: ['hook' as const],
+      pov: 'first' as const,
+      source: '책 1화',
+      text: '덜컹.\n나는 눈을 떴다.',
+    },
+    {
+      id: 'p-cut',
+      functions: ['cliffhanger' as const],
+      source: '책 9화',
+      text: '“기회를 주마.”\n문이 닫혔다.',
+    },
+  ];
+  const profile = identityProfileFromIntake('p-voice', intake, koStore, {
+    languageLayer: 'lang/ko@7',
+    voice,
+    operatorExemplars: exemplars,
+  });
+  koStore.add(profile);
+  const identity = composeIdentity(koStore, 'project/p-voice@1', 'v');
+
+  it('copies the voice lines and the passages into the composed identity', () => {
+    expect(profile.lineage?.output_language).toBe('lang/ko@7');
+    expect(profile.preferences?.operator_voice?.ref).toBe('voice/operator@1');
+    expect(profile.preferences?.operator_voice?.writer).toEqual(voice.writer);
+    expect(profile.preferences?.operator_exemplars?.map((e) => e.id)).toEqual(['p-hook', 'p-cut']);
+  });
+
+  it('gives writers the voice and the operator’s passages instead of studio exemplars, planners the chapter habits, judges the conventions', () => {
+    const writer = compileBlock(identity, { role: 'writer_full', budgetTokens: 14000 }).text;
+    expect(writer).toContain('## 작가 문체 (작가 원고에서 잰 기준)');
+    expect(writer).toContain(voice.writer[0]);
+    expect(writer).toContain('이전 작품에서 직접 쓴 문장이다');
+    expect(writer).toContain('덜컹.\n나는 눈을 떴다.');
+    expect(writer).not.toContain('스튜디오가 직접 쓴 합성 문장');
+    // The source of a passage is provenance, never shown to the model.
+    expect(writer).not.toContain('책 1화');
+    const planner = compileBlock(identity, { role: 'planner_compact', budgetTokens: 8000 }).text;
+    expect(planner).toContain('## 작가의 구성 습관');
+    expect(planner).not.toContain('## 작가 문체 (작가 원고에서 잰 기준)');
+    for (const role of [
+      'judge_rubric_prose',
+      'judge_rubric_structure',
+      'judge_rubric_voice',
+    ] as const) {
+      const judge = compileBlock(identity, { role, budgetTokens: 8000 }).text;
+      expect(judge).toContain('## 이 작가의 문체 (결함 아님)');
+      expect(judge).not.toContain('## 작가 문체 (작가 원고에서 잰 기준)');
+    }
+    expect(
+      compileBlock(identity, { role: 'judge_rubric_genre', budgetTokens: 8000 }).text,
+    ).not.toContain('이 작가의 문체');
+  });
+
+  it('ignores a voice profile of the other language and composes without passages when none are given', () => {
+    const en = identityProfileFromIntake('p-en', BASE, koStore, { voice });
+    expect(en.preferences?.operator_voice).toBeUndefined();
+    const bare = identityProfileFromIntake('p-bare', intake, koStore, {
+      languageLayer: 'lang/ko@7',
+    });
+    expect(bare.preferences?.operator_voice).toBeUndefined();
+    expect(bare.preferences?.operator_exemplars).toBeUndefined();
+  });
+});
+
+describe('premise device (ADR-0084, U2)', () => {
+  const koStore = ProfileStore.fromDirectory();
+  const ko = (genre: StoryIntake['genre'], premise: string): StoryIntake => ({
+    ...BASE,
+    manuscript_language: 'ko',
+    genre,
+    premise,
+  });
+
+  it('tells regression, game possession and novel possession apart from the intake', () => {
+    expect(storyDeviceOf(ko({ primary: 'regression' }, '마지막 생존자가 과거로 돌아온다.'))).toBe(
+      'regression',
+    );
+    expect(
+      storyDeviceOf(
+        ko({ primary: 'academy', secondary: ['possession'] }, '게임 속 아카데미에 빙의한다.'),
+      ),
+    ).toBe('game_possession');
+    expect(
+      storyDeviceOf(
+        ko({ primary: 'academy', secondary: ['possession'] }, '읽던 소설 속 악역에 빙의한다.'),
+      ),
+    ).toBe('novel_possession');
+    expect(storyDeviceOf(ko({ primary: 'academy' }, '아카데미에 입학한다.'))).toBeUndefined();
+  });
+
+  it('records the device only under the policy flag and gives writers, planners and the genre judge its vocabulary', () => {
+    const intake = ko({ primary: 'regression' }, '마지막 생존자가 과거로 돌아온다.');
+    expect(
+      identityProfileFromIntake('p-nodev', intake, koStore).preferences?.story_device,
+    ).toBeUndefined();
+    const profile = identityProfileFromIntake('p-dev', intake, koStore, { deviceLexicon: true });
+    expect(profile.preferences?.story_device).toBe('regression');
+    koStore.add(profile);
+    const identity = composeIdentity(koStore, 'project/p-dev@1', 'v');
+    for (const role of ['writer_full', 'planner_compact', 'judge_rubric_genre'] as const) {
+      const text = compileBlock(identity, { role, budgetTokens: 12000 }).text;
+      expect(text).toContain('## 장치 어휘 (절대)');
+      expect(text).toContain('이 작품의 장치는 회귀다');
+    }
+    expect(
+      compileBlock(identity, { role: 'judge_rubric_prose', budgetTokens: 8000 }).text,
+    ).not.toContain('장치 어휘');
   });
 });

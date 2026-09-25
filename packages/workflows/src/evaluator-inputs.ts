@@ -96,12 +96,20 @@ export function readerSecrets(
   chapterNo: number,
   bible: StoryBible | undefined,
   lang: Lang,
+  opts: {
+    /**
+     * The chapter's POV character (bible id). Their own secrets are the narrator's knowledge — in a
+     * regression serial the premise itself — so they are not reader secrets (ADR-0074, defect A-3).
+     */
+    readonly povEntityId?: string | undefined;
+  } = {},
 ): string | undefined {
   const n = nameOf(bible);
   const lines: string[] = [];
   for (const p of bible?.propositions ?? []) {
     const secret = p.secret;
     if (!secret) continue;
+    if (opts.povEntityId && list(secret.owner_ids).includes(opts.povEntityId)) continue;
     const notBefore =
       typeof secret.reveal_not_before_chapter === 'number'
         ? secret.reveal_not_before_chapter
