@@ -2831,6 +2831,124 @@ run(
 );
 
 run(
+  'Korean novel run under standard.v28: a contract window of 1.0 → 1.1 does not reject a fact dated 1.2 by paragraph order (ADR-0104)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    // G17a: the planner wrote story time 1.0 → 1.1 and the extractor dated a relationship from 1.2.
+    const narrowWindow = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (!out || !('json' in out)) return out;
+      if (req.trace?.role === 'chapter_planner') {
+        const json = out.json as { story_time: { end: Record<string, unknown> } };
+        return {
+          json: {
+            ...json,
+            story_time: { ...json.story_time, end: { ...json.story_time.end, ordinal: 1 } },
+          },
+        };
+      }
+      if (req.trace?.role !== 'canon_extractor') return out;
+      const json = out.json as {
+        items: { evidence: unknown[]; payload: { participants?: { entity_id: string }[] } }[];
+      };
+      const [event] = json.items;
+      const hero = event?.payload.participants?.[0]?.entity_id;
+      if (!event || !hero) return out;
+      const at = { chapter_no: 1, ordinal: 2, precision: 'exact' };
+      const fact = {
+        local_id: 'f-seat',
+        type: 'fact',
+        op: 'assert',
+        frame: 'canonical',
+        confidence: 1,
+        importance: 'minor',
+        story_clock: at,
+        payload: { entity_id: hero, attribute: 'status.seat', value: 'front_row', valid_from: at },
+        evidence: event.evidence,
+      };
+      return { json: { ...json, items: [...json.items, fact] } };
+    };
+    // The polish run's writer line, so the chapter reaches extraction the same way.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) =>
+      narrowWindow(req, withMarker(req, batchedScript(req, script(req)))),
+    );
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-window');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('commits the fact from 1.2 and accepts chapter 1', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-window-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      expect((await getNovelRun(pool, projectId))?.last_error ?? null).toBeNull();
+      const contract = await pool.query<{ payload: { story_time: { end: { ordinal: number } } } }>(
+        `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'chapter_contract'`,
+        [projectId],
+      );
+      expect(contract.rows.map((r) => r.payload.story_time.end.ordinal)).toEqual([1]);
+      const facts = await pool.query<{ ord: string }>(
+        `SELECT valid_from_ord::text AS ord FROM facts WHERE project_id = $1 AND attribute = 'status.seat'`,
+        [projectId],
+      );
+      expect(facts.rows).toEqual([{ ord: '1000002' }]);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);
+
+run(
   'Korean novel run under standard.v20: a quoteless contract finding is rewritten in the scene it names (ADR-0092)',
   () => {
     let pool: Pool;

@@ -110,6 +110,7 @@
 | [0101](0101-pack-budgets.md) | `standard.v28`: the continuity checker's and the extractor's pack budgets raised to 48,000 and 44,000 tokens |
 | [0102](0102-polish-targets-and-extraction-repair.md) | The polish round names the lint findings as its targets; an extractor answer that fails the canon-delta schema is repaired, at most twice, with its own errors and the schema's shapes |
 | [0103](0103-extraction-repair-keeps-valid-fields.md) | A top-level field that validated in the extractor answer being repaired and fails in the repaired one is taken back from that answer; the repair note renders the shapes of the top-level fields errors name |
+| [0104](0104-story-present-reaches-last-paragraph.md) | For future validity at chapter acceptance, a contract window inside its own chapter ends no earlier than the chapter's last paragraph, because in-chapter ordinals follow paragraph order |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

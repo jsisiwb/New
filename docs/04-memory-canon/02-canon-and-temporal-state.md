@@ -119,7 +119,8 @@ is updated in the same transaction with an optimistic check (`WHERE canon_versio
 - After commit, `PlanningHorizonWorkflow` compares the delta against the contract's planned deltas and
   marks each planned item `realized|partially_realized|unrealized` — explicit, never inferred.
 - Facts have no `future` validity: `valid_from` must be ≤ the chapter's `story_time.end`. Predictions are
-  frame `prediction` knowledge items.
+  frame `prediction` knowledge items. In-chapter ordinals follow paragraph order, which the planner cannot know,
+  so a window planned inside the chapter's own story-present ends no earlier than its last paragraph (ADR-0104).
 
 ## 4. Chapter lifecycle (state machine; ADR-0037)
 

@@ -22,7 +22,12 @@ import {
   type DependencyEdgeInput,
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
-import { type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
+import {
+  type Generated,
+  recordNormalization,
+  storyPresentEnd,
+  validatorFor,
+} from '@yeonjae/domain';
 import { checkOutputLanguage, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { anchorEvidence } from './anchoring.js';
 import {
@@ -367,7 +372,11 @@ export async function acceptDelta(
           manuscriptVersionId: input.versionId,
           delta: input.delta,
           actor: { kind: 'workflow', workflow_id: ctx.workflowId, job_id: ctx.job.id },
-          clockMax: input.contract.story_time.end,
+          clockMax: storyPresentEnd(
+            input.contract.story_time.end,
+            input.contract.chapter_number,
+            segmentParagraphs(toNfcText(version.text)).length,
+          ),
           timelines,
           mainTimelineId: input.mainTimelineId,
           knownEntityIds: new Set(entities.rows.map((e) => e.id)),
