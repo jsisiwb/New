@@ -18,6 +18,7 @@ export * from './identity-from-intake.js';
 export * from './simulated-model.js';
 export * from './series-audit.js';
 export * from './run-report.js';
+export * from './blind-packet.js';
 export * from './fix-rates.js';
 export * from './reveal-schedule.js';
 export * from './plan-prevention.js';
