@@ -55,6 +55,7 @@ describe('the extractor repair note (ADR-0102)', () => {
   });
 
   it('renders the shapes of the types used from the schemas', () => {
+    expect(proposalShapes(['relationship_state'])).toMatch(/"hostility\?":"integer -?\d+\.\.5"/u);
     const shapes = proposalShapes(['event', 'promise_event', 'event']);
     expect(shapes.split('\n')).toHaveLength(2);
     expect(shapes).toContain(

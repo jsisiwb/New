@@ -25,15 +25,19 @@ that follow had never run on live output.
 
 1. **The polish round names its targets.** The polish call passes the lint findings as the reviser's extra targets. The
    polished version is still kept only when it passes and the lint finds fewer (ADR-0073).
-2. **One repair of an extractor answer that fails the schema.** When the extraction envelope does not validate, the
-   extractor is asked once more (activity `extract:<n>:repair`, counted as `extraction_repair`). The request carries the
+2. **At most two repairs of an extractor answer that fails the schema.** When the extraction envelope does not validate,
+   the extractor is asked again (activities `extract:<n>:repair`, then `extract:<n>:repair2`; counted as
+   `extraction_repair`). The request carries the
    envelope's top-level errors, each item's own errors (its payload validated against its type's branch of the union,
-   `extractionItemErrors`), and the payload shapes of the types it used, rendered from the schemas (`proposalShapes`).
-   The repaired answer is anchored, envelope-checked and validated exactly like the first; if it still fails, the
+   `extractionItemErrors`), and the payload shapes of the types it used, rendered from the schemas with their enums, patterns and bounds
+   (`proposalShapes`).
+   The repaired answer is anchored, envelope-checked and validated exactly like the first; if the second repair still fails, the
    extraction is rejected as before.
 
-The repair count is one, fixed in code like the gateway's bounded repair of a schema-invalid answer: it is a recovery
-path, not a tuning knob. Both changes apply to every project, because each turns a stop that no project could get past
+The repair count is two, the same bound the gateway uses when it repairs a schema-invalid answer. It is fixed in code
+because it is a recovery path, not a tuning knob. In G17a the first repair fixed five of seven items (participants,
+kinds, the fact's attribute), and two errors remained: a relationship axis of 8 against a maximum of 5, and a promise
+event still using `op: assert`. Both changes apply to every project, because each turns a stop that no project could get past
 into the designed behaviour. Evidence, frame, clock and approval-lock checks are unchanged.
 
 ## Alternatives considered
@@ -47,5 +51,5 @@ into the designed behaviour. Evidence, frame, clock and approval-lock checks are
 
 - A chapter that passes its gates can be polished, extracted and committed.
 - Tests: `novel-ko.integration.test.ts` (two simulated `standard@28` runs to acceptance: one through the polish round,
-  which fails without change 1; one whose first extraction has bare-id participants and is repaired once),
-  `extraction-repair.test.ts` (per-item errors; shapes rendered from the schemas), `normalizers.test.ts`.
+  which fails without change 1; one whose first extraction has bare-id participants and is repaired),
+  `extraction-repair.test.ts` (per-item errors; shapes rendered from the schemas, bounds included), `normalizers.test.ts`.

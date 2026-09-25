@@ -89,6 +89,9 @@ function render(schema: unknown, file: string, depth: number): unknown {
     );
   }
   if (typeof s.pattern === 'string') return `string matching ${s.pattern}`;
+  // G17a's repaired answer still wrote a relationship axis of 8 where the schema allows at most 5.
+  if (typeof s.minimum === 'number' || typeof s.maximum === 'number')
+    return `${typeof s.type === 'string' ? s.type : 'number'} ${typeof s.minimum === 'number' ? String(s.minimum) : ''}..${typeof s.maximum === 'number' ? String(s.maximum) : ''}`;
   return typeof s.type === 'string' ? s.type : 'any';
 }
 

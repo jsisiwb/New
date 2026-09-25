@@ -230,9 +230,10 @@ export async function extractCanon(
         };
       };
       let attempt = await extractOnce(`extract:${input.contract.chapter_number}`, '');
-      if (!attempt.v.ok) {
-        // ADR-0102 (G17-2): one repair — each item's own errors and the schema's shapes for the types it used; the
-        // repaired answer is anchored, envelope-checked and validated exactly like the first.
+      // ADR-0102 (G17-2): at most two repairs, as the gateway bounds its own — each with the answer's top-level errors,
+      // each item's own errors and the schema's shapes for the types it used; a repaired answer is anchored,
+      // envelope-checked and validated exactly like the first.
+      for (let repair = 1; repair <= 2 && !attempt.v.ok; repair++) {
         const topLevel = attempt.v.errors
           .filter((e) => !e.path.startsWith('/items'))
           .map((e) => `${e.path} ${e.message}`);
@@ -240,7 +241,7 @@ export async function extractCanon(
           .map((i) => (i as { type?: unknown }).type)
           .filter((t): t is string => typeof t === 'string');
         attempt = await extractOnce(
-          `extract:${input.contract.chapter_number}:repair`,
+          `extract:${input.contract.chapter_number}:repair${repair === 1 ? '' : String(repair)}`,
           extractionRepairNote(
             [...new Set(topLevel), ...extractionItemErrors(attempt.rawItems)],
             types,
