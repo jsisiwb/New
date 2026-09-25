@@ -132,6 +132,11 @@ export interface ChapterProductionInput {
   readonly approvedBy?: string | undefined;
   /** Test hook: fail after this step completes (resume proofs). */
   readonly failAfterStep?: string | undefined;
+  /**
+   * ADR-0098: revision rounds an operator granted this chapter beyond the pinned budget (`novel:extend`); the
+   * gates are the pinned policy's either way.
+   */
+  readonly extraRounds?: number | undefined;
   /** `contract_and_pack` stops after the locked contract and the scene_writer pack (the Chapter 2 proof). */
   readonly stage?: 'full' | 'contract_and_pack' | undefined;
   /**
@@ -607,7 +612,10 @@ export async function produceChapter(
     // keeps one representative round and Korean takes up to max_rounds (ADR-0056).
     const manuscriptLang = ctx.identity.outputLanguage.language === 'ko' ? 'ko' : 'en';
     const roundsByLanguage = ctx.policy.revision.rounds_by_language;
-    const maxRounds = roundsByLanguage?.[manuscriptLang] ?? ctx.policy.revision.max_rounds;
+    const extraRounds = Math.max(0, Math.floor(input.extraRounds ?? 0));
+    const maxRounds =
+      (roundsByLanguage?.[manuscriptLang] ?? ctx.policy.revision.max_rounds) + extraRounds;
+    const roundLimit = ctx.policy.revision.max_rounds + extraRounds;
     const discarded: DiscardedPatch[] = [];
     // ADR-0060: patches applied since every evaluator last ran on the whole chapter.
     let patchesSinceFull = 0;
@@ -781,6 +789,7 @@ export async function produceChapter(
             registerDigests: writerBuilt.variables.register_digests ?? '(none)',
             ...(allOpen ? { allDimensions: true } : {}),
             ...(scoreOnly.length ? { extraTargetIds: new Set(scoreOnly.map((i) => i.id)) } : {}),
+            roundLimit,
           });
       versions.push(revised.version);
       revision = { rounds: round, dimension, patch_artifact_id: revised.patchArtifactId };
@@ -972,6 +981,9 @@ export async function produceChapter(
           dimension,
           round: polishRound,
           registerDigests: writerBuilt.variables.register_digests ?? '(none)',
+          // ADR-0098: the polish round follows the last budgeted round, so a chapter first approvable in that
+          // round is polished instead of stopped with REVISION_LIMIT.
+          roundLimit: roundLimit + 1,
         });
         versions.push(revised.version);
         guard('revise');

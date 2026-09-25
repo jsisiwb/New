@@ -10,26 +10,27 @@
 
 ## Commands
 
-| Command                                                                                                         | What it does                                                                       |
-| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm install`                                                                                                  | install the workspace                                                              |
-| `pnpm gen:types`                                                                                                | regenerate `packages/domain/src/generated` from `schemas/` (commit the result)     |
-| `pnpm check:types-fresh`                                                                                        | fail if generated types are stale (CI)                                             |
-| `pnpm typecheck`                                                                                                | `tsc -b` over all packages (strict)                                                |
-| `pnpm lint` / `pnpm format` / `pnpm format:check`                                                               | ESLint (type-aware) / Prettier — never touches `examples/`, `docs/`, `schemas/`    |
-| `pnpm test`                                                                                                     | Vitest unit tests                                                                  |
-| `pnpm validate:planning`                                                                                        | planning-package validator (schemas, examples, evidence, references, stale terms)  |
-| `pnpm check`                                                                                                    | everything CI runs                                                                 |
-| `pnpm build:web`                                                                                                | production build of the operator web app                                           |
-| `pnpm --filter @yeonjae/web dev`                                                                                | run the operator web app against a local API (see the environment variables below) |
-| `pnpm cli <command>`                                                                                            | the CLI (`pnpm cli` prints usage)                                                  |
-| `pnpm cli pack:build <project> <ch> <role> <contract.json> <spec.json> [--identity=<ref>] [--full] [--persist]` | build a Context Pack and print its manifest (no manuscript text unless `--full`)   |
-| `pnpm cli novel:start <project> <intake.json>` / `novel:approve` / `novel:run` / `novel:status`                 | the autopilot novel lifecycle (needs `YEONJAE_PROVIDER_MODE`; see `.env.example`)  |
-| `pnpm --filter @yeonjae/worker start:novel`                                                                     | the Postgres-queued novel runner as its own process (no Temporal needed)           |
-| `pnpm cli chapter:produce <project> <ch>`                                                                       | run (or resume) chapter production through the Postgres-checkpointed workflow      |
-| `pnpm cli chapter:status <workflow-id>`                                                                         | job status, pins, steps and llm call count (`chapter:<project>:<ch>`)              |
-| `pnpm cli chapter:resume <workflow-id>`                                                                         | resume a started workflow (same entrypoint as re-running produce)                  |
-| `pnpm cli export:accepted <project> [--chapters=1,2] [--format=markdown\|text] [--full]`                        | export accepted manuscripts only (never working/approved/quarantined)              |
+| Command                                                                                                         | What it does                                                                         |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `pnpm install`                                                                                                  | install the workspace                                                                |
+| `pnpm gen:types`                                                                                                | regenerate `packages/domain/src/generated` from `schemas/` (commit the result)       |
+| `pnpm check:types-fresh`                                                                                        | fail if generated types are stale (CI)                                               |
+| `pnpm typecheck`                                                                                                | `tsc -b` over all packages (strict)                                                  |
+| `pnpm lint` / `pnpm format` / `pnpm format:check`                                                               | ESLint (type-aware) / Prettier — never touches `examples/`, `docs/`, `schemas/`      |
+| `pnpm test`                                                                                                     | Vitest unit tests                                                                    |
+| `pnpm validate:planning`                                                                                        | planning-package validator (schemas, examples, evidence, references, stale terms)    |
+| `pnpm check`                                                                                                    | everything CI runs                                                                   |
+| `pnpm build:web`                                                                                                | production build of the operator web app                                             |
+| `pnpm --filter @yeonjae/web dev`                                                                                | run the operator web app against a local API (see the environment variables below)   |
+| `pnpm cli <command>`                                                                                            | the CLI (`pnpm cli` prints usage)                                                    |
+| `pnpm cli pack:build <project> <ch> <role> <contract.json> <spec.json> [--identity=<ref>] [--full] [--persist]` | build a Context Pack and print its manifest (no manuscript text unless `--full`)     |
+| `pnpm cli novel:start <project> <intake.json>` / `novel:approve` / `novel:run` / `novel:status`                 | the autopilot novel lifecycle (needs `YEONJAE_PROVIDER_MODE`; see `.env.example`)    |
+| `pnpm cli novel:extend <project> [--rounds=N]`                                                                  | more revision rounds for a chapter that needs attention, then `novel:run` (ADR-0098) |
+| `pnpm --filter @yeonjae/worker start:novel`                                                                     | the Postgres-queued novel runner as its own process (no Temporal needed)             |
+| `pnpm cli chapter:produce <project> <ch>`                                                                       | run (or resume) chapter production through the Postgres-checkpointed workflow        |
+| `pnpm cli chapter:status <workflow-id>`                                                                         | job status, pins, steps and llm call count (`chapter:<project>:<ch>`)                |
+| `pnpm cli chapter:resume <workflow-id>`                                                                         | resume a started workflow (same entrypoint as re-running produce)                    |
+| `pnpm cli export:accepted <project> [--chapters=1,2] [--format=markdown\|text] [--full]`                        | export accepted manuscripts only (never working/approved/quarantined)                |
 
 Chapter production runs replay-only in this checkpoint: `chapter:produce` pins the fixture Narrative
 Identity on the project, replays `examples/fixture/ch01/replay.ch01.json` (no live provider, no spend),

@@ -337,6 +337,10 @@ export async function advanceNovelRun(
     lease: opts.lease,
   });
   try {
+    const extraRounds = grantedRounds(
+      (await getProject(deps.pool, run.project_id)).settings,
+      chapterNo,
+    );
     const result = await produceChapter(
       { pool: deps.pool, gateway: deps.gateway, registry: deps.registry, profiles: deps.profiles },
       {
@@ -352,6 +356,7 @@ export async function advanceNovelRun(
         },
         specVersion: stored.plan.spec_version,
         approvedBy: 'workflow:novel_run',
+        ...(extraRounds > 0 ? { extraRounds } : {}),
         ...(opts.isCancelled ? { cancellation: { isDurablyCancelled: opts.isCancelled } } : {}),
       },
     );
@@ -440,6 +445,86 @@ export async function advanceNovelRun(
 /** A cancellation raised because the runner lost its lease, not because anyone cancelled the run (ADR-0091). */
 function isLeaseLoss(err: unknown, opts: { leaseLost?: (() => boolean) | undefined }): boolean {
   return err instanceof WorkflowError && err.code === 'CANCELLED' && opts.leaseLost?.() === true;
+}
+
+interface RevisionGrant {
+  readonly rounds: number;
+  readonly at: string;
+  readonly reason?: string | undefined;
+}
+
+/** The revision rounds operators granted a chapter (ADR-0098), from the project's settings; 0 when none. */
+export function grantedRounds(settings: Record<string, unknown>, chapterNo: number): number {
+  const all = settings.revision_extensions;
+  if (!all || typeof all !== 'object') return 0;
+  const entry = (all as Record<string, unknown>)[String(chapterNo)];
+  const n = entry && typeof entry === 'object' ? (entry as { rounds?: unknown }).rounds : undefined;
+  return typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : 0;
+}
+
+/**
+ * ADR-0098: grant the chapter a needs_attention run stopped on more revision rounds under the project's pinned
+ * policy. Rounds granted to one chapter add up to at most the policy's own `revision.max_rounds`; the grant is kept
+ * in the project's settings and the run's event log, and the gates and override matrix do not change. The run is
+ * left for `resumeNovelRun`, whose replay runs the recorded rounds from their checkpoints and the new ones live.
+ */
+export async function extendChapterRevision(
+  pool: Pool,
+  input: { projectId: string; rounds?: number | undefined; reason?: string | undefined },
+): Promise<{ chapter_no: number; granted: number; total: number; budget: number }> {
+  const run = await getNovelRun(pool, input.projectId);
+  if (!run)
+    throw new WorkflowError('WORKFLOW_NOT_FOUND', 'this project has no novel run', {
+      step: 'extend',
+    });
+  if (run.status !== 'needs_attention')
+    throw new WorkflowError(
+      'SELECTION_REQUEST_CHANGED',
+      `a ${run.status} run has no chapter waiting for attention`,
+      { step: 'extend', data: { status: run.status } },
+    );
+  const project = await getProject(pool, run.project_id);
+  const budget = requirePolicy(project.production_policy_version as PolicyRef).revision.max_rounds;
+  const chapterNo = run.next_chapter;
+  const before = grantedRounds(project.settings, chapterNo);
+  const granted = input.rounds ?? budget - before;
+  if (!Number.isInteger(granted) || granted < 1 || before + granted > budget)
+    throw new WorkflowError(
+      'REVISION_LIMIT',
+      `chapter ${String(chapterNo)} may be granted at most ${String(budget - before)} more revision rounds (the pinned policy's budget is ${String(budget)})`,
+      { step: 'extend', data: { chapter_no: chapterNo, granted_before: before, budget } },
+    );
+  const total = before + granted;
+  const prior = (project.settings.revision_extensions as Record<string, unknown> | undefined)?.[
+    String(chapterNo)
+  ] as { grants?: RevisionGrant[] } | undefined;
+  const grant: RevisionGrant = {
+    rounds: granted,
+    at: new Date().toISOString(),
+    ...(input.reason ? { reason: input.reason } : {}),
+  };
+  await withTransaction(pool, async (client) => {
+    await client.query(
+      `UPDATE projects
+          SET settings = jsonb_set(
+                jsonb_set(settings, '{revision_extensions}',
+                          COALESCE(settings->'revision_extensions', '{}'::jsonb)),
+                ARRAY['revision_extensions', $2::text], $3::jsonb),
+              updated_at = now()
+        WHERE id = $1`,
+      [
+        run.project_id,
+        String(chapterNo),
+        JSON.stringify({ rounds: total, grants: [...(prior?.grants ?? []), grant] }),
+      ],
+    );
+    await emitNovelRunEvent(client, {
+      runId: run.id,
+      kind: 'chapter.revision_extended',
+      payload: { chapter_no: chapterNo, ...grant, total, budget },
+    });
+  });
+  return { chapter_no: chapterNo, granted, total, budget };
 }
 
 /** Resume a paused / needs_attention / failed run: back onto the queue at its current next chapter. */
