@@ -26,8 +26,10 @@ import {
 } from '@yeonjae/domain';
 import {
   codePointLength,
+  lintKoreanWebnovel,
   measure,
   paragraphPerLine,
+  pronounThreshold,
   segmentParagraphs,
   sliceCodePoints,
   talkShareOf,
@@ -750,6 +752,43 @@ export async function draftScenes(
             }
           }
         }
+        // ADR-0097 (G14-1): a Korean scene at or above the language layer's pronoun warn line (the operator's p90)
+        // is re-drafted once with its measure; the redraft is kept only when its rate is lower.
+        const pronounLine = ko
+          ? pronounThreshold(
+              ctx.identity.outputLanguage.lint_thresholds,
+              ctx.identity.preferences?.pov,
+            )
+          : undefined;
+        if (
+          ctx.policy.drafting?.pronoun_redraft === true &&
+          typeof prose === 'string' &&
+          pronounLine
+        ) {
+          const rateOf = (t: string) =>
+            lintKoreanWebnovel(t, {
+              thresholds: ctx.identity.outputLanguage.lint_thresholds,
+              pov: ctx.identity.preferences?.pov,
+            }).metrics.pronoun_per_1k;
+          const measured = rateOf(prose);
+          if (measured >= pronounLine.warn) {
+            const retry = await writeScene(
+              {
+                ...variables,
+                scene_plan: variables.scene_plan + pronounRedraftNote(measured, pronounLine.warn),
+              },
+              `scene_draft:${ch}:${scene.scene_no}:pronoun`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (typeof again === 'string' && rateOf(again) < measured) {
+              prose = again;
+              call = retry;
+              recordNormalization('pronoun_redraft');
+            }
+          }
+        }
         const draft =
           typeof prose === 'string'
             ? validateSceneDraft(
@@ -1095,6 +1134,11 @@ export function talkRedraftNote(measured: number, target: number, ko: boolean): 
   return ko
     ? `\n\n다시 쓰기: 직전 초고는 대사와 속마음이 글자 수의 ${pct(measured)}%뿐이었다(목표 약 ${pct(target)}%). 같은 사건과 비트를 지키되, 무대에 있는 인물끼리 주고받는 대사로 장면을 밀고, 서술은 대사 사이의 한 줄 비트로 줄인다.`
     : `\n\nRewrite: the previous draft had only ${pct(measured)}% dialogue and thought (target about ${pct(target)}%). Keep the same events and beats; drive the scene with lines between the characters on stage and cut narration to one-line beats between them.`;
+}
+
+/** ADR-0097 (G14-1): the pronoun redraft instruction, with the measure that triggered it. */
+export function pronounRedraftNote(ratePer1k: number, warn: number): string {
+  return `\n\n대명사 다시 쓰기: 직전 초고는 ‘그/그녀’가 1,000자에 ${String(ratePer1k)}번이었다(운영자 원고의 경고선 ${String(warn)}). 서술의 ‘그는·그녀는·그녀의’를 인물의 이름이나 호칭으로 바꾸거나 주어를 생략한다. 사건·비트·대사는 그대로 둔다.`;
 }
 
 /**

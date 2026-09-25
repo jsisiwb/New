@@ -47,6 +47,8 @@ export const OUTPUT_NORMALIZERS = [
   'repeated_line',
   // ADR-0090: a first-person scene drafted in the third person, re-drafted once.
   'pov_redraft',
+  // ADR-0097: a Korean scene at or above the pronoun warn line, re-drafted once.
+  'pronoun_redraft',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

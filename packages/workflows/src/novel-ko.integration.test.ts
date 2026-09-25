@@ -2421,6 +2421,94 @@ run(
 );
 
 run(
+  'Korean novel run under standard.v25: a scene above the pronoun warn line is re-drafted (ADR-0097)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G14a r0: 4.41 그/그녀 per 1,000자 against the first-person warn line 2.57. Each first draft opens with twelve
+    // pronoun lines (two G12a draft lines the prose judge quoted, alternating); the pronoun redraft answers without them.
+    const lines = [
+      '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.',
+      '그녀의 목소리는 방금 전 레이몬드를 꾸짖을 때보다 훨씬 더 매서웠다.',
+    ];
+    const pronounsFirst = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      const head = req.user.includes('대명사 다시 쓰기')
+        ? []
+        : Array.from({ length: 12 }, (_, i) => lines[i % 2] ?? '');
+      return { text: [...head, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return pronounsFirst(req, batchedScript(req, script(req)));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v25-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@25',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('re-drafts each pronoun-heavy scene once and keeps the redraft', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v25-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+      const redrafts = writers.filter((r) => (r.trace?.activityId ?? '').endsWith(':pronoun'));
+      expect(redrafts.length).toBeGreaterThan(0);
+      for (const r of redrafts) expect(r.user).toContain('대명사 다시 쓰기: 직전 초고는');
+      const drafts = await pool.query<{ text: string }>(
+        "SELECT payload->>'text' AS text FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scene_draft'",
+        [projectId],
+      );
+      expect(drafts.rows.length).toBeGreaterThan(0);
+      for (const d of drafts.rows) expect(d.text).not.toContain(lines[0]);
+    }, 300_000);
+  },
+);
+
+run(
   'Korean novel run under standard.v20: a quoteless contract finding is rewritten in the scene it names (ADR-0092)',
   () => {
     let pool: Pool;

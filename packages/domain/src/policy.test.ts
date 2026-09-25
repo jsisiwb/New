@@ -25,6 +25,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@22',
       'policy/standard@23',
       'policy/standard@24',
+      'policy/standard@25',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -34,6 +35,19 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v25 is standard.v24 with the pronoun redraft and device rules 3 (ADR-0097)', () => {
+    const v24 = requirePolicy('policy/standard@24', policies);
+    const v25 = requirePolicy('policy/standard@25', policies);
+    expect(v25.drafting).toEqual({ ...v24.drafting, pronoun_redraft: true });
+    expect(v25.identity).toEqual({ ...v24.identity, device_rules: 3 });
+    const strip = (p: typeof v24) => {
+      const { version: _v, name: _n, content_hash: _h, drafting: _d, identity: _i, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v25)).toEqual(strip(v24));
+    expect(v25.gates).toEqual(v24.gates);
   });
 
   it('standard.v24 is standard.v23 with arc-plan beat types and the pronoun band lint (ADR-0096)', () => {

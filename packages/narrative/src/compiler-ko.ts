@@ -383,12 +383,25 @@ const DEVICE_KO_V2: Readonly<Record<string, string>> = {
     '이 작품의 장치는 게임 빙의다. 주인공은 자기가 하던 게임 속 인물의 몸에 들어왔다. 앞날의 지식은 주로 ‘게임’, ‘공략’, ‘회차’, ‘퀘스트’, ‘특성’, ‘플레이어’ 같은 게임 어휘로 말하고, 게임 자체를 ‘원작’이라 부를 수는 있다(‘원작 게임에서는’, ‘원작대로라면’). ‘원작 주인공’, ‘원작 소설’처럼 소설 속으로 들어간 이야기의 어휘는 쓰지 않는다.',
 };
 
+/**
+ * ADR-0097 (G14-2): in G14a two in-world characters called someone an ‘엑스트라’ aloud — the possessor's word for the
+ * world, read by the knowledge-leak checker as a leak in every round. Wording 3 keeps the possession devices' meta
+ * words in the hero's narration and 속마음; the other devices keep their earlier wording.
+ */
+const DEVICE_KO_V3: Readonly<Record<string, string>> = {
+  game_possession: `${DEVICE_KO_V2.game_possession ?? ''} 이 세계가 게임이라는 사실은 주인공만 안다(바이블이 아는 인물로 정한 사람은 예외다). ‘게임’, ‘플레이어’, ‘공략’, ‘퀘스트’, ‘엑스트라’, ‘NPC’, ‘원작’ 같은 말은 주인공의 서술과 속마음에만 쓰고 다른 인물의 대사에는 넣지 않는다. 다른 인물은 자기 세계의 말로 말한다.`,
+  novel_possession: `${DEVICE_KO.novel_possession ?? ''} 이 세계가 소설이라는 사실은 주인공만 안다(바이블이 아는 인물로 정한 사람은 예외다). ‘원작’, ‘원작 주인공’, ‘작가’, ‘엑스트라’, ‘조연’ 같은 말은 주인공의 서술과 속마음에만 쓰고 다른 인물의 대사에는 넣지 않는다. 다른 인물은 자기 세계의 말로 말한다.`,
+  possession: `${DEVICE_KO.possession ?? ''} 이 세계가 게임이나 소설이라는 사실은 주인공만 안다(바이블이 아는 인물로 정한 사람은 예외다). 그 어휘와 ‘엑스트라’ 같은 말은 주인공의 서술과 속마음에만 쓰고 다른 인물의 대사에는 넣지 않는다.`,
+};
+
 /** The project's premise device as a rule (ADR-0084); empty unless the identity records one. */
 export function renderDeviceKo(id: ComposedIdentity): string {
   const d = id.preferences?.story_device;
   if (!d) return '';
-  const v2 = id.preferences.story_device_rules === 2 ? DEVICE_KO_V2[d] : undefined;
-  return v2 ?? DEVICE_KO[d] ?? '';
+  const rules = id.preferences.story_device_rules;
+  const v3 = rules === 3 ? DEVICE_KO_V3[d] : undefined;
+  const v2 = rules === 2 || rules === 3 ? DEVICE_KO_V2[d] : undefined;
+  return v3 ?? v2 ?? DEVICE_KO[d] ?? '';
 }
 
 /**

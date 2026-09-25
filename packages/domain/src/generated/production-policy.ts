@@ -216,6 +216,10 @@ export interface ProductionPolicy {
      */
     pov_redraft?: boolean;
     /**
+     * ADR-0097 (live defect G14-1): in a Korean project, a scene whose measured 그/그녀 rate is at or above the language layer's pronoun warn threshold (KO-PRN-RATE-1P for a first-person project when the layer has it, else KO-PRN-RATE — the operator's p90) is re-drafted once with that measure; the redraft is kept only when its rate is lower (pronoun_redraft).
+     */
+    pronoun_redraft?: boolean;
+    /**
      * ADR-0088 (live defect G6-3): an assembled chapter's line that repeats the line right before it word for word, and is at least ten characters with a space in it, is dropped (a generation glitch; short sound lines such as '덜컹 덜컹.' may repeat on purpose), counted as repeated_line.
      */
     dedupe_repeated_lines?: boolean;
@@ -353,9 +357,9 @@ export interface ProductionPolicy {
      */
     protagonist_type?: boolean;
     /**
-     * ADR-0090 (live defect G8-2): under device_lexicon a new project records story_device_rules 2 — a game-possession serial may call the game itself the 원작, as the operator does; the other devices' wording is unchanged. Absent: the ADR-0084 wording, which forbids 원작 outright in a game-possession serial.
+     * ADR-0090 (live defect G8-2): under device_lexicon a new project records story_device_rules 2 — a game-possession serial may call the game itself the 원작, as the operator does; the other devices' wording is unchanged. 3 (ADR-0097, live defect G14-2): wording 2, and in the possession devices only the hero knows the world is a game or a novel — their meta words (게임, 플레이어, 엑스트라, 원작 …) stay in the hero's narration and 속마음, never in another character's line. Absent: the ADR-0084 wording, which forbids 원작 outright in a game-possession serial.
      */
-    device_rules?: 2;
+    device_rules?: 2 | 3;
     /**
      * ADR-0089 (live defect G7-2): genre overlay versions a new Korean project composes instead of the newest one it would take without asking, e.g. genre/regression@4 (the 회빙환 overlay with device variants, read in the words of the premise device identity.device_lexicon records). A listed overlay applies only when the intake selects its genre. Absent: genre/regression up to @3, as before.
      */

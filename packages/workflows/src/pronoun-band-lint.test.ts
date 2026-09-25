@@ -14,6 +14,7 @@ import {
   proseLintDigest,
   runDeterministicChecks,
 } from './evaluation.js';
+import { pronounRedraftNote } from './drafting.js';
 import { type ChapterContract } from './planning.js';
 import { type WorkflowContext } from './runtime.js';
 
@@ -71,10 +72,10 @@ describe('per-hit pronoun markers inside the operator’s band (ADR-0096, G12-1)
 
   it('reads the third-person line when the layer has no first-person one', () => {
     const report = { metrics: { pronoun_per_1k: 3 } } as unknown as KoStyleReport;
-    const only3p = { 'KO-PRN-RATE': { warn: 3.79 } };
+    const only3p = { 'KO-PRN-RATE': { warn: 3.79, fail: 5.74 } };
     expect(pronounBand(report, only3p, 'first')).toEqual({ rate: 3, warn: 3.79 });
     expect(
-      pronounBand(report, { ...only3p, 'KO-PRN-RATE-1P': { warn: 2.57 } }, 'first'),
+      pronounBand(report, { ...only3p, 'KO-PRN-RATE-1P': { warn: 2.57, fail: 3.78 } }, 'first'),
     ).toBeUndefined();
     expect(pronounBand(report, undefined, 'first')).toBeUndefined();
   });
@@ -87,5 +88,15 @@ describe('per-hit pronoun markers inside the operator’s band (ADR-0096, G12-1)
     expect(banded).not.toContain(`[${PRONOUN_MARKER}`);
     expect(banded).toContain('운영자 원고의 범위 안이다(경고선 2.57)');
     expect(proseLintDigest(report, undefined)).toContain(`[${PRONOUN_MARKER}`);
+  });
+});
+
+describe('the pronoun redraft instruction (ADR-0097, G14-1)', () => {
+  it('carries the measured rate and the warn line, and keeps the scene’s events', () => {
+    const note = pronounRedraftNote(4.41, 2.57);
+    expect(note).toContain('1,000자에 4.41번');
+    expect(note).toContain('경고선 2.57');
+    expect(note).toContain('사건·비트·대사는 그대로 둔다');
+    expect(note).not.toMatch(/[A-Za-z]/);
   });
 });

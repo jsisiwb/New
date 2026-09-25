@@ -724,7 +724,7 @@ function pinnedVoiceOptions(
   return {
     ...(identity?.device_lexicon ? { deviceLexicon: true } : {}),
     ...(identity?.genre_layers?.length ? { genreLayers: identity.genre_layers } : {}),
-    ...(identity?.device_rules === 2 ? { deviceRules: 2 as const } : {}),
+    ...(identity?.device_rules ? { deviceRules: identity.device_rules } : {}),
     ...(identity?.protagonist_type ? { protagonistType: true } : {}),
     ...(identity?.voice_profile ? { voice: requireVoiceProfile(identity.voice_profile) } : {}),
     ...(pick

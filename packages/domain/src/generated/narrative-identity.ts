@@ -320,9 +320,9 @@ export type NarrativeIdentityProfile = {
      */
     protagonist_type?: 'munchkin';
     /**
-     * ADR-0090 (live defect G8-2): the wording of the device rule this identity was composed with. 2: a game-possession serial may call the game itself the 원작 (‘원작 게임에서는’, ‘원작대로라면’), as the operator's game-possession book does 17 times; 원작 주인공 and 원작 소설 stay the other device's words. Absent: the ADR-0084 wording.
+     * ADR-0090 (live defect G8-2): the wording of the device rule this identity was composed with. 2: a game-possession serial may call the game itself the 원작 (‘원작 게임에서는’, ‘원작대로라면’), as the operator's game-possession book does 17 times; 원작 주인공 and 원작 소설 stay the other device's words. 3 (ADR-0097): wording 2, and in the possession devices only the hero knows the world is a game or a novel, so their meta words stay in the hero's narration and 속마음. Absent: the ADR-0084 wording.
      */
-    story_device_rules?: 2;
+    story_device_rules?: 2 | 3;
     /**
      * ADR-0084 (U2, live defect G-1): the premise device, derived from the intake when the policy names identity.device_lexicon. It selects the device vocabulary writers, planners and the genre judge are given, and the words a deterministic check flags (a regression serial does not call its past the 원작).
      */

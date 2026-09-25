@@ -166,6 +166,19 @@ function sentenceCount(p: string): number {
   return Math.max(1, n);
 }
 
+/**
+ * The pronoun rate rule's threshold for a chapter or scene: the first-person band when the layer has one (lang/ko@7,
+ * ADR-0083), else the general one — the key the rate rule in `lintKoreanWebnovel` reads.
+ */
+export function pronounThreshold(
+  thresholds: KoStyleSource['thresholds'],
+  pov: string | undefined,
+): { warn: number; fail: number } | undefined {
+  return thresholds?.[
+    pov === 'first' && thresholds['KO-PRN-RATE-1P'] ? 'KO-PRN-RATE-1P' : 'KO-PRN-RATE'
+  ];
+}
+
 export function lintKoreanWebnovel(input: string, src: KoStyleSource = {}): KoStyleReport {
   const nfc = toNfcText(input);
   const text = nfc.text;

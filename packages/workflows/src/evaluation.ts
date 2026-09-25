@@ -31,6 +31,7 @@ import {
   koStyleDigest,
   lintKoreanWebnovel,
   measure,
+  pronounThreshold,
   repetitionDigestKo,
   repetitionReport,
   segmentParagraphs,
@@ -1397,13 +1398,10 @@ export interface PronounBand {
  */
 export function pronounBand(
   report: Pick<KoStyleReport, 'metrics'>,
-  thresholds: Readonly<Record<string, { readonly warn: number } | undefined>> | undefined,
+  thresholds: Readonly<Record<string, { warn: number; fail: number } | undefined>> | undefined,
   pov: string | undefined,
 ): PronounBand | undefined {
-  const t =
-    thresholds?.[
-      pov === 'first' && thresholds['KO-PRN-RATE-1P'] ? 'KO-PRN-RATE-1P' : 'KO-PRN-RATE'
-    ];
+  const t = pronounThreshold(thresholds, pov);
   if (!t) return undefined;
   const rate = report.metrics.pronoun_per_1k;
   return rate < t.warn ? { rate, warn: t.warn } : undefined;
