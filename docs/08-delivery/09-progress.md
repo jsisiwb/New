@@ -16,7 +16,8 @@ the operator merges.
 | 2 | STEP 2 — Phase U (plan-level prevention) + the V2 rules G5-3 demanded | done: `standard@15` (ADR-0086); live G6 (§6) |
 | 3 | STEP 3 — Phase V2 (escalation ladder) | done: `standard@16` (ADR-0087); fix-rate table |
 | 3b | G6 fixes | done: `standard@17` (ADR-0088); live G7 (§7) |
-| 3c | G7 fixes | done: `standard@18` (ADR-0089); live G8 next |
+| 3c | G7 fixes | done: `standard@18` (ADR-0089); live G8 (§8) |
+| 3d | G8 fixes | done: `standard@19` (ADR-0090); live G9 next |
 | 4 | STEP 4 — finish Phase C | partly: C7 into `lang/ko@8` (ADR-0089); C2, C6 pending |
 | 5 | STEP 5 — Phase N (accepted chapters) | next, on whichever project accepts chapter 1 |
 | 6–8 | STEPS 6–8 — Q, M, I, E, W, B, D | pending |
@@ -28,20 +29,48 @@ the regression chapter was blocked by the hero's prior-life knowledge against th
 answers both (ADR-0088). G7 (`standard@17`, §7): both chapters passed all four dimension gates in at least one round
 and the regression chapter's last round stood at one blocking finding and no major; in both, the last blocker was the
 bible's settled relationship register (사부님, 형님) enforced from 화 0 in the chapter where the relationship forms.
-`standard@18` answers it (ADR-0089); G8 on `standard@18` is the next evidence.
+`standard@18` answers it (ADR-0089). G8 (`standard@18`, §8): no finding cited a 화-0 register any more; the academy
+chapter reached 0 blocking findings in two rounds (3 majors each) — at r5 two of the three were single 그녀 below the
+operator's own pronoun band; the regression chapter never recovered from two scenes drafted in the third person.
+`standard@19` answers those and five more (ADR-0090); G9 on `standard@19` is the next evidence.
 
-**Open defects.** None of G5-1 … G5-9, G6-1 … G6-5 or G7-1 … G7-3 is open in code; G7-4 (solo scenes far below their
-planned talk; the redraft needs an on-page partner) is open; G5-8 (voice metrics: likeness 70 in G6r, 속마음
+**Open defects.** None of G5-1 … G5-9, G6-1 … G6-5, G7-1 … G7-3 or G8-1 … G8-7 is open in code; G7-4 (solo scenes far
+below their planned talk; the redraft needs an on-page partner) is open; a database blip records a run as cancelled by
+the operator and stops it (G8 incident; matters for unattended runs, N4); G5-8 (voice metrics: likeness 70 in G6r, 속마음
 and endings outside the band) is only partly addressed. Carried: the operator's 3인칭 cutaways (not planned), story-clock
 checks by the continuity checker (U4, partly), C2/C6/C7 corpus work, Phases N–D.
 
-**Budget.** Bridge credits after G7: ws1 80.93 %, ws2 94.08 %, ws3 6.75 %, ws4 2.80 % (billing period ending
-2026-10-09; about 215 points remain). A chapter-1 run from a fresh project costs about 6 points on `standard@17` with
-five rounds (11.98 for the G7 pair; 8.91 for the G6 pair on `standard@15`).
+**Budget.** Bridge credits after G8: ws1 83.04 %, ws2 98.57 %, ws3 11.35 %, ws4 4.33 % (billing period ending
+2026-10-09; about 203 points remain, workspace 2 nearly spent). A chapter-1 run from a fresh project costs about 6
+points with five rounds (12.73 for the G8 pair; 11.98 for G7; 8.91 for G6 on `standard@15`).
 
 **Safety rules.** Tests run against local sandbox databases (`yeonjae_test` for full suites, `yeonjae_test_b` for
 targeted runs — never both suites on one database at once); the inherited `DATABASE_URL` is the permanent database,
-used only by live runs, corpus commands and reports, from the separate worktree `/tmp/hoplite/live`.
+used only by live runs, corpus commands and reports, from the separate worktree `/tmp/hoplite/live`. Never run the full `pnpm
+check` while a live run is in flight: at G8 (09:42 UTC) its memory peak at the sandbox's 4 GiB ceiling dropped the live
+runs' database connections — one runner stopped on the failed heartbeat, the other failed closed as cancelled — and both
+resumed from their checkpoints (`novel:resume`, a fresh `novel:run`).
+
+## G8 fixes — `standard.v19` — 2026-09-25
+
+**Built (ADR-0090):** `planning.reveal_schedule.narrator_current_knowledge` (present secrets the narrator knows at the
+start are the reader's); `identity.device_rules` 2 (a game-possession serial may call the game the 원작, as the operator
+does); `identity.protagonist_type` (the intake's 먼치킨 hero as a 주인공 유형 section for writers, editors, planners and
+the genre and structure judges); `drafting.pov_redraft` with `thirdPersonDrift` (a first-person scene narrated in the
+third person is re-drafted once); `evaluation.pronoun_band_cap` (`capPronounFindings`: a prose-judge pronoun finding
+below the language layer's pronoun warn threshold is minor); prompt family 4.10.0 (`scene_writer`: no copied example
+lines, no stranger named before an introduction, an unawakened body within its level).
+
+**Measured:** G8 (§8) is the evidence for the fixes; `standard@19` itself is measured by G9.
+
+**Tests:** `reveal-schedule.test.ts`, `identity-from-intake.test.ts` (device rules 2, the protagonist section by role),
+`ko-style-v6.test.ts` (`thirdPersonDrift`), `pronoun-cap.test.ts`, `registry.test.ts` (4.10.0 changes one family and
+sorts after 4.9.0), `policy.test.ts` (v19), the CLI inventory (318 prompt versions), `novel-ko.integration.test.ts` (a
+simulated first-person run under v19: drifted scenes re-drafted once, the first-person redraft kept).
+
+**Not done (and why):** the cancellation reason recorded for a lease lost on a database error (`operator_cancelled`)
+— fixed with the unattended-run work (N4); judge variance across full re-evaluations (each round surfaces one to three
+new majors on unchanged text) — to be measured on a fixed version before any rule.
 
 ## G7 fixes and C7 — `standard.v18` — 2026-09-25
 

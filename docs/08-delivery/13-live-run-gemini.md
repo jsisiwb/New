@@ -350,3 +350,72 @@ dimension gates in at least one round — the regression chapter's last round st
   eleven locked bible facts carry `[FACT]`, `[PLANNED]` or `[SUMMARY]`.
 - **G7-4 (open):** the regression chapter's two solo scenes came back at 6.3 % and 4.2 % talk against planned 20 % and
   30 %; the talk redraft needs an on-page partner. The structure gate passed at every round.
+
+## 8. G8 — the `standard.v18` checkpoint on both projects (09:30–10:19 UTC)
+
+Chapter 1 of two fresh projects on `standard@18` (ADR-0089: relationships dated and not canon before they begin, the
+회빙환 overlay in the device's words, provenance tags stripped, `lang/ko@8`), run in parallel from the live worktree at
+`565c09b`. Run reports and findings: `ops/live-runs/g8-standard18/`.
+
+| | G8a (academy) | G8r (regression) |
+| --- | --- | --- |
+| ADR-0089 on live data | 0 tagged bible facts; every register dated (화 1, 2, 11); no relationship seeded; the game variant and the `lang/ko@8` notes in the writer's prompt | 0 tagged bible facts; every register dated (화 3–14); no relationship seeded; no `원작` term list |
+| Length (v1) | 6,120자 (+15.5 %) | 6,117자 (+15.4 %) |
+| Scenes (planned talk → measured talk + 속마음) | 2: 40 % → 24.6 %, 25 % → 32.0 % | 3: 40 % → 20.6 %, 30 % → 24.0 %, 50 % → 43.2 % |
+| Quoted dialogue lines | 45 (7.4 per 1,000자) | 50 (8.2 per 1,000자) |
+| Quoted 속마음 lines | 7 | 9 |
+| Plan critic / repairs | one critique of the contract (kept) and one of the scenes (re-planned once) | the same, and one scene redrafted for talk |
+| First line | `[마력 적성, 제로(0).]` (a status-window line) | `[2026년 4월 20일]` (a date line) |
+| r0 gate | overall 87: prose 79.2, structure 95, genre 75, voice 88.8; knowledge ✗ | overall 76: prose 61.5 ✗, structure 90, genre 80, voice 81 |
+| Rounds | r0 to r5; r3 and r4 quarantined | r0 to r5; r2 quarantined |
+| Blocking / major | r0 2 / 7 → r1 2 / 2 → r2 **0 / 3** → r3 1 / 2 → r4 1 / 2 → r5 **0 / 3** | r0 2 / 5 → r1 0 / 5 → r2 1 / 4 → r3 1 / 3 → r4 2 / 2 → r5 3 / 1 |
+| The last blockers | r5: a mana-perception contradiction and two single `그녀` (0.33 per 1,000자; the operator's first-person p10 is 0.66) | r5: scenes 1–2 narrated in the third person (continuity and prose, blocking) and a payment of 5억 written as 5천만 |
+| Reader-secret findings | 2 blocking at r0: two present-timeline secrets the hero knows from the game, told at the characters' entrances | none |
+| Device vocabulary | `KO-DEVICE-01` 0; the genre judge flagged a bare `원작` twice at r0 and as blocking at r1 | `KO-DEVICE-01` 0 |
+| Findings citing a 0화 register (G7: 5) | 0 | 0 |
+| Likeness (C8) | 80 (first-person bands 80); G7a 80 | 85 (first-person bands 85); G7r 65 |
+| Result | not accepted (`needs_attention`) | not accepted (`needs_attention`) |
+| Calls / tokens / time | 74 (74 attempts) / 313,935 in, 32,320 out / 2,454 s | 79 (79 attempts, 1 failed) / 294,728 in, 31,343 out / 2,874 s |
+
+Credits for the pair: ws1 80.93 → 83.04 %, ws2 94.08 → 98.57 %, ws3 6.75 → 11.35 %, ws4 2.80 → 4.33 % (12.73 points).
+
+**Incident.** At 09:42 the full `pnpm check`, started beside the live runs, ran out of memory at the sandbox's ceiling and
+the live runs' connections to the permanent database dropped. G8a's runner stopped on the failed heartbeat, and the
+runner of the still-running G8r process claimed G8a's run and finished it. G8r's own runner could not prove its lease on
+the failed read, failed closed and recorded the run as cancelled with the reason `operator_cancelled` (one designer call
+discarded in `cast_core`) — a database blip, not an operator; it was resumed at 09:49 (`novel:resume`, a new runner). No
+checkpoint was lost. `09-progress.md` now forbids the full check during a live run; the misleading cancellation reason
+is an open item for unattended runs (N4).
+
+Excerpts (the first three lines of each chapter, unedited):
+
+> [마력 적성, 제로(0).]
+> 입학식장 단상 위.
+> 마력 측정구에서 흘러나온 차가운 기계음이 거대한 식장을 반으로 갈랐다.
+
+> [2026년 4월 20일]
+> 스마트폰 액정 위로 선명한 숫자가 떠올랐다.
+> 게이트 사태 D-10.
+
+**What changed against G7.** No finding cites a register from 화 0 (G7-3 fixed; G7 had five); no provenance tag in any
+bible fact (G7-1); the regression writer's pack no longer lists possession terms (G7-2). The academy chapter reached 0
+blocking findings twice.
+
+**Defects (fixed by ADR-0090, `standard@19`).**
+
+- **G8-1:** two present-timeline secrets the first-person hero knows at the start (a rival's drug use, a classmate's side
+  business) were hidden from the reader until 화 8 and 15; the schedule gave the reader only prior-life and
+  source-work knowledge.
+- **G8-2:** the device rule forbids a bare `원작` in a game-possession serial, which the operator's own game-possession book
+  uses 17 times; the genre judge followed the rule.
+- **G8-3:** a cast card's example line pasted into the chapter; characters naming strangers before any introduction
+  (r0, r1, r3).
+- **G8-4:** the genre judge called the 먼치킨 hero's cost-free power a forbidden development (also G7a r2, r3, r5); the
+  intake's protagonist type reached no prompt.
+- **G8-5:** a first-person chapter with two scenes narrated in the third person; `KO-POV-01` reads the whole chapter and
+  no patch rewrites two scenes.
+- **G8-6:** the unawakened regression hero kicking steel doors off their hinges (also G7r r0, r2, r3).
+- **G8-7:** prose-judge majors for single 그/그녀 in a chapter below the operator's own pronoun band.
+- **Observations, not fixed:** the regression designer listed a non-regressor as remembering the prior loop (one
+  continuity finding); a status-window line judged against the world rule's formatting example (G8a r4, blocking);
+  G7-4 (solo scenes raised to the talk floor) recurred in the plan but not as a finding.
