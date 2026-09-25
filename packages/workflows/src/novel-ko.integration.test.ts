@@ -2509,6 +2509,91 @@ run(
 );
 
 run(
+  'Korean novel run under standard.v28: a chapter that passes its gates is polished and accepted (G17-1)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G17a: the chapter passed its confirmation, and the polish round then stopped with INTERNAL because the reviser
+    // was given the lint's minor findings without naming them as targets. One G12a draft line the prose judge quoted
+    // gives every scene a 번역투 marker for the polish round to address.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return withMarker(req, batchedScript(req, script(req)));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('runs the polish round on the lint findings and accepts chapter 1', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const run = await getNovelRun(pool, projectId);
+      expect(run?.last_error ?? null).toBeNull();
+      const polish = await pool.query<{ payload: { lint_before: number } }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'polish_report'",
+        [projectId],
+      );
+      expect(polish.rows.length).toBeGreaterThan(0);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);
+
+run(
   'Korean novel run under standard.v20: a quoteless contract finding is rewritten in the scene it names (ADR-0092)',
   () => {
     let pool: Pool;

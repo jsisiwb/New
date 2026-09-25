@@ -981,6 +981,9 @@ export async function produceChapter(
           dimension,
           round: polishRound,
           registerDigests: writerBuilt.variables.register_digests ?? '(none)',
+          // G17-1: the polish targets are the lint's findings of any severity (a passing chapter has no major left),
+          // and the reviser targets only blocking and major findings unless they are named here.
+          extraTargetIds: new Set(targets.map((i) => i.id)),
           // ADR-0098: the polish round follows the last budgeted round, so a chapter first approvable in that
           // round is polished instead of stopped with REVISION_LIMIT.
           roundLimit: roundLimit + 1,
