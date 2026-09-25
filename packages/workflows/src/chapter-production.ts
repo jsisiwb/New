@@ -31,7 +31,12 @@ import {
   type JobRow,
   type Pool,
 } from '@yeonjae/db';
-import { canonicalPolicyHash, promptCeilingOf, requirePolicy, type PolicyRef } from '@yeonjae/domain';
+import {
+  canonicalPolicyHash,
+  promptCeilingOf,
+  requirePolicy,
+  type PolicyRef,
+} from '@yeonjae/domain';
 import { type Gateway } from '@yeonjae/gateway';
 import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/narrative';
 import { PromptRegistry } from '@yeonjae/prompts';
