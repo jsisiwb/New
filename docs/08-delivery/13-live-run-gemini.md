@@ -689,3 +689,20 @@ replays to the same `APPROVAL_BLOCKED`, and a chapter first approvable in the la
 `REVISION_LIMIT` in the polish round (both fixed by ADR-0098). G15-1: G15a's requirement interpreter typed a
 requirement `relationship`, failing `novel:start` (ADR-0099, `standard@26`). G15b's cast step lost a call to a bridge 502
 and was resumed; G15r and G15b were paused at 18:35 to leave the degraded bridge to G14.
+
+### 13.1 After the bridge came back (19:25–19:43 UTC)
+
+- **G14a.** The resumed job replayed r0–r9 and repeated only the confirmation. The full re-reading of r9 came back at
+  overall 82, 0 blocking / 6 majors: the structure judge at 77.5 (below its gate) with a late hook, pacing, exposition
+  and a weak ending as majors, a continuity major for one line of the heroine's in 반말, and a genre major for the
+  system forcing a class change. Round 10, the last granted one, left overall 86, 0 blocking / 2 majors (a late hook;
+  bystander reaction cuts used four times), with prose 87.2, structure 85, genre 85 and voice 91.3 all passing. The run
+  ended `APPROVAL_BLOCKED` with the grant at the policy's cap (ten rounds in all).
+- **G14r.** r8 and r9 were quarantined (0 / 7 each); r10 kept at overall 86, 0 blocking / 3 majors, all four gates
+  passing; `APPROVAL_BLOCKED` at the cap.
+- **G14-4: one reading's severity decides acceptance.** The structure judge read r8 fresh and rated the late hook and the
+  summarizing last line minor (structure 87.5). The confirmation, one sentence later, rated both major, adding a pacing
+  and an exposition major (77.5). At r10 the hook was major again and the pacing and exposition minor. Fixed by
+  ADR-0100 (`standard@27`): a taste judge's reviewer-class major must be reproduced by a second reading to block.
+- Every finding left on either chapter is reviewer-class (ADR-0042): an editor may override it with a recorded reason,
+  or the chapter may be regenerated. Both are the operator's decisions, and neither was taken.

@@ -15,17 +15,17 @@ named the old owner; the only stale names were in this block, and the corpus rep
 | Order | Step of the operator's plan | Status |
 | --- | --- | --- |
 | 1 | STEP 1 — `standard@19` checkpoint on both projects | done: the recorded G9 pair (ADR-0085 §2, `13-live-run-gemini.md` §9); defects G9-1 … G9-8 |
-| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | in progress: `standard@20` … `standard@26` (ADR-0092 … ADR-0097, ADR-0099) and `novel:extend` (ADR-0098); live G10–G14 recorded (§10–§13) |
+| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | in progress: `standard@20` … `standard@27` (ADR-0092 … ADR-0097, ADR-0099, ADR-0100) and `novel:extend` (ADR-0098); live G10–G14 recorded (§10–§13); live G16 (`standard@27`) in flight |
 | 3 | STEP 4.1 — the corpus in the database | done: `corpus:verify` (3 books, 1,138 spine chapters, 656 Korean main-story chapters, all hashes equal) |
 | 4 | STEP 4.4 — stock phrases refreshed | done: `lang/ko@9` in `standard@21` |
 | 5–12 | the rest | see the reconciliation below |
 
-**Where acceptance stands.** No chapter is accepted yet, but one has passed its gates. G14a (academy, `standard@24`, §13)
-ended its five rounds at overall 87 with all four dimension gates passing and 1 blocking / 1 major. With five granted
-rounds (`novel:extend`, ADR-0098) it reached r9 at 0 / 0, overall 89, gate outcome `approved`. The confirmation
-re-evaluation that precedes approval then lost four judges to the bridge's HTTP 502s, so the run is `failed`
-(retryable) with r9 approved by its scorecard. G14r (regression) ended at 0 blocking / 4 majors with all gates passing;
-its granted rounds reached 0 / 2 at r6 before a bridge 401.
+**Where acceptance stands.** No chapter is accepted yet. Both G14 chapters (`standard@24`, §13, §13.1) used their five
+rounds and all five granted rounds (`novel:extend`, ADR-0098) and ended at 0 blocking with all four dimension gates
+passing: G14a at overall 86 with 2 majors, G14r at 86 with 3, every one reviewer-class. G14a's r9 had reached 0 / 0
+(gate outcome `approved`), but the confirmation's fresh reading rated majors that r8's fresh reading had rated minor
+(G14-4, fixed by ADR-0100 in `standard@27`). G16a and G16r, chapter 1 on `standard@27`, started at 20:02 UTC from
+`/tmp/hoplite/live2` at `75edc1c`.
 
 **Open defects.** G12-2 (a heroine's misunderstanding narrated before the scene that forms it); carried: G9-6 (the
 unawakened body; again in G14r), G9-8, G7-4, G5-8, the 3인칭 cutaways.
@@ -37,14 +37,26 @@ unawakened body; again in G14r), G9-8, G7-4, G5-8, the 3인칭 cutaways.
 **Safety rules.** Tests run against local sandbox databases only (`yeonjae_test` for full suites, `yeonjae_test_b` for
 targeted runs; a wrapper sets `DATABASE_URL` to the sandbox and unsets every provider variable); the inherited
 `DATABASE_URL` is the permanent database, used only by live runs, corpus commands and reports, from the live worktrees:
-`/tmp/hoplite/live` (G15, at `f58e8a8`) and `/tmp/hoplite/live2` (the G14 extensions, at `aba1b7b`). A running project's
+`/tmp/hoplite/live` (G15, paused, at `f58e8a8`) and `/tmp/hoplite/live2` (G16, at `75edc1c`; the G14 extensions ran there at `aba1b7b`). A running project's
 worktree is never checked out to another commit. Never run the full `pnpm check` while a live run is in flight (G8
 incident). The sandbox now bursts to 8 GiB.
 
-**Resume point.** When `provider:check --probe` passes again: `novel:resume` then `novel:run` for `G14a 아카데미
-standard24` from `/tmp/hoplite/live2`. The job replays r0–r9 and repeats only the confirmation; an accepted chapter 1
-goes on to STEP 5 (`novel:resume <project> --stop-after=5`, then `novel:run`). Then G14r the same way, and G15r and G15b
-(`standard@25`, paused) from `/tmp/hoplite/live`. New projects start on `standard@26`.
+**Resume point.** Record G16 (`G16a 아카데미 standard27`, `G16r 회귀 standard27`) with `quality:checkpoint` (§14). A
+chapter that ends one step short gets `novel:extend` from `/tmp/hoplite/live2`; an accepted chapter 1 goes on to STEP 5
+(`novel:resume <project> --stop-after=5`, then `novel:run`). G14a and G14r wait for the operator (override or
+regenerate; §13.1). G15r and G15b (`standard@25`) are paused in `/tmp/hoplite/live`; new projects start on
+`standard@27`.
+
+## G14-4 — `standard.v27` — 2026-09-25
+
+**Built (ADR-0100):** `evaluation.major_agreement` (`agreementJudges`, `reproducedKinds`, `unconfirmMajors`,
+`averageReadings`): when a taste judge's reviewer-class majors are all that blocks a chapter, the judge reads the text
+again (`:agree`), a major stands only if that reading reproduces its kind, and the two readings' scores are averaged.
+
+**Measured:** G14a's structure judge rated the same two observations minor at r8 and major at the r9 confirmation
+(`13-live-run-gemini.md` §13.1).
+
+**Tests:** `major-agreement.test.ts`, `policy.test.ts` (v27), `commands.test.ts`.
 
 ## G14 fixes — `standard.v25`, `novel:extend`, `standard.v26` — 2026-09-25
 
