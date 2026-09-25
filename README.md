@@ -16,7 +16,7 @@ names only).
 ```bash
 pnpm install && pnpm build && pnpm cli db:migrate
 export YEONJAE_PROVIDER_MODE=notion          # or live / genspark / simulated / replay
-pnpm cli project:create "제목" --policy=policy/standard@26
+pnpm cli project:create "제목" --policy=policy/standard@27
 pnpm cli novel:start <project> intake.json    # intake → story spec → two story directions
 pnpm cli novel:approve <project> <concept-id> --stop-after=3
 pnpm cli novel:run <project> --status-file=run.json
@@ -55,6 +55,7 @@ version. For a new Korean project use the newest `standard`:
 | `standard@24` | arc-plan beat types normalized, per-hit pronoun markers inside the operator's pronoun band recorded as notes | 0096 |
 | `standard@25` | a scene above the pronoun warn line re-drafted once, possession meta words kept out of other characters' lines (device rules 3) | 0097 |
 | `standard@26` | story-spec requirement categories normalized | 0099 |
+| `standard@27` | a taste judge's reviewer-class major must be reproduced by a second reading to block | 0100 |
 
 **Watching a run.**
 

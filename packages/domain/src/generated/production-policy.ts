@@ -197,6 +197,10 @@ export interface ProductionPolicy {
      */
     pronoun_band_lint?: boolean;
     /**
+     * ADR-0100 (live defect G14-4): when every blocking or major finding of an evaluation is a reviewer-class major raised by a taste judge (prose, structure, genre, voice or repetition) that ran in it, each such judge reads the text once more; a major stands only when the second reading rates a finding of its kind major or blocking, else it is recorded as minor with a note, and the two readings' rubric sub-scores and judge scores are averaged. A blocking finding, a checker's, a lint's or a carried finding leaves the evaluation as it is. Absent or false: one reading decides.
+     */
+    major_agreement?: boolean;
+    /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */
     judge_calibration?: {

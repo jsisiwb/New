@@ -27,6 +27,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@24',
       'policy/standard@25',
       'policy/standard@26',
+      'policy/standard@27',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -36,6 +37,18 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v27 is standard.v26 with major agreement (ADR-0100)', () => {
+    const v26 = requirePolicy('policy/standard@26', policies);
+    const v27 = requirePolicy('policy/standard@27', policies);
+    expect(v27.evaluation).toEqual({ ...v26.evaluation, major_agreement: true });
+    const strip = (p: typeof v26) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v27)).toEqual(strip(v26));
+    expect(v27.gates).toEqual(v26.gates);
   });
 
   it('standard.v26 is standard.v25 with story-spec categories normalized (ADR-0099)', () => {

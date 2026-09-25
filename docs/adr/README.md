@@ -106,6 +106,7 @@
 | [0097](0097-pronoun-redraft-and-device-rules-3.md) | `standard.v25`: a Korean scene at or above the pronoun warn line is re-drafted once (`drafting.pronoun_redraft`); a new possession project records device-rule wording 3, which keeps the possessor's meta words out of other characters' lines (`identity.device_rules: 3`) |
 | [0098](0098-operator-granted-revision-rounds.md) | `novel:extend`: an operator grants the chapter a needs_attention run stopped on more revision rounds, up to the pinned policy's `max_rounds` in all; the polish round may follow the last round |
 | [0099](0099-story-spec-categories.md) | `standard.v26`: a story spec's requirement categories are read as the schema knows them (`planning.normalize_spec_categories`) |
+| [0100](0100-major-agreement.md) | `standard.v27`: a taste judge's reviewer-class major blocks only when a second reading of the same text reproduces it (`evaluation.major_agreement`) |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

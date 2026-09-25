@@ -664,8 +664,10 @@ export async function evaluateVersion(
       const packIn = packCallInput(checker.stored);
       const packVars = checker.stored.variables;
       const packSection = (names: readonly string[]) => packSections(checker.stored, names);
+      // ADR-0100: a second reading of a judge is keyed apart from the first (`:agree`).
+      let actSuffix = '';
       const act = (name: string) =>
-        `${name}:${input.contract.chapter_number}:r${input.round}${tag}`;
+        `${name}:${input.contract.chapter_number}:r${input.round}${tag}${actSuffix}`;
       const checkerSchedule = scheduleOf(ctx, input.bible);
 
       const optional = policyEval?.optional_evaluators ?? [];
@@ -1057,6 +1059,49 @@ export async function evaluateVersion(
             ...capPronounFindings(issues, det.ko_style.metrics.pronoun_per_1k, band.warn),
           );
       }
+      // ADR-0100: when a taste judge's reviewer-class majors are all that stands between the chapter and its gates,
+      // each such judge reads the text once more; a major stands only when the second reading reproduces its kind as
+      // major or blocking, and the two readings' rubric sub-scores are averaged.
+      if (policyEval?.major_agreement === true) {
+        const reviewer = new Set<string>(ctx.policy.override_matrix.reviewer);
+        const implicated = agreementJudges(issues, results, reviewer);
+        if (implicated.length) {
+          actSuffix = ':agree';
+          const again = await runBounded(
+            implicated.map((e) => () => call(e)),
+            policyEval.max_parallel_evaluators,
+          );
+          actSuffix = '';
+          const pronounLine = det.ko_style
+            ? pronounThreshold(
+                ctx.identity.outputLanguage.lint_thresholds,
+                ctx.identity.preferences?.pov,
+              )
+            : undefined;
+          implicated.forEach((e, idx) => {
+            const first = results.get(e);
+            const second = again[idx];
+            if (!first || !second) return;
+            evaluatorCalls.push(second.llmCallId);
+            let reread = (second.output.issues ?? []).map((raw, i) =>
+              toIssue(ctx, v.id, SOURCE[e], EVALUATOR_DIMENSION[e], raw, i, anchor),
+            );
+            // The first reading's pronoun cap applies to the second reading too.
+            if (policyEval.pronoun_band_cap === true && det.ko_style && pronounLine)
+              reread = capPronounFindings(
+                reread,
+                det.ko_style.metrics.pronoun_per_1k,
+                pronounLine.warn,
+              );
+            issues.splice(
+              0,
+              issues.length,
+              ...unconfirmMajors(issues, SOURCE[e], reproducedKinds(reread), reviewer, ko),
+            );
+            results.set(e, { ...first, output: averageReadings(first.output, second.output) });
+          });
+        }
+      }
 
       const callId = (e: EvaluatorName, key: string): string | undefined =>
         results.get(e)?.llmCallId ?? (priorSection(key)?.evaluator_call_id as string | undefined);
@@ -1381,6 +1426,79 @@ function clamp(n: number): number {
 }
 
 const PRONOUN_CLAIM = /대명사|[‘'"“]그녀|[‘'"“]그[’'"”는가의를]|그\/그녀|그·그녀/u;
+
+/** ADR-0100: the judges whose findings are readings of taste, not of facts, rules or the contract. */
+export const TASTE_JUDGES: readonly EvaluatorName[] = [
+  'prose_judge',
+  'structure_judge',
+  'genre_judge',
+  'voice_judge',
+  'repetition_judge',
+];
+
+/**
+ * ADR-0100 (G14-4): G14a's structure judge rated the same late hook and summarizing last line minor in one fresh reading
+ * and major in the next, on text that differed by one sentence. The judges that read again are the taste judges that
+ * ran in this evaluation and raised a reviewer-class major — and only when every blocking or major finding of the
+ * evaluation is such a major (a blocking finding, a checker's, a lint's or a carried one leaves nothing to agree on).
+ */
+export function agreementJudges(
+  issues: readonly Issue[],
+  fresh: ReadonlyMap<EvaluatorName, unknown>,
+  reviewer: ReadonlySet<string>,
+): EvaluatorName[] {
+  const heavy = issues.filter((i) => i.severity === 'blocking' || i.severity === 'major');
+  const implicated = new Set<EvaluatorName>();
+  for (const i of heavy) {
+    const e = TASTE_JUDGES.find((j) => SOURCE[j] === i.source);
+    if (!e || !fresh.has(e) || i.severity !== 'major' || !reviewer.has(i.kind)) return [];
+    implicated.add(e);
+  }
+  return TASTE_JUDGES.filter((e) => implicated.has(e));
+}
+
+/** The finding kinds a reading rated major or blocking. */
+export function reproducedKinds(reading: readonly Issue[]): Set<string> {
+  return new Set(
+    reading.filter((i) => i.severity === 'major' || i.severity === 'blocking').map((i) => i.kind),
+  );
+}
+
+/** A judge's reviewer-class majors whose kind the second reading did not reproduce, recorded as minor with a note. */
+export function unconfirmMajors(
+  issues: readonly Issue[],
+  source: string,
+  reproduced: ReadonlySet<string>,
+  reviewer: ReadonlySet<string>,
+  ko: boolean,
+): Issue[] {
+  const note = ko
+    ? '(두 번째 판독에서 주요 결함으로 재현되지 않음) '
+    : '(not reproduced as major on a second reading) ';
+  return issues.map((i) =>
+    i.source === source && i.severity === 'major' && reviewer.has(i.kind) && !reproduced.has(i.kind)
+      ? { ...i, severity: 'minor' as const, claim: `${note}${i.claim}` }
+      : i,
+  );
+}
+
+/** Two readings of one judge: the first reading's findings and flags, the mean of both readings' scores. */
+export function averageReadings<T extends JudgeOutput>(first: T, second: JudgeOutput): T {
+  const a = first.dimension_scores ?? {};
+  const b = second.dimension_scores ?? {};
+  const dimension_scores = Object.fromEntries(
+    [...new Set([...Object.keys(a), ...Object.keys(b)])].map((k) => {
+      const x = a[k];
+      const y = b[k];
+      return [k, typeof x === 'number' && typeof y === 'number' ? (x + y) / 2 : (x ?? y ?? 0)];
+    }),
+  );
+  const judge =
+    typeof first.judge_score === 'number' && typeof second.judge_score === 'number'
+      ? { judge_score: (first.judge_score + second.judge_score) / 2 }
+      : {};
+  return { ...first, dimension_scores, ...judge };
+}
 
 /** The per-hit 그/그녀 translation marker of lang/ko@3 to @9 (one finding per 그는, 그녀의 …). */
 export const PRONOUN_MARKER = 'TRN-KO-14';
