@@ -134,6 +134,93 @@ export async function ensureChapter(ctx: WorkflowContext, chapterNo: number): Pr
   return id;
 }
 
+const SPEC_CATEGORIES = new Set([
+  'genre',
+  'premise',
+  'character',
+  'world',
+  'progression',
+  'romance',
+  'tone',
+  'ending',
+  'structure',
+  'length',
+  'mandatory_scene',
+  'forbidden_development',
+  'content_restriction',
+  'style',
+  'audience',
+  'direction',
+  'other',
+]);
+// A live interpreter's category word read as the nearest one the schema knows (G15a wrote `relationship`). A sub-genre
+// is not mapped to `genre`: the first genre item is read as the primary genre.
+const SPEC_CATEGORY_ALIASES: Readonly<Record<string, string>> = {
+  relationship: 'character',
+  relationships: 'character',
+  relations: 'character',
+  protagonist: 'character',
+  characters: 'character',
+  cast: 'character',
+  heroine: 'character',
+  heroines: 'character',
+  love: 'romance',
+  love_line: 'romance',
+  setting: 'world',
+  worldbuilding: 'world',
+  world_building: 'world',
+  magic_system: 'world',
+  power_system: 'world',
+  growth: 'progression',
+  power_progression: 'progression',
+  leveling: 'progression',
+  levelling: 'progression',
+  plot: 'structure',
+  pacing: 'structure',
+  pace: 'structure',
+  arc: 'structure',
+  theme: 'tone',
+  mood: 'tone',
+  atmosphere: 'tone',
+  climax: 'ending',
+  finale: 'ending',
+  conclusion: 'ending',
+  word_count: 'length',
+  chapter_length: 'length',
+  scene: 'mandatory_scene',
+  required_scene: 'mandatory_scene',
+  forbidden: 'forbidden_development',
+  taboo: 'forbidden_development',
+  prohibited: 'forbidden_development',
+  prohibition: 'forbidden_development',
+  banned: 'forbidden_development',
+  restriction: 'content_restriction',
+  pov: 'style',
+  point_of_view: 'style',
+  narration: 'style',
+  format: 'style',
+  writing_style: 'style',
+  rating: 'audience',
+  age_rating: 'audience',
+  target_audience: 'audience',
+  readership: 'audience',
+};
+
+/**
+ * ADR-0099 (live defect G15-1): a story-spec requirement's category as the schema knows it — an exact category, a
+ * live interpreter's word read as its nearest category, else `other`, the schema's own catch-all. The requirement's
+ * text, kind and scope are untouched.
+ */
+export function specCategoryOf(v: unknown): string {
+  if (typeof v !== 'string') return 'other';
+  const key = v
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/gu, '_');
+  if (SPEC_CATEGORIES.has(key)) return key;
+  return SPEC_CATEGORY_ALIASES[key] ?? 'other';
+}
+
 export async function interpretRequirements(
   ctx: WorkflowContext,
   intake: StoryIntake,
@@ -159,7 +246,17 @@ export async function interpretRequirements(
       },
     });
     const raw = call.output;
-    const items = Array.isArray(raw.items) ? (raw.items as Requirement[]) : [];
+    const rawItems: unknown[] = Array.isArray(raw.items) ? raw.items : [];
+    // ADR-0099 (G15-1): a requirement category the schema does not know is read as its nearest one, else `other`.
+    const items = (
+      ctx.policy.planning?.normalize_spec_categories
+        ? rawItems.map((i) =>
+            typeof i === 'object' && i !== null
+              ? { ...i, category: specCategoryOf((i as { category?: unknown }).category) }
+              : i,
+          )
+        : rawItems
+    ) as Requirement[];
     const candidate: StorySpec = {
       project_id: ctx.projectId,
       version: specVersion,

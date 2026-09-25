@@ -26,6 +26,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@23',
       'policy/standard@24',
       'policy/standard@25',
+      'policy/standard@26',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -35,6 +36,18 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v26 is standard.v25 with story-spec categories normalized (ADR-0099)', () => {
+    const v25 = requirePolicy('policy/standard@25', policies);
+    const v26 = requirePolicy('policy/standard@26', policies);
+    expect(v26.planning).toEqual({ ...v25.planning, normalize_spec_categories: true });
+    const strip = (p: typeof v25) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v26)).toEqual(strip(v25));
+    expect(v26.gates).toEqual(v25.gates);
   });
 
   it('standard.v25 is standard.v24 with the pronoun redraft and device rules 3 (ADR-0097)', () => {

@@ -105,6 +105,7 @@
 | [0096](0096-arc-beat-types-and-the-pronoun-band-lint.md) | `standard.v24`: an arc plan's beat types are read as the schema knows them (`planning.normalize_arc_beats`); per-hit pronoun markers inside the operator's pronoun band are notes and the prose judge's digest names the band (`evaluation.pronoun_band_lint`) |
 | [0097](0097-pronoun-redraft-and-device-rules-3.md) | `standard.v25`: a Korean scene at or above the pronoun warn line is re-drafted once (`drafting.pronoun_redraft`); a new possession project records device-rule wording 3, which keeps the possessor's meta words out of other characters' lines (`identity.device_rules: 3`) |
 | [0098](0098-operator-granted-revision-rounds.md) | `novel:extend`: an operator grants the chapter a needs_attention run stopped on more revision rounds, up to the pinned policy's `max_rounds` in all; the polish round may follow the last round |
+| [0099](0099-story-spec-categories.md) | `standard.v26`: a story spec's requirement categories are read as the schema knows them (`planning.normalize_spec_categories`) |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

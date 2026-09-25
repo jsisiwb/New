@@ -300,6 +300,10 @@ export interface ProductionPolicy {
      */
     normalize_arc_beats?: boolean;
     /**
+     * ADR-0099 (live defect G15-1): a story spec's requirement categories are read as the schema knows them — an exact category stays, an interpreter's word (relationship, setting, theme) becomes its nearest category, anything else becomes other, the schema's catch-all — instead of failing the spec (SPEC_INVALID at novel:start, which a retry replays from the recorded answer). The requirement's text, kind and scope are untouched. Absent or false: the spec is validated as written.
+     */
+    normalize_spec_categories?: boolean;
+    /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
      */
     cut_design?: boolean;
