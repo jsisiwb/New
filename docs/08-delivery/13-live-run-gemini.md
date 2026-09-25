@@ -419,3 +419,83 @@ blocking findings twice.
 - **Observations, not fixed:** the regression designer listed a non-regressor as remembering the prior loop (one
   continuity finding); a status-window line judged against the world rule's formatting example (G8a r4, blocking);
   G7-4 (solo scenes raised to the talk floor) recurred in the plan but not as a finding.
+
+## 9. G9 — the `standard.v19` checkpoint on both projects (STEP 1 of this run; 11:57–12:38 UTC)
+
+Chapter 1 of two fresh projects on `standard@19` (ADR-0090: the narrator's present knowledge, the operator's own device
+words, the 먼치킨 premise, the per-scene POV redraft, pronouns inside the operator's band, writer 4.10.0), started by the
+previous session at 11:57 UTC from the tree of `0b010a3` — one minute after the `standard@19` commit and before
+ADR-0091 (migration 0025 was first applied to the permanent database at 13:55 UTC by this run's `db:migrate`, so the
+runs used the old claim). The session ended before recording them. As with G5 (ADR-0085 §2), the recorded pair is the
+`standard@19` checkpoint; nothing later on the branch changes prose behaviour. The metrics below come from
+`quality:checkpoint` (new in this run: the same measures for every checkpoint, read from the database); the run
+reports, every blocking/major finding and the metrics JSON are in `ops/live-runs/g9-standard19/`.
+
+| | G9a (academy) | G9r (regression) |
+| --- | --- | --- |
+| ADR-0090 on live data | `KO-DEVICE-01` 0 and no genre finding for `원작` (G8-2); no finding against the 먼치킨 hero's power (G8-4); no pronoun major (G8-7); three scene-writer redrafts for two scenes | `KO-DEVICE-01` 0; no third-person scene in the kept draft (G8-5); two scene-writer redrafts for two scenes |
+| Length (v1) | 5,952자 (+12.3 %), 4,635 without spaces | 5,529자 (+4.3 %), 4,340 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 20 % → 19.8 %, 40 % → 25.5 % | 2: 20 % → 10.9 %, 40 % → 37.4 % |
+| Quoted dialogue lines | 42 (7.1 per 1,000자) | 47 (8.5 per 1,000자) |
+| Quoted 속마음 lines | 9 | 11 |
+| Plan critic / repairs | two critic majors on the scene plan (open on a voice; give the heroine's entrance "the fate or secret the hero knows"), the plan re-asked once | the critic flagged an unawakened hero breaking walls and doors and a non-voice opening; `PLAN-DLG-02` removed one talk ban; the plan re-asked once; three chapter-planner calls |
+| First line | `웅성웅성. 시끌벅적.` (a sound line) | `우드득.` (a sound line) |
+| r0 gate | overall 74: prose 73.3 ✗, structure 75.5 ✗, genre 80, voice 90.4; continuity and knowledge ✗ | overall 87: prose 89.3, structure 85, genre 90, voice 87.5 — all four gates passing, 7 majors |
+| Rounds (revision scope) | r0 to r5 (r1 scene, r2 scene, r3 paragraph, r4 paragraph, r5 scene); r2, r3, r5 quarantined | r0 to r5 (r1 scene, r2 scene, r3–r5 paragraph); r1–r5 quarantined |
+| Blocking / major | r0 4 / 8 → r1 2 / 3 → r2 0 / 5 → r3 0 / 4 → r4 **0 / 5 (kept)** → r5 1 / 3 | r0 **0 / 7** → r1 4 / 7 → r2 1 / 5 → r3 **0 / 2** → r4 0 / 4 → r5 0 / 3 |
+| Why rounds were quarantined | r2: a new repetition major; r3 and r5: structure 87.5 → 77.5 and 85 → 75 under a paragraph patch that did not touch the opening or the cut | r1, r2: scene rewrites that entered the office twice and drifted into the third person (4 and 1 blocking); r3–r5: `targeted_worsened` alone — genre 90 → 85 against its gate of 72 |
+| The last blockers | r4 (kept): 상태창 lines without the world rule's 체력 line and a trait name off by one word; the rival's drug use (hidden until 화 24) in narration; an over-nested sentence; the hero calling 반말 a breach of rules that make everyone use 평어 | r3/r5: contract AC-1 (the status window and the regression "within the first three sentences") in all six scorecards and never targeted; the unawakened hero kicking a locked steel door open; a repeated catchphrase |
+| Reader-secret findings | r0: 3 blocking (continuity: the heroine's 원작 bad ending "15화 이전 공개 금지", her candy habit, the rival's drugs and fall) + 1 major (knowledge); r1 2 blocking; r2, r4 1 major | r0 1 major: the hero asks a stranger about her debt before any introduction |
+| `KO-DEVICE-01` | 0 in every round | 0 in every round |
+| Corpus copy check (14 syllables) | no `corpus_copy` finding on any of the six versions | no `corpus_copy` finding on any of the six versions |
+| Likeness (C8) | v1 70 (first-person bands 80); kept v5 80 (75); G8a 80 | v1 70 (first-person bands 55); v6 55 (50); G8r 85 |
+| Result | not accepted (`needs_attention`, APPROVAL_BLOCKED on v5: 0 blocking, 5 major) | not accepted (`needs_attention`) |
+| Calls / tokens / time | 83 (85 attempts, 2 failed) / 334,809 in, 35,390 out / 2,440 s | 79 (80 attempts, 1 failed) / 332,188 in, 36,282 out / 2,272 s |
+
+Credits for the pair: ws1 83.04 → 87.34 %, ws3 11.35 → 17.42 %, ws4 4.33 → 6.44 % (12.48 points); ws2 (98.57 % after G8)
+answers `rate-limited` with no reading, so its share is unknown (at most 1.43 points). Nothing else is recorded against
+the workspaces between the G8 reading and this run's first reading (13:53 UTC).
+
+Excerpts (the first three lines of each chapter, unedited pipeline output):
+
+> 웅성웅성. 시끌벅적.
+> 제1연무장을 가득 채운 백여 명의 신입생들이 뿜어내는 열기가 뜨거웠다.
+> 입학식 직후에 치러지는 마력 측정 평가.
+
+> 우드득.
+> 가슴뼈가 통째로 부서지는 감각.
+> 심장을 꿰뚫고 지나간 거대한 발톱의 서늘함이 생생했다. 핏물이 식도를 타고 역류하며 단말마의 비명조차 삼켜버렸다.
+
+**What changed against G8.** Both chapters open on a sound line, as the operator's do; no scene was left in the third
+person (G8-5), no device or 먼치킨 finding (G8-2, G8-4) and no pronoun major (G8-7). The regression chapter's first
+draft passed all four dimension gates with no blocking finding — the best r0 of any live run — and its r3 reached
+0 blocking and 2 majors; both were thrown away by the revision rules, not by the text.
+
+**Defects (each is fixed in this run; the ADR that fixes it is named when it lands).**
+
+- **G9-1 — two dates for one secret.** The canon-state lines every pack carries render a secret with the bible's one
+  reveal chapter ("15화 이전 공개 금지") while the reveal schedule (ADR-0088, ADR-0090) gives the first-person narrator's
+  remembered game knowledge to the reader from 화 1. The writer followed the schedule; the continuity checker read the
+  canon line and raised three blocking findings (G9a r0). G5-1 was the same split in the knowledge section.
+- **G9-2 — the heroine formula against the schedule.** The operator's introduction formula (`operator-voice-analysis.md`
+  §8: "the hero's game knowledge of her, often a doomed fate") reaches the planners and the plan critic without the
+  schedule; the critic sent the plan back to give the heroine's entrance "the fate or secret the hero knows", and the
+  writer told a habit only the heroine knows (화 8) and the rival's drugs (화 24). The bible compounds it: the hero
+  knows the drugs' consequence ("이 마약 부작용으로 … 타락") but is not a knower of the drugs.
+- **G9-3 — noise quarantines resolved rounds.** A judge's score moves in rubric steps of about 5 points (one sub-score);
+  the regression tolerance is 3. `targeted_worsened` quarantined G9r r3–r5 for genre 90 → 85 against a gate of 72 while
+  the round resolved its targets (7 majors → 2); the structure judge's rubric read 55, 75, 70, 55, 70, 50 over G9a's six
+  scorecards on mostly unchanged text, so paragraph patches that never touched the opening or the cut were quarantined
+  for structure (r3, r5).
+- **G9-4 — a spanless contract finding is never targeted.** G9r's AC-1 ("상태창 알림과 회귀 확신이 첫 3문장 안에") has
+  no quote, so the patch planner listed it as untargeted in every round; no round could ever approve the chapter.
+- **G9-5 — a quarantined round repeats itself.** After a quarantine the next round starts again from the same parent
+  with the same targets and the same rung: G9r r3, r4 and r5 are the same four paragraph patches to v1 (1,972–1,978
+  characters each), quarantined the same way.
+- **G9-6 — the unawakened body again.** The hero kicks a locked steel door open (G9r r0, r4, r5) although the plan
+  critic removed door-breaking from the plan and the writer's own narration says only a plywood door gives way.
+- **G9-7 — a scene rewrite is judged before it is checked.** G9r r1's scene rewrite entered the office twice and slipped
+  into the third person (`진우는`); four blocking findings came from a draft that a deterministic check could have
+  rejected before any judge call.
+- **G9-8 — stock figures and world vocabulary.** `서늘한 미소가 입가에 번졌다`, `정적이 내려앉았다` (one stock figure raised
+  by two judges as two majors); `오러` for a mage; a 상태창 without the world rule's lines and trait name.

@@ -423,7 +423,7 @@ async function passagesCmd(pool: Pool, args: readonly string[]): Promise<Result>
 }
 
 /** The operator's style bands (all Korean chapters and first-person ones) and their own likeness scores. */
-function operatorBands(rows: readonly CorpusChapterRow[], source: KoStyleSource) {
+export function operatorBands(rows: readonly CorpusChapterRow[], source: KoStyleSource) {
   const metrics = rows.map((r) => ({ pov: r.pov, m: chapterMetrics(r.text, source) }));
   const all = distributions(metrics.map((x) => x.m));
   const first = distributions(metrics.filter((x) => x.pov === 'first').map((x) => x.m));
