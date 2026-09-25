@@ -182,7 +182,19 @@
         "judge_notes": { "type": "array", "items": { "type": "string" } },
         "lint_thresholds": { "$ref": "#/$defs/thresholds" },
         "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" }, "description": "Genre Judge rubric (dimension C)" },
-        "style_exemplars": { "$ref": "#/$defs/styleExemplars" }
+        "style_exemplars": { "$ref": "#/$defs/styleExemplars" },
+        "device_variants": {
+          "type": "object",
+          "description": "ADR-0089 (live defect G7-2): the overlay in one premise device's own words. When the composed identity records preferences.story_device and the overlay has a variant for it, each field the variant sets replaces the overlay's field before any writer, planner or judge reads it. A 회빙환 overlay worded for novel possession otherwise tells a regression writer to use 원작 while the device rule forbids it.",
+          "additionalProperties": false,
+          "properties": {
+            "regression": { "$ref": "#/$defs/genreDeviceVariant" },
+            "reincarnation": { "$ref": "#/$defs/genreDeviceVariant" },
+            "game_possession": { "$ref": "#/$defs/genreDeviceVariant" },
+            "novel_possession": { "$ref": "#/$defs/genreDeviceVariant" },
+            "possession": { "$ref": "#/$defs/genreDeviceVariant" }
+          }
+        }
       }
     },
 
@@ -473,6 +485,22 @@
         "severity": { "$ref": "common.schema.json#/$defs/severity" },
         "weight": { "type": "number", "minimum": 0, "maximum": 2 },
         "note": { "type": "string" }
+      }
+    },
+    "genreDeviceVariant": {
+      "type": "object",
+      "description": "The genre fields one premise device words differently (ADR-0089); an absent field keeps the overlay's own.",
+      "additionalProperties": false,
+      "properties": {
+        "reader_fantasy": { "type": "string" },
+        "vocabulary": { "$ref": "#/properties/genre/properties/vocabulary" },
+        "devices": { "type": "array", "items": { "$ref": "#/$defs/device" } },
+        "structure_overrides": { "type": "object", "additionalProperties": true },
+        "register_notes": { "type": "array", "items": { "type": "string" } },
+        "taboos": { "type": "array", "items": { "type": "string" } },
+        "judge_notes": { "type": "array", "items": { "type": "string" } },
+        "rubric": { "type": "array", "items": { "$ref": "#/$defs/rubricDimension" } },
+        "style_exemplars": { "$ref": "#/$defs/styleExemplars" }
       }
     },
     "rubricDimension": {

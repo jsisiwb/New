@@ -2158,3 +2158,160 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v18: design answers lose copied tags, relationships are dated, the overlay speaks the device (ADR-0089)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // The operator writes one sentence per line; the calibrated layer (lang/ko@8) fails long paragraphs.
+    const sentencePerLine = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !('json' in out)) return out;
+      const draft = out.json as { text?: unknown };
+      return typeof draft.text === 'string'
+        ? { ...out, json: { ...draft, text: draft.text.replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') } }
+        : out;
+    };
+    // G7's designers copied provenance tags into their answers; the hero's register toward the mentor begins in 화 1.
+    const g7Answers = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (!('json' in out)) return out;
+      const role = req.trace?.role;
+      if (role === 'concept_generator') {
+        const c = out.json as { logline?: string };
+        return { json: { ...c, logline: `[FACT] ${c.logline ?? ''}` } };
+      }
+      if (role === 'power_system_designer') {
+        const p = out.json as { world_rules?: { statement?: string }[] };
+        return {
+          json: {
+            ...p,
+            world_rules: (p.world_rules ?? []).map((r, i) =>
+              i === 0 ? { ...r, statement: `[PLANNED] ${r.statement ?? ''}` } : r,
+            ),
+          },
+        };
+      }
+      if (role === 'character_designer') {
+        const cast = out.json as {
+          characters?: { role?: string; registers?: Record<string, unknown>[] }[];
+        };
+        return {
+          json: {
+            ...cast,
+            characters: (cast.characters ?? []).map((c) =>
+              c.role === 'protagonist'
+                ? { ...c, registers: (c.registers ?? []).map((r) => ({ ...r, since_chapter: 1 })) }
+                : c,
+            ),
+          },
+        };
+      }
+      return out;
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return sentencePerLine(req, g7Answers(req, batchedScript(req, script(req))));
+    });
+    // A regression serial: the premise device is 회귀, so the 회빙환 overlay must not speak of a 원작.
+    const intake = {
+      ...INTAKE,
+      pov: 'third_limited',
+      genre: { primary: 'regression', secondary: ['hunter-gate'] },
+    };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v18-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@18',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('stores untagged design answers, seeds no relationship before it begins and completes', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v18-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+
+      // G7-1: the stored concept and the bible facts carry no tag; the raw answer in the call record keeps it.
+      const tag = String.raw`\[(FACT|PLANNED|SUMMARY)\]`;
+      const tagged = await pool.query<{ kind: string; n: string }>(
+        `SELECT kind, count(*) AS n FROM workflow_artifacts
+          WHERE project_id = $1 AND payload::text ~ $2 GROUP BY kind`,
+        [projectId, tag],
+      );
+      const kinds = Object.fromEntries(tagged.rows.map((r) => [r.kind, Number(r.n)]));
+      expect(kinds.concept).toBeUndefined();
+      expect(kinds.power_system).toBeUndefined();
+      expect(kinds.llm_output).toBeGreaterThan(0);
+      const facts = await pool.query<{ n: string }>(
+        'SELECT count(*) AS n FROM facts WHERE project_id = $1 AND value_text ~ $2',
+        [projectId, tag],
+      );
+      expect(Number(facts.rows[0]?.n)).toBe(0);
+
+      // G7-3: the hero's registers begin in 화 1, so none of them is canon from before 화 1; the others are.
+      const rels = await pool.query<{ terms: string[] | null }>(
+        `SELECT ARRAY(SELECT jsonb_array_elements_text(register->'address_terms')) AS terms
+           FROM relationship_states WHERE project_id = $1`,
+        [projectId],
+      );
+      const terms = rels.rows.flatMap((r) => r.terms ?? []);
+      expect(terms).not.toContain('Senior Baek');
+      expect(terms).toContain('kid');
+      const voice = seen.filter((r) => r.trace?.role === 'voice_judge');
+      expect(voice.some((r) => r.user.includes('이 화에서 시작되는 관계다'))).toBe(true);
+
+      // G7-2: the regression writer reads the overlay in the device's words; lang/ko@8's stock phrases reach it.
+      const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+      expect(writers.length).toBeGreaterThan(0);
+      for (const r of writers) {
+        expect(r.system).toContain('‘지난 생에서는 여기서 죽었다.’');
+        expect(r.system).not.toContain('장르 용어: 빙의, 원작');
+        expect(r.system).toContain('무기를 고쳐 쥐었다');
+      }
+      // The cast designer of 4.9.0 dates each relationship.
+      const designers = seen.filter((r) => r.trace?.role === 'character_designer');
+      for (const r of designers)
+        expect(r.system).toContain('since_chapter에 그 관계가 시작되는 회차');
+    }, 300_000);
+  },
+);

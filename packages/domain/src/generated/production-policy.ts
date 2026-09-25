@@ -178,6 +178,10 @@ export interface ProductionPolicy {
      */
     plan_check: boolean;
     /**
+     * ADR-0089 (live defect G7-1): the provenance tags that label context items ([FACT], [PLANNED], [SUMMARY], [EVIDENCE], [UNTRUSTED], with or without a qualifier) are removed from every string of a designer's or planner's answer (requirement interpreter through plan critic) before the workflow stores it; the raw answer stays in the call record. Absent or false: answers are stored as returned, so a copied tag can reach bible facts and packs.
+     */
+    strip_provenance_tags?: boolean;
+    /**
      * How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON.
      */
     scene_plan_format?: 'json' | 'labelled';
@@ -212,6 +216,10 @@ export interface ProductionPolicy {
        */
       contract?: boolean;
     };
+    /**
+     * ADR-0089 (live defect G7-3): a cast register whose since_chapter is N ≥ 1 (the 화 in which the relationship begins — a first meeting, becoming a disciple or a subordinate) is planned, not seeded as canon: the voice judge's 호칭 matrix leaves it out before 화 N and marks it as beginning in 화 N, and canon records the relationship from the accepted text. Absent or false: every register is canon from before 화 1, so a checker demands the settled register (사부님, 형님) from the first line of the chapter in which the relationship forms.
+     */
+    register_time_frames?: boolean;
     /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
      */
@@ -265,6 +273,10 @@ export interface ProductionPolicy {
      * ADR-0084 (U2, live defect G-1): a new project records its premise device from the intake (regression, reincarnation, game or novel possession); writers, editors, planners and the genre judge get that device's vocabulary, and every evaluated version is checked for the other devices' words (KO-DEVICE-01, a major genre finding). Absent or false: the genre overlay's vocabulary alone, as before.
      */
     device_lexicon?: boolean;
+    /**
+     * ADR-0089 (live defect G7-2): genre overlay versions a new Korean project composes instead of the newest one it would take without asking, e.g. genre/regression@4 (the 회빙환 overlay with device variants, read in the words of the premise device identity.device_lexicon records). A listed overlay applies only when the intake selects its genre. Absent: genre/regression up to @3, as before.
+     */
+    genre_layers?: string[];
     /**
      * ADR-0083 (C3): the operator voice profile (examples/voice-profiles) a new project in the profile's language copies into its composed identity. Absent: no operator voice section.
      */

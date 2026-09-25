@@ -695,7 +695,7 @@ function pinnedVoiceOptions(
   intake: StoryIntake,
 ): Pick<
   Parameters<typeof ensureProjectIdentity>[1],
-  'voice' | 'operatorExemplars' | 'deviceLexicon'
+  'voice' | 'operatorExemplars' | 'deviceLexicon' | 'genreLayers'
 > {
   let identity;
   try {
@@ -706,6 +706,7 @@ function pinnedVoiceOptions(
   const pick = identity?.operator_exemplars;
   return {
     ...(identity?.device_lexicon ? { deviceLexicon: true } : {}),
+    ...(identity?.genre_layers?.length ? { genreLayers: identity.genre_layers } : {}),
     ...(identity?.voice_profile ? { voice: requireVoiceProfile(identity.voice_profile) } : {}),
     ...(pick
       ? {

@@ -148,14 +148,7 @@ export type NarrativeIdentityProfile = {
   genre?: {
     genre_id?: string;
     reader_fantasy?: string;
-    vocabulary?: {
-      /**
-       * English terms
-       */
-      preferred_terms?: string[];
-      discouraged_terms?: string[];
-      terminology_defaults?: TerminologyEntry[];
-    };
+    vocabulary?: Vocabulary;
     devices?: Device[];
     cadence?: {
       progression_event_every_chapters?: number;
@@ -190,6 +183,16 @@ export type NarrativeIdentityProfile = {
      */
     rubric?: RubricDimension[];
     style_exemplars?: StyleExemplars;
+    /**
+     * ADR-0089 (live defect G7-2): the overlay in one premise device's own words. When the composed identity records preferences.story_device and the overlay has a variant for it, each field the variant sets replaces the overlay's field before any writer, planner or judge reads it. A 회빙환 overlay worded for novel possession otherwise tells a regression writer to use 원작 while the device rule forbids it.
+     */
+    device_variants?: {
+      regression?: GenreDeviceVariant;
+      reincarnation?: GenreDeviceVariant;
+      game_possession?: GenreDeviceVariant;
+      novel_possession?: GenreDeviceVariant;
+      possession?: GenreDeviceVariant;
+    };
   };
   /**
    * Layer 4 — Setting & cultural profile
@@ -589,6 +592,14 @@ export interface Device {
   format_grammar?: string;
   max_per_chapter?: number;
 }
+export interface Vocabulary {
+  /**
+   * English terms
+   */
+  preferred_terms?: string[];
+  discouraged_terms?: string[];
+  terminology_defaults?: TerminologyEntry[];
+}
 /**
  * Abstract canonical description of how a speaker addresses a counterpart, rendered in natural English by the writer (replaces Korean speech-level enforcement).
  */
@@ -632,4 +643,23 @@ export interface DialogueRegister {
     titles?: string[];
   };
   note?: string;
+}
+/**
+ * The genre fields one premise device words differently (ADR-0089); an absent field keeps the overlay's own.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "genreDeviceVariant".
+ */
+export interface GenreDeviceVariant {
+  reader_fantasy?: string;
+  vocabulary?: Vocabulary;
+  devices?: Device[];
+  structure_overrides?: {
+    [k: string]: unknown | undefined;
+  };
+  register_notes?: string[];
+  taboos?: string[];
+  judge_notes?: string[];
+  rubric?: RubricDimension[];
+  style_exemplars?: StyleExemplars;
 }

@@ -859,7 +859,11 @@ export async function evaluateVersion(
                 ? {
                     chapter_text: chapterText,
                     voice_cards: orNone(voiceCards(input.contract, input.bible, lang)),
-                    address_matrix: orNone(addressMatrix(input.contract, input.bible, lang)),
+                    address_matrix: orNone(
+                      addressMatrix(input.contract, input.bible, lang, {
+                        timeFramed: ctx.policy.planning?.register_time_frames === true,
+                      }),
+                    ),
                     register_digests: packVars.register_digests ?? none,
                     register_check_report: register
                       ? dialogueRegisterDigestKo(register)

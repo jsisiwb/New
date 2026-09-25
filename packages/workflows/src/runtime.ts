@@ -40,6 +40,7 @@ import {
   type PromptSet,
 } from '@yeonjae/prompts';
 import { asWorkflowError, WorkflowError } from './errors.js';
+import { DESIGN_FAMILIES, stripProvenanceTagsDeep } from './provenance-tags.js';
 
 export type ProductionPolicy = Generated.ProductionPolicySchema.ProductionPolicy;
 
@@ -555,11 +556,14 @@ export async function modelCall<T = unknown>(
   } catch (err) {
     throw asWorkflowError(err, input.step);
   }
-  const output = (res.output.json ?? res.output.text) as T;
+  let output = (res.output.json ?? res.output.text) as T;
   if (output === undefined)
     throw new WorkflowError('MODEL_CALL_FAILED', `${input.family} returned no output`, {
       step: input.step,
     });
+  // ADR-0089 (G7-1): a copied provenance tag never becomes story data; the raw answer stays in the call record.
+  if (ctx.policy.planning?.strip_provenance_tags && DESIGN_FAMILIES.has(pv.family))
+    output = stripProvenanceTagsDeep(output).value;
   return {
     llmCallId: res.llmCallId,
     output,

@@ -61,11 +61,17 @@ function latestKoreanRef(store: ProfileStore, id: string): string | undefined {
  * The newest version a project composes without asking (ADR-0073). Later versions add rules that change
  * what a new project is gated by, so they are opt-in: a policy names them (`identity.language_layer`).
  */
-const AUTO_LAYER_CAP: Readonly<Record<string, number>> = { 'lang/ko': 5 };
+const AUTO_LAYER_CAP: Readonly<Record<string, number>> = {
+  'lang/ko': 5,
+  // ADR-0089: v4 adds device variants; a policy names it in identity.genre_layers.
+  'genre/regression': 3,
+};
 
 export interface IdentityCompositionOptions {
   /** `policy.identity.language_layer` of the project's pinned policy, when it names one. */
   readonly languageLayer?: string | undefined;
+  /** `policy.identity.genre_layers` (ADR-0089): overlay versions taken instead of the newest uncapped one. */
+  readonly genreLayers?: readonly string[] | undefined;
   /** The voice profile `policy.identity.voice_profile` names (ADR-0083, C3); used when its language matches. */
   readonly voice?: VoiceProfile | undefined;
   /** Corpus passages selected under `policy.identity.operator_exemplars` (ADR-0083, C5). */
@@ -136,7 +142,12 @@ export function identityProfileFromIntake(
     throw new Error(`the global ${langRef} and ${tradRef} profiles must carry contract text`);
   const overlays = [intake.genre.primary, ...(intake.genre.secondary ?? [])]
     .map((g) => GENRE_PROFILES[g])
-    .map((ref) => (ref && isKo ? latestKoreanRef(store, ref.replace(/@\d+$/, '')) : ref))
+    .map((ref) => {
+      if (!ref || !isKo) return ref;
+      const id = ref.replace(/@\d+$/, '');
+      const named = opts.genreLayers?.find((r) => r.replace(/@\d+$/, '') === id && known.has(r));
+      return named ?? latestKoreanRef(store, id);
+    })
     .filter((ref): ref is string => ref !== undefined && known.has(ref));
   const unique = [...new Set(overlays)];
   const genres: NonNullable<NonNullable<NarrativeProfile['lineage']>['genres']> =
@@ -238,6 +249,7 @@ export async function ensureProjectIdentity(
     intake: StoryIntake;
     store?: ProfileStore | undefined;
     languageLayer?: string | undefined;
+    genreLayers?: readonly string[] | undefined;
     voice?: VoiceProfile | undefined;
     deviceLexicon?: boolean | undefined;
     /** Resolved only when the project has no pinned identity yet (it reads the corpus). */
@@ -266,6 +278,7 @@ export async function ensureProjectIdentity(
   if (!doc) {
     const profile = identityProfileFromIntake(input.projectId, input.intake, store, {
       languageLayer: input.languageLayer,
+      genreLayers: input.genreLayers,
       voice: input.voice,
       operatorExemplars: input.operatorExemplars ? await input.operatorExemplars() : undefined,
       deviceLexicon: input.deviceLexicon,

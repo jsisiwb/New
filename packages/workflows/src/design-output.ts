@@ -57,6 +57,7 @@ function validateCast(root: RecordValue): void {
         optionalNumber(r, 'directness', registerPath);
         optionalString(r, 'contractions', registerPath);
         optionalStringArray(r, 'address_terms', registerPath);
+        optionalNumber(r, 'since_chapter', registerPath);
       },
       path,
     );

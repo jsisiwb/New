@@ -17,6 +17,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@15',
       'policy/standard@16',
       'policy/standard@17',
+      'policy/standard@18',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -27,6 +28,36 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v18 is standard.v17 with the G7 fixes (ADR-0089)', () => {
+    const v17 = requirePolicy('policy/standard@17', policies);
+    const v18 = requirePolicy('policy/standard@18', policies);
+    expect(v18.planning).toEqual({
+      ...v17.planning,
+      strip_provenance_tags: true,
+      register_time_frames: true,
+    });
+    expect(v18.prompts).toEqual({ max_version: '4.9.0' });
+    expect(v18.identity).toEqual({
+      ...v17.identity,
+      language_layer: 'lang/ko@8',
+      genre_layers: ['genre/regression@4'],
+    });
+    const strip = (p: typeof v17) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        prompts: _pr,
+        identity: _i,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v18)).toEqual(strip(v17));
+    expect(v18.gates).toEqual(v17.gates);
   });
 
   it('standard.v17 is standard.v16 with the G6 fixes (ADR-0088)', () => {

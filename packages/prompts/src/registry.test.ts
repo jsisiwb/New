@@ -35,7 +35,7 @@ const REQUIRED_FAMILIES = [
   // ADR-0086
   'plan_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 316;
+const TOTAL_PROMPT_VERSIONS = 317;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
@@ -409,8 +409,18 @@ describe('prompt registry (ADR-0016)', () => {
     expect(reg.get('character_designer@4.8.0').system_template).not.toContain(
       '원작 주인공과의 관계',
     );
-    // Without a ceiling the registry's newest active versions are the 4.8.0 set.
-    expect(reg.activeSet().mapping).toEqual(v48);
+  });
+
+  it('a policy ceiling of 4.9.0 changes only the cast designer, which dates each relationship (ADR-0089)', () => {
+    const v48 = reg.activeSet('4.8.0').mapping;
+    const v49 = reg.activeSet('4.9.0').mapping;
+    const changed = Object.keys(v49).filter((f) => v49[f] !== v48[f]);
+    expect(changed).toEqual(['character_designer']);
+    const cast = reg.get('character_designer@4.9.0');
+    expect(cast.system_template).toContain('since_chapter에 그 관계가 시작되는 회차를 적는다');
+    expect(cast.user_template).toContain('"since_chapter": 1');
+    // Without a ceiling the registry's newest active versions are the 4.9.0 set.
+    expect(reg.activeSet().mapping).toEqual(v49);
   });
 
   it('pins the full-bible contracts in the revised planning prompts', () => {

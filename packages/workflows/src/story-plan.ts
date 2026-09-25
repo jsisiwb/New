@@ -415,6 +415,7 @@ interface CastOutput extends Record<string, unknown> {
       directness?: number;
       contractions?: string;
       address_terms?: string[];
+      since_chapter?: number;
     }[];
   }[];
   propositions?: { statement?: string; kind?: string; secret?: unknown; entity_names?: string[] }[];
@@ -884,6 +885,14 @@ export async function buildFullBible(
     for (const r of c.registers ?? []) {
       const to = resolve(r.toward);
       if (!to || to === from) continue;
+      // ADR-0089 (G7-3): a relationship that begins in 화 N ≥ 1 is planned, not canon — the 호칭 matrix carries it from
+      // 화 N, and canon records it from the accepted text like any other relationship change.
+      if (
+        ctx.policy.planning?.register_time_frames === true &&
+        typeof r.since_chapter === 'number' &&
+        r.since_chapter >= 1
+      )
+        continue;
       n++;
       const level = (v: number | undefined) =>
         typeof v === 'number' ? Math.max(0, Math.min(5, Math.round(v))) : undefined;
