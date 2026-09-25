@@ -1,0 +1,41 @@
+{
+  "family": "scene_writer",
+  "version": "4.7.0",
+  "role": "scene_writer",
+  "purpose": "Korean webnovel prompt for plan-level prevention in the operator's voice (ADR-0086), 4.7.0.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "writer_full",
+  "model_class": "P",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plan",
+    "scene_no",
+    "scene_total",
+    "scene_role",
+    "previous_text",
+    "canon_state",
+    "knowledge_lists",
+    "register_digests",
+    "open_promises",
+    "length_target_words"
+  ],
+  "output_schema": "scene-draft.schema.json",
+  "output_mode": "text",
+  "params": {
+    "temperature": 0.85,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.7.0 — plan-level prevention (ADR-0086): the reveal schedule in planner, writer and knowledge checker; a talk partner in every 화 and countable talk targets; the cut as the last beat; time frames for later character states; the pre-flight plan critic.",
+  "regression_cases": [
+    "scene_writer.fixture.smoke"
+  ],
+  "content_hash": "sha256:84975c133b854ecdfb019607c4504c0baaf7bef9b1376272e45fe8053d5ef149"
+}

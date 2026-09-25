@@ -102,6 +102,29 @@
       "required": ["issues"],
       "properties": { "issues": { "type": "array", "items": { "$ref": "#/$defs/checkerIssue" } } }
     },
+    "plan_critic": {
+      "type": "object",
+      "description": "ADR-0086 (U8): the pre-flight plan critic's answer — defects of the contract and scene plans found before any drafting call. target names the plan part: contract, or scene N.",
+      "additionalProperties": false,
+      "required": ["issues"],
+      "properties": {
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "severity", "target", "claim", "fix"],
+            "properties": {
+              "kind": {"type": "string", "enum": ["reveal_unsafe", "knowledge_impossible", "repeated_exposition", "state_contradiction", "dialogue_missing", "weak_cut", "structure_off", "time_inconsistent", "other"]},
+              "severity": {"type": "string", "enum": ["minor", "major", "blocking"]},
+              "target": {"type": "string", "minLength": 1},
+              "claim": {"type": "string", "minLength": 1},
+              "fix": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
     "knowledge_leak_checker": {
       "type": "object",
       "additionalProperties": false,

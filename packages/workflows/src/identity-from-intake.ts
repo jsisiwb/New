@@ -61,17 +61,34 @@ function latestKoreanRef(store: ProfileStore, id: string): string | undefined {
  * The newest version a project composes without asking (ADR-0073). Later versions add rules that change
  * what a new project is gated by, so they are opt-in: a policy names them (`identity.language_layer`).
  */
-const AUTO_LAYER_CAP: Readonly<Record<string, number>> = { 'lang/ko': 5 };
+const AUTO_LAYER_CAP: Readonly<Record<string, number>> = {
+  'lang/ko': 5,
+  // ADR-0089: v4 adds device variants; a policy names it in identity.genre_layers.
+  'genre/regression': 3,
+};
 
 export interface IdentityCompositionOptions {
   /** `policy.identity.language_layer` of the project's pinned policy, when it names one. */
   readonly languageLayer?: string | undefined;
+  /** `policy.identity.genre_layers` (ADR-0089): overlay versions taken instead of the newest uncapped one. */
+  readonly genreLayers?: readonly string[] | undefined;
   /** The voice profile `policy.identity.voice_profile` names (ADR-0083, C3); used when its language matches. */
   readonly voice?: VoiceProfile | undefined;
   /** Corpus passages selected under `policy.identity.operator_exemplars` (ADR-0083, C5). */
   readonly operatorExemplars?: readonly OperatorExemplar[] | undefined;
   /** `policy.identity.device_lexicon` (ADR-0084, U2): record the premise device from the intake. */
   readonly deviceLexicon?: boolean | undefined;
+  /** `policy.identity.device_rules` (ADR-0090): the device rule's wording the identity records. */
+  readonly deviceRules?: 2 | undefined;
+  /** `policy.identity.protagonist_type` (ADR-0090): record the intake's protagonist type. */
+  readonly protagonistType?: boolean | undefined;
+}
+
+/** The protagonist type an intake names, when the compiler has a line for it (ADR-0090, G8-4). */
+export function protagonistTypeOf(intake: StoryIntake): 'munchkin' | undefined {
+  return /먼치킨|munchkin|사기캐|오버파워/iu.test(intake.protagonist_type ?? '')
+    ? 'munchkin'
+    : undefined;
 }
 
 export type StoryDevice = NonNullable<NonNullable<NarrativeProfile['preferences']>['story_device']>;
@@ -136,7 +153,12 @@ export function identityProfileFromIntake(
     throw new Error(`the global ${langRef} and ${tradRef} profiles must carry contract text`);
   const overlays = [intake.genre.primary, ...(intake.genre.secondary ?? [])]
     .map((g) => GENRE_PROFILES[g])
-    .map((ref) => (ref && isKo ? latestKoreanRef(store, ref.replace(/@\d+$/, '')) : ref))
+    .map((ref) => {
+      if (!ref || !isKo) return ref;
+      const id = ref.replace(/@\d+$/, '');
+      const named = opts.genreLayers?.find((r) => r.replace(/@\d+$/, '') === id && known.has(r));
+      return named ?? latestKoreanRef(store, id);
+    })
     .filter((ref): ref is string => ref !== undefined && known.has(ref));
   const unique = [...new Set(overlays)];
   const genres: NonNullable<NonNullable<NarrativeProfile['lineage']>['genres']> =
@@ -210,6 +232,12 @@ export function identityProfileFromIntake(
         ? { operator_exemplars: opts.operatorExemplars.map((e) => ({ ...e })) }
         : {}),
       ...(isKo && opts.deviceLexicon && device ? { story_device: device } : {}),
+      ...(isKo && opts.deviceLexicon && device && opts.deviceRules === 2
+        ? { story_device_rules: 2 as const }
+        : {}),
+      ...(isKo && opts.protagonistType && protagonistTypeOf(intake)
+        ? { protagonist_type: 'munchkin' as const }
+        : {}),
     },
     calibration: { status: 'uncalibrated', notes: 'Composed from the intake at novel start.' },
   };
@@ -238,8 +266,11 @@ export async function ensureProjectIdentity(
     intake: StoryIntake;
     store?: ProfileStore | undefined;
     languageLayer?: string | undefined;
+    genreLayers?: readonly string[] | undefined;
     voice?: VoiceProfile | undefined;
     deviceLexicon?: boolean | undefined;
+    deviceRules?: 2 | undefined;
+    protagonistType?: boolean | undefined;
     /** Resolved only when the project has no pinned identity yet (it reads the corpus). */
     operatorExemplars?: (() => Promise<readonly OperatorExemplar[]>) | undefined;
   },
@@ -266,9 +297,12 @@ export async function ensureProjectIdentity(
   if (!doc) {
     const profile = identityProfileFromIntake(input.projectId, input.intake, store, {
       languageLayer: input.languageLayer,
+      genreLayers: input.genreLayers,
       voice: input.voice,
       operatorExemplars: input.operatorExemplars ? await input.operatorExemplars() : undefined,
       deviceLexicon: input.deviceLexicon,
+      deviceRules: input.deviceRules,
+      protagonistType: input.protagonistType,
     });
     const appended = await appendIdentityDocument(pool, {
       workspaceId: input.workspaceId,

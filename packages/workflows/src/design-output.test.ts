@@ -90,6 +90,7 @@ describe('assertDesignOutput', () => {
     ['aliases', 'cast', { characters: [{ aliases: [null] }] }],
     ['secrets', 'cast', { characters: [{ secrets: [{ known_by: [3] }] }] }],
     ['registers', 'cast', { characters: [{ registers: [{ address_terms: [false] }] }] }],
+    ['register date', 'cast', { characters: [{ registers: [{ since_chapter: '1화' }] }] }],
     [
       'arc turning point',
       'cast',

@@ -9,6 +9,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  claimNovelRun,
   createProject,
   createWorkspace,
   getNovelRun,
@@ -21,7 +22,7 @@ import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import { Gateway, MemoryBudget, MockProvider } from '@yeonjae/gateway';
 import { segmentParagraphs, sliceCodePoints, toNfcText } from '@yeonjae/prose';
 import { simulatedModelScript as script } from './simulated-model.js';
-import { approveConcept, resumeNovelRun, startNovel } from './novel.js';
+import { advanceNovelRun, approveConcept, resumeNovelRun, startNovel } from './novel.js';
 import { NovelRunner } from './novel-runner.js';
 import { ArtifactLlmOutputStore } from './runtime.js';
 import { REPLAY_ROUTING } from './testkit.js';
@@ -282,3 +283,105 @@ run('novel run: intake → suggestions → approval → bible → chapters (simu
     }
   }, 300_000);
 });
+
+run(
+  'a runner that loses its lease stops without writing, and a project-scoped runner claims only its project (ADR-0091)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    let otherId: string;
+    const provider = new MockProvider((req) => script(req));
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-lease');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: 'Ash Ledger',
+        operatingMode: 'autopilot',
+      }));
+      ({ projectId: otherId } = await createProject(pool, {
+        workspaceId,
+        title: 'Other Ledger',
+        operatingMode: 'autopilot',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = (input?: { projectId: string }, p: MockProvider = provider) => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', p]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId: input?.projectId ?? projectId },
+          new ArtifactLlmOutputStore(pool, {
+            workspaceId,
+            projectId: input?.projectId ?? projectId,
+          }),
+        ),
+        minEnglishConfidence: 0.99,
+        cancelPollMs: 10,
+      }),
+    });
+    // The first planning call is held open until the durable cancellation check aborts it.
+    const heldOpen = () =>
+      makeDeps(
+        undefined,
+        new MockProvider((req) => script(req)).injectFault({
+          kind: 'block',
+          onCall: 1,
+          until: new Promise(() => undefined),
+        }),
+      );
+
+    it('keeps a planning run claimable when the cancellation came from a lost lease, and fails it otherwise', async () => {
+      for (const id of [projectId, otherId]) {
+        const started = await startNovel(makeDeps({ projectId: id }), {
+          projectId: id,
+          intake: INTAKE,
+        });
+        await approveConcept(pool, { projectId: id, conceptId: started.concepts[0]?.id ?? '' });
+      }
+      const planning = await getNovelRun(pool, projectId);
+      if (!planning) throw new Error('run expected');
+      expect(planning.status).toBe('planning');
+      // The G8 incident: the stage started, then the lease read failed mid-planning and the call was cancelled.
+      const cancelAfterStart = () => {
+        let checks = 0;
+        return async () => Promise.resolve(++checks > 1);
+      };
+      const lost = await advanceNovelRun(heldOpen(), planning, {
+        isCancelled: cancelAfterStart(),
+        leaseLost: () => true,
+      });
+      expect(lost).toMatchObject({ kind: 'stopped', reason: 'lease_lost' });
+      expect((await getNovelRun(pool, projectId))?.status).toBe('planning');
+      // An operator's cancellation (the lease still held) keeps its old outcome.
+      const cancelled = await advanceNovelRun(heldOpen(), planning, {
+        isCancelled: cancelAfterStart(),
+        leaseLost: () => false,
+      });
+      expect(cancelled).toMatchObject({ kind: 'stopped', reason: 'planning_failed' });
+      expect((await getNovelRun(pool, projectId))?.status).toBe('failed');
+    }, 300_000);
+
+    it('claims only the named project’s run', async () => {
+      const other = await getNovelRun(pool, otherId);
+      expect(other?.status).toBe('planning');
+      // The failed run above is not claimable; the other project's planning run is, but not for this project.
+      const scoped = new NovelRunner({ pool, makeDeps, runnerId: 'scoped', projectId });
+      expect(await scoped.tick()).toBe(false);
+      expect((await getNovelRun(pool, otherId))?.runner_id ?? null).toBeNull();
+      const claimed = await claimNovelRun(pool, 'scoped-other', 60, otherId);
+      expect(claimed?.project_id).toBe(otherId);
+      expect(claimed?.runner_id).toBe('scoped-other');
+    }, 120_000);
+  },
+);

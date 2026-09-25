@@ -15,6 +15,7 @@ import {
   renderAvoidKo,
   renderContrastPairsKo,
   renderDeviceKo,
+  renderProtagonistKo,
   renderExemplarsKo,
   renderOperatorVoiceKo,
   renderPovKo,
@@ -288,6 +289,7 @@ const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
   writer_full: [
     'pov',
     'device',
+    'premise',
     'structure',
     'cadence',
     'genres',
@@ -306,6 +308,7 @@ const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
   editor_full: [
     'pov',
     'device',
+    'premise',
     'structure',
     'cadence',
     'genres',
@@ -322,6 +325,7 @@ const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
   ],
   planner_compact: [
     'device',
+    'premise',
     'structure',
     'cadence',
     'genres',
@@ -337,8 +341,15 @@ const ROLE_SECTIONS: Record<RoleVariant, readonly string[]> = {
     'naming',
     'voice_judges',
   ],
-  judge_rubric_structure: ['structure', 'cadence', 'structure_rubric', 'genres', 'voice_judges'],
-  judge_rubric_genre: ['device', 'genres', 'genre_rubric', 'terminology'],
+  judge_rubric_structure: [
+    'premise',
+    'structure',
+    'cadence',
+    'structure_rubric',
+    'genres',
+    'voice_judges',
+  ],
+  judge_rubric_genre: ['device', 'premise', 'genres', 'genre_rubric', 'terminology'],
   // ADR-0060: voice is judged against register rules, the participants' voice cards and naming.
   judge_rubric_voice: ['pov', 'register', 'participants', 'naming', 'avoid', 'voice_judges'],
   summarizer_min: ['naming', 'terminology'],
@@ -412,6 +423,8 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     exemplars: { name: 'exemplars', text: isKo ? renderExemplarsKo(id) : '', priority: 86 },
     // ADR-0084 (U2): the premise device's vocabulary; empty unless the identity records a device.
     device: { name: 'device', text: isKo ? renderDeviceKo(id) : '', priority: Infinity },
+    // ADR-0090 (G8-4): the protagonist type the intake names; empty unless the identity records one.
+    premise: { name: 'premise', text: isKo ? renderProtagonistKo(id) : '', priority: Infinity },
     // ADR-0083 (C3): the operator's measured voice; empty unless the project pinned a voice profile.
     voice: { name: 'voice', text: isKo ? renderOperatorVoiceKo(id, 'writer') : '', priority: 83 },
     voice_planner: {
@@ -512,6 +525,7 @@ export function compileBlock(id: ComposedIdentity, opts: CompileOptions): Compil
     avoid: 'Diction to avoid',
     exemplars: 'Style exemplars',
     device: 'Premise device',
+    premise: 'Protagonist type',
     voice: 'Operator voice',
     voice_planner: 'Operator chapter habits',
     voice_judges: 'Operator conventions (not defects)',

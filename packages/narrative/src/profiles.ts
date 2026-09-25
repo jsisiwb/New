@@ -91,6 +91,21 @@ export class ContractMissingError extends Error {
   }
 }
 
+type Genre = NonNullable<NarrativeProfile['genre']>;
+type StoryDevice = NonNullable<NonNullable<NarrativeProfile['preferences']>['story_device']>;
+
+/**
+ * ADR-0089 (live defect G7-2): an overlay read in the premise device's own words — each field the device's
+ * variant sets replaces the overlay's. The variants never reach a prompt; an overlay without them is returned
+ * as it is, so identities composed before v4 compile to the same bytes.
+ */
+export function genreForDevice(g: Genre, device: StoryDevice | undefined): Genre {
+  if (!g.device_variants) return g;
+  const { device_variants: variants, ...base } = g;
+  const variant = device ? variants[device] : undefined;
+  return variant ? { ...base, ...variant } : base;
+}
+
 /**
  * Compose a project identity from its `composed` profile (lineage refs) plus the referenced global layers.
  * Scalar overrides follow JSON-merge-patch semantics for the layers the project owns; the two contracts are
@@ -119,12 +134,14 @@ export function composeIdentity(
   if (lang.language !== 'en' && lang.language !== 'ko')
     throw new Error(`OUTPUT_LANGUAGE_UNSUPPORTED: ${lang.language}`);
 
+  const device = composed.preferences?.story_device;
   const genres = (lineage.genres ?? []).map((ref) => {
     const g = store.get(ref).genre;
     if (!g) throw new Error(`${ref} has no genre layer`);
-    return g;
+    return genreForDevice(g, device);
   });
-  const primaryGenre = lineage.primary_genre ? store.get(lineage.primary_genre).genre : genres[0];
+  const primary = lineage.primary_genre ? store.get(lineage.primary_genre).genre : genres[0];
+  const primaryGenre = primary ? genreForDevice(primary, device) : undefined;
 
   // Project-owned scalar override of the composed layers (locale etc.) — never the contract text.
   const outputLanguage = {

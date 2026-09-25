@@ -248,6 +248,11 @@ export async function advanceNovelRun(
   opts: {
     isCancelled?: (() => Promise<boolean>) | undefined;
     lease?: NovelRunLease | undefined;
+    /**
+     * ADR-0091 (G8 incident): true once the runner can no longer prove it holds the lease (a failed renewal or
+     * lease read). A cancellation then writes nothing: the run stays claimable and resumes from its checkpoints.
+     */
+    leaseLost?: (() => boolean) | undefined;
   } = {},
 ): Promise<AdvanceOutcome> {
   // Do not start another durable stage after an operator pause/cancel or a lost run lease.
@@ -278,6 +283,7 @@ export async function advanceNovelRun(
       });
       return { kind: 'planned', run: r.run };
     } catch (err) {
+      if (isLeaseLoss(err, opts)) return { kind: 'stopped', run, reason: 'lease_lost' };
       const updated = await failRun(deps.pool, run.id, err, 'planning', 'failed', {}, opts.lease);
       return { kind: 'stopped', run: updated, reason: 'planning_failed' };
     }
@@ -405,6 +411,7 @@ export async function advanceNovelRun(
   } catch (err) {
     const code = err instanceof WorkflowError ? err.code : 'INTERNAL';
     const attention = code === 'APPROVAL_BLOCKED' || code === 'PATCH_REGRESSED';
+    if (isLeaseLoss(err, opts)) return { kind: 'stopped', run, reason: 'lease_lost' };
     if (code === 'CANCELLED') {
       const r = await transitionNovelRun(deps.pool, {
         runId: run.id,
@@ -428,6 +435,11 @@ export async function advanceNovelRun(
     );
     return { kind: 'stopped', run: updated, reason: attention ? 'quality_gate' : 'chapter_failed' };
   }
+}
+
+/** A cancellation raised because the runner lost its lease, not because anyone cancelled the run (ADR-0091). */
+function isLeaseLoss(err: unknown, opts: { leaseLost?: (() => boolean) | undefined }): boolean {
+  return err instanceof WorkflowError && err.code === 'CANCELLED' && opts.leaseLost?.() === true;
 }
 
 /** Resume a paused / needs_attention / failed run: back onto the queue at its current next chapter. */
@@ -695,7 +707,12 @@ function pinnedVoiceOptions(
   intake: StoryIntake,
 ): Pick<
   Parameters<typeof ensureProjectIdentity>[1],
-  'voice' | 'operatorExemplars' | 'deviceLexicon'
+  | 'voice'
+  | 'operatorExemplars'
+  | 'deviceLexicon'
+  | 'genreLayers'
+  | 'deviceRules'
+  | 'protagonistType'
 > {
   let identity;
   try {
@@ -706,6 +723,9 @@ function pinnedVoiceOptions(
   const pick = identity?.operator_exemplars;
   return {
     ...(identity?.device_lexicon ? { deviceLexicon: true } : {}),
+    ...(identity?.genre_layers?.length ? { genreLayers: identity.genre_layers } : {}),
+    ...(identity?.device_rules === 2 ? { deviceRules: 2 as const } : {}),
+    ...(identity?.protagonist_type ? { protagonistType: true } : {}),
     ...(identity?.voice_profile ? { voice: requireVoiceProfile(identity.voice_profile) } : {}),
     ...(pick
       ? {

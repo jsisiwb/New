@@ -32,13 +32,16 @@ const REQUIRED_FAMILIES = [
   'repetition_judge',
   // ADR-0076
   'arc_summarizer',
+  // ADR-0086
+  'plan_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 309;
+const TOTAL_PROMPT_VERSIONS = 318;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
   'repetition_judge',
   'arc_summarizer',
+  'plan_critic',
 ]);
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';
@@ -370,8 +373,64 @@ describe('prompt registry (ADR-0016)', () => {
       'voice_judge',
     ]);
     for (const f of changed) expect(v46[f]).toBe(`${f}@4.6.0`);
-    // Without a ceiling the registry's newest active versions are the 4.6.0 set.
-    expect(reg.activeSet().mapping).toEqual(v46);
+    // A family that first appears later (plan_critic, 4.7.0) is not in the 4.6.0 set at all.
+    expect(v46.plan_critic).toBeUndefined();
+  });
+
+  it('a policy ceiling of 4.7.0 adds the plan-level prevention prompts and the plan critic (ADR-0086)', () => {
+    const v46 = reg.activeSet('4.6.0').mapping;
+    const v47 = reg.activeSet('4.7.0').mapping;
+    const changed = Object.keys(v47).filter((f) => v47[f] !== v46[f]);
+    expect(changed.sort()).toEqual([
+      'chapter_planner',
+      'character_designer',
+      'knowledge_leak_checker',
+      'plan_critic',
+      'scene_planner',
+      'scene_writer',
+    ]);
+    for (const f of changed) expect(v47[f]).toBe(`${f}@4.7.0`);
+    // The planners read the reveal schedule and the plan feedback; the critic is not style-sensitive.
+    for (const f of ['chapter_planner', 'scene_planner'])
+      expect(reg.get(`${f}@4.7.0`).input_variables).toEqual(
+        expect.arrayContaining(['reveal_schedule', 'plan_feedback']),
+      );
+    expect(reg.get('plan_critic@4.7.0').style_sensitive).toBe(false);
+    // No Latin letters in the Korean instructions beyond the JSON keys and enum values the shape names.
+    const critic = reg.get('plan_critic@4.7.0');
+    expect(critic.system_template).not.toMatch(/\b(the|and|must|scene|plan)\b/i);
+  });
+
+  it('a policy ceiling of 4.8.0 changes only the cast designer (ADR-0088)', () => {
+    const v47 = reg.activeSet('4.7.0').mapping;
+    const v48 = reg.activeSet('4.8.0').mapping;
+    const changed = Object.keys(v48).filter((f) => v48[f] !== v47[f]);
+    expect(changed).toEqual(['character_designer']);
+    expect(reg.get('character_designer@4.8.0').system_template).not.toContain(
+      '원작 주인공과의 관계',
+    );
+  });
+
+  it('a policy ceiling of 4.9.0 changes only the cast designer, which dates each relationship (ADR-0089)', () => {
+    const v48 = reg.activeSet('4.8.0').mapping;
+    const v49 = reg.activeSet('4.9.0').mapping;
+    const changed = Object.keys(v49).filter((f) => v49[f] !== v48[f]);
+    expect(changed).toEqual(['character_designer']);
+    const cast = reg.get('character_designer@4.9.0');
+    expect(cast.system_template).toContain('since_chapter에 그 관계가 시작되는 회차를 적는다');
+    expect(cast.user_template).toContain('"since_chapter": 1');
+  });
+
+  it('a policy ceiling of 4.10.0 changes only the scene writer (ADR-0090)', () => {
+    const v49 = reg.activeSet('4.9.0').mapping;
+    const v410 = reg.activeSet('4.10.0').mapping;
+    const changed = Object.keys(v410).filter((f) => v410[f] !== v49[f]);
+    expect(changed).toEqual(['scene_writer']);
+    const writer = reg.get('scene_writer@4.10.0').system_template;
+    expect(writer).toContain('말투만 따르고 그 문장을 원고에 그대로 옮기지 않는다');
+    expect(writer).toContain('처음 만난 상대의 이름을 부르지 않는다');
+    // 4.10.0 sorts after 4.9.0 numerically, and without a ceiling it is the newest active set.
+    expect(reg.activeSet().mapping).toEqual(v410);
   });
 
   it('pins the full-bible contracts in the revised planning prompts', () => {

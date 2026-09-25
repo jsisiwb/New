@@ -715,6 +715,19 @@
         }
       }
     },
+    "reader_guards": {
+      "type": "array",
+      "description": "ADR-0086 (U1): secrets the reader may not learn in this chapter, filled by the workflow from the reveal schedule (never by the planner). The writer and the knowledge-leak checker read the same list.",
+      "items": {
+        "type": "object",
+        "required": ["proposition_id"],
+        "additionalProperties": false,
+        "properties": {
+          "proposition_id": {"$ref": "common.schema.json#/$defs/uuid"},
+          "reader_from_chapter": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
     "knowledge_guards": {
       "type": "array",
       "items": {

@@ -15,3 +15,5 @@ packages/eval/fixtures/
 # Next's build output is generated, not source.
 **/.next/
 apps/web/next-env.d.ts
+# Exported live-run output (pipeline prose, scorecards, packets) is data, never reflowed (rule 4).
+ops/live-runs/

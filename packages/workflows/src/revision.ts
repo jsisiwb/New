@@ -15,6 +15,7 @@ import { type Generated, recordNormalization, validatorFor } from '@yeonjae/doma
 import {
   checkOutputLanguage,
   codePointLength,
+  lintKoreanWebnovel,
   sliceCodePoints,
   toNfcText,
   type NfcText,
@@ -180,6 +181,10 @@ export async function reviseVersion(
     dimension: Issue['dimension'];
     round: number;
     registerDigests: string;
+    /** ADR-0086 (G5-3d): target every open blocking/major finding, whatever its dimension. */
+    allDimensions?: boolean | undefined;
+    /** ADR-0086 (G5-3e): minor issues that are targets of this round too (a score-only failure's passages). */
+    extraTargetIds?: ReadonlySet<string> | undefined;
   },
 ): Promise<RevisionResult> {
   const maxRounds = ctx.policy.revision.max_rounds;
@@ -195,7 +200,9 @@ export async function reviseVersion(
     async () => {
       const targeted = input.issues.filter(
         (i) =>
-          i.dimension === input.dimension && (i.severity === 'blocking' || i.severity === 'major'),
+          input.extraTargetIds?.has(i.id) === true ||
+          ((input.allDimensions === true || i.dimension === input.dimension) &&
+            (i.severity === 'blocking' || i.severity === 'major')),
       );
       if (targeted.length === 0)
         throw new WorkflowError(
@@ -434,6 +441,21 @@ export interface DroppedPatch {
  * acknowledge its must-preserve facts or pass the language check is dropped, and the round fails only when
  * none is usable.
  */
+/**
+ * ADR-0087: lint pattern hits (번역투 markers, AI stock phrases, calques — every finding that quotes a span) in a
+ * piece of text, measured with the project's own language layer. Rates are not counted: a span is too short.
+ */
+function localCheckHits(ctx: WorkflowContext, text: string, language: 'en' | 'ko'): number {
+  if (language !== 'ko' || !ctx.policy.revision.candidates_per_cluster) return 0;
+  const ol = ctx.identity.outputLanguage;
+  return lintKoreanWebnovel(text, {
+    translationMarkers: ol.translation_markers,
+    forbiddenPatterns: ol.forbidden_patterns,
+    thresholds: ol.lint_thresholds,
+    calquePhrases: ol.calque_phrases,
+  }).findings.filter((f) => typeof f.quote === 'string').length;
+}
+
 export async function reviseVersionMulti(
   ctx: WorkflowContext,
   input: RevisionInput,
@@ -453,7 +475,9 @@ export async function reviseVersionMulti(
     async () => {
       const targeted = input.issues.filter(
         (i) =>
-          i.dimension === input.dimension && (i.severity === 'blocking' || i.severity === 'major'),
+          input.extraTargetIds?.has(i.id) === true ||
+          ((input.allDimensions === true || i.dimension === input.dimension) &&
+            (i.severity === 'blocking' || i.severity === 'major')),
       );
       if (targeted.length === 0)
         throw new WorkflowError(
@@ -486,106 +510,137 @@ export async function reviseVersionMulti(
         const mustPreserve = [
           ...new Set(cluster.issues.flatMap((i) => i.repair?.must_preserve_fact_ids ?? [])),
         ];
-        const call = await modelCall<Partial<Patch>>(ctx, {
-          step: 'revise',
-          family: 'targeted_reviser',
-          activityId: `revise:${input.chapterNo}:${input.dimension}:r${input.round}:p${k + 1}`,
-          variables: {
-            dimension: input.dimension,
-            issues: JSON.stringify(
-              cluster.issues.map((i) => ({
-                id: i.id,
-                kind: i.kind,
-                severity: i.severity,
-                claim: i.claim,
-                repair: i.repair,
-              })),
-            ),
-            span_text: spanText,
-            context_before: sliceCodePoints(nfc, Math.max(0, cluster.start - 600), cluster.start),
-            context_after: sliceCodePoints(nfc, cluster.end, Math.min(total, cluster.end + 600)),
-            must_preserve: mustPreserve.length
-              ? mustPreserve.join('\n')
-              : language === 'ko'
-                ? '(없음)'
-                : '(none)',
-            register_digests: input.registerDigests,
-            length_budget_words: String(spanText.split(/\s+/).filter(Boolean).length),
-          },
-          block: compileFor(ctx, 'editor_full'),
-        });
-        const output: unknown = call.output;
-        const fields = normalizePatchFields(
-          output && typeof output === 'object' ? (output as Record<string, unknown>) : {},
-        );
-        if (JSON.stringify(fields) !== JSON.stringify(output)) recordNormalization('patch_fields');
-        const raw =
-          language === 'ko' && typeof fields.new_text === 'string'
-            ? { ...fields, new_text: koQuoteMarks(fields.new_text) }
-            : fields;
-        const window = { start: cluster.start, end: cluster.end };
-        const anchored = anchorPatchSpan(nfc, window, raw.span);
-        if (!anchored || anchored.end < 0) {
-          drop('patch original_quote does not occur in the parent text');
-          continue;
-        }
-        if (anchored.start < window.start || anchored.end > window.end) {
-          drop(`patch anchors at ${anchored.start}–${anchored.end}, outside its window`);
-          continue;
-        }
-        const rawSpan = raw.span as { start?: unknown; end?: unknown } | undefined;
-        if (rawSpan && (rawSpan.start !== anchored.start || rawSpan.end !== anchored.end))
-          recordNormalization('patch_quote_anchor');
-        const candidate: Patch = {
-          ...(raw as unknown as Patch),
-          span: anchored,
-          dimension: input.dimension,
-          id: patchId(ctx, input.version.id, input.round),
-          from_version_id: input.version.id,
-          issue_ids: cluster.issues.map((i) => i.id),
-          reviser_call_id: call.llmCallId,
-        };
-        const v = validatorFor<Patch>('patch.schema.json')(candidate);
-        if (!v.ok) {
-          drop(
-            `patch does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+        // ADR-0087 (STEP 3): up to `revision.candidates_per_cluster` patches per cluster; the one that brings the
+        // fewest new lint pattern hits into its span wins before any judge reads it (the first on a tie).
+        const attemptPatch = async (
+          attempt: number,
+        ): Promise<
+          | { reason: string }
+          | { entry: AppliedPatch & { patch: Patch; issueIds: string[] }; hits: number }
+        > => {
+          const call = await modelCall<Partial<Patch>>(ctx, {
+            step: 'revise',
+            family: 'targeted_reviser',
+            activityId: `revise:${input.chapterNo}:${input.dimension}:r${input.round}:p${k + 1}${attempt > 0 ? `:c${String(attempt + 1)}` : ''}`,
+            variables: {
+              dimension: input.allDimensions
+                ? [...new Set(cluster.issues.map((i) => i.dimension))].join(', ')
+                : input.dimension,
+              issues: JSON.stringify(
+                cluster.issues.map((i) => ({
+                  id: i.id,
+                  kind: i.kind,
+                  severity: i.severity,
+                  claim: i.claim,
+                  repair: i.repair,
+                })),
+              ),
+              span_text: spanText,
+              context_before: sliceCodePoints(nfc, Math.max(0, cluster.start - 600), cluster.start),
+              context_after: sliceCodePoints(nfc, cluster.end, Math.min(total, cluster.end + 600)),
+              must_preserve: mustPreserve.length
+                ? mustPreserve.join('\n')
+                : language === 'ko'
+                  ? '(없음)'
+                  : '(none)',
+              register_digests: input.registerDigests,
+              length_budget_words: String(spanText.split(/\s+/).filter(Boolean).length),
+            },
+            block: compileFor(ctx, 'editor_full'),
+          });
+          const output: unknown = call.output;
+          const fields = normalizePatchFields(
+            output && typeof output === 'object' ? (output as Record<string, unknown>) : {},
           );
+          if (JSON.stringify(fields) !== JSON.stringify(output))
+            recordNormalization('patch_fields');
+          const raw =
+            language === 'ko' && typeof fields.new_text === 'string'
+              ? { ...fields, new_text: koQuoteMarks(fields.new_text) }
+              : fields;
+          const window = { start: cluster.start, end: cluster.end };
+          const anchored = anchorPatchSpan(nfc, window, raw.span);
+          if (!anchored || anchored.end < 0) {
+            return { reason: 'patch original_quote does not occur in the parent text' };
+          }
+          if (anchored.start < window.start || anchored.end > window.end) {
+            return {
+              reason: `patch anchors at ${anchored.start}–${anchored.end}, outside its window`,
+            };
+          }
+          const rawSpan = raw.span as { start?: unknown; end?: unknown } | undefined;
+          if (rawSpan && (rawSpan.start !== anchored.start || rawSpan.end !== anchored.end))
+            recordNormalization('patch_quote_anchor');
+          const candidate: Patch = {
+            ...(raw as unknown as Patch),
+            span: anchored,
+            dimension: input.dimension,
+            id: patchId(ctx, input.version.id, input.round),
+            from_version_id: input.version.id,
+            issue_ids: cluster.issues.map((i) => i.id),
+            reviser_call_id: call.llmCallId,
+          };
+          const v = validatorFor<Patch>('patch.schema.json')(candidate);
+          if (!v.ok) {
+            return {
+              reason: `patch does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+            };
+          }
+          const patch = v.value;
+          const original = sliceCodePoints(nfc, patch.span.start, patch.span.end);
+          if (
+            patch.span.original_quote !== undefined &&
+            toNfcText(patch.span.original_quote).text !== original
+          ) {
+            return { reason: 'patch original_quote does not equal the parent text at the span' };
+          }
+          const missing = mustPreserve.filter((id) => !patch.preserved_facts_ack.includes(id));
+          if (missing.length) {
+            return {
+              reason: `patch does not acknowledge must-preserve fact ${missing.join(', ')}`,
+            };
+          }
+          const newText = toNfcText(patch.new_text).text;
+          const lang = checkOutputLanguage(toNfcText(newText), {
+            minConfidence: ctx.policy.output_language.min_english_confidence,
+            language,
+          });
+          if (!lang.passed) {
+            return { reason: `patch text is not ${language === 'ko' ? 'Korean' : 'English'}` };
+          }
+          if (newText === original) {
+            return { reason: 'patch changes nothing' };
+          }
+          return {
+            entry: {
+              start: patch.span.start,
+              end: patch.span.end,
+              newText,
+              patch,
+              issueIds: cluster.issues.map((i) => i.id),
+            },
+            hits: localCheckHits(ctx, newText, language) - localCheckHits(ctx, original, language),
+          };
+        };
+        const tries = Math.max(1, ctx.policy.revision.candidates_per_cluster ?? 1);
+        let best:
+          { entry: AppliedPatch & { patch: Patch; issueIds: string[] }; hits: number } | undefined;
+        const reasons: string[] = [];
+        for (let attempt = 0; attempt < tries; attempt++) {
+          const r = await attemptPatch(attempt);
+          if ('reason' in r) {
+            reasons.push(r.reason);
+            continue;
+          }
+          if (!best || r.hits < best.hits) best = r;
+          if (best.hits <= 0) break;
+        }
+        if (!best) {
+          drop(reasons.join(' | '));
           continue;
         }
-        const patch = v.value;
-        const original = sliceCodePoints(nfc, patch.span.start, patch.span.end);
-        if (
-          patch.span.original_quote !== undefined &&
-          toNfcText(patch.span.original_quote).text !== original
-        ) {
-          drop('patch original_quote does not equal the parent text at the span');
-          continue;
-        }
-        const missing = mustPreserve.filter((id) => !patch.preserved_facts_ack.includes(id));
-        if (missing.length) {
-          drop(`patch does not acknowledge must-preserve fact ${missing.join(', ')}`);
-          continue;
-        }
-        const newText = toNfcText(patch.new_text).text;
-        const lang = checkOutputLanguage(toNfcText(newText), {
-          minConfidence: ctx.policy.output_language.min_english_confidence,
-          language,
-        });
-        if (!lang.passed) {
-          drop(`patch text is not ${language === 'ko' ? 'Korean' : 'English'}`);
-          continue;
-        }
-        if (newText === original) {
-          drop('patch changes nothing');
-          continue;
-        }
-        usable.push({
-          start: patch.span.start,
-          end: patch.span.end,
-          newText,
-          patch,
-          issueIds: cluster.issues.map((i) => i.id),
-        });
+        if (tries > 1) recordNormalization('patch_candidates');
+        usable.push(best.entry);
       }
       if (usable.length === 0)
         throw new WorkflowError(

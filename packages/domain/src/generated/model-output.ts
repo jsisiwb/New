@@ -287,6 +287,30 @@ export interface ContinuityChecker {
   issues: CheckerIssue[];
 }
 /**
+ * ADR-0086 (U8): the pre-flight plan critic's answer — defects of the contract and scene plans found before any drafting call. target names the plan part: contract, or scene N.
+ *
+ * This interface was referenced by `ModelAnswersWithoutADocumentSchema`'s JSON-Schema
+ * via the `definition` "plan_critic".
+ */
+export interface PlanCritic {
+  issues: {
+    kind:
+      | 'reveal_unsafe'
+      | 'knowledge_impossible'
+      | 'repeated_exposition'
+      | 'state_contradiction'
+      | 'dialogue_missing'
+      | 'weak_cut'
+      | 'structure_off'
+      | 'time_inconsistent'
+      | 'other';
+    severity: 'minor' | 'major' | 'blocking';
+    target: string;
+    claim: string;
+    fix: string;
+  }[];
+}
+/**
  * This interface was referenced by `ModelAnswersWithoutADocumentSchema`'s JSON-Schema
  * via the `definition` "knowledge_leak_checker".
  */
