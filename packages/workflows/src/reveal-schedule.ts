@@ -32,6 +32,12 @@ export interface ScheduledSecret {
   readonly othersFrom: number | undefined;
   /** Owned by the first-person narrator: the reader shares it from the start. */
   readonly narratorOwn: boolean;
+  /**
+   * Known to the first-person narrator from a prior life or the source work (ADR-0088): with
+   * `narratorKnowledge` the reader shares it from the start, as the operator's readers hold the hero's game and
+   * future knowledge (the 착각 runs on it); the other characters keep the bible's date.
+   */
+  readonly narratorKnows?: boolean;
 }
 
 export type ReaderStatus = 'known' | 'revealable' | 'hidden';
@@ -63,7 +69,10 @@ function chapterOf(v: unknown): number | undefined {
  */
 export function revealSchedule(
   bible: Pick<StoryBible, 'propositions'> | undefined,
-  opts: { readonly narratorId?: string | undefined } = {},
+  opts: {
+    readonly narratorId?: string | undefined;
+    readonly narratorKnowledge?: boolean | undefined;
+  } = {},
 ): ScheduledSecret[] {
   const out: ScheduledSecret[] = [];
   for (const p of bible?.propositions ?? []) {
@@ -74,9 +83,16 @@ export function revealSchedule(
     const othersFrom = chapterOf(s.reveal_not_before_chapter);
     const narratorOwn = opts.narratorId !== undefined && ownerIds.includes(opts.narratorId);
     const explicitReader = chapterOf(s.reader_reveal_chapter);
+    const layer = knowledgeLayerOf(p.statement, s.layer);
+    const narratorKnows =
+      opts.narratorKnowledge === true &&
+      opts.narratorId !== undefined &&
+      !narratorOwn &&
+      knowerIds.includes(opts.narratorId) &&
+      layer !== 'current';
     // U3: a secret that becomes true later cannot reach the reader before it is true.
     const trueFrom = chapterOf(s.true_from_chapter);
-    const base = explicitReader ?? (narratorOwn ? 1 : othersFrom);
+    const base = explicitReader ?? (narratorOwn || narratorKnows ? 1 : othersFrom);
     const readerFrom =
       trueFrom !== undefined && base !== undefined ? Math.max(base, trueFrom) : (base ?? trueFrom);
     out.push({
@@ -84,10 +100,11 @@ export function revealSchedule(
       statement: p.statement,
       ownerIds,
       knowerIds,
-      layer: knowledgeLayerOf(p.statement, s.layer),
+      layer,
       readerFrom,
       othersFrom,
       narratorOwn,
+      ...(narratorKnows ? { narratorKnows } : {}),
     });
   }
   return out;
@@ -95,7 +112,9 @@ export function revealSchedule(
 
 export function readerStatus(s: ScheduledSecret, chapterNo: number): ReaderStatus {
   if (s.readerFrom === undefined || s.readerFrom > chapterNo) return 'hidden';
-  return s.readerFrom === chapterNo && !s.narratorOwn ? 'revealable' : 'known';
+  return s.readerFrom === chapterNo && !s.narratorOwn && s.narratorKnows !== true
+    ? 'revealable'
+    : 'known';
 }
 
 /** Secrets the reader may not learn in this chapter. */

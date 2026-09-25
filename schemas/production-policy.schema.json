@@ -113,6 +113,7 @@
       "additionalProperties": false,
       "properties": {
         "paragraph_per_line": {"type": "boolean", "description": "Every line break of a prose draft becomes a paragraph break (one paragraph per line, as serial platforms render it); words are untouched. Counted as the paragraph_per_line normalizer. Absent or false: drafts keep the model's own line layout."},
+        "dedupe_repeated_lines": {"type": "boolean", "description": "ADR-0088 (live defect G6-3): an assembled chapter's line that repeats the line right before it word for word, and is at least ten characters with a space in it, is dropped (a generation glitch; short sound lines such as '덜컹 덜컹.' may repeat on purpose), counted as repeated_line."},
         "reader_secrets_in_plan": {"type": "boolean", "description": "ADR-0084 (U1, live defects A-4, G3-3): each scene plan the writer reads ends with the secrets the reader must not learn yet — the same list the knowledge-leak checker judges against (reveal chapter later than this one; under evaluation.pov_secrets_reader_visible the POV character's own secrets are left out). Absent or false: the writer sees only the contract's knowledge guards, as before."}
       }
     },
@@ -132,7 +133,8 @@
           "required": ["hint_budget"],
           "additionalProperties": false,
           "properties": {
-            "hint_budget": {"type": "integer", "minimum": 0, "description": "Oblique hints per hidden secret per 화 the planner and writer are allowed."}
+            "hint_budget": {"type": "integer", "minimum": 0, "description": "Oblique hints per hidden secret per 화 the planner and writer are allowed."},
+            "narrator_knowledge": {"type": "boolean", "description": "ADR-0088 (live defect G6-1): a secret the first-person narrator knows from a prior life or the source work (knowledge layer prior_loop or source_work, the narrator among its knowers) is the reader's from 화 1 unless the bible dates it for the reader; the other characters keep the bible's date. Absent: only the narrator's own secrets are."}
           }
         },
         "plan_critic": {
@@ -141,7 +143,8 @@
           "required": ["max_repairs"],
           "additionalProperties": false,
           "properties": {
-            "max_repairs": {"type": "integer", "minimum": 0, "maximum": 2}
+            "max_repairs": {"type": "integer", "minimum": 0, "maximum": 2},
+            "contract": {"type": "boolean", "description": "ADR-0088 (live defect G6-2): the contract is critiqued on its own before any scene is planned, and sent back to the chapter planner once when the critic finds a blocking or major defect (a hook built on a fact the reader may not learn yet, knowledge the hero cannot have)."}
           }
         },
         "cut_design": {"type": "boolean", "description": "ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes)."},

@@ -52,6 +52,8 @@ const DESIGNED_PATHS = [
   'plan_repair',
   'patch_candidates',
   'scene_rewrite',
+  // ADR-0088: a line repeated word for word right after itself, dropped at assembly.
+  'repeated_line',
 ] as const;
 
 describe('output normalizer inventory (ADR-0057)', () => {

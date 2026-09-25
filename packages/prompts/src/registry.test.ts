@@ -35,7 +35,7 @@ const REQUIRED_FAMILIES = [
   // ADR-0086
   'plan_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 315;
+const TOTAL_PROMPT_VERSIONS = 316;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
@@ -399,8 +399,18 @@ describe('prompt registry (ADR-0016)', () => {
     // No Latin letters in the Korean instructions beyond the JSON keys and enum values the shape names.
     const critic = reg.get('plan_critic@4.7.0');
     expect(critic.system_template).not.toMatch(/\b(the|and|must|scene|plan)\b/i);
-    // Without a ceiling the registry's newest active versions are the 4.7.0 set.
-    expect(reg.activeSet().mapping).toEqual(v47);
+  });
+
+  it('a policy ceiling of 4.8.0 changes only the cast designer (ADR-0088)', () => {
+    const v47 = reg.activeSet('4.7.0').mapping;
+    const v48 = reg.activeSet('4.8.0').mapping;
+    const changed = Object.keys(v48).filter((f) => v48[f] !== v47[f]);
+    expect(changed).toEqual(['character_designer']);
+    expect(reg.get('character_designer@4.8.0').system_template).not.toContain(
+      '원작 주인공과의 관계',
+    );
+    // Without a ceiling the registry's newest active versions are the 4.8.0 set.
+    expect(reg.activeSet().mapping).toEqual(v48);
   });
 
   it('pins the full-bible contracts in the revised planning prompts', () => {

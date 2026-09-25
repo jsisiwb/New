@@ -3,6 +3,7 @@ import { type Generated } from '@yeonjae/domain';
 import {
   checkPlanConsistency,
   contractHasPartner,
+  dedupeRepeatedLines,
   cutNote,
   ensureCutBeat,
   lineTargetNote,
@@ -114,5 +115,25 @@ describe('plan-level prevention (ADR-0086)', () => {
     expect(text).toContain('따옴표 대사 49줄 안팎(적어도 28줄)');
     expect(/[A-Za-z]/.test(text)).toBe(false);
     expect(renderPlanFeedback([])).toBe('(없음)');
+  });
+
+  it('drops a line repeated word for word right after itself, but keeps short sound lines', () => {
+    const out = dedupeRepeatedLines(
+      [
+        '덜컹 덜컹.',
+        '',
+        '덜컹 덜컹.',
+        '',
+        '네놈이 정녕 미쳤구나!',
+        '',
+        '네놈이 정녕 미쳤구나!',
+        '',
+        '끝.',
+      ].join('\n'),
+    );
+    expect(out.removed).toBe(1);
+    expect(out.text).toBe(
+      ['덜컹 덜컹.', '', '덜컹 덜컹.', '', '네놈이 정녕 미쳤구나!', '', '끝.'].join('\n'),
+    );
   });
 });

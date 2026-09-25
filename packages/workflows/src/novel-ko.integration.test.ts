@@ -2073,3 +2073,88 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v17: the contract is critiqued before any scene (ADR-0088)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // The operator writes one sentence per line; the calibrated layer (lang/ko@7) fails long paragraphs.
+    const sentencePerLine = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !('json' in out)) return out;
+      const draft = out.json as { text?: unknown };
+      return typeof draft.text === 'string'
+        ? { ...out, json: { ...draft, text: draft.text.replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') } }
+        : out;
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return sentencePerLine(req, batchedScript(req, script(req)));
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v17-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@17',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('runs one contract critique per chapter before the scene plan and completes', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v17-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+      const contractCritics = seen.filter((r) =>
+        /^plan_critic:\d+:contract$/.test(r.trace?.activityId ?? ''),
+      );
+      const sceneCritics = seen.filter((r) => /^plan_critic:\d+$/.test(r.trace?.activityId ?? ''));
+      expect(contractCritics.length).toBeGreaterThan(0);
+      expect(contractCritics.length).toBe(sceneCritics.length);
+      for (const r of contractCritics) expect(r.user).toContain('계약만 검수한다');
+      // The cast designer of 4.8.0 names the hero among the knowers of what he remembers.
+      const designers = seen.filter((r) => r.trace?.role === 'character_designer');
+      expect(designers.length).toBeGreaterThan(0);
+      for (const r of designers) expect(r.system).toContain('known_by에 주인공의 이름을 넣는다');
+    }, 300_000);
+  },
+);

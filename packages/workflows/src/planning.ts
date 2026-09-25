@@ -23,7 +23,13 @@ import { type LengthTarget } from '@yeonjae/prose';
 import { WorkflowError } from './errors.js';
 import { chooseFallbackLocation, normalizeContractOutput } from './plan-normalize.js';
 import { checkRhythm, renderRhythmDirectives, type RhythmContract } from './rhythm.js';
-import { contractHasPartner, renderPlanFeedback, type PlanFinding } from './plan-prevention.js';
+import {
+  contractHasPartner,
+  parsePlanCriticIssues,
+  renderPlanFeedback,
+  structureTargets,
+  type PlanFinding,
+} from './plan-prevention.js';
 import {
   hiddenFromReader,
   readerGuardsFor,
@@ -454,7 +460,10 @@ export function scheduleOf(
   bible: StoryBible | undefined,
 ): ScheduledSecret[] | undefined {
   if (!ctx.policy.planning?.reveal_schedule || !bible) return undefined;
-  return revealSchedule(bible, { narratorId: narratorIdOf(ctx, bible) });
+  return revealSchedule(bible, {
+    narratorId: narratorIdOf(ctx, bible),
+    narratorKnowledge: ctx.policy.planning.reveal_schedule.narrator_knowledge,
+  });
 }
 
 /**
@@ -647,6 +656,62 @@ export async function generateContract(
           message: finding.message,
           repaired,
         });
+      }
+      // ADR-0088 (live defect G6-2): the contract itself is critiqued before any scene is planned — a hook built on
+      // a fact the reader may not learn yet, or on knowledge the hero cannot have, is a contract defect that no
+      // scene plan can repair.
+      if (issues.length === 0 && ctx.policy.planning?.plan_critic?.contract) {
+        const critic = await modelCall<{ issues?: unknown }>(ctx, {
+          step: 'chapter_contract',
+          family: 'plan_critic',
+          activityId: `plan_critic:${String(input.chapterNo)}:contract`,
+          variables: {
+            chapter_contract: JSON.stringify(candidate),
+            scene_plans: '(장면 설계 전이다. 계약만 검수한다.)',
+            reveal_schedule: schedule
+              ? (renderRevealSchedule(schedule, input.chapterNo, 'planner', {
+                  nameOf: (id) => nameOfEntity.get(id) ?? id,
+                  hintBudget: ctx.policy.planning.reveal_schedule?.hint_budget,
+                }) ?? '(설정에 기록된 비밀 없음)')
+              : '(설정에 기록된 비밀 없음)',
+            canon_state: input.bible
+              ? renderBibleState(input.bible, ctx.bindings, lang)
+              : '(정사 상태 없음)',
+            structure_targets: structureTargets({
+              chapterNo: input.chapterNo,
+              lineTargets: ctx.policy.planning.dialogue_floor?.line_targets,
+              lengthTarget: input.lengthTarget.value,
+              plannerVoice: ctx.identity.preferences?.operator_voice?.planner,
+            }),
+          },
+        });
+        const serious = parsePlanCriticIssues(critic.output.issues).filter(
+          (i) => i.severity !== 'minor',
+        );
+        if (serious.length > 0) {
+          const retry = await planOnce(
+            renderPlanFeedback(
+              serious.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+            ),
+            ':critic',
+          );
+          const partnerKept =
+            !ctx.policy.planning.dialogue_floor?.partner_in_contract ||
+            contractHasPartner(retry.candidate);
+          const repaired = retry.issues.length === 0 && partnerKept;
+          if (repaired) {
+            ({ candidate, issues } = retry);
+            recordNormalization('contract_repair');
+          }
+          for (const i of serious)
+            planFindings.push({
+              rule: 'PLAN-CRITIC-CONTRACT',
+              severity: i.severity,
+              target: i.target,
+              message: `${i.kind}: ${i.claim}`,
+              repaired,
+            });
+        }
       }
       if (issues.length > 0)
         throw new WorkflowError('CONTRACT_INVALID', issues.join('; '), {

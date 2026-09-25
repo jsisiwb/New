@@ -64,6 +64,9 @@ import {
   sceneLineTargets,
   stripTalkBans,
   structureTargets,
+  dedupeRepeatedLines,
+  parsePlanCriticIssues,
+  type PlanCriticIssue,
   type PlanFinding,
 } from './plan-prevention.js';
 import { renderRevealSchedule } from './reveal-schedule.js';
@@ -488,14 +491,6 @@ export async function planScenes(
   );
 }
 
-export interface PlanCriticIssue {
-  readonly kind: string;
-  readonly severity: 'minor' | 'major' | 'blocking';
-  readonly target: string;
-  readonly claim: string;
-  readonly fix: string;
-}
-
 /** ADR-0086 (U8): the pre-flight plan critic over the contract and scene plans; malformed items are dropped. */
 async function runPlanCritic(
   ctx: WorkflowContext,
@@ -524,24 +519,7 @@ async function runPlanCritic(
     },
     pack: packCallInput(input.pack),
   });
-  const raw = Array.isArray(call.output.issues) ? (call.output.issues as unknown[]) : [];
-  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
-  return raw.flatMap((item): PlanCriticIssue[] => {
-    if (typeof item !== 'object' || item === null) return [];
-    const r = item as Record<string, unknown>;
-    const severity = r.severity === 'blocking' || r.severity === 'major' ? r.severity : 'minor';
-    const claim = str(r.claim);
-    if (!claim) return [];
-    return [
-      {
-        kind: str(r.kind) || 'other',
-        severity,
-        target: str(r.target) || '장면 설계',
-        claim,
-        fix: str(r.fix),
-      },
-    ];
-  });
+  return parsePlanCriticIssues(call.output.issues);
 }
 
 export interface SceneDraftRef {
@@ -986,7 +964,15 @@ export async function assembleChapter(
     ctx,
     'assemble',
     async () => {
-      const text = toNfcText(input.texts.map((t) => t.trim()).join('\n\n')).text;
+      let text = toNfcText(input.texts.map((t) => t.trim()).join('\n\n')).text;
+      // ADR-0088 (G6-3): a line the writer repeated word for word right after itself is a glitch, not a beat.
+      if (ctx.policy.drafting?.dedupe_repeated_lines) {
+        const deduped = dedupeRepeatedLines(text);
+        if (deduped.removed > 0) {
+          text = deduped.text;
+          recordNormalization('repeated_line');
+        }
+      }
       const paragraphs = segmentParagraphs(toNfcText(text));
       if (paragraphs.length === 0)
         throw new WorkflowError('SCENE_DRAFT_INVALID', 'assembled chapter is empty', {

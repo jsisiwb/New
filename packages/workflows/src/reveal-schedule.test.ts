@@ -112,4 +112,14 @@ describe('reveal schedule (U1, G5-1)', () => {
       { proposition_id: 'c2', reader_from_chapter: 15 },
     ]);
   });
+
+  it("with narrator knowledge, what the narrator remembers from a prior life is the reader's from chapter 1", () => {
+    const s = revealSchedule(bible, { narratorId: 'hero', narratorKnowledge: true });
+    const rival = s.find((x) => x.localId === 'P2');
+    if (!rival) throw new Error('P2 expected');
+    expect(rival).toMatchObject({ readerFrom: 1, othersFrom: 15, narratorKnows: true });
+    expect(readerStatus(rival, 1)).toBe('known');
+    // An explicit reader date still wins (P3 is source-work knowledge the bible dates for the reader).
+    expect(s.find((x) => x.localId === 'P3')).toMatchObject({ readerFrom: 4 });
+  });
 });

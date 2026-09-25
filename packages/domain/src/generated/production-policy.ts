@@ -161,6 +161,10 @@ export interface ProductionPolicy {
      */
     paragraph_per_line?: boolean;
     /**
+     * ADR-0088 (live defect G6-3): an assembled chapter's line that repeats the line right before it word for word, and is at least ten characters with a space in it, is dropped (a generation glitch; short sound lines such as '덜컹 덜컹.' may repeat on purpose), counted as repeated_line.
+     */
+    dedupe_repeated_lines?: boolean;
+    /**
      * ADR-0084 (U1, live defects A-4, G3-3): each scene plan the writer reads ends with the secrets the reader must not learn yet — the same list the knowledge-leak checker judges against (reveal chapter later than this one; under evaluation.pov_secrets_reader_visible the POV character's own secrets are left out). Absent or false: the writer sees only the contract's knowledge guards, as before.
      */
     reader_secrets_in_plan?: boolean;
@@ -193,12 +197,20 @@ export interface ProductionPolicy {
        * Oblique hints per hidden secret per 화 the planner and writer are allowed.
        */
       hint_budget: number;
+      /**
+       * ADR-0088 (live defect G6-1): a secret the first-person narrator knows from a prior life or the source work (knowledge layer prior_loop or source_work, the narrator among its knowers) is the reader's from 화 1 unless the bible dates it for the reader; the other characters keep the bible's date. Absent: only the narrator's own secrets are.
+       */
+      narrator_knowledge?: boolean;
     };
     /**
      * ADR-0086 (U7, U8): before any drafting call the contract and scene plans are checked deterministically for self-consistency (participants, the final scene ending on the hook, dialogue beats with a partner, length) and by a plan_critic call (reveal safety, repeated exposition, character state against the schedule, the operator's structure targets). Blocking or major findings send the scene plan back to the scene planner with the findings, at most max_repairs times; the findings are recorded with the plan.
      */
     plan_critic?: {
       max_repairs: number;
+      /**
+       * ADR-0088 (live defect G6-2): the contract is critiqued on its own before any scene is planned, and sent back to the chapter planner once when the critic finds a blocking or major defect (a hook built on a fact the reader may not learn yet, knowledge the hero cannot have).
+       */
+      contract?: boolean;
     };
     /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).

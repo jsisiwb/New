@@ -236,3 +236,60 @@ export function structureTargets(input: {
   for (const v of input.plannerVoice ?? []) lines.push(`- ${v}`);
   return lines.join('\n');
 }
+
+export interface PlanCriticIssue {
+  readonly kind: string;
+  readonly severity: 'minor' | 'major' | 'blocking';
+  readonly target: string;
+  readonly claim: string;
+  readonly fix: string;
+}
+
+/** The plan critic's answer, malformed items dropped (ADR-0086). */
+export function parsePlanCriticIssues(raw: unknown): PlanCriticIssue[] {
+  const list = Array.isArray(raw) ? (raw as unknown[]) : [];
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  return list.flatMap((item): PlanCriticIssue[] => {
+    if (typeof item !== 'object' || item === null) return [];
+    const r = item as Record<string, unknown>;
+    const severity = r.severity === 'blocking' || r.severity === 'major' ? r.severity : 'minor';
+    const claim = str(r.claim);
+    if (!claim) return [];
+    return [
+      {
+        kind: str(r.kind) || 'other',
+        severity,
+        target: str(r.target) || '장면 설계',
+        claim,
+        fix: str(r.fix),
+      },
+    ];
+  });
+}
+
+/**
+ * ADR-0088 (live defect G6-3): drop a line that repeats the line before it word for word — a generation glitch —
+ * when it is at least ten characters with a space in it; short sound lines ("덜컹 덜컹.") may repeat on purpose.
+ */
+export function dedupeRepeatedLines(text: string): { text: string; removed: number } {
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let previous: string | undefined;
+  let removed = 0;
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) {
+      out.push(line);
+      continue;
+    }
+    if (previous !== undefined && t === previous && t.length >= 10 && /\s/u.test(t)) {
+      removed++;
+      // Also drop the blank line that separated the two copies.
+      while (out.length && !(out[out.length - 1] ?? '').trim()) out.pop();
+      continue;
+    }
+    out.push(line);
+    previous = t;
+  }
+  return { text: out.join('\n'), removed };
+}

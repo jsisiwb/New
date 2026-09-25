@@ -43,6 +43,8 @@ export const OUTPUT_NORMALIZERS = [
   'patch_candidates',
   // ADR-0087: the scene-rewrite rung of the escalation ladder.
   'scene_rewrite',
+  // ADR-0088: a line repeated word for word right after itself, dropped at assembly.
+  'repeated_line',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

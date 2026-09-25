@@ -16,6 +16,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@14',
       'policy/standard@15',
       'policy/standard@16',
+      'policy/standard@17',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -26,6 +27,41 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v17 is standard.v16 with the G6 fixes (ADR-0088)', () => {
+    const v16 = requirePolicy('policy/standard@16', policies);
+    const v17 = requirePolicy('policy/standard@17', policies);
+    expect(v17.planning).toEqual({
+      ...v16.planning,
+      reveal_schedule: { ...v16.planning?.reveal_schedule, narrator_knowledge: true },
+      plan_critic: { ...v16.planning?.plan_critic, contract: true },
+    });
+    expect(v17.drafting).toEqual({ ...v16.drafting, dedupe_repeated_lines: true });
+    expect(v17.prompts).toEqual({ max_version: '4.8.0' });
+    expect(v17.identity).toEqual({ ...v16.identity, voice_profile: 'voice/operator@2' });
+    // Five Korean revision rounds: a revision budget, not a gate (G6a converged 9 → 2 → 1 majors and ran out).
+    expect(v17.revision).toEqual({
+      ...v16.revision,
+      max_rounds: 5,
+      rounds_by_language: { ...v16.revision.rounds_by_language, ko: 5 },
+    });
+    const strip = (p: typeof v16) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        drafting: _d,
+        prompts: _pr,
+        identity: _i,
+        revision: _r,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v17)).toEqual(strip(v16));
+    expect(v17.gates).toEqual(v16.gates);
   });
 
   it('standard.v16 is standard.v15 with the escalation ladder (ADR-0087)', () => {
