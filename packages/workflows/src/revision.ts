@@ -141,11 +141,22 @@ export interface RevisionResult {
   readonly issueIds: readonly string[];
 }
 
-/** Choose the dimension to target: the one with the most blocking/major issues that carry a span. */
-export function pickRevisionDimension(issues: readonly Issue[]): Issue['dimension'] | undefined {
+/**
+ * Choose the dimension to target: the one with the most blocking/major issues that carry a span. With
+ * `failing` (ADR-0084, V2) only dimensions whose gate failed compete when any of them has such issues: a
+ * dimension that already passes cannot keep every round while a failing one waits (live defect G3-1).
+ */
+export function pickRevisionDimension(
+  issues: readonly Issue[],
+  failing?: ReadonlySet<Issue['dimension']>,
+): Issue['dimension'] | undefined {
+  const open = issues.filter((i) => i.severity === 'blocking' || i.severity === 'major');
+  const pool =
+    failing && open.some((i) => failing.has(i.dimension))
+      ? open.filter((i) => failing.has(i.dimension))
+      : open;
   const counts = new Map<Issue['dimension'], number>();
-  for (const i of issues) {
-    if (i.severity !== 'blocking' && i.severity !== 'major') continue;
+  for (const i of pool) {
     counts.set(i.dimension, (counts.get(i.dimension) ?? 0) + (i.chapter_span ? 2 : 1));
   }
   let best: Issue['dimension'] | undefined;

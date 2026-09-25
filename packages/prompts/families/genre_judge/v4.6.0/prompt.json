@@ -1,0 +1,32 @@
+{
+  "family": "genre_judge",
+  "version": "4.6.0",
+  "role": "genre_judge",
+  "purpose": "Korean webnovel prompt for same-model judging and Gemini drafting (ADR-0081), 4.6.0.",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_genre",
+  "model_class": "C",
+  "input_variables": [
+    "chapter_text",
+    "terminology_checks"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 1500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.6.0 — same-model judging (ADR-0081): judges quote the weakest passages first and score against anchored Korean rubrics with caps; the scene writer keeps 속마음 in 반말 and writes one paragraph per line.",
+  "regression_cases": [
+    "genre_judge.fixture.smoke"
+  ],
+  "content_hash": "sha256:49207ca5bff1e9d36aed4373e033a108cd314319cb4b72858547799712bb9377"
+}

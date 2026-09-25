@@ -137,6 +137,12 @@ export function planReevaluation(input: {
   readonly carry?: EvaluationCarry | undefined;
   readonly smokeAfterPatches: number;
   readonly unanchored: ReadonlySet<EvaluatorName>;
+  /**
+   * ADR-0084 (V2, live defect G3-1): evaluators whose findings on the parent include an open blocking or
+   * major issue. Under `revision.convergence.rejudge_open_majors` they re-run after every patch, so a
+   * finding that blocks acceptance is re-checked on the new text instead of carried forever.
+   */
+  readonly openMajor?: ReadonlySet<EvaluatorName> | undefined;
 }): ReevaluationPlan {
   const carry = input.carry;
   if (input.reevaluation === 'full' || !carry || carry.patchesSinceFull >= input.smokeAfterPatches)
@@ -151,6 +157,7 @@ export function planReevaluation(input: {
       (carry.changedClaims && (e === 'continuity_checker' || e === 'knowledge_leak_checker')) ||
       (e === 'contract_checker' && (carry.changedClaims || failedCriterion)) ||
       input.unanchored.has(e) ||
+      input.openMajor?.has(e) === true ||
       !section ||
       typeof section.evaluator_call_id !== 'string';
     (must ? rerun : carried).push(e);

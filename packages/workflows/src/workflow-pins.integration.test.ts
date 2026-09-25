@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createProject, getProject, PgAuditStore, type Pool } from '@yeonjae/db';
 import { databaseUrl, freshDatabase } from '@yeonjae/db/testkit';
 import { PromptRegistry } from '@yeonjae/prompts';
+import { LEGACY_PROMPT_CEILING } from '@yeonjae/domain';
 import { Gateway, MemoryBudget, MockProvider } from '@yeonjae/gateway';
 import { makeContext, produceChapter } from './chapter-production.js';
 import { makePlanContext } from './story-plan.js';
@@ -12,10 +13,13 @@ import { createHarness, REPLAY_ROUTING, type Harness } from './testkit.js';
 
 const dbAvailable = !!databaseUrl();
 
-function upgradedRegistry(options: { omitHistorical?: boolean; changeHistorical?: boolean } = {}) {
+function upgradedRegistry(
+  options: { omitHistorical?: boolean; changeHistorical?: boolean; nextVersion?: string } = {},
+) {
   // Simulated "next deployment" version number — must not collide with real registry versions
-  // (real v2.0.0 Korean prompt families exist since ADR-0054).
-  const NEXT_VERSION = '9.9.9';
+  // (real v2.0.0 Korean prompt families exist since ADR-0054). 4.4.9 sits below the legacy prompt ceiling
+  // (4.5.0, ADR-0081), so a policy without `prompts.max_version` picks it up for new jobs.
+  const NEXT_VERSION = options.nextVersion ?? '4.4.9';
   const source = PromptRegistry.fromDirectory();
   const registry = new PromptRegistry();
   for (const version of source.list()) {
@@ -155,9 +159,23 @@ describe.skipIf(!dbAvailable)('deployment-safe persisted workflow pins (ADR-0053
         settings: project.settings,
       });
       const fresh = (await open(kind, registry, next.projectId)).ctx;
-      expect(fresh.promptSet.id).toBe(registry.activeSet().id);
-      expect(fresh.promptSet.mapping.scene_writer).toBe('scene_writer@9.9.9');
+      expect(fresh.promptSet.id).toBe(registry.activeSet(LEGACY_PROMPT_CEILING).id);
+      expect(fresh.promptSet.mapping.scene_writer).toBe('scene_writer@4.4.9');
       expect((await pool.query('SELECT id FROM llm_calls')).rows).toHaveLength(0);
+    });
+
+    it('a release above the policy prompt ceiling leaves new jobs of older policies alone (ADR-0081)', async () => {
+      await open(kind);
+      const registry = upgradedRegistry({ nextVersion: '9.9.9' });
+      const project = await getProject(pool, h.projectId);
+      const next = await createProject(pool, {
+        workspaceId: h.workspaceId,
+        title: 'Release above the ceiling',
+        settings: project.settings,
+      });
+      const fresh = (await open(kind, registry, next.projectId)).ctx;
+      expect(Object.values(fresh.promptSet.mapping)).not.toContain('scene_writer@9.9.9');
+      expect(fresh.promptSet.id).toBe(registry.activeSet(LEGACY_PROMPT_CEILING).id);
     });
 
     it.each([
@@ -312,7 +330,7 @@ describe.skipIf(!dbAvailable)('deployment-safe persisted workflow pins (ADR-0053
     );
     expect(after.rows).toEqual(expect.arrayContaining(before.rows));
     expect(after.rows.length - before.rows.length).toBe(10);
-    // The upgraded deployment's new scene_writer version (9.9.9) must not be used: the job is pinned.
-    expect(after.rows.some((call) => call.prompt_version_id === 'scene_writer@9.9.9')).toBe(false);
+    // The upgraded deployment's new scene_writer version (4.4.9) must not be used: the job is pinned.
+    expect(after.rows.some((call) => call.prompt_version_id === 'scene_writer@4.4.9')).toBe(false);
   }, 60_000);
 });

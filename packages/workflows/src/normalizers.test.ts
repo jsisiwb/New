@@ -36,6 +36,14 @@ const DESIGNED_PATHS = [
   'patch_quote_anchor',
   'judge_quote_anchor',
   'scene_draft',
+  // ADR-0080: the gateway's JSON recoveries; ADR-0081: one paragraph per line in a prose draft.
+  'json_fence_stripped',
+  'json_object_extracted',
+  'paragraph_per_line',
+  // ADR-0084: the plan's dialogue floor and scene partner, and the one scene redraft below the talk band.
+  'dialogue_floor',
+  'dialogue_partner',
+  'dialogue_redraft',
 ] as const;
 
 describe('output normalizer inventory (ADR-0057)', () => {

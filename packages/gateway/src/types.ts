@@ -72,6 +72,18 @@ export interface ProviderRetryPolicy {
   readonly jitter: 'full' | 'none';
   /** An empty completion (no text, no JSON, not a content filter) is a retryable provider fault. */
   readonly retry_empty_reply: boolean;
+  /**
+   * A declined request (ADR-0080): a `content_filter` finish, a safety block, or (with `detect_text`) a
+   * short reply that is a refusal instead of the requested output. Retried on the SAME route with the
+   * same request, at most `max_retries` times, then the call fails `MODEL_REFUSED`. Absent: refusals are
+   * counted and recorded, and the call proceeds as before.
+   */
+  readonly refusal?:
+    | {
+        readonly max_retries: number;
+        readonly detect_text: boolean;
+      }
+    | undefined;
 }
 
 export interface ModelParams {
@@ -153,7 +165,8 @@ export class GatewayError extends Error {
       | 'RATE_LIMITED'
       | 'PROVIDER_FAILED'
       | 'SCHEMA_INVALID'
-      | 'TRUNCATED',
+      | 'TRUNCATED'
+      | 'MODEL_REFUSED',
     message: string,
   ) {
     super(`${code}: ${message}`);

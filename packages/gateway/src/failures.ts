@@ -24,6 +24,13 @@ export type FailureClass =
   /** The request itself is wrong (4xx, bad schema, content refusal, auth). Fallback is NOT authorized. */
   | 'non_retryable_request'
   /**
+   * The provider or its model declined the request: a safety block, a content filter, or a reply that is
+   * a refusal instead of the requested output (ADR-0080). Never rerouted as a transport fault; retried on
+   * the SAME route only under the pinned policy's `provider_retry.refusal` rule, and never by softening
+   * the request.
+   */
+  | 'refused'
+  /**
    * The call was cancelled (operator intent, activity cancellation, worker shutdown, lease loss, or a
    * deadline). Never retried, repaired or rerouted: there is no second model that can satisfy a request
    * whose requester has withdrawn it.
@@ -43,6 +50,21 @@ export function isRetryable(cls: FailureClass): boolean {
 }
 
 /**
+ * What happened, one level below the failure class (ADR-0080): the audit row's `error_class` is derived
+ * from it, so an empty reply, a 5xx, a throttle, a safety block and a transport fault stay apart even
+ * where they share a retry class.
+ */
+export type ProviderFailureReason =
+  | 'empty_reply'
+  | 'http_5xx'
+  | 'http_429'
+  | 'http_4xx'
+  | 'safety_block'
+  | 'transport'
+  | 'deadline'
+  | 'malformed_body';
+
+/**
  * The typed error a provider adapter raises when it knows what happened. Adapters are the only code with
  * the vendor's status codes in hand, so they get to state the verdict rather than have it guessed from a
  * message string.
@@ -56,6 +78,8 @@ export class ProviderFailure extends Error {
       readonly providerRequestId?: string | undefined;
       /** True when the provider may have completed the work even though we never saw the response. */
       readonly possiblyCompleted?: boolean | undefined;
+      /** The finer reason behind the class (ADR-0080); absent on adapters that predate it. */
+      readonly reason?: ProviderFailureReason | undefined;
     } = {},
   ) {
     super(message);
@@ -71,6 +95,9 @@ const SERVER =
   /\b(50[0234]|internal server error|bad gateway|service unavailable|gateway timeout|server_error)\b/i;
 const REQUEST =
   /\b(40[0134]|invalid.?request|unauthorized|forbidden|authentication|api.?key|content.?filter|content.?policy|unsupported|not.?found|context.?length)\b/i;
+/** A provider's own words for a declined request (Gemini `SAFETY`/`PROHIBITED_CONTENT`, OpenAI `content_filter`). */
+export const SAFETY_MARKERS =
+  /\b(safety|blocked|block_reason|content.?filter|content.?policy|prohibited(_content)?|harm.?category|recitation|spii|blocklist)\b/i;
 
 /**
  * Classify a thrown provider error. `ProviderFailure` is authoritative; otherwise the shape is inspected,
@@ -97,6 +124,9 @@ export function classifyProviderFailure(err: unknown): FailureClass {
   const message = err instanceof Error ? err.message : String(err);
   const text = `${code} ${message}`;
 
+  // A declined request is its own class (ADR-0080): checked before the generic request pattern, which
+  // also matches "content filter".
+  if (SAFETY_MARKERS.test(text)) return 'refused';
   // A rejected request is checked FIRST: "invalid request" must not be rerouted just because the vendor's
   // message happens to contain a word that also appears in a transport fault.
   if (REQUEST.test(text)) return 'non_retryable_request';

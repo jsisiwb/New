@@ -10,7 +10,7 @@
  * diff and promotes it explicitly. Promotion is a reviewed Git change.
  */
 import { writeFileSync } from 'node:fs';
-import { requirePolicy } from '@yeonjae/domain';
+import { promptCeilingOf, requirePolicy } from '@yeonjae/domain';
 import { PromptRegistry } from '@yeonjae/prompts';
 import { loadCorpus, VARIANT_CLASSES } from './corpus.js';
 import { ALL_DIMENSIONS, type DimensionName } from './expectations.js';
@@ -30,7 +30,7 @@ export function buildProposal(): FixtureFile {
   const corpus = loadCorpus();
   const policy = requirePolicy(POLICY_REF);
   const registry = PromptRegistry.fromDirectory();
-  const active = registry.activeSet();
+  const active = registry.activeSet(promptCeilingOf(policy));
 
   const dims = policy.gates.dimensions as Record<string, { min_score: number } | undefined>;
   const thresholds = {} as Record<DimensionName, number>;

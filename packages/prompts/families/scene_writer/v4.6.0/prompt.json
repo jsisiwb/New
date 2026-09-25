@@ -1,0 +1,41 @@
+{
+  "family": "scene_writer",
+  "version": "4.6.0",
+  "role": "scene_writer",
+  "purpose": "Korean webnovel prompt for same-model judging and Gemini drafting (ADR-0081), 4.6.0.",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "writer_full",
+  "model_class": "P",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plan",
+    "scene_no",
+    "scene_total",
+    "scene_role",
+    "previous_text",
+    "canon_state",
+    "knowledge_lists",
+    "register_digests",
+    "open_promises",
+    "length_target_words"
+  ],
+  "output_schema": "scene-draft.schema.json",
+  "output_mode": "text",
+  "params": {
+    "temperature": 0.85,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.6.0 — same-model judging (ADR-0081): judges quote the weakest passages first and score against anchored Korean rubrics with caps; the scene writer keeps 속마음 in 반말 and writes one paragraph per line.",
+  "regression_cases": [
+    "scene_writer.fixture.smoke"
+  ],
+  "content_hash": "sha256:f317ead61c4921babe6abaff18c2a3ae2695143749f4eda688f8f0a4e33b8abe"
+}

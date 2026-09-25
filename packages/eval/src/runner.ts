@@ -24,7 +24,7 @@ import {
   type Recording,
   type RoutingTable,
 } from '@yeonjae/gateway';
-import { requirePolicy, uuidv7, type Generated } from '@yeonjae/domain';
+import { promptCeilingOf, requirePolicy, uuidv7, type Generated } from '@yeonjae/domain';
 import {
   compileBlock,
   composeIdentity,
@@ -248,7 +248,7 @@ export async function runContrastRegression(options: RunOptions = {}): Promise<C
   const variants = options.variants ?? VARIANT_CLASSES;
 
   const registry = PromptRegistry.fromDirectory();
-  const promptSet = registry.activeSet();
+  const promptSet = registry.activeSet(promptCeilingOf(policy));
   const profiles = ProfileStore.fromDirectory();
   const identity = composeIdentity(profiles, IDENTITY_REF, IDENTITY_VERSION);
 

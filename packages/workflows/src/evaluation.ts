@@ -9,6 +9,7 @@
  * major_count ≤ major_max, every deterministic criterion passed and every gated dimension at or above its
  * pinned threshold. Numbers come from the pinned Production Policy only.
  */
+import { corpusCopyIndexFor } from './corpus-index.js';
 import { createHash } from 'node:crypto';
 import { type ManuscriptVersionRow } from '@yeonjae/db';
 import {
@@ -20,6 +21,7 @@ import {
 } from '@yeonjae/domain';
 import { exemplarsOf } from '@yeonjae/narrative';
 import {
+  codePointLength,
   checkDialogueRegister,
   checkOutputLanguage,
   compileModelPattern,
@@ -144,7 +146,11 @@ function toIssue(
     severity,
     override_class: overrideClassFor(ctx.policy, kind, severity),
     confidence: Math.max(0, Math.min(1, raw.confidence ?? 0.5)),
-    claim: raw.claim ?? `${kind} reported by ${source}`,
+    claim:
+      raw.claim ??
+      (ctx.identity.outputLanguage.language === 'ko'
+        ? `${kind}: ${source}의 지적`
+        : `${kind} reported by ${source}`),
     status: 'open',
     ...(raw.chapter_span
       ? { chapter_span: { ...raw.chapter_span, manuscript_version_id: versionId } }
@@ -217,7 +223,11 @@ export function runDeterministicChecks(
           kind: 'non_english_output',
           severity: 'blocking',
           confidence: 1,
-          claim: `English confidence ${lang.english_confidence}; offending paragraphs ${lang.offending_segments.map((s) => s.paragraph_id).join(', ')}`,
+          // A Korean project's claims stay Korean: they reach the reviser's prompt (ADR-0081).
+          claim:
+            language === 'ko'
+              ? `한국어 원고 검사 실패(신뢰도 ${String(lang.english_confidence)}): 문단 ${lang.offending_segments.map((s) => s.paragraph_id).join(', ')}`
+              : `English confidence ${lang.english_confidence}; offending paragraphs ${lang.offending_segments.map((s) => s.paragraph_id).join(', ')}`,
           chapter_span: { paragraph_ids: lang.offending_segments.map((s) => s.paragraph_id) },
         },
         n++,
@@ -286,7 +296,10 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'major',
           confidence: 1,
-          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
+          claim:
+            language === 'ko'
+              ? `분량 ${String(count)}자, 목표 ${String(contract.length_target.value)}자 대비 ${(len.ratio * 100).toFixed(0)}%`
+              : `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%)`,
           metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
@@ -303,7 +316,10 @@ export function runDeterministicChecks(
           kind: 'length_out_of_range',
           severity: 'minor',
           confidence: 1,
-          claim: `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
+          claim:
+            language === 'ko'
+              ? `분량 ${String(count)}자, 목표 ${String(contract.length_target.value)}자 대비 ${(len.ratio * 100).toFixed(0)}% (허용 범위 안)`
+              : `${count} ${contract.length_target.unit} vs target ${contract.length_target.value} (${(len.ratio * 100).toFixed(0)}%, within fail tolerance)`,
           metric: { rule_id: 'LEN-01', value: count, threshold: contract.length_target.value },
         },
         n++,
@@ -552,6 +568,60 @@ export async function evaluateVersion(
         );
       }
 
+      // ADR-0084 (U2): the words of another premise device (a regression serial's 원작, live defect G-1).
+      const device = ctx.identity.preferences?.story_device;
+      if (ko && device)
+        deviceLexiconFindings(nfc.text, device).forEach((f, i) =>
+          issues.push(
+            toIssue(
+              ctx,
+              v.id,
+              'lint:device',
+              'genre',
+              {
+                kind: 'terminology_violation',
+                severity: 'major',
+                confidence: 1,
+                claim: `‘${f.quote}’은(는) 이 작품의 장치(${DEVICE_LABEL_KO[device] ?? device})에 없는 어휘다. 이 작품의 장치 어휘로 바꾼다.`,
+                chapter_span: { start: f.start, end: f.end, quote: f.quote },
+                metric: { rule_id: 'KO-DEVICE-01', value: 1, threshold: 0 },
+              },
+              1100 + i,
+            ),
+          ),
+        );
+
+      // ADR-0082 (C0.4): no span of a draft, patch or polish may reuse the operator's published sentences.
+      const copyRule = policyEval?.corpus_copy;
+      if (copyRule) {
+        const index = await corpusCopyIndexFor(ctx.pool, copyRule.min_chars);
+        (index?.findCopies(nfc.text) ?? []).forEach((c, i) =>
+          issues.push(
+            toIssue(
+              ctx,
+              v.id,
+              'lint:corpus_copy',
+              'prose',
+              {
+                kind: 'corpus_copy',
+                severity: 'blocking',
+                confidence: 1,
+                claim: ko
+                  ? `운영자 작품(${c.source_id})의 문장과 공백·문장부호를 빼고 ${String(c.chars)}자가 그대로 겹친다. 이 대목을 새 문장으로 다시 쓴다.`
+                  : `${String(c.chars)} characters match the operator corpus (${c.source_id}) verbatim; rewrite the passage.`,
+                chapter_span: { start: c.start, end: c.end, quote: c.quote },
+                metric: {
+                  rule_id: 'CORPUS-COPY-01',
+                  value: c.chars,
+                  threshold: copyRule.min_chars,
+                },
+              },
+              1000 + i,
+            ),
+          ),
+        );
+      }
+
       // Checker pack: the working version enters only as job-scoped chapter_text (status recorded in the manifest).
       const checker = await checkpointPack(ctx, {
         label: `continuity_checker:r${input.round}`,
@@ -595,6 +665,20 @@ export async function evaluateVersion(
         carry,
         smokeAfterPatches: ctx.policy.revision.smoke_after_patches,
         unanchored,
+        ...(carry && ctx.policy.revision.convergence?.rejudge_open_majors
+          ? {
+              openMajor: new Set(
+                evaluators.filter((e) =>
+                  carry.scorecard.issues.some(
+                    (i) =>
+                      i.source === SOURCE[e] &&
+                      i.status === 'open' &&
+                      (i.severity === 'blocking' || i.severity === 'major'),
+                  ),
+                ),
+              ),
+            }
+          : {}),
       });
       const runs = new Set(plan.rerun);
 
@@ -930,12 +1014,25 @@ export async function evaluateVersion(
           : 100;
       const composites: Record<GatedDimension, number> = {
         prose: lintOf('prose', 'output_language'),
-        structure: lintOf('structure'),
+        // ADR-0081: under `evaluation.length_in_structure` the length finding counts against structure.
+        structure: policyEval?.length_in_structure
+          ? lintOf('structure', 'length')
+          : lintOf('structure'),
         genre: Math.round((terminology?.compliance ?? 1) * 1000) / 10,
         voice: Math.round((1 - (register?.register_violation_rate ?? 0)) * 1000) / 10,
       };
-      const rubricOf = (d: GatedDimension, out: JudgeOutput) =>
-        rubricScore(d, dimensionScores(out.dimension_scores));
+      // ADR-0081: a judge grading its own model may not rate a dimension more than `max_gap_points` above
+      // the dimension's deterministic composite; the rubric is capped there (never raised).
+      const maxGap = policyEval?.judge_calibration?.max_gap_points;
+      const calibration: Partial<Record<GatedDimension, { rubric: number; capped_at: number }>> =
+        {};
+      const rubricOf = (d: GatedDimension, out: JudgeOutput) => {
+        const raw = rubricScore(d, dimensionScores(out.dimension_scores));
+        if (maxGap === undefined || raw <= composites[d] + maxGap) return raw;
+        const cap = Math.round((composites[d] + maxGap) * 10) / 10;
+        calibration[d] = { rubric: raw, capped_at: cap };
+        return cap;
+      };
       const scoreOf = (d: GatedDimension, out: JudgeOutput) =>
         subscores
           ? composeDimensionScore(
@@ -1011,6 +1108,7 @@ export async function evaluateVersion(
                 ? {
                     rubric_score: rubricOf(d, out),
                     judge_weight: gates.dimensions[d]?.judge_weight ?? 1,
+                    ...(calibration[d] ? { judge_calibration: calibration[d] } : {}),
                   }
                 : {}),
               ...(d === 'prose' || d === 'structure' ? { lint_composite: composites[d] } : {}),
@@ -1186,7 +1284,50 @@ export function revisionTargets(scorecard: Scorecard): Issue[] {
   );
 }
 
+const DEVICE_LABEL_KO: Readonly<Record<string, string>> = {
+  regression: '회귀',
+  reincarnation: '환생',
+  game_possession: '게임 빙의',
+  novel_possession: '소설 빙의',
+  possession: '빙의',
+};
+
+/** Words that belong to another premise device (ADR-0084, U2); game possession may still name a 원작 game. */
+const FOREIGN_DEVICE_WORDS: Readonly<Record<string, RegExp | undefined>> = {
+  regression: /원작\s?주인공|원작|빙의/gu,
+  reincarnation: /원작\s?주인공|원작|빙의/gu,
+  game_possession: /원작\s?주인공|원작\s?소설/gu,
+  novel_possession: /회귀\s?전|지난\s?생/gu,
+  possession: undefined,
+};
+
+/** The first three uses of another device's words, as code-point spans with their quotes. */
+export function deviceLexiconFindings(
+  text: string,
+  device: string,
+): { start: number; end: number; quote: string }[] {
+  const re = FOREIGN_DEVICE_WORDS[device];
+  if (!re) return [];
+  const out: { start: number; end: number; quote: string }[] = [];
+  for (const m of text.matchAll(new RegExp(re.source, re.flags))) {
+    const start = codePointLength(text.slice(0, m.index));
+    out.push({ start, end: start + codePointLength(m[0]), quote: m[0] });
+    if (out.length === 3) break;
+  }
+  return out;
+}
+
+/** Gated dimensions whose scorecard section failed its threshold (ADR-0084, V2). */
+export function failingDimensions(scorecard: Scorecard): ReadonlySet<Issue['dimension']> {
+  const sections = scorecard.sections as Record<string, { passed?: boolean } | undefined>;
+  return new Set(
+    (['prose', 'structure', 'genre', 'voice'] as const).filter(
+      (d) => sections[d]?.passed === false,
+    ),
+  );
+}
+
 /** The bible (plan) id bound to a canon entity id, for matching bible propositions (ADR-0074). */
-function povPlanId(ctx: WorkflowContext, canonId: string): string {
+export function povPlanId(ctx: WorkflowContext, canonId: string): string {
   return Object.entries(ctx.bindings).find(([, v]) => v === canonId)?.[0] ?? canonId;
 }

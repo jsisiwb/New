@@ -238,6 +238,7 @@ export const METRIC = {
   retries: 'yeonjae_provider_retries_total',
   repairs: 'yeonjae_provider_repairs_total',
   fallbacks: 'yeonjae_provider_fallbacks_total',
+  refusals: 'yeonjae_provider_refusals_total',
   cancellationRequests: 'yeonjae_cancellation_requests_total',
   cancellationObservations: 'yeonjae_cancellation_observations_total',
   remoteCancellation: 'yeonjae_remote_cancellation_total',
@@ -303,6 +304,8 @@ export const METRIC_HELP: Readonly<Record<string, string>> = {
   [METRIC.retries]: 'Provider attempts retried, by failure class.',
   [METRIC.repairs]: 'Bounded structured-output repair attempts.',
   [METRIC.fallbacks]: 'Route fallbacks by reason.',
+  [METRIC.refusals]:
+    'Declined requests (content filter, safety block, refusal reply) by provider, class and reason.',
   [METRIC.cancellationRequests]: 'Cancellation requests by source.',
   [METRIC.cancellationObservations]: 'Cancellations observed by a running call, by phase.',
   [METRIC.remoteCancellation]: 'Remote cancellation states reported by a provider.',

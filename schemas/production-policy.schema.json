@@ -41,6 +41,15 @@
         "rounds_by_language": {"type": "object", "additionalProperties": false, "description": "ADR-0064: revision rounds per manuscript language, replacing max_rounds for that language. Absent: English takes one representative round and Korean up to max_rounds (ADR-0056)", "properties": {"en": {"type": "integer", "minimum": 0}, "ko": {"type": "integer", "minimum": 0}}},
         "polish_pass": {"type": "boolean", "description": "ADR-0073 (K1): after a Korean chapter passes its gates, one editor round on the Korean lint's 번역투, sentence-ending, dialogue-share and paragraph findings; the polished version is kept only if it still passes and the lint finds fewer of them, else it is quarantined (polish_rejected). Absent or false: no polish round"},
         "regression_baseline": {"type": "string", "enum": ["absolute", "parent"], "description": "ADR-0078 (V-1): what a patch's regression protections are measured against. absolute (the default when absent): every protected section must pass and no translation-like, register or westernization major may remain on the revised version, whatever the parent carried. parent: a protected section fails only when it passed on the parent and fails on the revision, and a kind guard fails only when the revision carries more open blocking/major issues of those kinds than the parent. The targeted-improvement, tolerance, dropped-dimension and new-issue-kind checks are the same in both."},
+        "convergence": {
+          "type": "object",
+          "description": "ADR-0084 (V2, live defect G3-1): how revision rounds converge on a gate that allows no open major. rejudge_open_majors: after every patch, each evaluator whose findings on the parent include an open blocking or major issue re-runs on the new text, instead of carrying the finding forward. prefer_failing_dimension: a round targets a dimension whose gate failed whenever one has open blocking or major issues, so a passing dimension cannot take every round. Absent: carried findings and the most-issues dimension choice, as before.",
+          "additionalProperties": false,
+          "properties": {
+            "rejudge_open_majors": {"type": "boolean"},
+            "prefer_failing_dimension": {"type": "boolean"}
+          }
+        },
         "multi_patch": {
           "type": "object",
           "description": "ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.",
@@ -65,7 +74,31 @@
         "reevaluation": {"type": "string", "enum": ["full", "targeted"], "description": "targeted: after a patch the deterministic checks and the targeted dimension's evaluator re-run, continuity and knowledge re-run when the patch changed claims, and every other evaluator re-runs only when one of its carried findings no longer anchors or revision.smoke_after_patches patches have accumulated since its last run"},
         "lint_penalty_points": {"type": "object", "required": ["minor", "major", "blocking"], "additionalProperties": false, "description": "Points a deterministic finding takes off its dimension's lint composite (starting at 100, floored at 0) under rubric_subscores", "properties": {"minor": {"type": "number", "minimum": 0, "maximum": 100}, "major": {"type": "number", "minimum": 0, "maximum": 100}, "blocking": {"type": "number", "minimum": 0, "maximum": 100}}},
         "ledger_checks": {"type": "boolean", "description": "ADR-0063: compare each draft with the state ledgers (countdowns against the story clock, the status-window format, registered address terms against the expected 말높이 (존댓말/반말)). Absent or false: no ledger check runs."},
-        "pov_secrets_reader_visible": {"type": "boolean", "description": "ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed."}
+        "pov_secrets_reader_visible": {"type": "boolean", "description": "ADR-0074 (live defect A-3): the chapter's POV character's own secrets are the narrator's knowledge and so the reader's; the knowledge-leak checker's reader-secret list leaves them out. In a regression serial the regressor's own return is the premise, not a leak. Absent or false: every unrevealed secret is listed."},
+        "length_in_structure": {"type": "boolean", "description": "ADR-0081: the chapter length finding (LEN-01) counts against the structure dimension's deterministic composite, so a judge cannot rate the structure of a chapter far off its length target as if it were complete. Absent or false: length gates only through its own major finding, as before."},
+        "corpus_copy": {
+          "type": "object",
+          "description": "ADR-0082 (C0.4): every evaluated version (draft, patch, polish) is checked against the operator corpus in the permanent database; a span sharing at least min_chars consecutive Hangul syllables, letters or digits with it (spaces and punctuation ignored) is a blocking corpus_copy finding. Absent: no corpus check.",
+          "required": ["min_chars"],
+          "additionalProperties": false,
+          "properties": {"min_chars": {"type": "integer", "minimum": 8, "maximum": 60}}
+        },
+        "judge_calibration": {
+          "type": "object",
+          "description": "ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.",
+          "required": ["max_gap_points"],
+          "additionalProperties": false,
+          "properties": {"max_gap_points": {"type": "number", "minimum": 0, "maximum": 100}}
+        }
+      }
+    },
+    "drafting": {
+      "type": "object",
+      "description": "Deterministic handling of scene drafts before assembly (ADR-0081).",
+      "additionalProperties": false,
+      "properties": {
+        "paragraph_per_line": {"type": "boolean", "description": "Every line break of a prose draft becomes a paragraph break (one paragraph per line, as serial platforms render it); words are untouched. Counted as the paragraph_per_line normalizer. Absent or false: drafts keep the model's own line layout."},
+        "reader_secrets_in_plan": {"type": "boolean", "description": "ADR-0084 (U1, live defects A-4, G3-3): each scene plan the writer reads ends with the secrets the reader must not learn yet — the same list the knowledge-leak checker judges against (reveal chapter later than this one; under evaluation.pov_secrets_reader_visible the POV character's own secrets are left out). Absent or false: the writer sees only the contract's knowledge guards, as before."}
       }
     },
     "planning": {
@@ -77,7 +110,18 @@
         "plan_check": {"type": "boolean", "description": "Check the contract and scene plans against the state ledgers, first meetings and the story clock before drafting. A blocking finding (an on-page character the ledger records as dead, story time running backwards) stops the chapter as PLAN_INCONSISTENT before any draft is written; other findings are recorded with the plan."},
         "scene_plan_format": {"type": "string", "enum": ["json", "labelled"], "description": "How a scene plan reaches a Korean writer (ADR-0068). 'json' (the same as absent) passes the plan object as JSON; 'labelled' renders it as labelled Korean text with names resolved from the registry. English writers always receive JSON."},
         "design_batches": {"type": "boolean", "description": "Generate the bible's cast in three checkpointed batches — protagonist, core cast, supporting cast — instead of one large character_designer call (ADR-0072). Each batch is its own checkpoint, so a rerun resumes after the last completed batch; later batches receive the names already designed and add the protagonist's registers toward the new characters. Absent or false: one call, as before."},
-        "rhythm_directives": {"type": "boolean", "description": "Serial-rhythm directives for the chapter planner (ADR-0073): from the accepted contracts, a chapter is told to carry a 사이다 beat when the last two had none (사이다 within three 화; at most two 고구마 chapters in a row), the first 25 화 carry the funnel's denser cadence, and the 절단 must change the situation. The directives join the planner's hard constraints and a plan check records each (PLAN-RHYTHM-01..03). Absent or false: no directive."}
+        "rhythm_directives": {"type": "boolean", "description": "Serial-rhythm directives for the chapter planner (ADR-0073): from the accepted contracts, a chapter is told to carry a 사이다 beat when the last two had none (사이다 within three 화; at most two 고구마 chapters in a row), the first 25 화 carry the funnel's denser cadence, and the 절단 must change the situation. The directives join the planner's hard constraints and a plan check records each (PLAN-RHYTHM-01..03). Absent or false: no directive."},
+        "dialogue_floor": {
+          "type": "object",
+          "description": "ADR-0084 (U6, live defect G3-2): the scene plan carries enough talk. A scene whose planned dialogue share is below chapter_min is raised to it before drafting (the writer reads the target), and when partner_required and no scene puts anyone beside its POV character on stage, the longest scene gets the contract's first on-page participant who is not the POV character. Both are recorded as plan findings (PLAN-DLG-01, PLAN-PARTNER-01) and normalizations; scene_redraft_below re-drafts a scene that came back far below the band once. Absent: the plan is drafted as planned.",
+          "required": ["chapter_min", "partner_required"],
+          "additionalProperties": false,
+          "properties": {
+            "chapter_min": {"type": "number", "minimum": 0, "maximum": 0.6},
+            "partner_required": {"type": "boolean"},
+            "scene_redraft_below": {"type": "number", "minimum": 0, "maximum": 0.5, "description": "A drafted scene that has someone beside its POV character on stage and whose measured dialogue-and-속마음 share is below this is re-drafted once, the writer told the measured share and the target; the redraft is kept only when its share is higher (counted as dialogue_redraft). Absent: no redraft."}
+          }
+        }
       }
     },
     "identity": {
@@ -85,7 +129,29 @@
       "description": "Identity choices a policy makes for projects composed under it (ADR-0073). Absent: a Korean project composes the newest Korean language layer up to lang/ko@5, as before.",
       "additionalProperties": false,
       "properties": {
-        "language_layer": {"type": "string", "pattern": "^lang/(en|ko)@[0-9]+$", "description": "The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches."}
+        "language_layer": {"type": "string", "pattern": "^lang/(en|ko)@[0-9]+$", "description": "The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches."},
+        "device_lexicon": {"type": "boolean", "description": "ADR-0084 (U2, live defect G-1): a new project records its premise device from the intake (regression, reincarnation, game or novel possession); writers, editors, planners and the genre judge get that device's vocabulary, and every evaluated version is checked for the other devices' words (KO-DEVICE-01, a major genre finding). Absent or false: the genre overlay's vocabulary alone, as before."},
+        "voice_profile": {"type": "string", "pattern": "^voice/[a-z0-9-]+@[0-9]+$", "description": "ADR-0083 (C3): the operator voice profile (examples/voice-profiles) a new project in the profile's language copies into its composed identity. Absent: no operator voice section."},
+        "operator_exemplars": {
+          "type": "object",
+          "description": "ADR-0083 (C5): at novel start a new project pins per_function passages of each listed scene function from corpus.passages (tagger), preferring chapters in the project's point of view; they replace the studio's synthetic exemplars. A database without passages pins none. Absent: studio exemplars only.",
+          "required": ["tagger", "functions", "per_function"],
+          "additionalProperties": false,
+          "properties": {
+            "tagger": {"type": "string", "pattern": "^passages@[0-9]+$"},
+            "functions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["hook", "action", "banter", "status_window", "emotional_beat", "cliffhanger", "exposition_in_action", "comedy_beat"]}},
+            "per_function": {"type": "integer", "minimum": 1, "maximum": 2}
+          }
+        }
+      }
+    },
+    "prompts": {
+      "type": "object",
+      "description": "The newest prompt family version this policy's jobs may pin (ADR-0081): the job's prompt set is the newest active version per family at or below max_version. Absent: 4.5.0, the newest version when the field was introduced, so earlier policies keep their prompts when a new version is added.",
+      "required": ["max_version"],
+      "additionalProperties": false,
+      "properties": {
+        "max_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
       }
     },
     "provider_retry": {
@@ -99,7 +165,17 @@
         "max_delay_ms": {"type": "integer", "minimum": 0},
         "multiplier": {"type": "number", "minimum": 1},
         "jitter": {"type": "string", "enum": ["full", "none"]},
-        "retry_empty_reply": {"type": "boolean"}
+        "retry_empty_reply": {"type": "boolean"},
+        "refusal": {
+          "type": "object",
+          "description": "A declined request (ADR-0080): a content_filter or safety finish, a safety block in an error body, or (detect_text) a short reply that is a refusal instead of the requested output. The same request is sent again on the same route at most max_retries times, then the call fails MODEL_REFUSED. The request is never softened. Absent: refusals are counted and recorded and the call proceeds as before.",
+          "required": ["max_retries", "detect_text"],
+          "additionalProperties": false,
+          "properties": {
+            "max_retries": {"type": "integer", "minimum": 0, "maximum": 3},
+            "detect_text": {"type": "boolean"}
+          }
+        }
       }
     },
     "candidates": {

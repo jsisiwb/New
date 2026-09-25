@@ -185,6 +185,7 @@ export interface Issue {
     | 'character_inconsistency'
     | 'clock_unknown'
     | 'content_restriction'
+    | 'corpus_copy'
     | 'dialogue_tag_overuse'
     | 'english_grammar'
     | 'evidence_integrity'
