@@ -39,6 +39,10 @@ export const OUTPUT_NORMALIZERS = [
   'plan_talk_ban',
   'plan_cut_beat',
   'plan_repair',
+  // ADR-0087: a revision round that drafted more than one patch per cluster and kept the best.
+  'patch_candidates',
+  // ADR-0087: the scene-rewrite rung of the escalation ladder.
+  'scene_rewrite',
 ] as const;
 export type OutputNormalizer = (typeof OUTPUT_NORMALIZERS)[number];
 

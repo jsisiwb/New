@@ -33,6 +33,7 @@ import {
 } from '@yeonjae/db';
 import {
   canonicalPolicyHash,
+  type Generated,
   promptCeilingOf,
   requirePolicy,
   type PolicyRef,
@@ -40,6 +41,7 @@ import {
 import { type Gateway } from '@yeonjae/gateway';
 import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/narrative';
 import { PromptRegistry } from '@yeonjae/prompts';
+import { sliceCodePoints, toNfcText } from '@yeonjae/prose';
 import { resolveWorkflowPins } from './workflow-pins.js';
 import {
   acceptDelta,
@@ -53,6 +55,9 @@ import {
   checkpointPack,
   draftScenes,
   planScenes,
+  rewriteScene,
+  sceneRangesIn,
+  sceneTalkShare,
   type PackRef,
   type SceneDraftRef,
   type StoredPack,
@@ -63,6 +68,7 @@ import {
   povPlanId,
   revisionTargets,
   scoreTargets,
+  type Issue,
   type Scorecard,
 } from './evaluation.js';
 import { WorkflowError } from './errors.js';
@@ -589,6 +595,9 @@ export async function produceChapter(
     let patchesSinceFull = 0;
     const convergence = ctx.policy.revision.convergence;
     const allOpen = convergence?.round_scope === 'all_open';
+    // ADR-0087: the scene-rewrite rung — kinds patches rarely repair are answered by drafting the scene again.
+    const ladder = ctx.policy.revision.ladder;
+    let sceneRewrites = 0;
     while (!evaluation.approvable && round < maxRounds) {
       const targets = revisionTargets(evaluation.scorecard);
       // ADR-0086 (G5-3e): a dimension failing by score alone gets its judge's weakest passages as targets.
@@ -611,17 +620,48 @@ export async function produceChapter(
       const targetedIssueIds = (
         allOpen ? targets : targets.filter((i) => i.dimension === dimension)
       ).map((i) => i.id);
-      const revised = await reviseVersionMulti(ctx, {
-        version: current,
-        chapterId: contract.chapterId,
-        chapterNo,
-        issues: scoreOnly.length ? [...targets, ...scoreOnly] : targets,
-        dimension,
-        round,
-        registerDigests: writerBuilt.variables.register_digests ?? '(none)',
-        ...(allOpen ? { allDimensions: true } : {}),
-        ...(scoreOnly.length ? { extraTargetIds: new Set(scoreOnly.map((i) => i.id)) } : {}),
-      });
+      const rewriteFindings = ladder
+        ? targets.filter((i) => ladder.scene_rewrite_kinds.includes(i.kind))
+        : [];
+      const rewriteAt =
+        rewriteFindings.length > 0 && sceneRewrites < ctx.policy.revision.max_scene_rewrites
+          ? sceneToRewrite(
+              rewriteFindings,
+              sceneRangesIn(current.text, drafted.texts),
+              plan.scenes,
+              current.text,
+            )
+          : undefined;
+      if (rewriteAt) {
+        sceneRewrites++;
+        targetedIssueIds.splice(0, targetedIssueIds.length, ...rewriteFindings.map((i) => i.id));
+      }
+      const revised = rewriteAt
+        ? await rewriteScene(ctx, {
+            version: current,
+            chapterId: contract.chapterId,
+            chapterNo,
+            round,
+            contract: contract.contract,
+            pack: writerBuilt,
+            scene: rewriteAt.scene,
+            sceneTotal: plan.scenes.length,
+            range: rewriteAt.range,
+            findings: rewriteFindings,
+            dimension: rewriteFindings[0]?.dimension ?? dimension,
+            nameOf: (id: string) => registryNames.get(id) ?? id,
+          })
+        : await reviseVersionMulti(ctx, {
+            version: current,
+            chapterId: contract.chapterId,
+            chapterNo,
+            issues: scoreOnly.length ? [...targets, ...scoreOnly] : targets,
+            dimension,
+            round,
+            registerDigests: writerBuilt.variables.register_digests ?? '(none)',
+            ...(allOpen ? { allDimensions: true } : {}),
+            ...(scoreOnly.length ? { extraTargetIds: new Set(scoreOnly.map((i) => i.id)) } : {}),
+          });
       versions.push(revised.version);
       revision = { rounds: round, dimension, patch_artifact_id: revised.patchArtifactId };
       const parentText = current.text;
@@ -1310,4 +1350,43 @@ export function polishTargets(scorecard: Scorecard): Scorecard['issues'] {
       i.source === 'lint:ko_style' &&
       POLISH_RULE.test(i.metric?.rule_id ?? ''),
   );
+}
+
+/**
+ * ADR-0087: the scene a scene-rewrite round drafts again — the one holding most of the findings' spans, or, when the
+ * findings quote nothing (a chapter-level pacing finding), the scene furthest below its planned talk share.
+ */
+type ScenePlan = Generated.ScenePlanSchema.ScenePlan;
+
+function sceneToRewrite(
+  findings: readonly Issue[],
+  ranges: readonly ({ start: number; end: number } | undefined)[],
+  scenes: readonly ScenePlan[],
+  text: string,
+): { scene: ScenePlan; range: { start: number; end: number } } | undefined {
+  const counts = ranges.map(() => 0);
+  for (const f of findings) {
+    const at = f.chapter_span?.start;
+    if (typeof at !== 'number') continue;
+    const k = ranges.findIndex((r) => r !== undefined && at >= r.start && at < r.end);
+    if (k >= 0) counts[k] = (counts[k] ?? 0) + 1;
+  }
+  let best = counts.reduce((b, c, i) => (c > (counts[b] ?? 0) ? i : b), 0);
+  if ((counts[best] ?? 0) === 0) {
+    const nfc = toNfcText(text);
+    let worst = Number.POSITIVE_INFINITY;
+    best = -1;
+    ranges.forEach((r, i) => {
+      if (!r) return;
+      const target = scenes[i]?.dialogue_density_target ?? 0.2;
+      const ratio = sceneTalkShare(sliceCodePoints(nfc, r.start, r.end)) / Math.max(target, 0.01);
+      if (ratio < worst) {
+        worst = ratio;
+        best = i;
+      }
+    });
+  }
+  const range = best >= 0 ? ranges[best] : undefined;
+  const scene = best >= 0 ? scenes[best] : undefined;
+  return range && scene ? { scene, range } : undefined;
 }

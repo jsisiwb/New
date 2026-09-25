@@ -566,10 +566,10 @@ function scriptByRole(req: ProviderRequest) {
       return json({
         criteria: [{ criterion_id: 'AC-MH-1', passed: true, evidence_paragraph_ids: ['p3'] }],
       });
+    // ADR-0086: the pre-flight plan critic of a competent live model finds nothing to fix in a sound plan.
     case 'continuity_checker':
     case 'knowledge_leak_checker':
     case 'repetition_judge':
-    // ADR-0086: the pre-flight plan critic of a competent live model finds nothing to fix in a sound plan.
     case 'plan_critic':
       return json({ issues: [] });
     case 'promise_checker':

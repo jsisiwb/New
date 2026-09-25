@@ -10,13 +10,13 @@ import { scoreTargets, type Scorecard } from './evaluation.js';
 const V14 = requirePolicy('policy/standard@14');
 const V15 = requirePolicy('policy/standard@15');
 
-type IssueIn = {
+interface IssueIn {
   id: string;
   dimension: Scorecard['issues'][number]['dimension'];
   kind: Scorecard['issues'][number]['kind'];
   severity?: 'blocking' | 'major' | 'minor';
   span?: { start: number; end: number };
-};
+}
 
 function card(input: {
   prose: number;
@@ -242,7 +242,9 @@ describe('score-only targets (ADR-0086, G5-3e)', () => {
       prose: 75.4,
       structure: 88,
       weakest: [{ quote: '약한 문장이 여기에 있다.', why: '어색' }],
-      issues: [{ id: '0191b2a0-0000-7000-8000-00000c0e0003', dimension: 'prose', kind: 'literary_drift' }],
+      issues: [
+        { id: '0191b2a0-0000-7000-8000-00000c0e0003', dimension: 'prose', kind: 'literary_drift' },
+      ],
     });
     expect(scoreTargets(withMajor, text)).toEqual([]);
   });

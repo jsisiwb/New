@@ -16,16 +16,24 @@ import {
   setChapterStatus,
   type ManuscriptVersionRow,
 } from '@yeonjae/db';
-import { asUuid, type Generated, recordNormalization, validatorFor } from '@yeonjae/domain';
+import {
+  asUuid,
+  type Generated,
+  recordNormalization,
+  uuidFromKey,
+  validatorFor,
+} from '@yeonjae/domain';
 import {
   codePointLength,
   measure,
   paragraphPerLine,
   segmentParagraphs,
+  sliceCodePoints,
   talkShareOf,
   targetCount,
   toNfcText,
 } from '@yeonjae/prose';
+import { type Issue } from './evaluation.js';
 import { WorkflowError } from './errors.js';
 import { calibrateSceneTarget } from './length-calibration.js';
 import { chooseFallbackLocation, normalizeScenePlans } from './plan-normalize.js';
@@ -378,7 +386,9 @@ export async function planScenes(
         }
         return { scenes, issues };
       };
-      let { scenes, issues } = await planOnce(undefined, '');
+      const firstPlan = await planOnce(undefined, '');
+      let scenes = firstPlan.scenes;
+      const issues = firstPlan.issues;
       if (issues.length > 0)
         throw new WorkflowError('SCENE_PLAN_INVALID', issues.join('; '), {
           step: 'scene_plan',
@@ -1041,4 +1051,182 @@ export function talkRedraftNote(measured: number, target: number, ko: boolean): 
   return ko
     ? `\n\n다시 쓰기: 직전 초고는 대사와 속마음이 글자 수의 ${pct(measured)}%뿐이었다(목표 약 ${pct(target)}%). 같은 사건과 비트를 지키되, 무대에 있는 인물끼리 주고받는 대사로 장면을 밀고, 서술은 대사 사이의 한 줄 비트로 줄인다.`
     : `\n\nRewrite: the previous draft had only ${pct(measured)}% dialogue and thought (target about ${pct(target)}%). Keep the same events and beats; drive the scene with lines between the characters on stage and cut narration to one-line beats between them.`;
+}
+
+/**
+ * ADR-0087 (STEP 3): the scene-rewrite rung of the escalation ladder. A finding kind that patches rarely repair
+ * (the per-kind fix rates: pacing, exposition) is answered by drafting its scene again from the same scene plan,
+ * with the findings and the scene's measured talk share, and the new scene replacing the old one in the current
+ * version. The result is a revision of scope `scene` that the loop evaluates and regression-checks like a patch.
+ */
+export async function rewriteScene(
+  ctx: WorkflowContext,
+  input: {
+    version: ManuscriptVersionRow;
+    chapterId: string;
+    chapterNo: number;
+    round: number;
+    contract: ChapterContract;
+    pack: StoredPack;
+    scene: ScenePlan;
+    sceneTotal: number;
+    /** The scene's code-point range in the current version. */
+    range: { start: number; end: number };
+    findings: readonly { id: string; claim: string; dimension: Issue['dimension'] }[];
+    dimension: Issue['dimension'];
+    nameOf?: ((id: string) => string) | undefined;
+  },
+): Promise<{
+  version: ManuscriptVersionRow;
+  patch: Generated.PatchSchema.Patch;
+  patchArtifactId: string;
+  dimension: Issue['dimension'];
+  issueIds: readonly string[];
+}> {
+  const ch = input.chapterNo;
+  return runStep(
+    ctx,
+    'revise',
+    async () => {
+      const nfc = toNfcText(input.version.text);
+      const before = sliceCodePoints(nfc, 0, input.range.start);
+      const old = sliceCodePoints(nfc, input.range.start, input.range.end);
+      const after = sliceCodePoints(nfc, input.range.end, codePointLength(nfc.text));
+      const ko = ctx.identity.outputLanguage.language === 'ko';
+      const nameOf = input.nameOf;
+      const planText =
+        ctx.policy.planning?.scene_plan_format === 'labelled' && ko && nameOf
+          ? renderScenePlanKo(input.scene, nameOf)
+          : JSON.stringify(input.scene);
+      const lineTargets = ctx.policy.planning?.dialogue_floor?.line_targets;
+      const measured = sceneTalkShare(old);
+      const note = [
+        '',
+        '',
+        '다시 쓰기: 이 장면의 앞선 원고는 아래 결함 때문에 통과하지 못했다. 같은 장면 설계로 장면 전체를 새로 쓴다.',
+        ...input.findings.map((f) => `- ${f.claim}`),
+        `앞선 원고의 대사·속마음 비중은 ${String(Math.round(measured * 100))}%였다.`,
+      ].join('\n');
+      const targetsNote = lineTargets
+        ? lineTargetNote(
+            sceneLineTargets(input.scene, lineTargets),
+            input.scene.participants
+              .filter((p) => p !== input.scene.pov.character_id)
+              .map((p) => (nameOf ? nameOf(p) : p)),
+            undefined,
+          )
+        : '';
+      const cut =
+        ctx.policy.planning?.cut_design && input.scene.scene_no === input.sceneTotal
+          ? cutNote(input.contract)
+          : '';
+      const call = await modelCall<SceneDraft | string>(ctx, {
+        step: 'revise',
+        family: 'scene_writer',
+        activityId: `scene_rewrite:${String(ch)}:${String(input.scene.scene_no)}:r${String(input.round)}`,
+        variables: {
+          scene_plan: planText + targetsNote + cut + note,
+          scene_no: String(input.scene.scene_no),
+          previous_text:
+            before.trim() ||
+            (input.pack.variables.previous_text ??
+              (ko
+                ? `(${String(ch)}화가 연재를 연다. 앞에 이어지는 원고가 없다.)`
+                : `(Chapter ${String(ch)} opens the series; nothing precedes it.)`)),
+          length_target_words: String(input.scene.length_target.value),
+          scene_total: String(input.sceneTotal),
+          scene_role: sceneRole(input.scene.scene_no, input.sceneTotal, ko ? 'ko' : 'en'),
+        },
+        pack: packCallInput(input.pack),
+      });
+      let prose =
+        typeof call.output === 'string'
+          ? call.output
+          : (((call.output as { text?: unknown }).text as string | undefined) ?? '');
+      if (ctx.policy.drafting?.paragraph_per_line) prose = paragraphPerLine(prose);
+      prose = stripProseChatter(prose).trim();
+      if (!prose)
+        throw new WorkflowError('SCENE_DRAFT_INVALID', 'the scene rewrite came back empty', {
+          step: 'revise',
+          recommendedActions: ['regenerate'],
+        });
+      const trailing = after.startsWith('\n') ? '' : after ? '\n\n' : '';
+      const leading = before && !before.endsWith('\n') ? '\n\n' : '';
+      const revisedText = toNfcText(`${before}${leading}${prose}${trailing}${after}`).text;
+      await setChapterStatus(ctx.pool, input.chapterId, 'revising');
+      const version = await createManuscriptVersion(ctx.pool, {
+        workspaceId: ctx.workspaceId,
+        projectId: ctx.projectId,
+        chapterId: input.chapterId,
+        origin: 'revision',
+        text: revisedText,
+        parentVersionId: input.version.id,
+        createdByJobId: ctx.job.id,
+      });
+      const patch: Generated.PatchSchema.Patch = {
+        id: uuidFromKey(
+          `${ctx.workflowId}:${input.version.id}:scene_rewrite:${String(input.round)}`,
+        ),
+        from_version_id: input.version.id,
+        to_version_id: version.id,
+        scope: 'scene',
+        span: { start: input.range.start, end: input.range.end },
+        new_text: prose,
+        changed_claims: [],
+        preserved_facts_ack: [],
+        issue_ids: input.findings.map((f) => f.id),
+        dimension: input.dimension,
+        reviser_call_id: call.llmCallId,
+      };
+      const ref = await saveArtifact(ctx, {
+        step: 'revise',
+        kind: 'patch',
+        key: `${input.version.id}:r${String(input.round)}`,
+        schema: 'patch.schema.json',
+        payload: patch,
+      });
+      recordNormalization('scene_rewrite');
+      return {
+        version,
+        patch,
+        patchArtifactId: ref.artifact_id,
+        dimension: input.dimension,
+        issueIds: input.findings.map((f) => f.id),
+      };
+    },
+    `${input.version.id}:r${String(input.round)}:scene${String(input.scene.scene_no)}`,
+  );
+}
+
+/**
+ * The code-point ranges of the drafted scenes in the current version, found by each scene's first line (patches
+ * replace whole lines, so a scene whose first line survived still starts there). A scene whose first line no
+ * longer occurs has no range; the ladder then stays on the patch rung for it.
+ */
+export function sceneRangesIn(
+  current: string,
+  sceneTexts: readonly string[],
+): ({ start: number; end: number } | undefined)[] {
+  const text = toNfcText(current).text;
+  // Scenes are searched in order from the previous scene's start, so two scenes that open on the same line
+  // still get their own ranges.
+  let cursor = 0;
+  const starts = sceneTexts.map((t) => {
+    const first = toNfcText(t)
+      .text.split('\n')
+      .find((l) => l.trim().length > 0)
+      ?.trim();
+    if (!first) return undefined;
+    const at = text.indexOf(first, cursor);
+    if (at < 0) return undefined;
+    cursor = at + first.length;
+    return codePointLength(text.slice(0, at));
+  });
+  const total = codePointLength(text);
+  return starts.map((s, i) => {
+    if (s === undefined) return undefined;
+    const next = starts.slice(i + 1).find((x): x is number => x !== undefined);
+    const end = next ?? total;
+    return end > s ? { start: s, end } : undefined;
+  });
 }

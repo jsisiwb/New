@@ -33,6 +33,19 @@ export interface ProductionPolicy {
      */
     regression_tolerance_points?: number;
     /**
+     * ADR-0087 (STEP 3): the escalation ladder. A round whose open blocking/major findings include a kind in scene_rewrite_kinds (kinds the per-kind fix rates show patches rarely repair) drafts the scene holding them again from its scene plan instead of patching — the scene holding most of their spans, or for unquoted findings the scene furthest below its planned talk — at most max_scene_rewrites times per chapter; the rewrite is evaluated and regression-checked like a patch.
+     */
+    ladder?: {
+      /**
+       * @minItems 1
+       */
+      scene_rewrite_kinds: [string, ...string[]];
+    };
+    /**
+     * ADR-0087 (STEP 3): patches drafted per cluster of a multi-patch round; the one that brings the fewest new lint pattern hits (번역투 markers, AI stock phrases, calques) into its span is kept before any judge runs, the first on a tie. Absent or 1: one patch per cluster, as before.
+     */
+    candidates_per_cluster?: number;
+    /**
      * ADR-0064. stop (the default when absent): a patch that fails the ADR-0014 regression check stops the chapter as PATCH_REGRESSED. discard_and_continue: the patched version is quarantined, the chapter returns to the version before the patch and its scorecard, and the next round may revise again within the round limit
      */
     on_regression?: 'stop' | 'discard_and_continue';

@@ -528,7 +528,7 @@ export interface PropositionProposal {
     /**
      * ADR-0086 (U1): knowledge layer — current timeline, prior-life memory (회귀 전 기억) or source-work knowledge (원작·게임 지식).
      */
-    layer?: 'current' | 'prior_life' | 'source_work';
+    layer?: 'current' | 'prior_loop' | 'source_work';
   };
   truth?: PropositionTruthProposal[];
 }

@@ -1350,7 +1350,7 @@ export function scoreTargets(scorecard: Scorecard, versionText: string): Issue[]
   const out: Issue[] = [];
   for (const r of scorecard.acceptance.dimension_results) {
     if (r.passed) continue;
-    const dim = r.dimension as Issue['dimension'];
+    const dim = r.dimension;
     const hasMajor = scorecard.issues.some(
       (i) =>
         i.dimension === dim &&
@@ -1384,7 +1384,7 @@ export function scoreTargets(scorecard: Scorecard, versionText: string): Issue[]
           paragraph_ids: [],
         },
         override_class: 'advisory',
-      } as Issue);
+      });
     });
   }
   return out;

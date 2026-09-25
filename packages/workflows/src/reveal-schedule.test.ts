@@ -56,8 +56,8 @@ const bible = {
 
 describe('reveal schedule (U1, G5-1)', () => {
   it('reads the layer from the statement unless the bible names it', () => {
-    expect(knowledgeLayerOf('지난 생에서 배신했다.')).toBe('prior_life');
-    expect(knowledgeLayerOf('회귀 전 기억으로 안다.')).toBe('prior_life');
+    expect(knowledgeLayerOf('지난 생에서 배신했다.')).toBe('prior_loop');
+    expect(knowledgeLayerOf('회귀 전 기억으로 안다.')).toBe('prior_loop');
     expect(knowledgeLayerOf('원작 소설 속 악역이다.')).toBe('source_work');
     expect(knowledgeLayerOf('그냥 비밀이다.')).toBe('current');
     expect(knowledgeLayerOf('원작 설정이다.', 'current')).toBe('current');
@@ -67,14 +67,15 @@ describe('reveal schedule (U1, G5-1)', () => {
     const s = revealSchedule(bible, { narratorId: 'hero' });
     expect(s.map((x) => x.localId)).toEqual(['P1', 'P2', 'P3']);
     const [own, rival, p3] = s;
+    if (!own || !rival || !p3) throw new Error('three secrets expected');
     expect(own).toMatchObject({ narratorOwn: true, readerFrom: 1, othersFrom: 150 });
-    expect(rival).toMatchObject({ narratorOwn: false, readerFrom: 15, layer: 'prior_life' });
+    expect(rival).toMatchObject({ narratorOwn: false, readerFrom: 15, layer: 'prior_loop' });
     // An explicit reader date wins over the character date.
     expect(p3).toMatchObject({ readerFrom: 4, othersFrom: 1, layer: 'source_work' });
-    expect(readerStatus(own!, 1)).toBe('known');
-    expect(readerStatus(rival!, 1)).toBe('hidden');
-    expect(readerStatus(rival!, 15)).toBe('revealable');
-    expect(readerStatus(rival!, 16)).toBe('known');
+    expect(readerStatus(own, 1)).toBe('known');
+    expect(readerStatus(rival, 1)).toBe('hidden');
+    expect(readerStatus(rival, 15)).toBe('revealable');
+    expect(readerStatus(rival, 16)).toBe('known');
   });
 
   it('without a first-person narrator, the bible date binds the reader too', () => {

@@ -17,6 +17,7 @@
  * functions of policy + scorecards, and the numbers always come from the policy (ADR-0041).
  */
 import { createHash } from 'node:crypto';
+import { codePointLength } from '@yeonjae/prose';
 import { type Generated } from '@yeonjae/domain';
 import { type Issue, type Scorecard } from './evaluation.js';
 import { WorkflowError } from './errors.js';
@@ -442,7 +443,7 @@ export function changedRanges(texts: { readonly parent: string; readonly child: 
     const out: { text: string; start: number; end: number }[] = [];
     let at = 0;
     for (const line of t.split('\n')) {
-      const len = [...line].length;
+      const len = codePointLength(line);
       out.push({ text: line.trim(), start: at, end: at + len });
       at += len + 1;
     }

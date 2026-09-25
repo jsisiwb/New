@@ -17,7 +17,7 @@
  */
 import { type StoryBible } from './planning.js';
 
-export type KnowledgeLayer = 'current' | 'prior_life' | 'source_work';
+export type KnowledgeLayer = 'current' | 'prior_loop' | 'source_work';
 
 export interface ScheduledSecret {
   /** The bible proposition's local id. */
@@ -42,9 +42,9 @@ const SOURCE_WORK = /원작|게임\s?(?:속|에서|의|상)|공략|설정집|소
 
 /** The layer a secret belongs to: an explicit bible value wins, else the statement's own words decide. */
 export function knowledgeLayerOf(statement: string, explicit?: unknown): KnowledgeLayer {
-  if (explicit === 'current' || explicit === 'prior_life' || explicit === 'source_work')
+  if (explicit === 'current' || explicit === 'prior_loop' || explicit === 'source_work')
     return explicit;
-  if (PRIOR_LIFE.test(statement)) return 'prior_life';
+  if (PRIOR_LIFE.test(statement)) return 'prior_loop';
   if (SOURCE_WORK.test(statement)) return 'source_work';
   return 'current';
 }
@@ -67,7 +67,7 @@ export function revealSchedule(
 ): ScheduledSecret[] {
   const out: ScheduledSecret[] = [];
   for (const p of bible?.propositions ?? []) {
-    const s = p.secret as Record<string, unknown> | undefined;
+    const s = p.secret;
     if (!s) continue;
     const ownerIds = ids(s.owner_ids);
     const knowerIds = ids(s.allowed_knower_ids);
@@ -108,7 +108,7 @@ export function hiddenFromReader(
 
 const LAYER_KO: Record<KnowledgeLayer, string> = {
   current: '현재 시간선',
-  prior_life: '회귀 전 기억',
+  prior_loop: '회귀 전 기억',
   source_work: '원작·게임 지식',
 };
 

@@ -32,7 +32,7 @@ function scene(n: number, over: Partial<ScenePlan> = {}): ScenePlan {
     dialogue_density_target: 0.3,
     speaker_pairs: [],
     ...over,
-  } as ScenePlan;
+  };
 }
 
 const contract = {
@@ -73,7 +73,7 @@ describe('plan-level prevention (ADR-0086)', () => {
 
   it('checks the plan against its contract: partner, dialogue beats, the cut as the last beat', () => {
     expect(contractHasPartner(contract)).toBe(true);
-    const alone = { ...contract, participants: [contract.participants[0]!] };
+    const alone = { ...contract, participants: contract.participants.slice(0, 1) };
     expect(contractHasPartner(alone)).toBe(false);
     const noTalk = scene(2, { beats: [{ type: 'action', description: '달린다.' }] });
     const findings = checkPlanConsistency(alone, [scene(1), noTalk], {

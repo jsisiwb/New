@@ -37,6 +37,16 @@
         "per_span_attempts": {"type": "integer", "minimum": 1, "description": "Attempts on one span before escalating scope"},
         "smoke_after_patches": {"type": "integer", "minimum": 1, "description": "Cumulative patches after which both judges re-run on the whole chapter"},
         "regression_tolerance_points": {"type": "number", "minimum": 0, "description": "Max allowed per-dimension score drop between versions"},
+        "ladder": {
+          "type": "object",
+          "description": "ADR-0087 (STEP 3): the escalation ladder. A round whose open blocking/major findings include a kind in scene_rewrite_kinds (kinds the per-kind fix rates show patches rarely repair) drafts the scene holding them again from its scene plan instead of patching — the scene holding most of their spans, or for unquoted findings the scene furthest below its planned talk — at most max_scene_rewrites times per chapter; the rewrite is evaluated and regression-checked like a patch.",
+          "required": ["scene_rewrite_kinds"],
+          "additionalProperties": false,
+          "properties": {
+            "scene_rewrite_kinds": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+          }
+        },
+        "candidates_per_cluster": {"type": "integer", "minimum": 1, "maximum": 3, "description": "ADR-0087 (STEP 3): patches drafted per cluster of a multi-patch round; the one that brings the fewest new lint pattern hits (번역투 markers, AI stock phrases, calques) into its span is kept before any judge runs, the first on a tie. Absent or 1: one patch per cluster, as before."},
         "on_regression": {"type": "string", "enum": ["stop", "discard_and_continue"], "description": "ADR-0064. stop (the default when absent): a patch that fails the ADR-0014 regression check stops the chapter as PATCH_REGRESSED. discard_and_continue: the patched version is quarantined, the chapter returns to the version before the patch and its scorecard, and the next round may revise again within the round limit"},
         "rounds_by_language": {"type": "object", "additionalProperties": false, "description": "ADR-0064: revision rounds per manuscript language, replacing max_rounds for that language. Absent: English takes one representative round and Korean up to max_rounds (ADR-0056)", "properties": {"en": {"type": "integer", "minimum": 0}, "ko": {"type": "integer", "minimum": 0}}},
         "polish_pass": {"type": "boolean", "description": "ADR-0073 (K1): after a Korean chapter passes its gates, one editor round on the Korean lint's 번역투, sentence-ending, dialogue-share and paragraph findings; the polished version is kept only if it still passes and the lint finds fewer of them, else it is quarantined (polish_rejected). Absent or false: no polish round"},

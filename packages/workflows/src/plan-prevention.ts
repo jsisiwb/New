@@ -140,7 +140,7 @@ export function checkPlanConsistency(
   const last = scenes[scenes.length - 1];
   if (opts.cutDesign && last) {
     const beat = last.beats[last.beats.length - 1];
-    if (!beat || beat.type !== 'cliffhanger')
+    if (beat?.type !== 'cliffhanger')
       findings.push({
         rule: 'PLAN-CUT-01',
         severity: 'major',

@@ -50,6 +50,8 @@ const DESIGNED_PATHS = [
   'plan_talk_ban',
   'plan_cut_beat',
   'plan_repair',
+  'patch_candidates',
+  'scene_rewrite',
 ] as const;
 
 describe('output normalizer inventory (ADR-0057)', () => {

@@ -15,6 +15,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@13',
       'policy/standard@14',
       'policy/standard@15',
+      'policy/standard@16',
       'policy/standard@2',
       'policy/standard@3',
       'policy/standard@4',
@@ -25,6 +26,24 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v16 is standard.v15 with the escalation ladder (ADR-0087)', () => {
+    const v15 = requirePolicy('policy/standard@15', policies);
+    const v16 = requirePolicy('policy/standard@16', policies);
+    expect(v16.revision).toEqual({
+      ...v15.revision,
+      candidates_per_cluster: 2,
+      ladder: {
+        scene_rewrite_kinds: ['weak_pacing', 'excessive_exposition', 'western_novel_drift'],
+      },
+    });
+    const strip = (p: typeof v15) => {
+      const { version: _v, name: _n, content_hash: _h, revision: _r, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v16)).toEqual(strip(v15));
+    expect(v16.gates).toEqual(v15.gates);
   });
 
   it('standard.v15 is standard.v14 with plan-level prevention and converging revision (ADR-0086)', () => {

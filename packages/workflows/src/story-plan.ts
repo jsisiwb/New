@@ -731,7 +731,7 @@ export async function buildFullBible(
       reveal_not_before_chapter?: number;
       reader_reveal_chapter?: number;
       true_from_chapter?: number;
-      layer?: 'current' | 'prior_life' | 'source_work';
+      layer?: 'current' | 'prior_loop' | 'source_work';
     },
   ): string | undefined => {
     const text = (statement ?? '').trim();
@@ -768,7 +768,7 @@ export async function buildFullBible(
       const trueFrom = typeof s === 'string' ? undefined : chapterAtLeast1(s.true_from_chapter);
       const layer =
         typeof s !== 'string' &&
-        (s.layer === 'current' || s.layer === 'prior_life' || s.layer === 'source_work')
+        (s.layer === 'current' || s.layer === 'prior_loop' || s.layer === 'source_work')
           ? s.layer
           : undefined;
       const localId = addProposition(statement, 'secret', [ownerId], {
