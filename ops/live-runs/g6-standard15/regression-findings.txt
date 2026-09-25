@@ -1,0 +1,143 @@
+=== scorecard r0 overall={'score': 79, 'note_count': 0, 'major_count': 2, 'minor_count': 22, 'blocking_count': 3}
+  section genre {"score": 85, "passed": true, "issue_ids": ["d22f73f7-3804-8b31-8f7d-e09b087ec5dc", "61773c46-138d-8f21-9f9f-53faaf8885f4", "cb0328d9-5a3a-87ed-8bcd-d363c898eb80"], "drift_flags": ["ai_cliche"], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 81.3, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 5, "vocabulary_registe
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["9790dfa2-c3e8-8d52-8c14-373246f92631", "5bffa29e-f419-8d5e-a7dd-7e5e21440910", "3bdbd88f-b157-8022-97a9-4a3160f82d4f", "89d3772e-3bca-8eb1-8bef-dbaf588da4cc", "30be748a-02e8-863f-be0a-f394213f9734", "ce58bbd1-4565-8226-9cbc-942196b2a16e", "dcaeba4c-91f5-8415-bdcb-388a78aa4ee4", "0567b18a-21af-857e-9462-a875c0662e93", "1322537a-56c1-80b6-b487-686a7e63
+  section voice {"score": 84, "passed": true, "issue_ids": ["57fa0bc1-da90-83a6-b421-e3e33776fe8d", "e7894cba-778b-8da6-823e-b5207e89c2c5"], "drift_flags": ["존대·반말 혼용"], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 81.3, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 3, "register_naturalness": 4}, "evaluator_call_id": "01a0d7
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [], "issue_ids": [], "evaluator_call_id": "01a0d79e-c537-762a-8a20-e27de40be7e2"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["339d0671-0259-83cf-a59c-0b728f443d5b", "c744215f-b923-8095-9ea3-5f9aa19eb78e", "b059000d-f3e7-87b5-bca9-bb893b9852d8"], "evaluator_call_id": "01a0d79e-1aeb-7393-ae63-ca9d2b46335e"}
+  section structure {"score": 82.5, "passed": true, "issue_ids": ["92a07434-a610-862f-aa77-11919c37f4e0", "6595a062-0080-8155-ace4-a458e279b4dd", "d1c77298-3f86-879e-bd8f-3801e89f92c9"], "drift_flags": ["serial", "exposition"], "judge_score": 64, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 65, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 4, "local_payoff": 5
+  section continuity {"score": 0, "passed": true, "issue_ids": ["c89dac25-2624-8fe4-969c-5f14166ab627", "6d515bbb-afea-8852-8449-9a94ab765be7", "22144dc5-983a-80be-9903-d73db49ecfda"], "evaluator_call_id": "01a0d79e-7558-716e-bbee-4473dd004004"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["050f8539-8325-8baa-bd65-03e97ce60113", "76e7e7e7-4c58-8894-9a18-5c93ca2bb49f"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d79e-e67e-7459-b220-114a408e87ac"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d79e-2e74-73e1-b7e2-c78c72032b2d"}
+  [blocking/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 3화부터 공개되어야 할 마태석이 상위 조직 자금을 횡령하고 도박으로 날려 목숨이 위태롭다는 사실이 주인공의 속마음을 통해 직접 서술되었습니다.
+     quote: 지금쯤 상위 조직 자금 빼돌려서 불법 도박으로 다 날려 먹고 목숨이 간당간당할 때지.
+  [blocking/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 5화부터 공개되어야 할, 과거에 장기 밀매로 팔려 가기 직전 유서를 썼다는 사실이 서술을 통해 직접 진술되었습니다.
+     quote: 결국 장기 밀매꾼에게 팔려 가기 직전, 원룸 바닥에 엎드려 유서를 끄적이면서 자포자기했던 과거의 나.
+  [blocking/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 8화부터 공개되어야 할 박도준의 S급 각성 원인인 '천공의 영약'에 대한 정보가 서술에 직접적으로 노출되었습니다.
+     quote: 훗날 박도준이라는 놈에게 S급 각성을 안겨줄 ‘천공의 영약’부터,
+  [major/open] prose other judge:prose_judge 
+     claim: AI 초안에서 흔히 보이는 '알 수 없는 감정/위화감' 상투구가 쓰였다. 구체적인 행동이나 반응으로 묘사하는 편이 좋다.
+     quote: 마태석은 알 수 없는 위화감을 느낀 듯 나를 빤히 뜯어보았다.
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 긴장감을 주며 끊기보다 스스로 다음 목표를 선언하며 깔끔하게 정리해 버린다.
+     quote: 그곳에 훗날 S급 각성의 단초가 될 기연, ‘천공의 영약’이 잠들어 있다.
+=== scorecard r1 overall={'score': 73, 'note_count': 0, 'major_count': 6, 'minor_count': 20, 'blocking_count': 0}
+  section genre {"score": 90, "passed": true, "issue_ids": ["cb256417-dc43-8be9-bdb3-ac4e7775a62a", "a8119223-1b07-8765-a18b-7c224427229a"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d7a1-002e-76f6-bf
+  section prose {"score": 66.3, "passed": false, "issue_ids": ["4695c149-9d05-8684-8db1-5bb3029f0dd2", "12827de6-7ed2-82ce-818e-cef71589b7d4", "309e4e13-6ca0-8965-ac32-b323fbaf4ac8", "ee9b25fd-acda-8841-a17a-8008f113bf85", "ab287bd4-8e44-84d9-a829-ea306895b218", "d0d49ccc-f2b9-83e1-8efa-8b4800a04ed2", "eb37188d-763d-8a60-8beb-ebe42efa65ee", "5f09ba0c-a170-80e4-a28d-82f6da8ed07e", "3f3cce3d-761e-889d-9116-d4eca241
+  section voice {"score": 84, "passed": true, "issue_ids": ["2f6ec99b-5e51-804c-bd96-68dca2ec8c80", "2d1cc7a1-89e1-8324-b45e-1ee573ed32db"], "drift_flags": ["존대·반말 혼용"], "judge_score": 85, "score_model": "rubric_subscores", "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "judge_weight": 0.7, "rubric_score": 81.3, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 3, 
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [], "issue_ids": [], "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "evaluator_call_id": "01a0d79e-c537-762a-8a20-e27de40be7e2"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["5f5c93e9-0b35-8c09-aaa8-bee08e015940", "0ba28709-0121-8e74-ad5f-0e9bbe7fc9cd", "7457fb1a-4360-8044-9a6e-242978215dae"], "evaluator_call_id": "01a0d7a0-b90c-71f3-b9b7-6e8a4f843641"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["3ab87d73-f5fc-80cd-b6e5-982e4b826e0f", "f5ba7212-402c-8896-add1-f50eb467aa87", "4e038f91-158a-879f-aa75-760512e32771"], "drift_flags": ["serial", "exposition"], "judge_score": 68, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 3, "local_payoff": 5, 
+  section continuity {"score": 0, "passed": false, "issue_ids": ["1e085449-6dcd-8ebc-86cc-2aeb2cfcb9bb", "470e8ad4-d015-8782-9f4c-970ed94235e1"], "evaluator_call_id": "01a0d7a0-e000-7335-ad86-d06863b88ec6"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["0de0e40f-7dae-8b16-8112-ae74bdee9fc4", "42c2517d-0bdb-8558-83be-2bb7c97d5ebf"], "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "evaluator_call_id": "01a0d79e-e67e-7459-b220-114a408e87ac"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a0-aff9-7510-a0a8-b9ffc6cedc51"}
+  [major/open] continuity inventory_impossible judge:continuity_checker 
+     claim: 주인공이 집을 나설 때(p63~p64)는 '각서 하나 써주면 빌려주겠지'라고 생각만 하고 그대로 현관문을 나섰으나, 마태석 앞에서는 주머니에서 미리 이름표가 붙고 지장까지 찍힌 장기 포기 각서를 꺼냅니다. 각서를 작성하는 과정이 누락되었습니다.
+     quote: 나는 주머니에서 꼬깃꼬깃한 종이 한 장과 신분증을 꺼냈다.
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 3화부터 공개되어야 할 마태석의 상위 조직 자금 횡령 사실이 주인공의 대사를 통해 직접적으로 언급되었습니다.
+     quote: “위선 조직 자금 건드리셨다는 소문이 있던데.”
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 5화부터 공개되어야 할 주인공이 장기 밀매로 팔려 가기 직전이었다는 사실이 대사와 상황 묘사(장기 적출)를 통해 직접 드러났습니다.
+     quote: “그쪽에서 떼어가고 싶어 하던 콩팥, 간, 안구. 다 적어 놨습니다.”
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 8화부터 공개되어야 할 '천공의 영약'이 S급 각성의 원천이라는 설정이 서술을 통해 구체적으로 직접 노출되었습니다.
+     quote: 그곳에 훗날 S급 각성의 단초가 될 기연, ‘천공의 영약’이 잠들어 있다.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 주인공의 상태, 과거 15년의 경험, 앞으로 10일간의 계획 등을 행동과 대사에 녹이지 못하고 4문단 이상에 걸쳐 긴 속마음과 서술로 나열합니다.
+     quote: 15년 동안 지옥 같은 튜토리얼과 마수들의 아가리 속에서 살아남으며
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 회차의 마지막이 위기나 반전, 폭로로 이어지지 않고 '자 이제 시작해 볼까' 식의 흔한 다짐과 다음 기연에 대한 단순 예고로 끝나 당김이 약합니다.
+     quote: 그곳에 훗날 S급 각성의 단초가 될 기연, ‘천공의 영약’이 잠들어 있다.
+=== scorecard r2 overall={'score': 75, 'note_count': 0, 'major_count': 7, 'minor_count': 14, 'blocking_count': 2}
+  section genre {"score": 90, "passed": true, "issue_ids": ["0734e996-27a1-884a-9061-2fbac8127e8f"], "drift_flags": ["ai_cliche"], "judge_score": 88, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d7a3-6839-7766-8302-e38ed476bd07", "terminolog
+  section prose {"score": 67.9, "passed": false, "issue_ids": ["0b5ab2a3-fd79-852a-9f95-3c8b6f1e71cd", "7598be04-3e96-843d-8f30-21fcc0c69afa", "98c5335d-f86b-84eb-b898-06606007126c", "1b1d37ea-79fc-8b9e-835d-651d843b5977", "9a68a9c3-c5e9-8d22-8994-4ded7b74db35", "725f4e27-381b-88bf-b8a2-9691f6ec5fa1", "a03783da-00af-82c8-b2e8-386460081eea", "b18a250f-5664-8263-b7d7-56f454a427f1", "cdd2bf2c-7f82-8a75-8123-972b29aa
+  section voice {"score": 84, "passed": true, "issue_ids": ["94403045-96eb-869b-8939-dab46ba134c4", "cd498cbd-fec8-805c-b48b-5a6bb2b1334b"], "drift_flags": ["존대·반말 혼용"], "judge_score": 85, "score_model": "rubric_subscores", "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "judge_weight": 0.7, "rubric_score": 81.3, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 3, 
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [], "issue_ids": [], "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "evaluator_call_id": "01a0d79e-c537-762a-8a20-e27de40be7e2"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["59a669e7-7082-87e0-a6e0-eee93006e57d", "bd0be77d-3bfc-80f4-b0db-f7c977232d5b"], "evaluator_call_id": "01a0d7a3-2571-7110-9a77-0b9b27892d98"}
+  section structure {"score": 82.5, "passed": true, "issue_ids": ["8c75d045-89a5-84fb-b43f-1590c5c1cff8", "c53e1fad-ea3b-8b39-ad07-e9a3afc11f6d", "cb3f954e-af67-818d-b969-9f3872e81a83"], "drift_flags": ["serial", "cadence"], "judge_score": 70, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 65, "lint_composite": 100, "dimension_scores": {"ending_pull": 2, "hook_timing": 5, "local_payoff": 5, "
+  section continuity {"score": 0, "passed": false, "issue_ids": ["9b15de8e-5ff8-81b4-bde0-854722e2c7a1", "4cf4e569-fe33-8d23-8a58-e04c902b322e"], "evaluator_call_id": "01a0d7a3-2af7-7142-9ade-7e518cc99305"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["b70f08c2-bc2f-8c95-8fea-448caba7e7f6", "ebba0129-72b1-8f11-a533-4b15c7b5c884"], "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "evaluator_call_id": "01a0d79e-e67e-7459-b220-114a408e87ac"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a3-0d77-77a4-9923-293fea961208"}
+  [blocking/open] continuity canon_contradiction judge:continuity_checker 
+     claim: 마태석이 상위 조직의 자금을 횡령했다는 사실은 마태석 본인만 아는 비밀이며, 강진우의 지식 목록에 없을 뿐만 아니라 3화 이전에 공개가 금지된 설정입니다. 하지만 강진우가 1화에서 이를 발설하며 압박 카드로 쓰고 있습니다.
+     quote: “위선 조직 자금 건드리셨다는 소문이 있던데.”
+  [blocking/open] continuity canon_contradiction judge:continuity_checker 
+     claim: '천공의 영약'에 대한 정보는 강진우가 알고 있는 것이 맞으나, 독자에게는 '8화 이전 공개 금지'가 설정되어 있습니다. 1화 마지막 독백에서 아이템의 명칭을 직접적으로 노출하는 것은 공개 금지 규칙 위반입니다.
+     quote: 그곳에 훗날 S급 각성의 단초가 될 기연, ‘천공의 영약’이 잠들어 있다.
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 3화부터 공개되어야 할 마태석의 '상위 폭력 조직 자금 횡령' 사실이 강진우의 대사를 통해 직접적으로 진술되어 독자에게 너무 일찍 노출되었습니다.
+     quote: 위선 조직 자금 건드리셨다는 소문이 있던데.
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 독자에게 5화부터 공개되어야 할 '아버지가 남긴 막대한 빚 때문에 장기 밀매로 팔려 가기 직전'이라는 상황이 강진우의 독백 및 서술로 직접 진술되었습니다. 이후 마태석의 대사("당장 장기 적출하러 끌려갈 놈이")로도 반복 노출되었습니다.
+     quote: 회귀 전 아버지가 남긴 빚을 빌미로 나를 해체장으로 끌고 가려 했던 장본인이었다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 영어 3인칭 대명사를 직역한 '그', '그의', '그를'이 남발되었습니다. 생략하거나 이름/직함으로 바꿔야 합니다.
+     quote: 그의 약점은 이미 내 머릿속에 훤히 들어 있었다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 영어 'It is/was' 구문을 그대로 옮긴 듯한 어색한 대명사 주어입니다.
+     quote: 그것은, 철저히 상대를 먹잇감으로 내려다보는 눈빛이었다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 지시 사항에서 금지한 AI 상투구입니다. 뭉뚱그린 분위기 묘사 대신 인물의 구체적인 반응으로 보여주어야 합니다.
+     quote: 사무실 안의 공기가 일순간 얼어붙었다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 지시 사항에서 금지한 AI 상투구 '입꼬리' 묘사입니다. 진부한 표정 묘사 대신 행동이나 대사로 대체해야 합니다.
+     quote: 나는 차갑게 입꼬리를 올렸다.
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 마지막 장면이 새로운 위협이나 폭로 없이 아이템 파밍 계획을 요약하는 다짐으로 끝나 절단의 당김이 매우 약함.
+     quote: 그곳에 훗날 S급 각성의 단초가 될 기연, ‘천공의 영약’이 잠들어 있다.
+=== scorecard r3 overall={'score': 78, 'note_count': 0, 'major_count': 10, 'minor_count': 14, 'blocking_count': 1}
+  section genre {"score": 85, "passed": true, "issue_ids": ["4c82f7b6-66dd-8b1b-a21a-982407e40c07", "bcfd6392-e099-8494-9871-bd59e7adec3c"], "drift_flags": ["AI_cliche"], "judge_score": 80, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 81.3, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 4}, "evaluator_call_id": "01a0d7a5-c
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["9b82d911-e1d0-89af-a180-764da4b0cc6e", "035089c7-cb99-8ac8-9d92-979f9c517c7a", "157f1b8a-45d7-8961-a4fc-090b547ec086", "cfa15cc6-66e0-8610-be2b-c10b913e5bc5", "7809584b-f7d9-860b-b64c-bf20a087ebc9", "489a6875-0518-8f7f-b8f7-eb76e657b79b", "f9b7bfb5-d584-881c-8fb3-85ecabec00f2", "b9310109-029a-8199-9a5d-2494944f304e", "9cb2f207-5579-8dd7-8f8c-1a6db6a2
+  section voice {"score": 84, "passed": true, "issue_ids": ["a2747d8f-1bab-8c0c-9b44-eb22b97a56a9", "a62704d1-c530-8cb0-9d15-8df9291b529e"], "drift_flags": ["존대·반말 혼용"], "judge_score": 85, "score_model": "rubric_subscores", "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "judge_weight": 0.7, "rubric_score": 81.3, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 3, 
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [], "issue_ids": [], "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "evaluator_call_id": "01a0d79e-c537-762a-8a20-e27de40be7e2"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["ac2b6418-deee-807c-af13-b0a4ef586ff9", "b8a677f9-7f11-8058-8aab-27f99be4a2ce"], "evaluator_call_id": "01a0d7a5-883e-74a7-b1fe-089c86521fe0"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["bd7e98b8-13c4-8325-ab75-e8dc9190e95d", "38b7b9e8-033b-8dbb-b54c-df8ac6a24fee", "e5f00e68-cf3a-856c-ab7a-34fce48f5e73", "2cdf49db-092c-899d-aad2-023d406728d6"], "drift_flags": ["cadence", "serial"], "judge_score": 67, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, 
+  section continuity {"score": 0, "passed": false, "issue_ids": ["2e748b9e-299a-88d0-b8ac-f3bbda02e5a4", "9e4ae086-f913-8a88-afda-8b4ed41a50c0"], "evaluator_call_id": "01a0d7a6-284b-7436-b4fe-3b0f544e10fc"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["4e5bd439-2d97-82db-ad14-d60d73f41ccd", "a964da45-e65d-8549-931a-e4a00b2c2746"], "carried_from": "8ee737e8-98cb-886d-8dad-e21db8718e3e", "evaluator_call_id": "01a0d79e-e67e-7459-b220-114a408e87ac"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a5-75e0-7049-b0d8-36d0bf67c6a9"}
+  [blocking/open] continuity canon_contradiction judge:continuity_checker 
+     claim: 마태석이 상위 조직 자금을 횡령했다는 사실(secret)은 정사 설정상 3화 이전 공개 금지로 잠긴 지식입니다. 1화에서 강진우가 대놓고 이를 폭로하는 것은 지식 제한 규정 위반입니다. (또한 '윗선'을 '위선'으로 잘못 표기한 오타가 포함되어 있습니다.)
+     quote: “위선 조직 자금 건드리셨다는 소문이 있던데.”
+  [major/open] continuity inventory_impossible judge:continuity_checker 
+     claim: [p63]에서 장기 포기 각서를 써주겠다고 독백만 한 뒤 곧바로 현관문을 나섰으나, [p100]과 [p118]에서는 사무실 책상 위에 지장까지 야무지게 찍힌 완성된 신체 포기 각서를 꺼내 던집니다. 각서를 작성하는 과정이 누락되었습니다.
+     quote: 나는 주머니에서 꼬깃꼬깃한 종이 한 장과 신분증을 꺼냈다.
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 마태석이 상위 조직의 불법 도박 자금을 횡령하여 목숨이 위태롭다는 사실은 독자에게 3화부터 공개되어야 하나, 주인공의 대사로 직접 언급되었습니다. 또한 지식 설정상 강진우는 이 사실을 '알아도 되는 인물'에 명시되어 있지 않으므로 모르는 것을 아는 척하는 지식 누출에도 해당합니다.
+     quote: 위선 조직 자금 건드리셨다는 소문이 있던데.
+  [major/open] knowledge reader_knowledge_violation judge:knowledge_leak_checker 
+     claim: 아버지가 남긴 빚 때문에 장기 밀매로 팔려가기 직전 자포자기했던 과거는 독자에게 5화부터 공개되어야 하지만, 서술을 통해 구체적으로 사실 그대로 진술되었습니다.
+     quote: 결국 그 공포에 짓눌려 원룸 바닥에 엎드린 채 자포자기했던 과거의 나.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 린트 보고에서 지적되었듯 불필요한 3인칭 대명사('그의')가 쓰였습니다. 이름이나 직함으로 대체하거나 생략해야 합니다.
+     quote: 그의 약점은 이미 내 머릿속에 훤히 들어 있었다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 대명사 '그는'이 불필요하게 쓰였습니다. 호칭(마태석은)으로 바꾸거나 생략하는 것이 자연스럽습니다.
+     quote: 그는 미심쩍은 표정으로 서류를 집어 들었다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: 작성 지침에서 금지한 관습적인 분위기 묘사('공기가 얼어붙었다')입니다. 인물의 구체적인 행동이나 침묵 등 반응으로 보여주어야 합니다.
+     quote: 사무실 안의 공기가 일순간 얼어붙었다.
+  [major/open] prose literary_drift judge:prose_judge 
+     claim: AI가 자주 쓰는 표정 상투구입니다. 입꼬리를 올리는 대신 구체적인 대사나 실질적인 행동을 묘사하는 편이 좋습니다.
+     quote: 나는 차갑게 입꼬리를 올렸다.
+  [major/open] structure weak_pacing judge:structure_judge 
+     claim: 전화 통화 후 이어지는 화장실 거울 확인 씬은 회귀물의 낡은 관습으로, 전개의 속도감을 죽입니다.
+     quote: 침대에서 몸을 일으켜 화장실로 걸음을 옮겼다.
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 다음 화를 반드시 눌러야 할 위기나 극적인 반전 없이, 단순히 다음 목적지를 다짐하는 형태로 무난하게 끝납니다.
+     quote: 가장 먼저 털어야 할 곳.
+
+신림동 구석에 처박혀 있는 낡은 골동품점.
+  [major/open] genre payoff_without_setup judge:genre_judge 
+     claim: 원작 지식 사용의 대가 부재 및 너무 쉬운 해결
+     quote: 어차피 각서 썼으니 돈 내주시고, 나중에 제 배 째서 원금 열 배로 회수하시면 그만인데.

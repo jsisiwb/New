@@ -1,0 +1,105 @@
+=== scorecard r0 overall={'score': 81, 'note_count': 0, 'major_count': 8, 'minor_count': 14, 'blocking_count': 1}
+  section genre {"score": 85, "passed": true, "issue_ids": ["4d926fe1-8c86-8fce-a817-24fc490836c3", "11af4265-a311-84a8-a94f-f0aec856bf70", "712c2ca9-5cce-87f1-b853-0544b0460043", "934dad51-70ac-8c0b-b0fe-652b6cba8ce6"], "drift_flags": ["설명충 대사", "번역투 대사"], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 81.3, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 
+  section prose {"score": 73.8, "passed": false, "issue_ids": ["02c9b9b3-1c40-8386-8195-6ed0b4fceef9", "2168719c-c1e5-8080-9427-5aa4a4dcabc4", "5ed31e26-fd9f-8504-b022-879eb449ee12", "ee1b9421-cbb5-888b-b4e4-9f00feb22d41", "9b8e33c7-f9d4-8089-86c9-b169f9fde53f", "898c92ce-af33-830f-a985-e4914198cb85", "7f2d0986-874a-894e-a13e-71b9b05adb7f", "4c82c956-3fa7-8138-8248-aea6465d67df", "593a02c7-e230-8c61-9464-d228a0f2
+  section voice {"score": 95.7, "passed": true, "issue_ids": ["9c056522-d751-83fe-a906-fcb3077112bb", "7c9795b6-4fcf-8730-bc42-c929c9a3d776"], "drift_flags": ["설명조 대사"], "judge_score": 88, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 93.8, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 5, "register_naturalness": 4}, "evaluator_call_id": "01a0d7
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "9b2584c8-d36e-8cd5-91b2-c7d07c3788a1"}], "issue_ids": [], "evaluator_call_id": "01a0d7a1-72be-75c3-aa0d-109b0b574669"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["da7c1ee6-9122-8418-8aac-a0531cc3820a"], "evaluator_call_id": "01a0d7a1-3bb1-73fd-b657-6dcb9719f83c"}
+  section structure {"score": 87.5, "passed": true, "issue_ids": ["5191d416-4b2a-82b2-93bb-3ff45c7795d5", "44ad7479-06ee-8a00-b3c5-f89344d161a8", "a2f330ac-1e2c-8e8b-888e-4ed9d8f64b1b"], "drift_flags": ["serial"], "judge_score": 76, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 75, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 4, "local_payoff": 5, "exposition_
+  section continuity {"score": 0, "passed": false, "issue_ids": ["b27e8809-8100-82bd-9bdc-dbe7edf60a3a", "042fd800-ba73-883c-b229-7f65a0051bbb"], "evaluator_call_id": "01a0d7a1-2c8b-70c3-98e3-1c69483b5397"}
+  section repetition {"score": 0, "passed": false, "issue_ids": ["88f4acb8-65fa-863e-8325-4c7e69a63cb1", "e74b9850-92cb-8998-8e08-5ac19efc340c"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d7a1-bdcf-7738-82ec-1b3e65fd7f73"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a1-1331-77cb-9bcc-c0362201046b"}
+  [major/open] genre terminology_violation lint:device KO-DEVICE-01
+     claim: ‘원작 주인공’은(는) 이 작품의 장치(게임 빙의)에 없는 어휘다. 이 작품의 장치 어휘로 바꾼다.
+     quote: 원작 주인공
+  [major/open] genre terminology_violation lint:device KO-DEVICE-01
+     claim: ‘원작 주인공’은(는) 이 작품의 장치(게임 빙의)에 없는 어휘다. 이 작품의 장치 어휘로 바꾼다.
+     quote: 원작 주인공
+  [blocking/open] continuity timeline_error judge:continuity_checker 
+     claim: 앞선 135문단에서 이미 흙먼지가 걷히고 세르피아가 등장하여 아델과 대화(151~166문단)까지 나누었는데, 174문단에서 또다시 흙먼지가 걷히며 세르피아가 처음 질문하는 것처럼 묘사되어 한 장면 내에서 상황이 모순됩니다.
+     quote: 흙먼지가 걷히는 잔해 너머에서 화려한 프릴 제복의 세르피아가 떨리는 목소리로 물었다.
+  [major/open] knowledge knowledge_leak judge:knowledge_leak_checker 
+     claim: 세르피아는 아델과 처음 대면하는 상황이며, 아직 서로 통성명조차 하지 않았음에도 아델의 이름을 알고 부릅니다. 아델이 마력 적성 0점으로 유명하다 해도 밖을 지나가다 우연히 마주친 평민의 얼굴을 보자마자 이름을 아는 것은 부자연스러우며 지식 누출에 해당합니다.
+     quote: “아, 아델…….”
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 한국어 웹소설에서 피해야 할 3인칭 대명사('그', '그녀')가 여러 번(6회) 사용되었습니다. 이름, 직함으로 대체하거나 주어를 생략해야 합니다.
+     quote: 그녀가 비틀비틀 걸음을 옮겼다.
+  [major/open] prose other judge:prose_judge 
+     claim: 같은 대사가 연달아 두 번 중복 출력되는 오류가 있습니다.
+     quote: “네놈이 정녕 미쳤구나!”
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 상황을 회피하고 지나치는 흐지부지한 결말로, 독자가 다음 화를 반드시 눌러야 할 강력한 절단을 만들지 못했습니다.
+     quote: 나는 피곤한 눈으로 건조하게 대답하고는 그녀를 휙 지나쳐버렸다.
+  [major/open] genre other judge:genre_judge 
+     claim: 문단 [p130]과 [p131]에서 동일한 대사가 의미 없이 반복되는 생성 오류가 있습니다.
+     quote: 네놈이 정녕 미쳤구나!
+  [major/open] repetition repeated_paragraph judge:repetition_judge 
+     claim: 130문단과 131문단에서 동일한 대사가 연속으로 똑같이 반복되었습니다. 단순 복사 붙여넣기 혹은 편집 실수로 보입니다.
+     quote: “네놈이 정녕 미쳤구나!”
+=== scorecard r1 overall={'score': 83, 'note_count': 0, 'major_count': 2, 'minor_count': 21, 'blocking_count': 0}
+  section genre {"score": 90, "passed": true, "issue_ids": ["e72369ac-e327-8f49-a40f-a98fab601189", "f3e798ae-d6b5-8629-b8fa-84744e8fe78b", "34c5a3b6-11f1-89dc-8900-8366c6af8949"], "drift_flags": [], "judge_score": 86, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 5, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 4}, "ev
+  section prose {"score": 75.4, "passed": false, "issue_ids": ["d7a173a3-62bf-80e0-839b-f3c7fe71d524", "de26f675-fe61-8b57-ba62-ba95c0d532ff", "c8abbe29-44dc-82c0-9b20-e9f13cda7272", "dd30ca62-4987-8a1b-9221-3e9016fe9ea8", "37081fae-86e0-83c7-909a-c690f840f7a7", "f33f62e2-92e2-8847-bfe6-beb462aecc6b", "9a257ed7-3001-8f85-be64-68a5d6361af0", "28586d81-d79f-8799-802e-b057ad2db51f", "f3059c5a-1bee-8bbe-8ae0-c09ff407
+  section voice {"score": 95.7, "passed": true, "issue_ids": ["6dafd547-21c5-8dde-a4dc-bb8908b62543", "9a6286ef-f067-8c1c-bf43-2c18f08fc634"], "drift_flags": ["설명조 대사"], "judge_score": 88, "score_model": "rubric_subscores", "carried_from": "ce884419-214f-86da-90fc-ebe367b1a262", "judge_weight": 0.7, "rubric_score": 93.8, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 5, 
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "9b2584c8-d36e-8cd5-91b2-c7d07c3788a1"}], "issue_ids": [], "carried_from": "ce884419-214f-86da-90fc-ebe367b1a262", "evaluator_call_id": "01a0d7a1-72be-75c3-aa0d-109b0b574669"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a3-47c6-7471-9114-41a1c6d83159"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["aa302a7e-c865-8676-910d-5a9f40f0e488", "f0965263-549d-859c-b323-6229dc379d82"], "drift_flags": ["serial"], "judge_score": 82, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 5, "local_payoff": 5, "exposition_control": 4, "dialogue_forwardness": 4}, "
+  section continuity {"score": 0, "passed": false, "issue_ids": ["a675e271-2f0f-851f-b0cb-55ebb980d96b"], "evaluator_call_id": "01a0d7a3-6c18-7410-8de8-e6d4122da764"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["1840865e-01d9-8793-b4ac-4e5ded280380", "672dee79-1697-8ddf-bb98-d37d2bf183cf"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d7a3-ca73-747a-8a1b-201d0c18dcab"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a3-78fa-7185-ade3-aca4a76dc4e7"}
+  [major/open] continuity timeline_error judge:continuity_checker 
+     claim: 이미 [p134]에서 흙먼지가 걷히고 세르피아와 대면하여, [p150]~[p165]에 걸쳐 심연의 오러 운운하며 길게 대화까지 나누었습니다. 그런데 [p173]에서 갑자기 다시 '흙먼지가 걷히는 잔해 너머에서' 처음 목격한 것처럼 상황이 초기화되고 질문이 반복되는 모순이 발생했습니다.
+     quote: 흙먼지가 걷히는 잔해 너머에서 화려한 프릴 제복의 세르피아가 떨리는 목소리로 물었다.
+  [major/open] prose other judge:prose_judge 
+     claim: 금지된 AI 상투구 사용 (무거운 정적)
+     quote: 숨소리조차 들리지 않는 무거운 정적.
+=== scorecard r2 overall={'score': 85, 'note_count': 0, 'major_count': 1, 'minor_count': 19, 'blocking_count': 0}
+  section genre {"score": 90, "passed": true, "issue_ids": ["85a6932f-d87e-88fb-8980-3194fcbc3088", "3b0470db-d993-8cdd-8d8a-e1ce18a1e1e6", "434b05ba-dd2d-8366-a880-cdc164524b9c"], "drift_flags": [], "judge_score": 86, "score_model": "rubric_subscores", "carried_from": "dedba6cf-17cf-8a39-8eda-c31536c1b0ec", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 5, "taboo_restraint": 5,
+  section prose {"score": 79.2, "passed": true, "issue_ids": ["983f40da-2e6f-863b-9ade-e6f86ecd4c4a", "e96cf749-bceb-8cc1-b19d-e5c7a1ae39f8", "3ced4804-fbbd-8526-82b8-900880f395eb", "e5cefbac-d7f5-8021-9ccb-6fb66edaa132", "b25d09e6-d37e-8c2a-b5bb-c7ae8b454861", "af267fc8-e98f-8915-b200-f9ada25f4173", "3fc303a1-ecca-8f57-88fd-4aac9c26b6aa", "d2126340-699b-85ef-ab9b-4e429401dbfc", "8ea04adb-a3c2-80a6-9d3f-eea4047e5
+  section voice {"score": 95.7, "passed": true, "issue_ids": ["a18430b9-4449-8c42-b21a-28c3d26728b2", "d5d686be-3a15-8367-9015-ac8e58812fd5"], "drift_flags": ["설명조 대사"], "judge_score": 88, "score_model": "rubric_subscores", "carried_from": "dedba6cf-17cf-8a39-8eda-c31536c1b0ec", "judge_weight": 0.7, "rubric_score": 93.8, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 5, 
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "9b2584c8-d36e-8cd5-91b2-c7d07c3788a1"}], "issue_ids": [], "carried_from": "dedba6cf-17cf-8a39-8eda-c31536c1b0ec", "evaluator_call_id": "01a0d7a1-72be-75c3-aa0d-109b0b574669"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a5-7d8a-761c-ae11-467b2eb032e9"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["dd4430eb-3bbb-82dc-b4b6-8138f78d2401", "98fabbcd-e1ee-891c-b353-ccd933846d3c"], "drift_flags": ["serial"], "judge_score": 82, "score_model": "rubric_subscores", "carried_from": "dedba6cf-17cf-8a39-8eda-c31536c1b0ec", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 5, "local_payoff": 5
+  section continuity {"score": 0, "passed": false, "issue_ids": ["9973c027-c0eb-87dd-9a40-fea827fd66f4"], "evaluator_call_id": "01a0d7a5-2e61-7600-bec7-01fc624875b1"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["c889c47b-cb87-877c-a08b-ad53f43bb4b7", "dbd4fbfe-5735-824b-8e3f-e74093daab28"], "carried_from": "dedba6cf-17cf-8a39-8eda-c31536c1b0ec", "evaluator_call_id": "01a0d7a3-ca73-747a-8a1b-201d0c18dcab"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a4-f98a-7626-8747-956c8dbde65f"}
+  [major/open] continuity timeline_error judge:continuity_checker 
+     claim: 타임라인 설정상 빙의 시점은 '당일 오전'이지만, 원고에서는 '어제' 빙의했다고 서술되어 시점이 어긋납니다.
+     quote: 어제 이 몸에 빙의하자마자 확인한 마력 적성은 0점이었다.
+=== scorecard r3 overall={'score': 85, 'note_count': 0, 'major_count': 7, 'minor_count': 14, 'blocking_count': 0}
+  section genre {"score": 80, "passed": true, "issue_ids": ["baa662cc-95b8-8a64-af28-941d25ff25f2", "1930513d-38cc-88f3-a7e3-2d4ae96ed247", "ba14e8e0-d37b-8a26-9e56-5be8ec488a60"], "drift_flags": ["exaggerated_dialogue"], "judge_score": 75, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 75, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabular
+  section prose {"score": 79.2, "passed": true, "issue_ids": ["29900687-8189-8bd1-b739-8464ed23024f", "0d641acc-7afe-8dfe-96b3-cc21a813e98e", "8e681890-18d3-8dd5-acdb-bc82097953af", "bbbb9b02-9b65-899f-8d26-b4491d530259", "45d5a740-7cc4-81d4-b440-1b404851221e", "0f8433c2-e295-8c88-8f78-0ffda4fc7ee7", "a26d4d69-2c02-8f9c-9fc9-7a8ca9ed217d", "f23d66b9-a77a-89b6-9a63-f1dbd412e74d", "67b32e55-94c3-84d5-8240-bb5fa29cc
+  section voice {"score": 86.9, "passed": true, "issue_ids": ["371bec77-b870-8409-ace2-97e1f2302713", "7152acc4-b42a-8f39-98c3-4ada8d972d7c", "04db620a-28ad-8877-8b7f-dd71116f652a"], "drift_flags": ["사극풍 어미 혼용", "설명조 긴 대사"], "judge_score": 82, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 81.3, "dimension_scores": {"verbal_habits": 5, "distinguishability": 5, "register_consistency": 4, "
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "9b2584c8-d36e-8cd5-91b2-c7d07c3788a1"}], "issue_ids": [], "evaluator_call_id": "01a0d7a6-de49-77ca-a4cc-50a88b75ce22"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a6-6c4f-746c-8d5e-5e920305bee2"}
+  section structure {"score": 90, "passed": true, "issue_ids": ["97fc30d0-d7bd-8289-9fcb-f0701f111570", "10a4bb49-a020-889e-b001-32f5cb10a87f"], "drift_flags": ["serial"], "judge_score": 82, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 80, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 5, "local_payoff": 5, "exposition_control": 4, "dialogue_forwardness": 4}, "
+  section continuity {"score": 0, "passed": true, "issue_ids": ["1501618b-52e7-85f9-a5ec-2568f569fbf6"], "evaluator_call_id": "01a0d7a6-bcb2-72bc-820d-d89a51574952"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["d243d6ef-74cc-8f23-a021-7c3f4118774d"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d7a6-fbec-75ff-97c3-57b6c54bd217"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7a6-5ce9-776a-a6f6-2e8b377b0766"}
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 인칭 대명사('그의') 사용
+     quote: 채점표가 그의 손을 벗어나 바닥으로 툭 떨어졌다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 인칭 대명사('그가') 사용
+     quote: 침조차 제대로 삼키지 못한 그가 나를 보며 부들부들 떨었다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 번역투 대명사('그녀의') 사용
+     quote: 그녀의 붉은 눈동자가 지진이라도 난 듯 미친 듯이 흔들렸다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 번역투 대명사('그녀의') 사용
+     quote: 그녀의 시선이 내 손에 들린 조잡한 목검에 꽂혔다.
+  [major/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요한 대명사 목적어('그녀를') 사용
+     quote: 나는 피곤한 눈으로 건조하게 대답하고는 그녀를 휙 지나쳐버렸다.
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 착각물 요소를 촉발하고 오해가 쌓이는 장면까지는 좋으나, 마지막에 휙 지나쳐버리며 자연스럽게 상황을 넘겨 다음 화를 누를 강력한 '당김'이 부족하다.
+     quote: 나는 피곤한 눈으로 건조하게 대답하고는 그녀를 휙 지나쳐버렸다.
+  [major/open] voice register_error judge:voice_judge 
+     claim: 등장인물이 경악한 상황에서 자연스러운 감정 표출 대신 독자를 위한 상황 설명을 길게 늘어놓는 작위적인 대사
+     quote: 마력의 보조조차 없이 오로지 검의 궤적만으로 공간을 압축해 빚어낸 파괴력!

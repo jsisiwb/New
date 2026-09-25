@@ -7,43 +7,61 @@ Everything else in `docs/` describes design; only this file claims what exists a
 
 **Repository.** `sigma44web/New` (moved from `sigma43web/New`; the PR history did not move with it), default branch
 `hoplite/ainos-1ac771f8`, which holds everything through ADR-0084 / `standard@14`. This run works on one branch,
-`hoplite/euhesperides-dd340964`, one commit series per phase, with a draft roll-up PR into the default branch that the
-operator merges.
+`hoplite/euhesperides-dd340964`, one commit series per phase; the draft roll-up PR #1 into the default branch is what
+the operator merges.
 
 | Order | Phase (operator plan step) | Status |
 | --- | --- | --- |
 | 1 | STEP 1 — `standard@14` checkpoint on both projects | done: the recorded G5 pair (ADR-0085, `13-live-run-gemini.md` §5) |
-| 2 | STEP 2 — finish Phase U (plan-level prevention) | next |
-| 3 | STEP 3 — finish Phase V2 (revision that converges) | pending |
+| 2 | STEP 2 — Phase U (plan-level prevention) + the V2 rules G5-3 demanded | done: `standard@15` (ADR-0086); live G6 (§6) |
+| 3 | STEP 3 — Phase V2 (escalation ladder) | done: `standard@16` (ADR-0087); fix-rate table |
+| 3b | G6 fixes | done: `standard@17` (ADR-0088); live G7 running |
 | 4 | STEP 4 — finish Phase C | pending |
-| 5 | STEP 5 — Phase N (accepted chapters) | pending |
+| 5 | STEP 5 — Phase N (accepted chapters) | next, on whichever project accepts chapter 1 |
 | 6–8 | STEPS 6–8 — Q, M, I, E, W, B, D | pending |
 
-**Done in this phase (STEP 1).** The `standard@14` checkpoint was already in the permanent database: projects
-`G5a-acad-f14` and `G5r-regr-f14`, created 45 s after the Phase U + V2 commit on a tree identical to the merged branch,
-never recorded because the last session ran out of credits. Recorded in §5 of the live-run log with the §8 measures;
-run reports and findings exported to `ops/live-runs/g5-standard14/`. Neither chapter was accepted: G5a r0 overall 76
-(prose 75.4 ✗, structure 77.5 ✗), G5r r0 overall 80 (structure 77.5 ✗); every patched round of both quarantined.
+**Where acceptance stands.** No chapter is accepted yet. G6 (`standard@15`): the academy chapter converged from 9
+blocking/major findings to 1 with all four gates passing and every round kept, then a full re-evaluation raised seven
+majors (single 그/그녀 inside the operator's own band, a comic cut the rubric did not know) and the three rounds ran out;
+the regression chapter was blocked by the hero's prior-life knowledge against the bible's reader dates. `standard@17`
+answers both (ADR-0088). G7 on `standard@17` is the next evidence (§7 when recorded).
 
-**Open defects (the work list, `13-live-run-gemini.md` §5).** G5-1 the premise judged a reader secret (the canon state
-the knowledge-leak checker reads lists the hero's own device as a 150화 secret); G5-2 talk below the floor at the
-plan's source (a contract with no one else on page; a percentage the writer does not follow); G5-3 every patched
-round quarantined (passing dimensions "regressed" above their thresholds, judge-variance findings on untouched text
-counted as introduced, continuity/knowledge findings never targeted, score-only failures never revised); G5-4 one
-explanation in every scene; G5-5 the cut on a trailing beat; G5-6 character state against the bible (no time frames,
-no physical limits); G5-7 AI stock figures; G5-8 voice metrics outside the band (likeness 65 / 70); G5-9 scene-internal
-slips.
+**Open defects.** None of G5-1 … G5-9 or G6-1 … G6-5 is open in code; G5-8 (voice metrics: likeness 70 in G6r, 속마음
+and endings outside the band) is only partly addressed. Carried: the operator's 3인칭 cutaways (not planned), story-clock
+checks by the continuity checker (U4, partly), C2/C6/C7 corpus work, Phases N–D.
 
-**Next step.** STEP 2 (U1, U3–U8) and the parts of STEP 3 that G5-3 shows block every acceptance, as one policy
-(`standard@15`), then its live checkpoint on both projects (ADR-0085).
+**Budget.** Bridge credits after G6: ws1 78.34 %, ws2 89.90 %, ws3 3.30 %, ws4 1.04 % (billing period ending
+2026-10-09; workspaces 3 and 4 are new, so about 227 points remain). A chapter-1 run from a fresh project costs about 4.5
+points on `standard@15` (8.91 for the G6 pair).
 
-**Budget.** Bridge credits at this session's start: ws1 76.50 %, ws2 86.49 % of the billing period ending 2026-10-09
-(about 37 points). G5 cost 5.26 points between the post-G4 reading and this one. A chapter-1 run from a fresh project
-costs 3.2–4.1 points.
+**Safety rules.** Tests run against local sandbox databases (`yeonjae_test` for full suites, `yeonjae_test_b` for
+targeted runs — never both suites on one database at once); the inherited `DATABASE_URL` is the permanent database,
+used only by live runs, corpus commands and reports, from the separate worktree `/tmp/hoplite/live`.
 
-**Safety rules.** Tests and `pnpm check` run against a local sandbox database (`postgres://yeonjae:yeonjae@127.0.0.1:5432/yeonjae_test`);
-the inherited `DATABASE_URL` is the permanent database, used only by live runs, corpus commands and reports, from the
-separate worktree `/tmp/hoplite/live` so a rebuild never changes a running process.
+## STEP 2 / STEP 3 / G6 fixes — `standard.v15`, `standard.v16`, `standard.v17` — 2026-09-25
+
+**Built (`standard@15`, ADR-0086):** `reveal-schedule.ts` (reader and character dates, knowledge layers; renderings for
+planners, writer and knowledge checker; `reader_guards` on the contract; `PLAN-REVEAL-01`); `plan-prevention.ts`
+(countable talk targets from the operator's line densities, talk-ban removal, the plan self-check, the cut beat,
+structure targets, feedback); a contract re-asked once for a partner; the `plan_critic` family and one scene-plan repair;
+time frames in the cast bible (`true_from_chapter`, knowledge dated from it); revision convergence (findings attributed to
+changed lines, threshold protection, every open finding targeted, score-only targets, a full confirmation before
+approval); prompt family 4.7.0 (six families). **(`standard@16`, ADR-0087):** two candidate patches per cluster chosen by
+local lint checks; the scene-rewrite rung for pacing, exposition and Western-register findings; `quality:fix-rates`.
+**(`standard@17`, ADR-0088):** the narrator's remembered knowledge is the reader's; the contract is critiqued before the
+scenes; repeated lines dropped at assembly; cast designer 4.8.0; `voice/operator@2`; five Korean revision rounds.
+
+**Measured:** G6 (§6). Fix rates over 18 live patched rounds before `standard@15`: prose and continuity kinds 67–100 %,
+structural pacing 33 %, exposition 17 % (ADR-0087).
+
+**Tests:** `reveal-schedule.test.ts`, `plan-prevention.test.ts`, `convergence.test.ts` (G5a r3 replayed: kept under v15,
+quarantined under v14), `policy.test.ts` (v15–v17, gates unchanged), `registry.test.ts` (4.7.0 adds six families, 4.8.0
+changes one), `output-shapes.test.ts`, `voice.test.ts`, `normalizers.test.ts`, `novel-ko.integration.test.ts` (simulated
+runs under v15, v16 and v17). Full suite on the sandbox database: 2,217 passed before the count updates; the only real
+failures were the CLI's expected policy and prompt counts, since updated.
+
+**Not done (and why):** chapter regeneration and re-plan rungs (no live chapter has needed them yet); second-sample
+confirmation of variance findings (the measurable part of G6-5 was calibration); the 3인칭 cutaways.
 
 ## Operator-voice continuation — reconciliation of the operator's plan (2026-09-25)
 
@@ -53,14 +71,14 @@ start of the run (merged through ADR-0084 / `standard@14`). Later phases update 
 | Plan item | Status | Evidence |
 | --- | --- | --- |
 | STEP 1 — `standard@14` checkpoint, both projects | done | G5a / G5r (`13-live-run-gemini.md` §5, ADR-0085) |
-| U1 — planner reads the reveal schedule; reader vs character reveal; knowledge layers; hint budget; planner check | partly | the writer reads the checker's reader-secret list (ADR-0084); the POV owner's secrets leave that list (ADR-0074) but not the canon state the checker also reads (`packages/context/src/fetch.ts`, G5-1); one reveal chapter per secret; no layers, hint budget or planner check |
-| U3 — time frames for planned character states | not started | bible states carry no from/until chapter (G5-6) |
+| U1 — planner reads the reveal schedule; reader vs character reveal; knowledge layers; hint budget; planner check | done (`standard@15`, `@17`) | the writer reads the checker's reader-secret list (ADR-0084); the POV owner's secrets leave that list (ADR-0074) but not the canon state the checker also reads (`packages/context/src/fetch.ts`, G5-1); one reveal chapter per secret; no layers, hint budget or planner check |
+| U3 — time frames for planned character states | done for secrets (`true_from_chapter`, `standard@15`); turning points already carry chapters | bible states carry no from/until chapter (G5-6) |
 | U4 — story clock ledger (date, weekday, time of day, countdowns, semester) | partly | story clock and countdowns in the ledgers (ADR-0061, ADR-0063, `packages/context/src/ledgers.ts`); the contract's `story_time` is an ordinal; no calendar, no time-span check |
-| U5 — 절단 by design | partly | the contract's `hook` (type, description, question) and rhythm directives (ADR-0073); no placement rule, no last-scene check or rewrite (G5-5) |
-| U6 — dialogue at plan level, structural scene redraft, POV cutaways | partly | plan floor, partner and one redraft below 12 % (ADR-0084); no dialogue beats with a partner per scene; no cutaways (G5-2) |
-| U7 — contract / scene-plan self-consistency pre-check | partly | deterministic plan check against the ledgers (ADR-0063); nothing checks the scene plans against their contract |
-| U8 — pre-flight plan critic | not started | — |
-| STEP 3 — V2 escalation ladder, constrained patches, N candidates, best non-regressed version, fix-rate table | partly | multi-patch rounds (ADR-0077), parent baseline (ADR-0078), discard-and-continue (ADR-0064), re-judging open majors and failing dimension first (ADR-0084); every G5 patched round quarantined (G5-3) |
+| U5 — 절단 by design | done (`planning.cut_design`, `standard@15`); a weak cut is a structure finding the ladder targets | the contract's `hook` (type, description, question) and rhythm directives (ADR-0073); no placement rule, no last-scene check or rewrite (G5-5) |
+| U6 — dialogue at plan level, structural scene redraft, POV cutaways | done except cutaways (partner in contract, line targets, redraft ratio, scene rewrite; G6 talk inside the band) | plan floor, partner and one redraft below 12 % (ADR-0084); no dialogue beats with a partner per scene; no cutaways (G5-2) |
+| U7 — contract / scene-plan self-consistency pre-check | done (`checkPlanConsistency`, `standard@15`) | deterministic plan check against the ledgers (ADR-0063); nothing checks the scene plans against their contract |
+| U8 — pre-flight plan critic | done (`plan_critic`, scene plans `standard@15`, contract `standard@17`) | ADR-0086, ADR-0088 |
+| STEP 3 — V2 escalation ladder, constrained patches, N candidates, best non-regressed version, fix-rate table | done except chapter-regeneration and re-plan rungs (`standard@15`, `@16`) | multi-patch rounds (ADR-0077), parent baseline (ADR-0078), discard-and-continue (ADR-0064), re-judging open majors and failing dimension first (ADR-0084); every G5 patched round quarantined (G5-3) |
 | C1 statistics, C0.3 analysis, C3 voice profile, C4 calibrated lint, C5 exemplars, C8 likeness, C9 academy intake, copy detection | done | ADR-0082, ADR-0083, `docs/10-corpus/` |
 | C2 — structure profiles of the operator's chapters as planner targets | partly | read by hand (`operator-voice-analysis.md` §9–§10); no per-chapter profiles, no planner targets |
 | C6 — contrast pairs (pipeline 번역투 version vs operator original) | not started | `corpus.contrast_pairs` is empty |

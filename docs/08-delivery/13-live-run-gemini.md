@@ -238,3 +238,59 @@ Excerpts (the first three lines of each chapter, unedited pipeline output):
   few ellipses and pronouns (G5r). (Q, C)
 - **G5-9 — scene-internal slips.** Two "boss" steel doors in one scene (G5r); a swapped wand called the old one
   (G5a). Patch territory once rounds converge (V2).
+
+## 6. G6 — the `standard.v15` checkpoint on both projects (STEP 2; 07:52–08:21 UTC)
+
+Chapter 1 of two fresh projects on `standard@15` (ADR-0086: reveal schedule, talk partner and countable talk targets,
+the cut as the last beat, time frames, the plan critic, findings attributed to the patch), run in parallel from the
+live worktree at `3c8d084`. Run reports and findings: `ops/live-runs/g6-standard15/`.
+
+| | G6a (academy) | G6r (regression) |
+| --- | --- | --- |
+| Length (v1) | 5,463자 (+3.1 %) | 5,449자 (+2.8 %) |
+| Scenes (planned talk → measured talk + 속마음) | 3: 40 % → 23.1 %, 20 % → 20.8 %, 40 % → 30.6 % | 2: 20 % → 16.2 %, 45 % → 32.8 % |
+| Quoted dialogue lines | 42 (7.7 per 1,000자; G5a 29, 4.9) | 49 (9.0 per 1,000자, the operator's median is 9.2; G5r 23, 3.9) |
+| Quoted 속마음 lines | 7 (G5a 13) | 7 |
+| Plan critic / repairs | 2 findings; the scene plan re-asked once (`PLAN-REPAIR`) | 1 finding; `PLAN-DLG-03` (a scene with a partner and no dialogue beat) repaired by one re-plan |
+| First line | `“다음, 아델.”` (a dialogue line) | `2026년 4월 10일.` (a date line) |
+| r0 gate | overall 81: prose 73.8 ✗, structure 87.5, genre 85, voice 95.7 | overall 79: prose 75.4 ✗, structure 82.5, genre 85, voice 84 |
+| Rounds | r0 to r3, **no round quarantined** | r0 to r3; r1 and r2 quarantined (`targeted_worsened`), r3 kept |
+| Blocking / major | r0 1 / 8 → r1 0 / 2 → r2 **0 / 1 (all four gates passing)** → r3 0 / 7 | r0 3 / 2 → r3 1 / 10 |
+| Talk findings | none at any round (G5a: a weak-pacing major) | none at any round (G5r: a blocking talk finding) |
+| Reader-secret findings | none (G5a: the premise judged a 200화 secret) | 3 blocking at r0: the hero's prior-life knowledge (an elixir, a thug's embezzlement) against bible reader dates 3–8 |
+| `KO-DEVICE-01` | 2 at r0 (`원작 주인공` in a game-possession serial) | 0 |
+| Likeness (C8) | see below | 70 (first-person bands 75); G5r 70 |
+| Result | not accepted (`needs_attention`) | not accepted (`needs_attention`) |
+| Calls / tokens / time | 53 (53 attempts) / 210,623 in, 27,301 out / 1,731 s | 55 (55 attempts) / 209,172 in, 28,686 out / 1,637 s |
+
+Credits for the pair: ws1 76.74 → 78.34 %, ws2 86.84 → 89.90 %, ws3 0.07 → 3.30 %, ws4 0.02 → 1.04 % (8.91 points; the
+operator added workspaces 3 and 4 before this run).
+
+Excerpts (the first three lines of each chapter, unedited):
+
+> “다음, 아델.”
+> 무미건조한 호명 소리가 일루전 연무장을 울렸다.
+> 나는 허공에 둥둥 떠 있는 반투명한 창을 멍하니 노려보았다.
+
+> 2026년 4월 10일.
+> 스마트폰 액정에 뜬 날짜.
+> 그 무기질적인 숫자를 눈에 담자마자, 나는 조금의 망설임도 없이 통화 버튼을 눌렀다.
+
+**What changed against G5.** The premise is no longer a reader secret (G5-1 fixed); talk is inside the operator's band at
+r0 in both chapters and no judge raised a talk finding (G5-2 fixed); the academy chapter's rounds converged — every
+round kept, 9 blocking/major findings down to 1 with all four gates passing at r2 (G5-3 fixed for the academy chapter).
+
+**Defects (fixed by ADR-0088, `standard@17`).**
+
+- **G6-1:** the hero's prior-life knowledge was hidden from the reader by the bible's dates (three blocking findings in
+  G6r). The schedule gave the reader only the narrator's own secrets; the operator's readers hold the hero's game and
+  future knowledge. For one secret the bible did not list the hero as a knower at all.
+- **G6-2:** G6r's hook was built on that knowledge; the plan critic raised contract-level findings that no scene-plan
+  repair could reach.
+- **G6-3:** a dialogue line written twice in a row and an entrance narrated twice across a scene boundary (G6a, the
+  blocking at r0).
+- **G6-4:** `원작 주인공` in the academy chapter, copied from the cast bible, whose designer brief asks for each heroine's
+  fate "in the 원작, with the 원작 주인공" whatever the device.
+- **G6-5:** after the third patch the full re-evaluation raised seven majors on text earlier rounds had judged clean —
+  five single uses of 그/그녀 (the draft's rate is inside the operator's first-person band) and a weak ending for the
+  comic-deflection cut the contract asked for — and the three rounds were spent.
