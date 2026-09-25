@@ -40,6 +40,19 @@ now bursts to 8 GiB.
 **Resume point.** Record G11 (`standard@21`, projects `G11a 아카데미 standard21` / `G11r 회귀 standard21`) with
 `quality:checkpoint`; an accepted chapter 1 goes on to STEP 5 (`novel:resume <project> --stop-after=5`, then `novel:run`).
 
+## G11 fixes — `standard.v22`, `standard.v23` — 2026-09-25
+
+**Built:** ADR-0094 (`standard@22`): `context.secret_names` (G10-5), `planning.normalize_arc_knowledge`
+(`normalizeArcKnowledge`, G11-1). ADR-0095 (`standard@23`): `evaluation.talk_band_cap` (`capTalkFindings`, G11-2) and
+`revision.convergence.net_improvement.exclude_variance` (G11-3).
+
+**Measured:** G11 (`13-live-run-gemini.md` §11): G11a failed at the arc plan; G11r used all five rounds, each revision a
+scene-sized rewrite that wrote new findings; its r0 (1 blocking, 1 major) stayed the best version.
+
+**Tests:** `story-plan.test.ts` (`normalizeArcKnowledge`), `pronoun-cap.test.ts` (the talk cap), `convergence.test.ts`
+(variance-free weights), `policy.test.ts` (v22, v23), `novel-ko.integration.test.ts` (a simulated v22 run naming every
+secret owner).
+
 ## G10 fixes and C7 refresh — `standard.v21` — 2026-09-25
 
 **Built (ADR-0093):** `revision.ladder.switch_rung` (the untried rung before any stop, then retries with the rejection

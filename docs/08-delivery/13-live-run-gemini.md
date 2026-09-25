@@ -552,3 +552,47 @@ Excerpts (the first three lines of each chapter, unedited):
 - **G10-4:** ADR-0092's `no_repeat` stopped both loops early — after one quarantined rewrite (G10a) and after one patch
   and one rewrite (G10r); both quarantines were for a single new finding while G10r r2 had removed a blocking one.
 - **G10-5 (open):** a secret's owner outside the pack's registry appears in the canon lines as a raw id.
+
+## 11. G11 — the `standard.v21` checkpoint (15:52–16:28 UTC)
+
+Chapter 1 of two fresh projects on `standard@21` (ADR-0093: the untried rung before any stop, net improvement, the length
+band, meeting-dated secrets, `lang/ko@9`), run in parallel from the live worktree at `ee2d5eb`. Exports:
+`ops/live-runs/g11-standard21/`.
+
+**G11a (academy) failed at the arc plan** after 10 calls (608 s): the arc planner wrote `to_stance: "believes"` in three
+planned knowledge changes, a stance the arc-plan schema does not know; the contract's normalizer maps free stances, the
+arc plan had none, and a resume would replay the same recorded answer (G11-1, fixed by ADR-0094 in `standard@22`; the
+academy project is re-run on `standard@22` as G12a).
+
+| | G11r (regression) |
+| --- | --- |
+| Length (v1) | 5,878자 (+10.9 %), 4,618 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 20 % → 12.2 %, 40 % → 18.1 % |
+| Quoted dialogue / 속마음 lines | 52 (8.8 per 1,000자) / 12 |
+| Plan critic / repairs | one critic finding (structure target); `PLAN-DLG-03`; the plan re-asked once |
+| First line | `“2026년 7월 1일. D-10이군.”` (a dialogue line) |
+| r0 gate | overall 88: prose 85.6, structure 90, genre 100, voice 86.9 — all four gates passing |
+| Rounds (scope) | r0 to r5, every revision a scene-sized rewrite; r1–r5 quarantined |
+| Blocking / major | r0 **1 / 1** → r1 0 / 6 → r2 0 / 3 → r3 2 / 3 → r4 0 / 3 → r5 1 / 5 |
+| Why rounds were quarantined | each wrote new findings (a weapon that changes in one scene, a villain's suit colour, a voice card's catchphrase given to the hero); r2 also cut the chapter to 3,311자 and failed the new length protection; net improvement kept none (r2 and r4 weigh 3 against r0's 3) |
+| The r0 findings | a stranger knowing the hero's name before they meet (continuity, blocking); "dialogue share 13 %" (structure major) — inside the operator's first-person band (p10 12.6 %) |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | 0 / 0 / 0 in every round |
+| Likeness (C8) | v1 60 (first-person bands 55) |
+| Result | not accepted (`needs_attention` on v1) |
+| Calls / tokens / time | 71 (71 attempts) / 280,072 in, 37,349 out / 2,125 s |
+
+Credits from the G11 start to 16:29 UTC (G11a, G11r and the first 17 minutes of G12a): ws1 89.67 → 92.22 %, ws3 21.70 →
+27.09 %, ws4 8.00 → 9.41 % (9.35 points).
+
+Excerpt (the first three lines of G11r's chapter, unedited):
+
+> “2026년 7월 1일. D-10이군.”
+> 쩍 갈라진 스마트폰 액정 위로 선명한 날짜가 빛났다.
+> 목이 날아가는 감각이 아직 생생했다.
+
+**What changed against G10.** The loop used all five rounds (G10-4 fixed); the length protection quarantined a revision that
+cut the chapter by 38 % (G10-2 fixed); no reader-secret finding again.
+
+**Defects.** G11-1 (above; ADR-0094). G11-2: the judges' dialogue-amount majors inside the operator's own talk band
+(13 %, 14 % here; 19 % in G9a) send rounds to scene rewrites that write new defects. G11-3: a revision's weight counted
+new-kind findings on lines both versions share. Both fixed by ADR-0095 (`standard@23`).
