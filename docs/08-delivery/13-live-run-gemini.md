@@ -706,3 +706,31 @@ and was resumed; G15r and G15b were paused at 18:35 to leave the degraded bridge
   ADR-0100 (`standard@27`): a taste judge's reviewer-class major must be reproduced by a second reading to block.
 - Every finding left on either chapter is reviewer-class (ADR-0042): an editor may override it with a recorded reason,
   or the chapter may be regenerated. Both are the operator's decisions, and neither was taken.
+
+## 14. G15–G17 — `standard.v25` to `standard.v28` under a failing bridge (18:00–21:20 UTC)
+
+Exports: `ops/live-runs/g16-standard27/`, `ops/live-runs/g17-standard28/`.
+
+- **G15 (`standard@25`).** G15a failed at its first call: the requirement interpreter typed a requirement
+  `relationship` (G15-1, ADR-0099). G15b, the academy relaunch, lost a cast call to a bridge 502 and was resumed. G15r and
+  G15b were paused at 18:35 to leave the degraded bridge to G14's granted rounds, and have not been resumed.
+- **G16a (academy, `standard@27`).** Its v1 (5,245자, −1.0 %; first line `“퇴교 명령을 집행한다.”`) never reached a
+  scorecard. The continuity checker's pack needed 35,114 tokens of critical context against the pinned budget of 34,000
+  (`PACK_FAILED`, G16-1, fixed for new projects by ADR-0101 in `standard@28`). A resume replays the same draft into the
+  same pack.
+- **G16r (regression, `standard@27`).** r0 overall 88, 0 blocking / 7 majors, with voice at 65 (below its gate of 76)
+  and the other three dimensions passing; r1 87 (0 / 5); r2 90 (2 / 3, voice 56.3); r3 and r4 quarantined. The bridge
+  failed the r5 evaluation (voice and continuity judges, six HTTP 502 attempts each). The run is `failed` (retryable).
+  Voice failed in every round: its findings are the hero's register toward strangers, the same class as G14r's last
+  major. `major_agreement` never applied, because blocking findings or checker majors were open in every round.
+- **G17a (academy, `standard@28`).** Planned (bible, arc plan, contract), then lost its scene plan to the bridge twice
+  (21:09, 21:15); the run is `failed` (retryable) before any draft.
+- **The bridge.** Probes failed from 18:54 to about 19:25 and again from 21:15 UTC. In between, long calls failed
+  often: G16r's 75 calls took 122 attempts, 50 of them failed. The bridge's per-workspace counters reset twice (the
+  readings at 20:24 and 21:20 start from 0 done), so credit deltas across those resets are not comparable.
+
+Calls / attempts / tokens / time: G16a 20 / 25 / 159,998 in, 35,540 out / 2,170 s; G16r 75 / 122 / 345,094 in, 43,622 out
+/ 4,634 s; G17a 17 / 33 / 70,242 in, 19,223 out / 2,483 s.
+
+**Defects.** G16-1 (above; ADR-0101). G16-2: the regression hero's register toward strangers fails the voice gate in
+every round (voice 56–69); open. The bridge outage is not a pipeline defect.

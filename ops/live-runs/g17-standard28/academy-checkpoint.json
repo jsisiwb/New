@@ -1,0 +1,54 @@
+{
+  "project_id": "01a0da46-85b7-749d-95f7-30968460036c",
+  "title": "G17a 아카데미 standard28",
+  "policy": "policy/standard@28",
+  "lineage": {
+    "genres": [
+      "genre/academy@3",
+      "genre/harem@2",
+      "genre/regression@4"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/academy@3",
+    "output_language": "lang/ko@9"
+  },
+  "run": {
+    "status": "failed",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "MODEL_CALL_FAILED",
+      "step": "scene_plan",
+      "message": "PROVIDER_FAILED: provider notion returned HTTP 502 [failure_class=retryable_provider]",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "retry_step"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "planned",
+  "accepted": false,
+  "target_characters": 5300,
+  "scenes": [],
+  "plan_critic": null,
+  "plan_findings": null,
+  "rounds": [],
+  "likeness": [],
+  "totals": {
+    "calls": 17,
+    "attempts": 33,
+    "failed_attempts": 18,
+    "tokens": {
+      "input": 70242,
+      "output": 19223
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T20:34:14.282Z",
+    "last_call_at": "2026-09-25T21:15:36.956Z",
+    "seconds": 2483
+  }
+}

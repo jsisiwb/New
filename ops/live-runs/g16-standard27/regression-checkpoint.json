@@ -1,0 +1,347 @@
+{
+  "project_id": "01a0da25-dc63-76b3-8312-fc962ab1b279",
+  "title": "G16r 회귀 standard27",
+  "policy": "policy/standard@27",
+  "lineage": {
+    "genres": [
+      "genre/regression@4",
+      "genre/hunter-gate@2"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/regression@4",
+    "output_language": "lang/ko@9"
+  },
+  "run": {
+    "status": "failed",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "MODEL_CALL_FAILED",
+      "step": "evaluate",
+      "message": "PROVIDER_FAILED: provider notion returned HTTP 502 [failure_class=retryable_provider]",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "retry_step"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "revising",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 5063,
+    "chars_no_spaces": 4014,
+    "quoted_dialogue_lines": 60,
+    "quoted_inner_lines": 7,
+    "talk_share": 0.186,
+    "first_lines": [
+      "끼익—.",
+      "소름 끼치는 마찰음이 네 평짜리 고시원 방을 길게 갈랐다.",
+      "“열흘.”"
+    ],
+    "deviation_pct": -4.5,
+    "dialogue_lines_per_1k": 11.9
+  },
+  "last_version": {
+    "version_no": 6,
+    "status": "working",
+    "chars": 5353,
+    "chars_no_spaces": 4216,
+    "quoted_dialogue_lines": 54,
+    "quoted_inner_lines": 8,
+    "talk_share": 0.17,
+    "first_lines": [
+      "끼익—.",
+      "소름 끼치는 마찰음이 네 평짜리 고시원 방을 길게 갈랐다.",
+      "“열흘.”"
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.2,
+      "measured_share": 0.124,
+      "chars": 1574
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.4,
+      "measured_share": 0.214,
+      "chars": 3489
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "부하들의 위협부터 오태식의 협상·굴복까지 최소 28줄의 대사 흐름을 구체화하되, 장면 2의 대사 비중을 약 40%로 낮춰 회차 전체를 35% 이내로 맞춘다.",
+      "kind": "structure_off",
+      "claim": "대사 비중을 45%로 잡았지만 대사 설계는 네 번의 문답뿐이라 최소 28줄이라는 구조 목표를 충족하기 어렵고, 회차 전체 예상 대사 비중도 약 39%로 목표 상한 35%를 넘는다.",
+      "target": "장면 2",
+      "severity": "major"
+    },
+    {
+      "fix": "폭행은 전부 사각지대에서 처리하고, 녹화 구간에서는 상처와 위협이 드러나지 않는 구도에서 오태식이 조건을 직접 확인하고 동의하는 장면만 남도록 비트를 분리한다.",
+      "kind": "state_contradiction",
+      "claim": "피투성이가 될 때까지 구타당한 오태식이 계약서에 서명하고 송금하는 모습을 각도만 조절해 자발적인 합의처럼 남긴다는 설계는 그의 현재 신체 상태와 모순된다.",
+      "target": "장면 2",
+      "severity": "major"
+    },
+    {
+      "fix": "절단 직전에 강민호가 이후 지시를 기다리라고 명령하고 오태식이 복종을 명시적으로 받아들이는 짧은 대사 비트를 추가한다.",
+      "kind": "structure_off",
+      "claim": "계약은 오태식을 공포와 복종 상태의 심부름꾼으로 만든다고 정했지만, 현재 설계는 일회성 송금 후 강민호가 떠나는 데서 끝나 지속적인 수족 관계가 성립되지 않는다.",
+      "target": "장면 2",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-DLG-02",
+      "target": "장면 2",
+      "message": "대화를 막는 금지 사항 1줄을 지웠다",
+      "repaired": true,
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 3개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 88,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 87.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 65,
+          "passed": false
+        }
+      },
+      "scopes": [],
+      "blocking": 0,
+      "major": 7,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 87,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 85,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 69.4,
+          "passed": false
+        }
+      },
+      "scopes": [
+        "dialogue"
+      ],
+      "blocking": 0,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 1
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 2,
+      "version_no": 3,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 90,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 90,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 56.3,
+          "passed": false
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 2,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 3,
+      "version_no": 4,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 90,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 90,
+          "passed": true
+        },
+        "genre": {
+          "score": 70,
+          "passed": false
+        },
+        "voice": {
+          "score": 60.7,
+          "passed": false
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 1,
+      "major": 7,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 4,
+      "version_no": 5,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 80,
+      "dimensions": {
+        "prose": {
+          "score": 74.3,
+          "passed": false
+        },
+        "structure": {
+          "score": 85,
+          "passed": true
+        },
+        "genre": {
+          "score": 100,
+          "passed": true
+        },
+        "voice": {
+          "score": 60.7,
+          "passed": false
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 0,
+      "major": 8,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 30,
+      "first_person": 30
+    },
+    {
+      "version_no": 2,
+      "status": "working",
+      "score": 30,
+      "first_person": 30
+    },
+    {
+      "version_no": 3,
+      "status": "working",
+      "score": 30,
+      "first_person": 30
+    },
+    {
+      "version_no": 4,
+      "status": "quarantined",
+      "score": 35,
+      "first_person": 30
+    },
+    {
+      "version_no": 5,
+      "status": "quarantined",
+      "score": 45,
+      "first_person": 50
+    },
+    {
+      "version_no": 6,
+      "status": "working",
+      "score": 40,
+      "first_person": 40
+    }
+  ],
+  "totals": {
+    "calls": 75,
+    "attempts": 122,
+    "failed_attempts": 50,
+    "tokens": {
+      "input": 345094,
+      "output": 43622
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T19:58:34.361Z",
+    "last_call_at": "2026-09-25T21:15:48.406Z",
+    "seconds": 4634
+  }
+}
