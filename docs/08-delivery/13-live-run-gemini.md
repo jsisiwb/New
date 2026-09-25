@@ -259,7 +259,7 @@ live worktree at `3c8d084`. Run reports and findings: `ops/live-runs/g6-standard
 | Talk findings | none at any round (G5a: a weak-pacing major) | none at any round (G5r: a blocking talk finding) |
 | Reader-secret findings | none (G5a: the premise judged a 200화 secret) | 3 blocking at r0: the hero's prior-life knowledge (an elixir, a thug's embezzlement) against bible reader dates 3–8 |
 | `KO-DEVICE-01` | 2 at r0 (`원작 주인공` in a game-possession serial) | 0 |
-| Likeness (C8) | see below | 70 (first-person bands 75); G5r 70 |
+| Likeness (C8) | 70 (first-person bands 65); G5a 65 | 70 (first-person bands 75); G5r 70 |
 | Result | not accepted (`needs_attention`) | not accepted (`needs_attention`) |
 | Calls / tokens / time | 53 (53 attempts) / 210,623 in, 27,301 out / 1,731 s | 55 (55 attempts) / 209,172 in, 28,686 out / 1,637 s |
 
@@ -294,3 +294,59 @@ round kept, 9 blocking/major findings down to 1 with all four gates passing at r
 - **G6-5:** after the third patch the full re-evaluation raised seven majors on text earlier rounds had judged clean —
   five single uses of 그/그녀 (the draft's rate is inside the operator's first-person band) and a weak ending for the
   comic-deflection cut the contract asked for — and the three rounds were spent.
+
+## 7. G7 — the `standard.v17` checkpoint on both projects (STEP 2; 08:30–09:09 UTC)
+
+Chapter 1 of two fresh projects on `standard@17` (ADR-0088: the narrator's remembered knowledge is the reader's, the
+contract critic, repeated lines dropped, cast designer 4.8.0, `voice/operator@2`, five Korean rounds), run in parallel
+from the live worktree at `a9028e4`. Run reports and findings: `ops/live-runs/g7-standard17/`.
+
+| | G7a (academy) | G7r (regression) |
+| --- | --- | --- |
+| Length (v1) | 6,390자 (+20.6 %) | 6,211자 (+17.2 %) |
+| Scenes (planned talk → measured talk + 속마음) | 3: 30 % → 25.2 %, 40 % → 21.3 %, 20 % → 14.2 % | 3: 20 % → 6.3 %, 30 % → 4.2 %, 30 % → 27.2 % |
+| Quoted dialogue lines | 50 (7.8 per 1,000자; G6a 42, 7.7) | 34 (5.5 per 1,000자; G6r 49, 9.0) |
+| Quoted 속마음 lines | 8 | 4 |
+| Plan critic / repairs | the contract sent back once, the scene plan once; one scene redrafted for talk | the same |
+| First line | `[근력: 999(MAX)]` (a status-window line) | `우드득.` (a sound line) |
+| r0 gate | overall 84: prose 84, structure 83, genre 80, voice 73.8 ✗ | overall 83: prose 85.6, structure 80, genre 70 ✗, voice 91.3 |
+| Rounds | r0 to r5; r2–r5 quarantined | r0 to r5; r3 and r4 quarantined |
+| Blocking / major | r0 0 / 4 → r1 **1 / 3 (all four gates passing)** → r2 2 / 5 → r3 2 / 4 → r4 1 / 7 → r5 2 / 4 | r0 1 / 7 → r1 0 / 2 → r2 1 / 1 → r3 1 / 7 → r4 0 / 2 → r5 **1 / 0 (all four gates passing)** |
+| The last blocker | r1: the continuity checker demands the bible's `사부님` register from the first line; r2–r5: `사부님` before the heroine has seen anything (genre and voice, blocking) | r4 and r5: the bible's `형님` register from the first line (continuity), and the thug knowing the hero's name (knowledge) once the reviser complied |
+| Talk findings | none | structure majors at r0, r1 and r3 (10–11 %) |
+| Reader-secret findings | none (G6r: 3 blocking) | none |
+| `KO-DEVICE-01` | 0 (G6a 2) | 2 at r0, with a blocking genre finding for `원작` |
+| Provenance tags in locked bible facts | 3 | 8 |
+| Likeness (C8) | 80 (first-person bands 80); G6a 70 | 65 at v1, 75 at v2 (first-person bands 65); G6r 70 |
+| Result | not accepted (`needs_attention`) | not accepted (`needs_attention`) |
+| Calls / tokens / time | 77 (79 attempts) / 339,799 in, 35,531 out / 2,304 s | 61 (61 attempts) / 269,711 in, 30,448 out / 2,129 s |
+
+Credits for the pair: ws1 78.34 → 80.93 %, ws2 89.90 → 94.08 %, ws3 3.30 → 6.75 %, ws4 1.04 → 2.80 % (11.98 points).
+
+Excerpts (the first three lines of each chapter, unedited):
+
+> [근력: 999(MAX)]
+> [민첩: 999(MAX)]
+> 반투명한 홀로그램 창이 허공에 떠올랐다.
+
+> 우드득.
+> 가슴뼈가 으스러지는 소리와 함께 시야가 박살 났다.
+> 마신의 창이 내 심장을 꿰뚫고 등 뒤로 튀어나왔다. 핏덩이가 목구멍을 역류했다. 숨통이 끊어지는 끔찍한 고통이 전신을 찢어발겼다.
+
+**What changed against G6.** No reader-secret finding in either chapter at any round (G6-1, G6-2 fixed); no repeated
+line (G6-3); no `원작 주인공` in the academy chapter (G6-4); both chapters used the five rounds and each passed all four
+dimension gates in at least one round — the regression chapter's last round stood at one blocking finding and no major.
+
+**Defects (fixed by ADR-0089, `standard@18`).**
+
+- **G7-3 (the last blocker in both chapters):** a cast register describes the settled relationship, but the bible
+  seeded every register as canon from before 화 1, and both relationships form in 화 1. The continuity checker demanded
+  the settled register from the first line; complying created the "calls him 사부님 before seeing anything" blocking
+  findings that quarantined every academy round after r1.
+- **G7-2:** the regression writer's pack carried `원작` 63 times — the one 회빙환 overlay the intake maps regression,
+  reincarnation and possession to is worded for novel possession, while the device rule in the same prompt forbids
+  `원작`.
+- **G7-1:** the concept generator, power-system designer and story architect copied provenance tags into their answers;
+  eleven locked bible facts carry `[FACT]`, `[PLANNED]` or `[SUMMARY]`.
+- **G7-4 (open):** the regression chapter's two solo scenes came back at 6.3 % and 4.2 % talk against planned 20 % and
+  30 %; the talk redraft needs an on-page partner. The structure gate passed at every round.

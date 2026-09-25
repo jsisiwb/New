@@ -15,8 +15,9 @@ the operator merges.
 | 1 | STEP 1 — `standard@14` checkpoint on both projects | done: the recorded G5 pair (ADR-0085, `13-live-run-gemini.md` §5) |
 | 2 | STEP 2 — Phase U (plan-level prevention) + the V2 rules G5-3 demanded | done: `standard@15` (ADR-0086); live G6 (§6) |
 | 3 | STEP 3 — Phase V2 (escalation ladder) | done: `standard@16` (ADR-0087); fix-rate table |
-| 3b | G6 fixes | done: `standard@17` (ADR-0088); live G7 running |
-| 4 | STEP 4 — finish Phase C | pending |
+| 3b | G6 fixes | done: `standard@17` (ADR-0088); live G7 (§7) |
+| 3c | G7 fixes | done: `standard@18` (ADR-0089); live G8 next |
+| 4 | STEP 4 — finish Phase C | partly: C7 into `lang/ko@8` (ADR-0089); C2, C6 pending |
 | 5 | STEP 5 — Phase N (accepted chapters) | next, on whichever project accepts chapter 1 |
 | 6–8 | STEPS 6–8 — Q, M, I, E, W, B, D | pending |
 
@@ -24,19 +25,44 @@ the operator merges.
 blocking/major findings to 1 with all four gates passing and every round kept, then a full re-evaluation raised seven
 majors (single 그/그녀 inside the operator's own band, a comic cut the rubric did not know) and the three rounds ran out;
 the regression chapter was blocked by the hero's prior-life knowledge against the bible's reader dates. `standard@17`
-answers both (ADR-0088). G7 on `standard@17` is the next evidence (§7 when recorded).
+answers both (ADR-0088). G7 (`standard@17`, §7): both chapters passed all four dimension gates in at least one round
+and the regression chapter's last round stood at one blocking finding and no major; in both, the last blocker was the
+bible's settled relationship register (사부님, 형님) enforced from 화 0 in the chapter where the relationship forms.
+`standard@18` answers it (ADR-0089); G8 on `standard@18` is the next evidence.
 
-**Open defects.** None of G5-1 … G5-9 or G6-1 … G6-5 is open in code; G5-8 (voice metrics: likeness 70 in G6r, 속마음
+**Open defects.** None of G5-1 … G5-9, G6-1 … G6-5 or G7-1 … G7-3 is open in code; G7-4 (solo scenes far below their
+planned talk; the redraft needs an on-page partner) is open; G5-8 (voice metrics: likeness 70 in G6r, 속마음
 and endings outside the band) is only partly addressed. Carried: the operator's 3인칭 cutaways (not planned), story-clock
 checks by the continuity checker (U4, partly), C2/C6/C7 corpus work, Phases N–D.
 
-**Budget.** Bridge credits after G6: ws1 78.34 %, ws2 89.90 %, ws3 3.30 %, ws4 1.04 % (billing period ending
-2026-10-09; workspaces 3 and 4 are new, so about 227 points remain). A chapter-1 run from a fresh project costs about 4.5
-points on `standard@15` (8.91 for the G6 pair).
+**Budget.** Bridge credits after G7: ws1 80.93 %, ws2 94.08 %, ws3 6.75 %, ws4 2.80 % (billing period ending
+2026-10-09; about 215 points remain). A chapter-1 run from a fresh project costs about 6 points on `standard@17` with
+five rounds (11.98 for the G7 pair; 8.91 for the G6 pair on `standard@15`).
 
 **Safety rules.** Tests run against local sandbox databases (`yeonjae_test` for full suites, `yeonjae_test_b` for
 targeted runs — never both suites on one database at once); the inherited `DATABASE_URL` is the permanent database,
 used only by live runs, corpus commands and reports, from the separate worktree `/tmp/hoplite/live`.
+
+## G7 fixes and C7 — `standard.v18` — 2026-09-25
+
+**Built (ADR-0089):** the cast designer 4.9.0 dates each relationship (`since_chapter`); under
+`planning.register_time_frames` a relationship that begins in 화 N ≥ 1 is not seeded as canon and the voice judge's 호칭
+matrix leaves it out before 화 N and marks it in 화 N; `genre/regression@4` with `device_variants` (regression,
+reincarnation, game possession) applied by `composeIdentity` for the recorded premise device, opted into by
+`identity.genre_layers` (`genre/regression` capped at v3 otherwise); `planning.strip_provenance_tags` for designer and
+planner answers (`provenance-tags.ts`); `lang/ko@8` with four stock phrases mined from 32 versions of eight projects
+(`voice-calibration.md` §4).
+
+**Measured:** G7 (§7) is the evidence for the fixes; `standard@18` itself is measured by G8.
+
+**Tests:** `provenance-tags.test.ts`, `identity-from-intake.test.ts` (device variants, v4 without a device = v3's bytes),
+`evaluator-inputs.test.ts` (the dated 호칭 matrix), `design-output.test.ts`, `registry.test.ts` (4.9.0 changes one
+family), `policy.test.ts` (v18), `compiler.test.ts` and the CLI inventory (new profiles, 317 prompt versions),
+`novel-ko.integration.test.ts` (a simulated regression run under v18).
+
+**Not done (and why):** G7-4 (talk in solo scenes) — the structure gate passed at every G7 round, and the operator's own
+first-person openings include solo scenes, so a rule waits for G8's evidence; four single-project stock phrases wait for
+the next mining pass.
 
 ## STEP 2 / STEP 3 / G6 fixes — `standard.v15`, `standard.v16`, `standard.v17` — 2026-09-25
 
@@ -82,7 +108,7 @@ start of the run (merged through ADR-0084 / `standard@14`). Later phases update 
 | C1 statistics, C0.3 analysis, C3 voice profile, C4 calibrated lint, C5 exemplars, C8 likeness, C9 academy intake, copy detection | done | ADR-0082, ADR-0083, `docs/10-corpus/` |
 | C2 — structure profiles of the operator's chapters as planner targets | partly | read by hand (`operator-voice-analysis.md` §9–§10); no per-chapter profiles, no planner targets |
 | C6 — contrast pairs (pipeline 번역투 version vs operator original) | not started | `corpus.contrast_pairs` is empty |
-| C7 — stock-phrase mining into the next `lang/ko` | partly | four candidates from two drafts (`voice-calibration.md` §4); no language layer |
+| C7 — stock-phrase mining into the next `lang/ko` | done | `lang/ko@8`: four phrases in drafts of three or more projects and none of the operator's 656 chapters (`voice-calibration.md` §4, ADR-0089) |
 | Likeness in every A/B | partly | reported per live checkpoint; no A/B harness |
 | STEP 5 — N1–N5 accepted chapters, blinded packet, unattended 6–15, audits | not started | no live project has an accepted chapter |
 | Q — best-of-N, polish kept on agreement, reader panel, voice cards, cross-judge normalization, titles | partly | a polish round (ADR-0073) and the judge calibration cap (ADR-0081); the rest not started |

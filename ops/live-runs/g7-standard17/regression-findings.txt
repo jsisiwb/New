@@ -1,0 +1,384 @@
+=== scorecard r0 overall={'score': 83, 'note_count': 0, 'major_count': 7, 'minor_count': 11, 'blocking_count': 1}
+  section genre {"score": 70, "passed": false, "issue_ids": ["3cbb2b93-8ea5-8d9c-9d8f-bb081c41ce06", "aad0f1c1-cbe9-8286-a4f9-84f5ea01d863", "4055cb57-288f-8dd4-8865-217e2554d8da", "a96b408f-8f30-841b-9cca-b23a2e792dab"], "drift_flags": ["possession_drift"], "judge_score": 68, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 62.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint":
+  section prose {"score": 85.6, "passed": true, "issue_ids": ["847345e6-5f34-8d6d-bf7c-cf5b8e76a99a", "2b72b482-1eaa-8f44-9fcc-4777dea59886", "e5b9d0d1-75a2-8805-8b60-e73f55a8430b", "01f444f0-3f78-85d0-a03a-1e88f691ad4d", "984f45fa-2bf5-8b0f-864a-953fc6b9531e", "b42d58ff-e5fd-8a6c-b151-3ec2c85c6a31", "6e78715c-a57a-8187-b47c-d7d74b8299e4"], "drift_flags": ["translation_like"], "judge_score": 85, "score_model": "r
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["1d8be83e-a83a-8ad9-a889-67c6edbe2129", "e3fa6e9d-5f5e-81dd-94c6-cde0d96a65e8"], "drift_flags": ["prompt-copy-paste"], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 4, "distinguishability": 5, "register_consistency": 5, "register_naturalness": 4}, "evaluator_call_i
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "6a376fcd-e791-86f7-8947-725018626aee"}], "issue_ids": [], "evaluator_call_id": "01a0d7c4-6fb7-729c-af7a-aebcbd3abe05"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7c4-31ee-7413-8ce1-e4c0e3a79023"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["0c06bf80-9170-89ad-a078-c3275a0135da", "7b183bc7-ef60-8f8b-8727-2329a5434c12", "2c8743bf-62fa-8ffd-bf90-59e794524e15"], "drift_flags": ["serial", "exposition", "cadence"], "judge_score": 68, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 5, "local_p
+  section continuity {"score": 0, "passed": false, "issue_ids": ["3dedc2b4-ef0e-807d-8635-7a498f94fe62", "c4c8c4f3-b69b-8208-a281-9b9745d2fd20"], "evaluator_call_id": "01a0d7c4-31bf-74fe-a50b-fbcc73660597"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["d99b4901-f20d-81ee-bad4-a0c81cb0fb73"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d7c4-88d8-73cf-b699-053777d05293"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7c3-b6d8-7293-a5eb-8b30a8fc6cbc"}
+  [minor/open] prose paragraph_length lint:ko_style KO-PARA-LONG
+     claim: 긴 서술 문단 비율 1% (기준 1%). 한두 문장씩 끊고 강조 문장은 한 줄 문단으로 뗀다.
+  [minor/open] prose weak_pacing lint:ko_style KO-TALK-SHARE-1P
+     claim: 대사와 속마음 비중 11% (운영자 원고의 보통 범위 13% 이상). 요약 서술을 대사와 반응 비트로 바꾼다.
+  [major/open] genre terminology_violation lint:device KO-DEVICE-01
+     claim: ‘원작’은(는) 이 작품의 장치(회귀)에 없는 어휘다. 이 작품의 장치 어휘로 바꾼다.
+     quote: 원작
+  [major/open] genre terminology_violation lint:device KO-DEVICE-01
+     claim: ‘원작’은(는) 이 작품의 장치(회귀)에 없는 어휘다. 이 작품의 장치 어휘로 바꾼다.
+     quote: 원작
+  [major/open] continuity canon_contradiction judge:continuity_checker 
+     claim: [PLANNED] 1화 계약의 '연속성 위험' 항목에 따르면 주인공은 '아직 1레벨도 달성하지 못한 일반인의 몸'이어야 합니다. 1레벨의 몸이라고 서술된 부분은 해당 설정과 정면으로 모순됩니다.
+     quote: 아직 1레벨의 빈약한 몸뚱이다.
+  [major/open] continuity numeric_inconsistency judge:continuity_checker 
+     claim: [PLANNED] 주인공이 아직 1레벨을 달성하지 못한 상태이므로, 상태창의 레벨 수치 역시 1이 아니라 0으로 표기되어야 논리적으로 맞습니다.
+     quote: [레벨: 1]
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '~것은 ~이었다' 구조의 번역투 문장으로, '뚫린 구멍 대신 온전한 살갗이 만져졌다' 등으로 고치는 것이 자연스럽습니다.
+     quote: 하지만 손끝에 만져지는 것은 뚫린 구멍이 아니라 온전한 살갗이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요하게 긴 명사절 주어를 사용한 번역투입니다. '가장 먼저 상단의 숫자가 눈에 박혔다'가 낫습니다.
+     quote: 가장 먼저 눈에 박힌 것은 상단의 숫자들이었다.
+  [minor/open] prose paragraph_length judge:prose_judge 
+     claim: 여러 문장이 한 문단에 뭉쳐 있어 모바일 화면에서 호흡이 깁니다. 린트 보고에서 지적된 긴 서술 문단입니다.
+     quote: 대경그룹 막내아들 김태혁. 놈이 클럽 비밀 금고에 숨겨둔 비자금 50억. 10일 뒤면 어차피 휴지 조각이 될 돈이다. 내가 유용하게 써 주는 게 낫지.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 긴 관형절 수식과 '짐승의 둔한 반응이다'라는 비유적 서술이 얽혀 있어 웹소설 특유의 빠른 속도감을 다소 해칩니다.
+     quote: 약에 취했거나, 그저 흉기 앞에서도 자신의 알량한 주먹을 맹신하는 짐승의 둔한 반응이다.
+  [minor/open] prose other judge:prose_judge 
+     claim: '미간을 구겼다'는 다소 흔하게 쓰이는 표정 묘사 상투구이며 회차 내에서 여러 번 반복됩니다.
+     quote: 내 노골적인 기척에 박태준이 미간을 팍 구겼다.
+  [major/open] structure weak_ending judge:structure_judge 
+     claim: 다음 화를 누를 만한 반전, 위기, 혹은 새로운 위협 없이 주인공의 일방적인 협박과 심문 단계에서 끝나 절단의 당김이 약함.
+     quote: “비밀 금고 번호 불어. 시간 아까우니까.”
+  [major/open] structure serial_drift judge:structure_judge 
+     claim: 대사 비중이 10%로 매우 낮아, 씬이 인물 간의 주고받음이나 상호작용보다는 1인칭 독백과 행동 묘사에 무겁게 의존함.
+     quote: 나는 거울 속의 나를 무심하게 응시했다. 죽음의 여운에 잠겨 눈물을 흘리거나 안도할 틈은 없었다.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 주인공의 과거사와 타겟에 대한 원작 지식을 대화나 짧은 속마음이 아닌, 한두 문단의 요약 서술로 직접 쏟아냄.
+     quote: 놈은 멸망기에서 수많은 생존자를 팔아넘기고, 결국 내 등에 칼을 꽂았던 배신자다.
+  [blocking/open] genre terminology_violation judge:genre_judge 
+     claim: 회귀 장르 절대 규칙 위반. 회귀자임에도 불구하고 '원작'이라는 빙의물 어휘를 두 차례 혼용했습니다.
+     quote: 원작과 다름없는, 내가 알던 과거 그대로의 타임라인이다.
+  [major/open] genre payoff_without_setup judge:genre_judge 
+     claim: 주인공의 능력치 설정 충돌. 마력과 스탯이 낮은 1레벨 상태라고 강조한 직후 두꺼운 철문을 발차기 한 번에 부수며 괴리를 일으켰습니다.
+     quote: 무식한 파열음과 함께 방음문이 경첩째로 뜯겨나갔다.
+  [minor/open] voice character_inconsistency judge:voice_judge 
+     claim: 상대방이 머리채를 거머쥔 상황인데도 김태혁이 '제발 얼굴만은!'이라고 외치는 등, 설정 카드의 예시 대사를 맹목적으로 출력했습니다.
+     quote: 죽을죄를 졌습니다! 살려만 주십쇼! 제발 얼굴만은!
+  [minor/open] voice voice_drift judge:voice_judge 
+     claim: 말을 아끼고 행동으로 보여주어야 할 주인공이 '네 심판자'라는 극적인 단어를 선택해 건조한 성격 설정과 약간 어긋납니다.
+     quote: 네 심판자.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: [EVIDENCE] 반복 검사 보고와 원문에 따르면 이번 회차 안에서 '나는'으로 시작하는 문장이 25회, '놈은'으로 시작하는 문장이 6회 등장합니다. 1인칭 시점 서술에서 주어가 습관적으로 반복되어 문장 패턴이 단조로워졌으므로, 불필요한 주어를 생략하거나 다른 어휘로 문장을 시작하도록 윤문할 필요가 있습니다.
+     quote: 나는 거칠게 숨을 들이켰다.
+=== scorecard r1 overall={'score': 85, 'note_count': 0, 'major_count': 2, 'minor_count': 14, 'blocking_count': 0}
+  section genre {"score": 90, "passed": true, "issue_ids": ["697c6745-295d-8f77-afdf-380c9ac467bd", "0a120617-4892-81f0-8181-89060993e367"], "drift_flags": [], "judge_score": 83, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_register": 5}, "evaluator_call_id": "01a0d7c6-bd1e-7372-b7
+  section prose {"score": 85.6, "passed": true, "issue_ids": ["dac10fa3-68fe-8b30-96e9-c9798d4536db", "dbe46039-d92c-815d-8d8b-15d030a883a7", "82c07353-54c7-8f91-b54e-611a5961642a", "a59ae2f8-5c70-8d52-80b5-0cca2e151b4b", "651622c4-7760-83c5-a3df-90ae54913967", "f3c00cce-ef58-8333-afde-d5d7d1e098ce", "5e219e5a-8412-81e6-98e9-d837d1206b0e"], "drift_flags": ["translation_like"], "judge_score": 85, "score_model": "r
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["51e62efe-f44a-8e07-95e2-222b94e3fee4", "b5f51573-b557-8126-851f-83996951e3fc"], "drift_flags": ["prompt-copy-paste"], "judge_score": 85, "score_model": "rubric_subscores", "carried_from": "2e252e4a-ab9c-810f-b088-74227e5bdd1c", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 4, "distinguishability": 5, "register_consis
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "6a376fcd-e791-86f7-8947-725018626aee"}], "issue_ids": [], "carried_from": "2e252e4a-ab9c-810f-b088-74227e5bdd1c", "evaluator_call_id": "01a0d7c4-6fb7-729c-af7a-aebcbd3abe05"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7c6-5b83-7605-b73d-d541aa4e768c"}
+  section structure {"score": 85, "passed": true, "issue_ids": ["5a032c61-8287-8ece-946c-2e31955e3db4", "9c11b2cf-995b-82fd-a7cc-9e7cbffe265c"], "drift_flags": ["serial"], "judge_score": 82, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 70, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff": 4, "exposition_control": 4, "dialogue_forwardness": 2}, "
+  section continuity {"score": 0, "passed": false, "issue_ids": ["0fb99d5e-1843-8d4f-807b-119c91368ed1", "50c20017-2535-84f1-9994-a24c680b32ab"], "evaluator_call_id": "01a0d7c6-c411-76b7-840b-4b83ddec6182"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["4c41839f-6118-835d-8256-f08c2627f73a"], "carried_from": "2e252e4a-ab9c-810f-b088-74227e5bdd1c", "evaluator_call_id": "01a0d7c4-88d8-73cf-b699-053777d05293"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7c6-51d5-704f-b74d-3d7598961996"}
+  [minor/open] prose paragraph_length lint:ko_style KO-PARA-LONG
+     claim: 긴 서술 문단 비율 1% (기준 1%). 한두 문장씩 끊고 강조 문장은 한 줄 문단으로 뗀다.
+  [minor/open] prose weak_pacing lint:ko_style KO-TALK-SHARE-1P
+     claim: 대사와 속마음 비중 11% (운영자 원고의 보통 범위 13% 이상). 요약 서술을 대사와 반응 비트로 바꾼다.
+  [minor/open] continuity world_rule_violation judge:continuity_checker 
+     claim: 세계 규칙에 따르면 상태창은 시야 우측 하단에 출력되어야 하지만, 원문에서는 '눈앞에' 떠올랐다고 서술하여 설정과 어긋납니다.
+     quote: 눈앞에 반투명한 푸른 패널이 떠올랐다.
+  [major/open] continuity other judge:continuity_checker 
+     claim: 앞선 문단에서 칼을 단단히 고쳐 쥐고 직접 달려들었고 직후에도 칼을 손에 들고 피를 닦아내는데, 여기서는 '손을 떠난'이라고 투척한 것처럼 표현하여 한 장면 안에서 행동과 소지품 상태가 모순됩니다.
+     quote: 내 손을 떠난 식칼이 놈의 목덜미를 깊숙이 파고들며 경동맥을 정확히 끊어냈다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '~것은 ~이었다' 구조의 번역투 문장으로, '뚫린 구멍 대신 온전한 살갗이 만져졌다' 등으로 고치는 것이 자연스럽습니다.
+     quote: 하지만 손끝에 만져지는 것은 뚫린 구멍이 아니라 온전한 살갗이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요하게 긴 명사절 주어를 사용한 번역투입니다. '가장 먼저 상단의 숫자가 눈에 박혔다'가 낫습니다.
+     quote: 가장 먼저 눈에 박힌 것은 상단의 숫자들이었다.
+  [minor/open] prose paragraph_length judge:prose_judge 
+     claim: 여러 문장이 한 문단에 뭉쳐 있어 모바일 화면에서 호흡이 깁니다. 린트 보고에서 지적된 긴 서술 문단입니다.
+     quote: 대경그룹 막내아들 김태혁. 놈이 클럽 비밀 금고에 숨겨둔 비자금 50억. 10일 뒤면 어차피 휴지 조각이 될 돈이다. 내가 유용하게 써 주는 게 낫지.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 긴 관형절 수식과 '짐승의 둔한 반응이다'라는 비유적 서술이 얽혀 있어 웹소설 특유의 빠른 속도감을 다소 해칩니다.
+     quote: 약에 취했거나, 그저 흉기 앞에서도 자신의 알량한 주먹을 맹신하는 짐승의 둔한 반응이다.
+  [minor/open] prose other judge:prose_judge 
+     claim: '미간을 구겼다'는 다소 흔하게 쓰이는 표정 묘사 상투구이며 회차 내에서 여러 번 반복됩니다.
+     quote: 내 노골적인 기척에 박태준이 미간을 팍 구겼다.
+  [major/open] structure other judge:structure_judge 
+     claim: 대사 비중이 11%로 매우 낮아 장면의 속도감이 온전히 대사 비트로 살아나지 않고 혼잣말과 서술에 의존한다.
+     quote: “길고양이인가. 시간이 아깝군.”
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 상태창이나 주인공의 특수한 상황에 대한 설명이 1인칭 독백을 빌려 직접적으로 서술된다.
+     quote: 일반인은 절대 열 수 없는 시스템이다. 첫 게이트가 열리고 마나에 노출되어야만 각성할 수 있으니까.
+  [minor/open] genre payoff_without_setup judge:genre_judge 
+     claim: 미래 핵심 인물 암살 직후 시스템(세계선 변동률 등)의 반응 컷이 생략되어 분기의 무게를 드러낼 기회를 놓쳤습니다.
+     quote: ‘오차 범위 내다.’
+  [minor/open] genre other judge:genre_judge 
+     claim: 10일이라는 짧은 시간에 700개의 신화급 기연을 독식한다는 설정이 물리적 개연성과 어긋나 서사의 긴장감을 낮춥니다.
+     quote: 이 10일 동안 700개의 신화급 기연을 모조리 선점해야 한다.
+  [minor/open] voice character_inconsistency judge:voice_judge 
+     claim: 상대방이 머리채를 거머쥔 상황인데도 김태혁이 '제발 얼굴만은!'이라고 외치는 등, 설정 카드의 예시 대사를 맹목적으로 출력했습니다.
+     quote: 죽을죄를 졌습니다! 살려만 주십쇼! 제발 얼굴만은!
+  [minor/open] voice voice_drift judge:voice_judge 
+     claim: 말을 아끼고 행동으로 보여주어야 할 주인공이 '네 심판자'라는 극적인 단어를 선택해 건조한 성격 설정과 약간 어긋납니다.
+     quote: 네 심판자.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: [EVIDENCE] 반복 검사 보고와 원문에 따르면 이번 회차 안에서 '나는'으로 시작하는 문장이 25회, '놈은'으로 시작하는 문장이 6회 등장합니다. 1인칭 시점 서술에서 주어가 습관적으로 반복되어 문장 패턴이 단조로워졌으므로, 불필요한 주어를 생략하거나 다른 어휘로 문장을 시작하도록 윤문할 필요가 있습니다.
+     quote: 나는 거칠게 숨을 들이켰다.
+=== scorecard r2 overall={'score': 83, 'note_count': 0, 'major_count': 1, 'minor_count': 16, 'blocking_count': 1}
+  section genre {"score": 90, "passed": true, "issue_ids": ["3d473517-3ffe-8c2d-91d0-a2177ae8bd8a", "2d2076ed-2ec9-8caf-99fe-1e493b97d113"], "drift_flags": [], "judge_score": 83, "score_model": "rubric_subscores", "carried_from": "a07b8b69-4beb-8968-8f38-5bec45341381", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_re
+  section prose {"score": 85.6, "passed": true, "issue_ids": ["18936b19-9978-815a-9ea5-cfb5111b4743", "35d5d871-5caa-8aee-8dfd-02458b9551f0", "f1112413-35ef-8c0d-9c0a-27b99428fc04", "26e54e40-4205-808d-9094-4ac50b2efdad", "f068cacf-bed6-8796-90ec-f27eb1938acc", "bfe96b59-4373-8733-a852-2316792e043b", "8013f085-9a54-854f-860f-f515874e6d0d"], "drift_flags": ["translation_like"], "judge_score": 85, "score_model": "r
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["8b9e19cb-3837-8cef-89f7-bd591eb5aa72", "8b3bdf82-499a-8ff9-b7e7-849456a743c4"], "drift_flags": ["prompt-copy-paste"], "judge_score": 85, "score_model": "rubric_subscores", "carried_from": "a07b8b69-4beb-8968-8f38-5bec45341381", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 4, "distinguishability": 5, "register_consis
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "6a376fcd-e791-86f7-8947-725018626aee"}], "issue_ids": [], "carried_from": "a07b8b69-4beb-8968-8f38-5bec45341381", "evaluator_call_id": "01a0d7c4-6fb7-729c-af7a-aebcbd3abe05"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "carried_from": "a07b8b69-4beb-8968-8f38-5bec45341381", "evaluator_call_id": "01a0d7c6-5b83-7605-b73d-d541aa4e768c"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["48755b0a-fa14-8e82-8d74-3b4c1d262295", "d4b35d83-9e4d-858e-b5ad-c9603f8720c5", "0896e665-b643-8895-93f5-e00a42177ccf"], "drift_flags": ["serial", "exposition"], "judge_score": 65, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": {"ending_pull": 3, "hook_timing": 5, "local_payoff": 4, 
+  section continuity {"score": 0, "passed": false, "issue_ids": ["dffb2f9e-043d-8624-872e-e64ee4f61c91", "b8ee197a-b7a3-8893-9aa1-0a933221336f", "9cddcd80-818c-81b1-a523-d2d717d176b4"], "evaluator_call_id": "01a0d7c8-4e32-7477-bdc3-8ada36d2cf71"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["9e2ad586-97d4-8a1a-8e29-bec114706a9c"], "carried_from": "a07b8b69-4beb-8968-8f38-5bec45341381", "evaluator_call_id": "01a0d7c4-88d8-73cf-b699-053777d05293"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "carried_from": "a07b8b69-4beb-8968-8f38-5bec45341381", "evaluator_call_id": "01a0d7c6-51d5-704f-b74d-3d7598961996"}
+  [minor/open] prose paragraph_length lint:ko_style KO-PARA-LONG
+     claim: 긴 서술 문단 비율 1% (기준 1%). 한두 문장씩 끊고 강조 문장은 한 줄 문단으로 뗀다.
+  [minor/open] prose weak_pacing lint:ko_style KO-TALK-SHARE-1P
+     claim: 대사와 속마음 비중 11% (운영자 원고의 보통 범위 13% 이상). 요약 서술을 대사와 반응 비트로 바꾼다.
+  [blocking/open] continuity relationship_inconsistency judge:continuity_checker 
+     claim: 정사 기록과 관계 축에 따르면 최강진과 김태혁은 이야기 시작(0화.0) 이전부터 이미 아는 사이이고 김태혁은 최강진에게 종속(subordinate)된 관계입니다. 그러나 원문에서는 김태혁이 최강진을 처음 보는 괴한 취급하며 누구냐고 묻는 등 초면인 것처럼 반응하고 있습니다.
+     quote: 아니, 이 새끼들 다 어디 처박힌 거야! 너 내가 누군지 알아?!
+  [minor/open] continuity world_rule_violation judge:continuity_checker 
+     claim: 세계 규칙에 따르면 게이트 개방 전이라도 숨겨진 '각성석'을 부수면 시스템 강제 개방 및 선제 각성이 가능합니다. 회귀자인 최강진이 '절대 열 수 없다'거나 '마나에 노출되어야만 한다'고 예외 없이 단정 짓는 것은 설정과 충돌할 여지가 있습니다.
+     quote: 일반인은 절대 열 수 없는 시스템이다. 첫 게이트가 열리고 마나에 노출되어야만 각성할 수 있으니까.
+  [major/open] continuity character_inconsistency judge:continuity_checker 
+     claim: 최강진은 아직 각성하지 않은 레벨 0, 근력 10의 일반인 신체입니다. 아무리 체중을 실은 발차기라 하더라도 육중한 철제 방음문이 경첩째 뜯겨나가는 것은 일반인의 물리적 한계를 넘어선 초인적인 연출로, 극 초반 능력치 설정(개연성)에 위배됩니다.
+     quote: 무식한 파열음과 함께 방음문이 경첩째로 뜯겨나갔다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '~것은 ~이었다' 구조의 번역투 문장으로, '뚫린 구멍 대신 온전한 살갗이 만져졌다' 등으로 고치는 것이 자연스럽습니다.
+     quote: 하지만 손끝에 만져지는 것은 뚫린 구멍이 아니라 온전한 살갗이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요하게 긴 명사절 주어를 사용한 번역투입니다. '가장 먼저 상단의 숫자가 눈에 박혔다'가 낫습니다.
+     quote: 가장 먼저 눈에 박힌 것은 상단의 숫자들이었다.
+  [minor/open] prose paragraph_length judge:prose_judge 
+     claim: 여러 문장이 한 문단에 뭉쳐 있어 모바일 화면에서 호흡이 깁니다. 린트 보고에서 지적된 긴 서술 문단입니다.
+     quote: 대경그룹 막내아들 김태혁. 놈이 클럽 비밀 금고에 숨겨둔 비자금 50억. 10일 뒤면 어차피 휴지 조각이 될 돈이다. 내가 유용하게 써 주는 게 낫지.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 긴 관형절 수식과 '짐승의 둔한 반응이다'라는 비유적 서술이 얽혀 있어 웹소설 특유의 빠른 속도감을 다소 해칩니다.
+     quote: 약에 취했거나, 그저 흉기 앞에서도 자신의 알량한 주먹을 맹신하는 짐승의 둔한 반응이다.
+  [minor/open] prose other judge:prose_judge 
+     claim: '미간을 구겼다'는 다소 흔하게 쓰이는 표정 묘사 상투구이며 회차 내에서 여러 번 반복됩니다.
+     quote: 내 노골적인 기척에 박태준이 미간을 팍 구겼다.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 독백 형식을 빌려 설정과 배경을 직접 설명하는 문단이 튀어나옵니다.
+     quote: 일반인은 절대 열 수 없는 시스템이다. 첫 게이트가 열리고 마나에 노출되어야만 각성할 수 있으니까.
+  [minor/open] structure other judge:structure_judge 
+     claim: 등장인물의 내면 상태를 행동 지문 대신 직접적인 감정 서술로 요약합니다.
+     quote: 과거의 기억이 떠올라 분노가 치솟는다거나 하는 감정적 동요는 전혀 없었다.
+  [minor/open] structure weak_ending judge:structure_judge 
+     claim: 새로운 위협이나 강한 궁금증 없이, 유리한 상황에서의 단순 협박으로 끝나 당김이 약합니다.
+     quote: 비밀 금고 번호 불어. 시간 아까우니까.
+  [minor/open] genre payoff_without_setup judge:genre_judge 
+     claim: 미래 핵심 인물 암살 직후 시스템(세계선 변동률 등)의 반응 컷이 생략되어 분기의 무게를 드러낼 기회를 놓쳤습니다.
+     quote: ‘오차 범위 내다.’
+  [minor/open] genre other judge:genre_judge 
+     claim: 10일이라는 짧은 시간에 700개의 신화급 기연을 독식한다는 설정이 물리적 개연성과 어긋나 서사의 긴장감을 낮춥니다.
+     quote: 이 10일 동안 700개의 신화급 기연을 모조리 선점해야 한다.
+  [minor/open] voice character_inconsistency judge:voice_judge 
+     claim: 상대방이 머리채를 거머쥔 상황인데도 김태혁이 '제발 얼굴만은!'이라고 외치는 등, 설정 카드의 예시 대사를 맹목적으로 출력했습니다.
+     quote: 죽을죄를 졌습니다! 살려만 주십쇼! 제발 얼굴만은!
+  [minor/open] voice voice_drift judge:voice_judge 
+     claim: 말을 아끼고 행동으로 보여주어야 할 주인공이 '네 심판자'라는 극적인 단어를 선택해 건조한 성격 설정과 약간 어긋납니다.
+     quote: 네 심판자.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: [EVIDENCE] 반복 검사 보고와 원문에 따르면 이번 회차 안에서 '나는'으로 시작하는 문장이 25회, '놈은'으로 시작하는 문장이 6회 등장합니다. 1인칭 시점 서술에서 주어가 습관적으로 반복되어 문장 패턴이 단조로워졌으므로, 불필요한 주어를 생략하거나 다른 어휘로 문장을 시작하도록 윤문할 필요가 있습니다.
+     quote: 나는 거칠게 숨을 들이켰다.
+=== scorecard r3 overall={'score': 83, 'note_count': 0, 'major_count': 7, 'minor_count': 11, 'blocking_count': 1}
+  section genre {"score": 100, "passed": true, "issue_ids": ["5ace1583-0238-89df-bffe-70ecc2eacc31", "9edf36b8-25bc-811e-b452-05756e00d73d"], "drift_flags": [], "judge_score": 85, "score_model": "rubric_subscores", "judge_weight": 0.8, "rubric_score": 100, "dimension_scores": {"reader_fantasy": 5, "taboo_restraint": 5, "device_correctness": 5, "vocabulary_register": 5}, "evaluator_call_id": "01a0d7cc-1ca0-7218-9c
+  section prose {"score": 85.6, "passed": true, "issue_ids": ["f07b4a95-ebda-8f7d-913a-601869130061", "00d33b1d-7835-80f6-986a-bbcae89ac7af", "828cc13d-c1c0-8604-810b-96e36a3bb161", "ad70659c-09fc-8b62-872e-a42763871594", "35e89944-c567-8b67-b1a6-0420d53b8c5b", "4613fcc8-1542-817f-9e1e-5835a57f55d3", "cb48c4c8-8bc7-8b54-b09a-e9e4190b7474"], "drift_flags": ["translation_like"], "judge_score": 82, "score_model": "r
+  section voice {"score": 65, "passed": false, "issue_ids": ["383559c8-ee05-88ad-9198-7bc973d3a55e", "e0864aeb-fefd-81f2-b9c7-b936dcbb8cd3", "54b0d89e-7f95-81d1-bde2-9e14186e1e51"], "drift_flags": ["태혁_존대반말_혼용", "태혁_설정대사_기계적복붙"], "judge_score": 60, "score_model": "rubric_subscores", "judge_weight": 0.7, "rubric_score": 50, "dimension_scores": {"verbal_habits": 3, "distinguishability": 4, "register_consistency": 2
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "6a376fcd-e791-86f7-8947-725018626aee"}], "issue_ids": [], "evaluator_call_id": "01a0d7cc-9e8c-755a-9440-9da5fe6d940c"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["13eab49b-08bb-82ea-9c45-55c436a32730"], "evaluator_call_id": "01a0d7cb-fde5-71b8-b226-d75d8e856058"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["6fd031ef-e10d-81db-93bb-88d1522f9c21", "cf573c37-07fd-8287-858a-55a34dbab342"], "drift_flags": ["exposition", "cadence"], "judge_score": 72, "score_model": "rubric_subscores", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": {"ending_pull": 4, "hook_timing": 5, "local_payoff": 4, "exposition_control": 2, "dialogue_forw
+  section continuity {"score": 0, "passed": false, "issue_ids": ["597716bb-1380-8455-bfeb-0ebdd84d7b3b", "c5c7d870-6f6c-8d4c-b5c2-9650d717fb37", "0a3ce93b-d79f-8b4c-881b-13f7724c3422"], "evaluator_call_id": "01a0d7cc-24f0-76d4-87d0-b0a49b1e61d3"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["ff9451a1-3072-8925-9945-2cd7912a9b86"], "overlap_ratio": 0, "prior_chapters": [], "evaluator_call_id": "01a0d7cc-a13a-7311-98ff-8662e2ff86b9"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7cb-c4b0-748e-bcbd-95fcd262034c"}
+  [minor/open] prose paragraph_length lint:ko_style KO-PARA-LONG
+     claim: 긴 서술 문단 비율 1% (기준 1%). 한두 문장씩 끊고 강조 문장은 한 줄 문단으로 뗀다.
+  [minor/open] prose weak_pacing lint:ko_style KO-TALK-SHARE-1P
+     claim: 대사와 속마음 비중 11% (운영자 원고의 보통 범위 13% 이상). 요약 서술을 대사와 반응 비트로 바꾼다.
+  [major/open] continuity character_inconsistency judge:continuity_checker 
+     claim: [p179]에서 '당신'이라 부르며 상대를 몰라보더니, [p181]에서는 '최강진 형님'이라며 이름을 부르고 곧바로 '너 내가 누군지 알아?'라고 묻습니다. 한 인물에 대해 아는 사람과 모르는 사람의 태도가 한 대사 안에서 뒤섞인 명백한 앞뒤 모순입니다.
+     quote: 처, 최강진 형님?! 형님이 여길 어떻게……! 아니, 너 내가 누군지 알아?!
+  [blocking/open] continuity relationship_inconsistency judge:continuity_checker 
+     claim: 정사 관계표(RELATIONSHIP)에 따르면 김태혁은 0화.0부터 최강진에게 존댓말(말높이: 존대 5)을 사용해야 하며 '형님', '보스'라 불러야 합니다. 원고에서 '너', '무릎 안 꿇어?!'와 같이 반말로 하대하며 위협하는 것은 관계 설정에 어긋납니다.
+     quote: 알면 당장 무릎 안 꿇어?! 너 오늘 내 손에 죽……!
+  [minor/open] continuity canon_contradiction judge:continuity_checker 
+     claim: 회차 계약(MH-3)에 따르면 강진은 쓰레기통 뒤 기척을 확인하지 않고 "길고양이인가. 시간이 아깝군."이라고 말하기로 계획되었으나, 원고에서는 "쥐새끼인가.", "뭐, 시간 아깝게."로 서술되어 계약된 대사와 다릅니다.
+     quote: 쥐새끼인가.
+  [major/open] knowledge knowledge_leak judge:knowledge_leak_checker 
+     claim: 공통 규칙 중 '처음 만나는 자리에서 소개도 받기 전에 상대 이름이나 사정을 아는 것도 지식 누출이다'라는 항목에 위배됩니다. 김태혁은 직전 문단에서 '뭐, 뭐야 당신!'이라며 침입자를 전혀 누군지 몰라보았음에도 불구하고, 통성명도 없이 갑자기 주인공의 이름(최강진)을 부릅니다. [FACT] 맥락 상 재벌 그룹 막내아들인 김태혁이 각성 전의 평범한 주인공을 미리 알고 있을 근거가 전혀 없으므로 심각한 지식 누출에 해당합니다.
+     quote: 처, 최강진 형님?! 형님이 여길 어떻게……! 아니, 너 내가 누군지 알아?!
+  [minor/open] prose other judge:prose_judge 
+     claim: '앞을 섰다'는 비문입니다. '앞에 섰다'로 고쳐야 합니다.
+     quote: 자리에서 비틀거리며 일어나 화장실 거울 앞을 섰다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 주체가 아닌 사물을 주어로 쓰는 영어식 문형입니다. '내가 휘두른 식칼로' 등으로 수정하는 것이 자연스럽습니다.
+     quote: 내 손에 들린 식칼이 놈의 목덜미를 깊숙이 파고들며 경동맥을 정확히 끊어냈다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 상황의 종료를 의미하는 서구권 관용구의 직역투에 가깝습니다.
+     quote: 그 짧은 욕설이 놈이 이 세상에 남긴 마지막 유언이 되었다.
+  [minor/open] prose register_error judge:prose_judge 
+     claim: 당황한 상황을 감안하더라도 한 문장 안에서 극존칭('형님')과 하대('너')가 맥락 없이 널뛰는 것은 부자연스럽습니다.
+     quote: 처, 최강진 형님?! 형님이 여길 어떻게……! 아니, 너 내가 누군지 알아?!
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '~할 뿐이었다'는 수동적이고 관조적인 번역 문체로 굳이 쓸 필요가 없습니다.
+     quote: 단지 목덜미에 마신에게 베였던 붉은 각인만이 희미하게 남아 있을 뿐이었다.
+  [major/open] structure excessive_exposition judge:structure_judge 
+     claim: 세계관의 설정(시스템, 각성 조건)과 적의 과거(미래) 정보를 짧은 독백이나 대사가 아닌 긴 서술로 풀어내고 있어 전개를 멈춥니다.
+     quote: 일반인은 절대 열 수 없는 시스템이다. 첫 게이트가 열리고 마나에 노출되어야만 각성할 수 있으니까.
+  [major/open] structure weak_pacing judge:structure_judge 
+     claim: 결정적 린트 보고에서 대사 비중이 11%에 불과하여, 행동과 서술이 장면의 대부분을 차지해 연재 웹소설로서의 호흡이 처집니다.
+     quote: 놈은 멸망기에서 수많은 생존자를 팔아넘기고, 결국 내 등에 칼을 꽂았던 배신자다. 아직 이 시대에서는 동네 뒷골목에서 양아치 짓이나 하고 다니는 놈이다.
+  [major/open] genre other judge:genre_judge 
+     claim: 주인공의 신체 능력 묘사 설정 충돌 (1레벨 미만의 몸 vs 철문을 부수는 괴력)
+     quote: 무식한 파열음과 함께 문 손잡이가 박살 나며 거칠게 열려 벽에 처박혔다.
+  [minor/open] genre other judge:genre_judge 
+     claim: 김태혁과 주인공의 기존 관계에 대한 최소한의 힌트 누락
+     quote: “처, 최강진 형님?! 형님이 여길 어떻게……! 아니, 너 내가 누군지 알아?!”
+  [major/open] voice register_error judge:voice_judge 
+     claim: 김태혁이 최강진을 마주친 직후 한 발화 안에서 '형님'이라는 극존칭과 '너'라는 하대, 반말을 맥락 없이 섞어 써서 말높이가 완전히 붕괴되었습니다.
+     quote: “처, 최강진 형님?! 형님이 여길 어떻게……! 아니, 너 내가 누군지 알아?!”
+  [major/open] voice character_inconsistency judge:voice_judge 
+     claim: 주인공에게 머리채를 잡히고 제압당한 상황에서 김태혁이 뱉는 대사가 설정 카드의 예시 대사를 상황에 맞게 각색하지 않고 그대로 붙여넣은 형태라 AI가 쓴 기계적인 느낌이 강하게 듭니다.
+     quote: “형님! 아유, 형님! 제가 다 알아서 모시겠습니다!”
+  [minor/open] voice register_error judge:voice_judge 
+     claim: 김태혁이 초반에는 반말을 하다가 힘으로 제압당한 후에야 존댓말로 바뀌는데, 앞서 이미 '최강진 형님?!'이라고 알아보고 두려워하는 모습이 나와 서열과 호칭 관계의 흐름이 부자연스럽습니다.
+     quote: “알면 당장 무릎 안 꿇어?! 너 오늘 내 손에 죽……!”
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: 이번 회차 내내 주인공의 행동을 서술할 때 '나는'으로 시작하는 문장과 문단이 24회나 반복해서 등장합니다. 잦은 1인칭 주어 사용으로 인해 문장 구조가 단조롭게 읽히므로 주어를 생략하거나 다양한 방식으로 문장을 시작하는 윤문이 필요합니다.
+     quote: 나는 거칠게 숨을 들이켰다.
+=== scorecard r4 overall={'score': 83, 'note_count': 0, 'major_count': 2, 'minor_count': 17, 'blocking_count': 0}
+  section genre {"score": 90, "passed": true, "issue_ids": ["7081e040-dbe5-8499-b359-b74a816ee1ac", "75b221fe-94f4-8a65-870c-7cc989d11ff4"], "drift_flags": [], "judge_score": 83, "score_model": "rubric_subscores", "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_re
+  section prose {"score": 85.6, "passed": true, "issue_ids": ["032fcac7-4a67-83e2-882b-52199e0f3423", "4e61abd2-2cff-82dc-b549-e6f87a1cd410", "1425fc79-c9f1-8b8e-9149-f013f44429d8", "0db744cb-e887-8b93-a92f-7d18d074060d", "381a418d-86a1-8807-a2c3-3561510a2599", "1f32358c-55ed-8983-a348-a8034ee81e49", "51a9032a-56f6-821b-9eda-b349ea5e51ca"], "drift_flags": ["translation_like"], "judge_score": 85, "score_model": "r
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["3fdd632e-9a66-8a47-9f48-b8ebdc02ab10", "2d1c715e-6765-8607-96e6-63124f9b92e6"], "drift_flags": ["prompt-copy-paste"], "judge_score": 85, "score_model": "rubric_subscores", "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 4, "distinguishability": 5, "register_consis
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "6a376fcd-e791-86f7-8947-725018626aee"}], "issue_ids": [], "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "evaluator_call_id": "01a0d7c4-6fb7-729c-af7a-aebcbd3abe05"}
+  section knowledge {"score": 0, "passed": false, "issue_ids": ["bc23fc7d-d847-83f3-85c5-ad221430c186"], "evaluator_call_id": "01a0d7ce-77de-75da-b0d1-481e09ef01e7"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["b9e661b4-193b-8b53-84aa-bf75b96c6949", "914ac574-b53a-8a21-9670-2b6b6a736ae4", "64f5c82c-2bfa-8dca-a4b4-d1f581060f68"], "drift_flags": ["serial", "exposition"], "judge_score": 65, "score_model": "rubric_subscores", "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": 
+  section continuity {"score": 0, "passed": false, "issue_ids": ["7898c103-f997-8693-b43a-10ed18176aaa", "5fb8db3b-c4d3-8df2-98ee-11afd393a4ab", "aaae0702-d2f1-8006-b202-c5d31c756f47"], "evaluator_call_id": "01a0d7ce-d79d-730a-a620-cb0880f61bfb"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["0f432422-7f6e-8641-aaee-81f64b9a9487"], "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "evaluator_call_id": "01a0d7c4-88d8-73cf-b699-053777d05293"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "evaluator_call_id": "01a0d7ce-39e3-7694-ab8b-f5fbf9bcc338"}
+  [minor/open] prose paragraph_length lint:ko_style KO-PARA-LONG
+     claim: 긴 서술 문단 비율 1% (기준 1%). 한두 문장씩 끊고 강조 문장은 한 줄 문단으로 뗀다.
+  [minor/open] prose weak_pacing lint:ko_style KO-TALK-SHARE-1P
+     claim: 대사와 속마음 비중 12% (운영자 원고의 보통 범위 13% 이상). 요약 서술을 대사와 반응 비트로 바꾼다.
+  [minor/open] continuity world_rule_violation judge:continuity_checker 
+     claim: 세계 규칙 'world.rule.status_window_format_six'에 따르면 상태창은 시야 우측 하단에 출력되어야 하지만, 원고에서는 눈앞에 떠올랐다고 묘사했습니다.
+     quote: 눈앞에 반투명한 푸른 패널이 떠올랐다.
+  [major/open] continuity relationship_inconsistency judge:continuity_checker 
+     claim: 상태 장부에 따르면 김태혁은 0화.0부터 최강진을 상급자로 대우하며 존댓말과 '형님', '보스'라는 호칭을 쓰는 것으로 설정되어 있으나, 원고에서는 반말로 하대하며 이름을 부르고 있습니다.
+     quote: 최, 최강진?! 아니, 이 새끼들 다 어디 처박히고 네가 여길 와! 너 내가 누군지 잊었어?!
+  [minor/open] continuity other judge:continuity_checker 
+     claim: 경동맥은 목의 앞부분이나 옆부분에 위치하는데, 뒷목을 뜻하는 '목덜미'를 파고들어 경동맥을 끊었다고 묘사하여 해부학적 모순이 발생했습니다.
+     quote: 내 손에 들린 식칼이 놈의 목덜미를 깊숙이 파고들며 경동맥을 정확히 끊어냈다.
+  [major/open] knowledge knowledge_leak judge:knowledge_leak_checker 
+     claim: 최강진은 회귀 전의 기억을 통해 김태혁의 위치와 비자금 정보를 알고 찾아간 것인데, 김태혁이 갑자기 최강진의 이름을 부르며 평소 아는 사이인 것처럼 반응하고 있습니다. 두 사람이 이전부터 아는 사이라는 서술이나 설정이 없다면, 첫 만남에서 상대방의 이름을 아는 것은 지식 누출(설정 오류)에 해당합니다.
+     quote: “최, 최강진?! 아니, 이 새끼들 다 어디 처박히고 네가 여길 와! 너 내가 누군지 잊었어?!”
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '~것은 ~이었다' 구조의 번역투 문장으로, '뚫린 구멍 대신 온전한 살갗이 만져졌다' 등으로 고치는 것이 자연스럽습니다.
+     quote: 하지만 손끝에 만져지는 것은 뚫린 구멍이 아니라 온전한 살갗이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요하게 긴 명사절 주어를 사용한 번역투입니다. '가장 먼저 상단의 숫자가 눈에 박혔다'가 낫습니다.
+     quote: 가장 먼저 눈에 박힌 것은 상단의 숫자들이었다.
+  [minor/open] prose paragraph_length judge:prose_judge 
+     claim: 여러 문장이 한 문단에 뭉쳐 있어 모바일 화면에서 호흡이 깁니다. 린트 보고에서 지적된 긴 서술 문단입니다.
+     quote: 대경그룹 막내아들 김태혁. 놈이 클럽 비밀 금고에 숨겨둔 비자금 50억. 10일 뒤면 어차피 휴지 조각이 될 돈이다. 내가 유용하게 써 주는 게 낫지.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 긴 관형절 수식과 '짐승의 둔한 반응이다'라는 비유적 서술이 얽혀 있어 웹소설 특유의 빠른 속도감을 다소 해칩니다.
+     quote: 약에 취했거나, 그저 흉기 앞에서도 자신의 알량한 주먹을 맹신하는 짐승의 둔한 반응이다.
+  [minor/open] prose other judge:prose_judge 
+     claim: '미간을 구겼다'는 다소 흔하게 쓰이는 표정 묘사 상투구이며 회차 내에서 여러 번 반복됩니다.
+     quote: 내 노골적인 기척에 박태준이 미간을 팍 구겼다.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 독백 형식을 빌려 설정과 배경을 직접 설명하는 문단이 튀어나옵니다.
+     quote: 일반인은 절대 열 수 없는 시스템이다. 첫 게이트가 열리고 마나에 노출되어야만 각성할 수 있으니까.
+  [minor/open] structure other judge:structure_judge 
+     claim: 등장인물의 내면 상태를 행동 지문 대신 직접적인 감정 서술로 요약합니다.
+     quote: 과거의 기억이 떠올라 분노가 치솟는다거나 하는 감정적 동요는 전혀 없었다.
+  [minor/open] structure weak_ending judge:structure_judge 
+     claim: 새로운 위협이나 강한 궁금증 없이, 유리한 상황에서의 단순 협박으로 끝나 당김이 약합니다.
+     quote: 비밀 금고 번호 불어. 시간 아까우니까.
+  [minor/open] genre payoff_without_setup judge:genre_judge 
+     claim: 미래 핵심 인물 암살 직후 시스템(세계선 변동률 등)의 반응 컷이 생략되어 분기의 무게를 드러낼 기회를 놓쳤습니다.
+     quote: ‘오차 범위 내다.’
+  [minor/open] genre other judge:genre_judge 
+     claim: 10일이라는 짧은 시간에 700개의 신화급 기연을 독식한다는 설정이 물리적 개연성과 어긋나 서사의 긴장감을 낮춥니다.
+     quote: 이 10일 동안 700개의 신화급 기연을 모조리 선점해야 한다.
+  [minor/open] voice character_inconsistency judge:voice_judge 
+     claim: 상대방이 머리채를 거머쥔 상황인데도 김태혁이 '제발 얼굴만은!'이라고 외치는 등, 설정 카드의 예시 대사를 맹목적으로 출력했습니다.
+     quote: 죽을죄를 졌습니다! 살려만 주십쇼! 제발 얼굴만은!
+  [minor/open] voice voice_drift judge:voice_judge 
+     claim: 말을 아끼고 행동으로 보여주어야 할 주인공이 '네 심판자'라는 극적인 단어를 선택해 건조한 성격 설정과 약간 어긋납니다.
+     quote: 네 심판자.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: [EVIDENCE] 반복 검사 보고와 원문에 따르면 이번 회차 안에서 '나는'으로 시작하는 문장이 25회, '놈은'으로 시작하는 문장이 6회 등장합니다. 1인칭 시점 서술에서 주어가 습관적으로 반복되어 문장 패턴이 단조로워졌으므로, 불필요한 주어를 생략하거나 다른 어휘로 문장을 시작하도록 윤문할 필요가 있습니다.
+     quote: 나는 거칠게 숨을 들이켰다.
+=== scorecard r5 overall={'score': 83, 'note_count': 0, 'major_count': 0, 'minor_count': 16, 'blocking_count': 1}
+  section genre {"score": 90, "passed": true, "issue_ids": ["2c767d2f-a9d1-8327-9151-dc0548cdf94c", "a5adad59-bb97-8cc8-8c5a-f5325785bd63"], "drift_flags": [], "judge_score": 83, "score_model": "rubric_subscores", "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "judge_weight": 0.8, "rubric_score": 87.5, "dimension_scores": {"reader_fantasy": 4, "taboo_restraint": 5, "device_correctness": 4, "vocabulary_re
+  section prose {"score": 85.6, "passed": true, "issue_ids": ["75ffe2d0-8e6e-8b07-b445-434e52e6f649", "d52e61c9-01a3-8f79-aa58-2e6f78b9ff7f", "97417ae4-420a-87b7-a3e6-2eb0b99ebd23", "f9b992d3-8898-821f-b6b9-13b71f08149d", "9c3a24b1-794c-89b8-a41c-5bbaf72cbaa0", "84a47cfb-5417-8487-977d-2dfc92b3e0a8", "6fd104bf-070c-868f-8e12-f983b8b55d6a"], "drift_flags": ["translation_like"], "judge_score": 85, "score_model": "r
+  section voice {"score": 91.3, "passed": true, "issue_ids": ["45583859-5d6b-8799-83f6-eccc261153e2", "fc26c40b-b720-8f13-a7dd-e747f190ddb7"], "drift_flags": ["prompt-copy-paste"], "judge_score": 85, "score_model": "rubric_subscores", "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "judge_weight": 0.7, "rubric_score": 87.5, "dimension_scores": {"verbal_habits": 4, "distinguishability": 5, "register_consis
+  section length {"score": 100, "passed": true, "issue_ids": []}
+  section promises {"score": 100, "passed": true, "touches": [{"found": true, "planned": "open", "promise_id": "6a376fcd-e791-86f7-8947-725018626aee"}], "issue_ids": [], "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "evaluator_call_id": "01a0d7c4-6fb7-729c-af7a-aebcbd3abe05"}
+  section knowledge {"score": 100, "passed": true, "issue_ids": [], "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "evaluator_call_id": "01a0d7c6-5b83-7605-b73d-d541aa4e768c"}
+  section structure {"score": 80, "passed": true, "issue_ids": ["54597cd5-e64b-8e0b-91f5-72d7a003b364", "df76202f-30a7-8c4a-b603-bd80301c715e", "7149b319-3e8f-8c30-85cf-6c20062cdd0c"], "drift_flags": ["serial", "exposition"], "judge_score": 65, "score_model": "rubric_subscores", "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "judge_weight": 0.5, "rubric_score": 60, "lint_composite": 100, "dimension_scores": 
+  section continuity {"score": 0, "passed": false, "issue_ids": ["462b51f6-0118-88b3-b64e-c979d77de55d", "064c7d46-186a-87ce-b528-eec98d5f2d79"], "evaluator_call_id": "01a0d7d1-122b-702b-99ba-1d1f2009eff2"}
+  section repetition {"score": 0, "passed": true, "issue_ids": ["fb52a520-bb06-8dd8-9500-ba95d238f610"], "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "evaluator_call_id": "01a0d7c4-88d8-73cf-b699-053777d05293"}
+  section output_language {"score": 100, "passed": true, "issue_ids": [], "english_confidence": 1, "non_english_segments": 0}
+  section contract_compliance {"score": 100, "passed": true, "issue_ids": [], "carried_from": "ff31a71b-98ce-844a-9751-a688b402f578", "evaluator_call_id": "01a0d7c6-51d5-704f-b74d-3d7598961996"}
+  [minor/open] prose paragraph_length lint:ko_style KO-PARA-LONG
+     claim: 긴 서술 문단 비율 1% (기준 1%). 한두 문장씩 끊고 강조 문장은 한 줄 문단으로 뗀다.
+  [minor/open] prose weak_pacing lint:ko_style KO-TALK-SHARE-1P
+     claim: 대사와 속마음 비중 12% (운영자 원고의 보통 범위 13% 이상). 요약 서술을 대사와 반응 비트로 바꾼다.
+  [blocking/open] continuity relationship_inconsistency judge:continuity_checker 
+     claim: 김태혁이 최강진을 '형님'이라 부르며 알아보는 동시에, 바로 다음 문장에서는 '너 내가 누군지 알아?!'라며 초면이거나 하대하는 태도를 보여 한 대사 안에서 심각한 개연성 모순이 발생합니다. 또한 정사 관계상 김태혁은 0화.0부터 최강진을 형님으로 부르며 굽히는 사이이므로 이후 이어지는 반말 대사(p183)도 잠긴 사실과 어긋납니다.
+     quote: 최, 최강진 형님? 혀, 형님이 여긴 어떻게……! 아, 아니! 너 내가 누군지 알아?!
+  [minor/open] continuity timeline_error judge:continuity_checker 
+     claim: 회차 계약(MH-3)에서는 기척을 느낀 후 '길고양이인가. 시간이 아깝군.'이라고 말하도록 계획되었으나, 원문에서는 '쥐새끼인가. 뭐, 시간 아깝게.'로 대사가 변경되었습니다.
+     quote: “쥐새끼인가.”
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: '~것은 ~이었다' 구조의 번역투 문장으로, '뚫린 구멍 대신 온전한 살갗이 만져졌다' 등으로 고치는 것이 자연스럽습니다.
+     quote: 하지만 손끝에 만져지는 것은 뚫린 구멍이 아니라 온전한 살갗이었다.
+  [minor/open] prose translation_like_english judge:prose_judge 
+     claim: 불필요하게 긴 명사절 주어를 사용한 번역투입니다. '가장 먼저 상단의 숫자가 눈에 박혔다'가 낫습니다.
+     quote: 가장 먼저 눈에 박힌 것은 상단의 숫자들이었다.
+  [minor/open] prose paragraph_length judge:prose_judge 
+     claim: 여러 문장이 한 문단에 뭉쳐 있어 모바일 화면에서 호흡이 깁니다. 린트 보고에서 지적된 긴 서술 문단입니다.
+     quote: 대경그룹 막내아들 김태혁. 놈이 클럽 비밀 금고에 숨겨둔 비자금 50억. 10일 뒤면 어차피 휴지 조각이 될 돈이다. 내가 유용하게 써 주는 게 낫지.
+  [minor/open] prose literary_drift judge:prose_judge 
+     claim: 긴 관형절 수식과 '짐승의 둔한 반응이다'라는 비유적 서술이 얽혀 있어 웹소설 특유의 빠른 속도감을 다소 해칩니다.
+     quote: 약에 취했거나, 그저 흉기 앞에서도 자신의 알량한 주먹을 맹신하는 짐승의 둔한 반응이다.
+  [minor/open] prose other judge:prose_judge 
+     claim: '미간을 구겼다'는 다소 흔하게 쓰이는 표정 묘사 상투구이며 회차 내에서 여러 번 반복됩니다.
+     quote: 내 노골적인 기척에 박태준이 미간을 팍 구겼다.
+  [minor/open] structure excessive_exposition judge:structure_judge 
+     claim: 독백 형식을 빌려 설정과 배경을 직접 설명하는 문단이 튀어나옵니다.
+     quote: 일반인은 절대 열 수 없는 시스템이다. 첫 게이트가 열리고 마나에 노출되어야만 각성할 수 있으니까.
+  [minor/open] structure other judge:structure_judge 
+     claim: 등장인물의 내면 상태를 행동 지문 대신 직접적인 감정 서술로 요약합니다.
+     quote: 과거의 기억이 떠올라 분노가 치솟는다거나 하는 감정적 동요는 전혀 없었다.
+  [minor/open] structure weak_ending judge:structure_judge 
+     claim: 새로운 위협이나 강한 궁금증 없이, 유리한 상황에서의 단순 협박으로 끝나 당김이 약합니다.
+     quote: 비밀 금고 번호 불어. 시간 아까우니까.
+  [minor/open] genre payoff_without_setup judge:genre_judge 
+     claim: 미래 핵심 인물 암살 직후 시스템(세계선 변동률 등)의 반응 컷이 생략되어 분기의 무게를 드러낼 기회를 놓쳤습니다.
+     quote: ‘오차 범위 내다.’
+  [minor/open] genre other judge:genre_judge 
+     claim: 10일이라는 짧은 시간에 700개의 신화급 기연을 독식한다는 설정이 물리적 개연성과 어긋나 서사의 긴장감을 낮춥니다.
+     quote: 이 10일 동안 700개의 신화급 기연을 모조리 선점해야 한다.
+  [minor/open] voice character_inconsistency judge:voice_judge 
+     claim: 상대방이 머리채를 거머쥔 상황인데도 김태혁이 '제발 얼굴만은!'이라고 외치는 등, 설정 카드의 예시 대사를 맹목적으로 출력했습니다.
+     quote: 죽을죄를 졌습니다! 살려만 주십쇼! 제발 얼굴만은!
+  [minor/open] voice voice_drift judge:voice_judge 
+     claim: 말을 아끼고 행동으로 보여주어야 할 주인공이 '네 심판자'라는 극적인 단어를 선택해 건조한 성격 설정과 약간 어긋납니다.
+     quote: 네 심판자.
+  [minor/open] repetition repetitive_sentence_openings judge:repetition_judge 
+     claim: [EVIDENCE] 반복 검사 보고와 원문에 따르면 이번 회차 안에서 '나는'으로 시작하는 문장이 25회, '놈은'으로 시작하는 문장이 6회 등장합니다. 1인칭 시점 서술에서 주어가 습관적으로 반복되어 문장 패턴이 단조로워졌으므로, 불필요한 주어를 생략하거나 다른 어휘로 문장을 시작하도록 윤문할 필요가 있습니다.
+     quote: 나는 거칠게 숨을 들이켰다.
