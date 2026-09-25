@@ -28,6 +28,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@25',
       'policy/standard@26',
       'policy/standard@27',
+      'policy/standard@28',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -37,6 +38,25 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v28 is standard.v27 with larger checker and extractor pack budgets (ADR-0101)', () => {
+    const v27 = requirePolicy('policy/standard@27', policies);
+    const v28 = requirePolicy('policy/standard@28', policies);
+    expect(v28.context).toEqual({
+      ...v27.context,
+      input_budget_tokens: {
+        ...v27.context.input_budget_tokens,
+        'pack.continuity_checker': 48000,
+        'pack.extractor': 44000,
+      },
+    });
+    const strip = (p: typeof v27) => {
+      const { version: _v, name: _n, content_hash: _h, context: _c, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v28)).toEqual(strip(v27));
+    expect(v28.gates).toEqual(v27.gates);
   });
 
   it('standard.v27 is standard.v26 with major agreement (ADR-0100)', () => {

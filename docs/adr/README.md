@@ -107,6 +107,7 @@
 | [0098](0098-operator-granted-revision-rounds.md) | `novel:extend`: an operator grants the chapter a needs_attention run stopped on more revision rounds, up to the pinned policy's `max_rounds` in all; the polish round may follow the last round |
 | [0099](0099-story-spec-categories.md) | `standard.v26`: a story spec's requirement categories are read as the schema knows them (`planning.normalize_spec_categories`) |
 | [0100](0100-major-agreement.md) | `standard.v27`: a taste judge's reviewer-class major blocks only when a second reading of the same text reproduces it (`evaluation.major_agreement`) |
+| [0101](0101-pack-budgets.md) | `standard.v28`: the continuity checker's and the extractor's pack budgets raised to 48,000 and 44,000 tokens |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
