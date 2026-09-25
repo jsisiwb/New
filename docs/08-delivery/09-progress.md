@@ -15,66 +15,92 @@ named the old owner; the only stale names were in this block, and the corpus rep
 | Order | Step of the operator's plan | Status |
 | --- | --- | --- |
 | 1 | STEP 1 — `standard@19` checkpoint on both projects | done: the recorded G9 pair (ADR-0085 §2, `13-live-run-gemini.md` §9); defects G9-1 … G9-8 |
-| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | done in code through `standard@28` (ADR-0092 … ADR-0101, including `novel:extend`); live G10–G17 recorded (§10–§14); no chapter accepted |
+| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | done in code through `standard@28` (ADR-0092 … ADR-0101, including `novel:extend`) and the acceptance path (ADR-0102 … ADR-0105); live G10–G18 recorded (§10–§15) |
 | 3 | STEP 4.1 — the corpus in the database | done: `corpus:verify` (3 books, 1,138 spine chapters, 656 Korean main-story chapters, all hashes equal), re-run 19:15 UTC |
 | 4 | STEP 4.4 — stock phrases refreshed | done: `lang/ko@9` in `standard@21` |
-| 5–12 | the rest | not reached: STEP 5 onward waits on an accepted chapter 1; see the reconciliation below |
+| 5 | STEP 5 — chapters 2–5 | in progress: G17a chapter 1 **accepted** (23:10 UTC); G17a resumed with `--stop-after=5` at 23:12 |
+| 6–12 | the rest | not reached; see the reconciliation below |
 
-### Final report of this run (2026-09-25, ended 21:30 UTC)
+### Final report of this run (2026-09-25, as of 23:20 UTC)
 
-**Accepted 화.** Academy: 0. Regression: 0. Closest results:
+**Accepted 화.** Academy: 1 (G17a chapter 1, `standard@28`, accepted at 23:10:26 UTC, canon commit v3). Regression: 0;
+G18r chapter 1 (`standard@28`) is on its granted rounds. Earlier closest results:
 
 | Chapter 1 | Policy | Best version | Why it is not accepted |
 | --- | --- | --- | --- |
 | G14a (academy) | `standard@24` | r9: 0 blocking / 0 majors, overall 89, gate outcome `approved`; after the confirmation, r10: 0 / 2, overall 86, all four gates passing | the confirmation's fresh reading rated majors that r8's fresh reading had rated minor (G14-4); the grant cap was reached |
 | G14r (regression) | `standard@24` | r10: 0 / 3, overall 86, all four gates passing | three reviewer-class majors at the grant cap |
 | G16r (regression) | `standard@27` | r2: 2 / 3, overall 90; voice below its gate in every round | the bridge failed the r5 evaluation |
+| G18r (regression) | `standard@28` | r5: 0 / 1, overall 89, all four taste gates passing | one continuity-checker major; granted five rounds at 23:12 |
 
 G14a's and G14r's remaining findings are all reviewer-class (ADR-0042). Overriding them, or regenerating the chapter,
 is the operator's decision; neither was taken.
 
-**ADRs and policies of this run.** ADR-0092 … ADR-0101; `standard@20` … `standard@28` (new projects: `standard@28`). The
-levers that moved the live numbers: the pronoun band lint (ADR-0096, G14a prose 18 → 81.8), granted rounds (ADR-0098,
-G14a 1 / 1 → 0 / 0), and the schema-drift normalizers (ADR-0094, ADR-0096, ADR-0099, three first-call failures).
-`standard@27`'s major agreement (ADR-0100) and `standard@28`'s pack budgets (ADR-0101) have not yet run to a scorecard
-that needed them.
+**ADRs and policies of this run.** ADR-0092 … ADR-0105; `standard@20` … `standard@28` (new projects: `standard@28`).
+ADR-0102 … ADR-0105 have no policy version: each turns a stop that no project could get past on the way from an
+approved chapter to canon into the designed behaviour (the polish round's targets, the extractor's repair, fields a
+repair broke, the story-present bound, a fact's clock). The levers that moved the live numbers: the pronoun band lint
+(ADR-0096, G14a prose 18 → 81.8), granted rounds (ADR-0098, G14a 1 / 1 → 0 / 0), the schema-drift normalizers
+(ADR-0094, ADR-0096, ADR-0099), and the acceptance path (ADR-0102 … ADR-0105, G17a accepted).
 
-**Metrics.** Per chapter (G14a, ten rounds, `cost:project`): 111 calls, 444,322 input / 31,531 output tokens, 50.5
-model-minutes. Corpus copy findings 0, `KO-DEVICE-01` 0 in every recorded round; reader-secret findings only in G14a
-r0 (the ‘엑스트라’ lines) and G14r r3.
+**Metrics.** G17a chapter 1: 80 calls (99 attempts), 341,138 input / 41,342 output tokens, 2,961 s of model time,
+r0 80 → r4 86 with 0 / 0, confirmation 89, polish kept (lint 7 → 1), 6,339자. Corpus copy findings 0, `KO-DEVICE-01` 0 and
+reader-secret findings 0 in every G17a round; earlier reader-secret findings only in G14a r0 and G14r r3.
 
-**Credits.** 17:10 → 18:58 UTC: at least 18.2 points for 256 calls (≈ 0.071 per call; ws1 94.10 → 97.81 % before it
-went `rate-limited`, ws3 29.66 → 39.82 %, ws4 10.54 → 14.85 %). The bridge's counters then reset twice. Latest raw
-reading (21:20): ws1 2.55 %, ws2 0 %, ws3 52.82 %, ws4 19.94 %, not comparable with the earlier ones.
+**Credits.** 17:10 → 18:58 UTC: at least 18.2 points for 256 calls (≈ 0.071 per call). The bridge's counters have
+reset since; ws5 and ws6 are new. Latest raw reading (23:15): ws1 7.02 %, ws2 1.61 %, ws3 56.74 %, ws4 21.88 %, ws5
+2.38 %, ws6 3.66 %. From 22:20 to 23:15, G17a's acceptance and G18r's planning and five rounds cost about 8 points.
 
-**200-화 projection.** At G14a's rate, 200 화 is 22,209 calls, 88.9 M input and 6.3 M output tokens, and 168 model-hours:
-about 1,580 bridge points at 0.071 per call, roughly 16 workspace billing periods. Five rounds without a grant take
-about 80 calls per chapter.
+**200-화 projection.** At G17a's chapter-1 rate (80 calls, 341,138 input and 41,342 output tokens), 200 화 is
+about 16,000 calls, 68 M input and 8.3 M output tokens: about 1,140 bridge points at 0.071 per call, roughly
+11 workspace billing periods. `cost:project` projects 7,409 calls and 72.5 model-hours from G17a's plan and its
+chapters observed so far. That is a floor, because chapter 1 needed five rounds and later chapters are not yet
+measured.
 
 **The corpus in the database.** `corpus:verify https://github.com/sigma43web/ko-corpus.git` at 19:15 UTC: 415 + 360 +
 363 = 1,138 of 1,138 chapters equal to the EPUBs (content SHA-256, 자 with and without spaces), `complete: true`.
 **Safe to delete the corpus repository: yes.**
 
-**BLOCKED.** The Notion bridge failed every probe from 18:54 to about 19:25 UTC and again from 21:15 UTC. In between it
-failed long calls often (G16r: 50 of 122 attempts), and its per-workspace counters reset twice. Vector retrieval (7.4):
-`EMBEDDING_PROVIDER_BASE_URL` and `EMBEDDING_PROVIDER_API_KEY` are unset.
+**BLOCKED.** None at present. The Notion bridge failed every probe from 18:54 to about 19:25 UTC and from 21:15 to
+about 22:10 UTC. ws4 and ws6 were `rate-limited` at 23:15. Vector retrieval (7.4): `EMBEDDING_PROVIDER_BASE_URL` and
+`EMBEDDING_PROVIDER_API_KEY` are unset.
 
-**Operator actions.** (1) Check the Notion bridge (restarts; HTTP 502 on long calls). (2) Decide G14a and G14r: override
-the reviewer-class majors with a recorded reason, or regenerate chapter 1. (3) Merge PR #1 with "Create a merge
-commit". (4) The corpus repository may be deleted.
+**Operator actions.** (1) Decide G14a and G14r (`standard@24`): override the reviewer-class majors with a recorded
+reason, or leave them; the acceptance path they would now take is the one G17a took. (2) Merge PR #1 with "Create a
+merge commit". (3) The corpus repository may be deleted.
 
-**Safety rules.** Tests run against local sandbox databases only (`yeonjae_test` for full suites, `yeonjae_test_b` for
-targeted runs; a wrapper sets `DATABASE_URL` to the sandbox and unsets every provider variable); the inherited
-`DATABASE_URL` is the permanent database, used only by live runs, corpus commands and reports, from the live worktrees:
-`/tmp/hoplite/live` (G17a and the paused G15 runs, at `9296310`) and `/tmp/hoplite/live2` (G16, at `75edc1c`). A running
-project's worktree is never checked out to another commit. Never run the full `pnpm check` while a live run is in flight
-(G8 incident). A full local suite run beside live runs can time out DB-reset hooks (10 s); re-run the file alone.
+**Safety rules.** Tests run against local sandbox databases only (`yeonjae_test` / `yeonjae_test_b`, through a wrapper
+that sets `DATABASE_URL` to the sandbox and unsets every provider variable). Full suites run from a clean worktree,
+`/tmp/hoplite/testwt`, so that edits cannot race them. The inherited `DATABASE_URL` is the permanent database. Only live
+runs, corpus commands and reports use it, and only from the live worktrees: `/tmp/hoplite/live` (G17a, at `f7271d1`)
+and `/tmp/hoplite/live2` (G18r, at `f7271d1`). A live worktree is rebuilt (`pnpm build`) after every checkout, because
+packages resolve each other through `dist/`. A running project's worktree is never checked out to another commit.
+Never run the full `pnpm check` while a live run is in flight (G8 incident).
 
-**Resume point.** When `provider:check --probe` passes: `novel:resume` then `novel:run` for `G16r 회귀 standard27` (from
-`/tmp/hoplite/live2`; it repeats only the failed r5 evaluation) and `G17a 아카데미 standard28` (from `/tmp/hoplite/live`;
-it repeats the scene plan). A chapter that ends one step short gets `novel:extend`. An accepted chapter 1 goes on to STEP 5
-(`novel:resume <project> --stop-after=5`, then `novel:run`). Open: G16-2 (the regression hero's register toward strangers
-fails voice in every round), G12-2, G9-6, G9-8, G7-4, G5-8.
+**Resume point.** `novel:status` for `G17a 아카데미 standard28` (STEP 5, chapters 2–5, from `/tmp/hoplite/live`) and
+`G18r 회귀 standard28` (granted rounds r6–r10, from `/tmp/hoplite/live2`). A failed run is resumed with `novel:resume`
+then `novel:run`. A chapter that ends one step short gets `novel:extend`. After chapter 5: refresh the blinded packet,
+then run the unattended batch 6–15 and the 15-화 audit. Open: G16-2 (not seen in G18r), G12-2, G9-6, G9-8, G7-4, G5-8. A
+rejected extraction still replays its recorded answers on resume (ADR-0103, deferred).
+
+## G17 fixes — the acceptance path — 2026-09-25
+
+**Built (ADR-0102 … ADR-0105, no policy version):**
+
+- The polish round names its lint findings as the reviser's targets.
+- The extractor's answer is repaired at most twice, with per-item errors and the schemas' shapes.
+- A top-level field that a repair broke is taken back from the answer it repaired (`restoreRegressedFields`,
+  `extraction_field_restore`), and the note renders top-level shapes.
+- For future validity, a contract window inside its own chapter ends no earlier than the chapter's last paragraph
+  (`storyPresentEnd`).
+- An asserted fact without `valid_from` takes its item's `story_clock` (`withFactClocks`), and a fact with neither is
+  rejected by the verifier.
+
+**Measured:** G17a chapter 1 went from confirmation through polish, extraction and acceptance to canon commit v3
+(`13-live-run-gemini.md` §15).
+
+**Tests:** `novel-ko.integration.test.ts` (four simulated `standard@28` runs to acceptance, each failing without its
+change), `extraction-repair.test.ts`, `story-clock.test.ts`, `packages/canon/src/verify.test.ts`, `normalizers.test.ts`.
 
 ## G16-1 — `standard.v28` — 2026-09-25
 

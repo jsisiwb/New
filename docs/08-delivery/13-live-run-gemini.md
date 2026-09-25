@@ -734,3 +734,49 @@ Calls / attempts / tokens / time: G16a 20 / 25 / 159,998 in, 35,540 out / 2,170 
 
 **Defects.** G16-1 (above; ADR-0101). G16-2: the regression hero's register toward strangers fails the voice gate in
 every round (voice 56–69); open. The bridge outage is not a pipeline defect.
+
+## 15. G17a — the first accepted chapter (21:25–23:10 UTC)
+
+Chapter 1 of G17a (academy, `standard@28`) was drafted once the bridge recovered and run from the live worktree. The
+code moved forward as each downstream defect was fixed: `730d457` (the polish round), then `211ca59`, `e5dd44d`,
+`df43377` and `f7271d1`. Every resume replayed the recorded calls. From the approved v5 onward, the only new model call
+was the extractor's second repair. Export: `ops/live-runs/g17-standard28/`.
+
+| | G17a |
+| --- | --- |
+| Length (accepted v6) | 6,339자 (+19.6 % against the contract's 5,300), 5,033 without spaces; 252 paragraphs |
+| Rounds | r0 80 (3 / 2) → r1 85 (0 / 3) → r2 84 and r3 89 quarantined (protection failed; r3 also a new major) → r4 86, **0 / 0**, all four gates passing (prose 87.2, structure 85.5, genre 90, voice 95.7) |
+| Confirmation (ADR-0086) | the full re-reading of v5: overall 89, 0 / 0, approved |
+| Polish (ADR-0073) | v6 kept: lint findings 7 → 1; overall 89, 0 / 0, approved |
+| Extraction | three answers. The first failed the canon-delta schema on seven items. The first repair fixed five. The second fixed the other two and broke `hypothesis_results`, which was taken back from the first repair (ADR-0103) |
+| Canon commit | v3 (`chapter_acceptance`): 5 events, 2 facts, 1 relationship state, 1 promise opened, then the summary and dependency edges; accepted at 23:10:26 |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | 0 / 0 / 0 |
+| Calls / attempts / tokens / time | 80 calls (99 attempts, 2 failed calls) / 341,138 in, 41,342 out / 2,961 s of model time; wall clock 20:35–23:10, including the bridge outage and the fixes |
+
+Excerpt (the first three lines of the accepted v6, unedited):
+
+> “다음 수험생, 번호표 771번! 시온! 단상으로 올라와라!”
+> 쩌렁쩌렁한 호통 소리가 귓바퀴를 세게 때렸다.
+> 나는 새끼손가락으로 귓구멍을 후비적거리며 느릿하게 눈을 떴다.
+
+**What it took.** Each defect below appeared only once the one before it was fixed. None of them was in the prose.
+
+- **G17-1.** The polish round found no target in a passing chapter and stopped with `INTERNAL` (ADR-0102).
+- **G17-2.** The extractor's answer failed the canon-delta schema. It is now repaired at most twice, with per-item
+  errors and rendered shapes (ADR-0102).
+- **G17-3.** The second repair broke a field that both earlier answers had right. Such a field is now taken back
+  (ADR-0103).
+- **G17-4.** The planner's window `1.0 → 1.1` against the extractor's paragraph-order ordinals turned a relationship
+  dated 1.2 into "the future" (ADR-0104).
+- **G17-5.** Two facts dated only by their items reached the insert without `valid_from` (ADR-0105).
+
+G17a was resumed with `--stop-after=5` at 23:12 (STEP 5).
+
+**G18r (regression, `standard@28`).** Planned from 22:30, from the second worktree. r0 77 (2 / 4) → r5 89 (0 / 1), with
+every round kept. At r5 all four taste gates passed (prose 90.9, structure 87.5, genre 85, voice 90.3), so G16-2 did not
+recur. One continuity-checker major remained: a line that contradicts the extortion it follows. At 23:12 the chapter
+was granted five rounds (ADR-0098) on `f7271d1`.
+
+Credits at 23:15: ws1 7.02 %, ws2 1.61 %, ws3 56.74 %, ws4 21.88 % (`rate-limited`), ws5 2.38 %, ws6 3.66 %
+(`rate-limited`). ws5 and ws6 are new in this period. Against the 22:20 reading, G17a's acceptance and G18r's planning
+and five rounds cost about 8 points across the six workspaces.

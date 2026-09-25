@@ -13,42 +13,377 @@
     "output_language": "lang/ko@9"
   },
   "run": {
-    "status": "failed",
+    "status": "producing",
     "target_chapters": 200,
-    "next_chapter": 1,
-    "stop_after_chapter": 1,
-    "last_error": {
-      "code": "MODEL_CALL_FAILED",
-      "step": "scene_plan",
-      "message": "PROVIDER_FAILED: provider notion returned HTTP 502 [failure_class=retryable_provider]",
-      "chapter_no": 1,
-      "recommended_actions": [
-        "retry_step"
-      ]
-    }
+    "next_chapter": 2,
+    "stop_after_chapter": 5,
+    "last_error": null
   },
   "chapter": 1,
-  "chapter_status": "planned",
-  "accepted": false,
+  "chapter_status": "accepted",
+  "accepted": true,
   "target_characters": 5300,
-  "scenes": [],
-  "plan_critic": null,
-  "plan_findings": null,
-  "rounds": [],
-  "likeness": [],
+  "v1": {
+    "chars": 6216,
+    "chars_no_spaces": 4931,
+    "quoted_dialogue_lines": 51,
+    "quoted_inner_lines": 9,
+    "talk_share": 0.204,
+    "first_lines": [
+      "“다음 수험생, 번호표 771번! 시온! 단상으로 올라와라!”",
+      "쩌렁쩌렁한 호통 소리가 귓바퀴를 세게 때렸다.",
+      "나는 새끼손가락으로 귓구멍을 후비적거리며 느릿하게 눈을 떴다."
+    ],
+    "deviation_pct": 17.3,
+    "dialogue_lines_per_1k": 8.2
+  },
+  "last_version": {
+    "version_no": 6,
+    "status": "accepted",
+    "chars": 6339,
+    "chars_no_spaces": 5033,
+    "quoted_dialogue_lines": 51,
+    "quoted_inner_lines": 11,
+    "talk_share": 0.202,
+    "first_lines": [
+      "“다음 수험생, 번호표 771번! 시온! 단상으로 올라와라!”",
+      "쩌렁쩌렁한 호통 소리가 귓바퀴를 세게 때렸다.",
+      "나는 새끼손가락으로 귓구멍을 후비적거리며 느릿하게 눈을 떴다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.4,
+      "measured_share": 0.207,
+      "chars": 3224
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.2,
+      "measured_share": 0.202,
+      "chars": 2992
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "비트 2의 '붉은 테두리의 시스템 창'을 '반투명한 푸른 패널'로 수정하세요.",
+      "kind": "state_contradiction",
+      "claim": "세계 규칙(rule_five)에 따르면 주인공의 전용 상태창은 '반투명한 푸른 패널'이어야 하지만, 2번 비트에서 '붉은 테두리의 시스템 창'으로 원작 설정과 어긋나게 설계되어 있습니다.",
+      "target": "장면 1",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 1개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 80,
+      "dimensions": {
+        "prose": {
+          "score": 81.8,
+          "passed": true
+        },
+        "structure": {
+          "score": 78,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 86.9,
+          "passed": true
+        }
+      },
+      "scopes": [],
+      "blocking": 3,
+      "major": 2,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 85,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 80.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 95.7,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 0,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 2,
+      "version_no": 3,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 84,
+      "dimensions": {
+        "prose": {
+          "score": 88.8,
+          "passed": true
+        },
+        "structure": {
+          "score": 80,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 95.7,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 3,
+      "version_no": 4,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 89,
+      "dimensions": {
+        "prose": {
+          "score": 92.5,
+          "passed": true
+        },
+        "structure": {
+          "score": 85,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 81.6,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 0,
+      "major": 8,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 4,
+      "version_no": 5,
+      "quarantined": false,
+      "gate": "approved",
+      "overall": 86,
+      "dimensions": {
+        "prose": {
+          "score": 87.2,
+          "passed": true
+        },
+        "structure": {
+          "score": 85.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 95.7,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 0,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 5,
+      "version_no": 5,
+      "quarantined": false,
+      "gate": "approved",
+      "overall": 89,
+      "dimensions": {
+        "prose": {
+          "score": 87.2,
+          "passed": true
+        },
+        "structure": {
+          "score": 90.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 91.3,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 0,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 6,
+      "version_no": 6,
+      "quarantined": false,
+      "gate": "approved",
+      "overall": 89,
+      "dimensions": {
+        "prose": {
+          "score": 87.2,
+          "passed": true
+        },
+        "structure": {
+          "score": 90.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 91.3,
+          "passed": true
+        }
+      },
+      "scopes": [],
+      "blocking": 0,
+      "major": 0,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 75,
+      "first_person": 70
+    },
+    {
+      "version_no": 2,
+      "status": "working",
+      "score": 75,
+      "first_person": 70
+    },
+    {
+      "version_no": 3,
+      "status": "quarantined",
+      "score": 80,
+      "first_person": 70
+    },
+    {
+      "version_no": 4,
+      "status": "quarantined",
+      "score": 80,
+      "first_person": 70
+    },
+    {
+      "version_no": 5,
+      "status": "working",
+      "score": 75,
+      "first_person": 70
+    },
+    {
+      "version_no": 6,
+      "status": "accepted",
+      "score": 75,
+      "first_person": 65
+    }
+  ],
   "totals": {
-    "calls": 17,
-    "attempts": 33,
-    "failed_attempts": 18,
+    "calls": 85,
+    "attempts": 102,
+    "failed_attempts": 19,
     "tokens": {
-      "input": 70242,
-      "output": 19223
+      "input": 372247,
+      "output": 44936
     },
     "cost_cents": 0
   },
   "wall_clock": {
     "started_at": "2026-09-25T20:34:14.282Z",
-    "last_call_at": "2026-09-25T21:15:36.956Z",
-    "seconds": 2483
+    "last_call_at": "2026-09-25T23:15:31.118Z",
+    "seconds": 9677
   }
 }

@@ -1,1 +1,140 @@
-
+=== scorecard r0 v1 overall={"score":80,"note_count":7,"major_count":2,"minor_count":16,"blocking_count":3}
+  section genre: score=80 passed=true issues=3
+  section prose: score=81.8 passed=true issues=17
+  section voice: score=86.9 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=78 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: 앞선 문단(p167~p171)에서 이미 기계가 폭발하여 파편을 처리했고, 마력 0 표시(p220)와 F반 배정(p241)까지 완료된 상태입니다. 그런데 다시 측정기가 터지고 홀로그램이 떠오르는 순간으로 묘사되어 시간선이 맞지 않습니다. 작가 가이드용 지시문(cliffhanger)이 원고에 그대로 노출된 것으로 보입니다.
+      quote: 요란한 굉음과 함께 측정기 파편이 흩날리고, 붉은색 홀로그램으로 [마력 : 0]이 떠오르는 순간.
+  [major/open] prose register_error (judge:prose_judge, confidence 1)
+      claim: 1인칭 화자('나')가 서술하다가 마지막에 갑자기 3인칭('시온만이')으로 바뀌며 금지된 상투구('정적이 내린')와 요약형 마무리가 쓰였습니다.
+      quote: 정적이 내린 시험장에서 시온만이 속으로 완벽한 노후 계획에 쾌재를 부른다.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 1)
+      claim: 회차의 마지막이 새로운 사건의 암시나 위기가 아닌, 주인공의 상황 정리와 다짐으로 끝나 다음 화로 독자를 끌고 가는 힘이 부족합니다.
+      quote: 정적이 내린 시험장에서 시온만이 속으로 완벽한 노후 계획에 쾌재를 부른다.
+  [blocking/open] genre other (judge:genre_judge, confidence 1)
+      claim: 1인칭 시점 붕괴 및 금지된 요약식 마무리
+      quote: 정적이 내린 시험장에서 시온만이 속으로 완벽한 노후 계획에 쾌재를 부른다.
+  [blocking/open] voice voice_drift (judge:voice_judge, confidence 1)
+      claim: 1인칭 주인공 시점임에도 불구하고 회차의 마지막 문단에서 서술자가 주인공을 객관적인 3인칭('시온')으로 지칭하며 전지적 시점처럼 서술했습니다.
+      quote: 정적이 내린 시험장에서 시온만이 속으로 완벽한 노후 계획에 쾌재를 부른다.
+=== scorecard r1 v2 overall={"score":85,"note_count":7,"major_count":3,"minor_count":12,"blocking_count":0}
+  section genre: score=90 passed=true issues=2
+  section prose: score=89.3 passed=true issues=13
+  section voice: score=95.7 passed=true issues=1
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=80.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity location_error (judge:continuity_checker, confidence 0.9)
+      claim: 8문단에서 귀족과 평민은 시험장 양쪽으로 멀리 떨어져 있었습니다. 평민 쪽에 있던 시온에게 드레이크가 다가와 시비를 걸었으므로 드레이크의 현재 위치는 평민 구역인데, 시온이 단상으로 올라간 직후 반대편에 있던 귀족 무리가 갑자기 드레이크 주변에 몰려들어 거드는 것은 동선상 어색합니다.
+      quote: 금발 양아치 주변에 몰려든 귀족 무리가 한마디씩 거들었다.
+  [major/open] continuity canon_contradiction (judge:continuity_checker, confidence 0.8)
+      claim: 계약된 복선(87b748d8)에 따르면 측정기가 '손을 댄 순간 미세한 파동과 함께 내부 마나석이 박살 나는 묘사'가 들어가야 합니다. 하지만 원고에서는 손을 댄 후 강렬한 섬광과 굉음이 한참 이어진 뒤(137~153문단)에야 마나석이 갈라지기 시작하므로, 복선에서 의도한 '은밀하고 즉각적인 파괴'의 뉘앙스가 훼손되었습니다.
+      quote: 크리스털 구 내부에 떠 있던 마나석의 표면이 갈라지기 시작했다.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 상황이 완전히 주인공의 뜻대로 해결된 후 스스로의 계획을 되새기는 다짐으로 끝나 연재물 특유의 당김(절단 신공)이 부족하다.
+      quote: 드디어 나의 완벽한 노후 계획이 첫걸음을 내디뎠다.
+=== scorecard r2 v3 (quarantined) overall={"score":84,"note_count":7,"major_count":3,"minor_count":10,"blocking_count":0}
+  section genre: score=90 passed=true issues=2
+  section prose: score=88.8 passed=true issues=13
+  section voice: score=95.7 passed=true issues=1
+  section length: score=0 passed=false issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=80 passed=true issues=1
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] length length_out_of_range (lint, confidence 1)
+      claim: 분량 6361자, 목표 5300자 대비 20%
+  [major/open] continuity power_rule_violation (judge:continuity_checker, confidence 0.9)
+      claim: 세계 규칙상 대괄호 '[]'를 사용하는 표기 양식은 주인공에게만 보이는 상태창과 시스템 메시지의 전용 포맷입니다. 측정기 기계(아티팩트)가 외부로 띄운 홀로그램 결과에 대괄호가 포함되어 있고 이를 다른 사람들이 볼 수 있는 것은 주인공 전용 인터페이스 설정과 충돌합니다.
+      quote: [마력 : 0]
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 주요 설정(스탯 격차, 악역의 설정, 기계의 스펙 등)이 대사나 행동을 통해 자연스럽게 드러나지 않고 주인공의 서술을 통해 백과사전식으로 나열되어 장면의 속도감을 크게 떨어뜨립니다.
+      quote: 근력과 민첩 같은 주요 스탯이 10 차이 날 때마다 1등급의 실력 격차가 벌어지는 이 세계의 규칙.
+=== scorecard r3 v4 (quarantined) overall={"score":89,"note_count":4,"major_count":8,"minor_count":10,"blocking_count":0}
+  section genre: score=85 passed=true issues=3
+  section prose: score=92.5 passed=true issues=8
+  section voice: score=81.6 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=true issues=1
+  section structure: score=85 passed=true issues=2
+  section continuity: score=0 passed=false issues=3
+  section repetition: score=0 passed=false issues=2
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: 심사관이 [p1]에서 이미 '번호표 771번! 시온!'이라며 이름과 번호를 정확히 호명했는데, 시온이 단상에 올라오자 [p119]에서 번호표만 확인하고 이름을 몰라 다시 묻는 것은 한 장면 안에서 앞뒤가 맞지 않는 모순입니다.
+      quote: 이름표가 어디 있지? 번호표 771번.
+  [major/open] continuity other (judge:continuity_checker, confidence 0.9)
+      claim: 단상 위의 마력 측정기 모습([p106]-[p107])을 묘사한 뒤, 시온이 단상에 오르는 장면([p116]-[p118])에서 거의 동일한 문장 구조로 측정기와 마나석을 중복 묘사하고 있습니다.
+      quote: 그곳에는 거대한 마력 측정기가 떡하니 자리를 차지하고 있었다.
+  [major/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: [p186]-[p188]에서 패시브 스킬이 발동해 튀어 오르려던 파편이 이미 바닥으로 낙하하여 가라앉았다고 서술했는데, [p196]에서 다시 '굉음과 함께 측정기 파편이 흩날리고'라고 묘사하여 앞뒤 상황이 모순됩니다. (회차 계약의 절단(cliffhanger) 지시문을 원고에 그대로 붙여넣으며 발생한 오류로 보입니다.)
+      quote: 요란한 굉음과 함께 측정기 파편이 흩날리고, 붉은색 홀로그램으로 [마력: 0]이 떠오르는 순간.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 1)
+      claim: 지침에서 금지한 '정적' 관련 상투구 사용
+      quote: 정적이 내린 시험장에서 나만이 속으로 완벽한 노후 계획에 쾌재를 불렀다.
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: [EVIDENCE] 주인공의 상태창 확인 후 세계관의 스탯 격차 규칙, 엑스트라의 원작 내 역할, 아카데미 측정기의 한계치 등을 행동이 아닌 속마음을 빙자한 요약 서술로 처리하여 흐름이 멈추는 구간이 다수 존재합니다.
+      quote: 원작 초반에 주인공 일행에게 찌질한 열등감을 느끼고 흑마법사에게 꼬리를 흔들다가 토사구팽당하는 3류 악역이었다.
+  [major/open] genre other (judge:genre_judge, confidence 0.9)
+      claim: 요약식, 감상적 마무리 문장으로 인해 회차가 닫혀버려 다음 화로 이어지는 긴장감이 끊어짐.
+      quote: 정적이 내린 시험장에서 나만이 속으로 완벽한 노후 계획에 쾌재를 불렀다.
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 결정적 검사 보고가 지적한 대로, 한 문장 안에서 해요체('마시죠')와 반말('없어서')이 특별한 감정적 연출 없이 혼용되어 어색함을 줍니다.
+      quote: 기대는 마시죠. 배운 적이 없어서.
+  [major/open] repetition repeated_paragraph (judge:repetition_judge, confidence 0.99)
+      claim: 한 회차 안에서 마력 측정기의 외형과 단상 위의 상황을 묘사하는 서술이 거의 똑같이 중복해서 등장합니다. 작가가 문단을 고쳐 쓰면서 이전 문장을 지우지 않은 것으로 보입니다.
+      quote: 단상 위에는 거대한 마력 측정기가 떡하니 버티고 있었다.
+=== scorecard r4 v5 overall={"score":86,"note_count":7,"major_count":0,"minor_count":17,"blocking_count":0}
+  section genre: score=90 passed=true issues=2
+  section prose: score=87.2 passed=true issues=16
+  section voice: score=95.7 passed=true issues=1
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=85.5 passed=true issues=2
+  section continuity: score=0 passed=true issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+=== scorecard r5 v5 overall={"score":86,"note_count":7,"major_count":0,"minor_count":17,"blocking_count":0}
+  section genre: score=90 passed=true issues=2
+  section prose: score=87.2 passed=true issues=16
+  section voice: score=95.7 passed=true issues=1
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=85.5 passed=true issues=2
+  section continuity: score=0 passed=true issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+=== scorecard r6 v6 overall={"score":89,"note_count":1,"major_count":0,"minor_count":13,"blocking_count":0}
+  section genre: score=85 passed=true issues=2
+  section prose: score=87.2 passed=true issues=5
+  section voice: score=91.3 passed=true issues=2
+  section length: score=100 passed=true issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=90.5 passed=true issues=2
+  section continuity: score=0 passed=true issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
