@@ -22,6 +22,7 @@ import {
   measure,
   paragraphPerLine,
   segmentParagraphs,
+  talkShareOf,
   targetCount,
   toNfcText,
 } from '@yeonjae/prose';
@@ -38,6 +39,7 @@ import {
   saveArtifact,
   type WorkflowContext,
 } from './runtime.js';
+import { applyDialogueFloor } from './dialogue-floor.js';
 
 export type ScenePlan = Generated.ScenePlanSchema.ScenePlan;
 export type SceneDraft = Generated.SceneDraftSchema.SceneDraftWriterOutputEnvelope;
@@ -335,11 +337,25 @@ export async function planScenes(
           data: { issues },
           recommendedActions: ['regenerate'],
         });
+      // ADR-0084 (U6): enough planned talk and someone to talk to, under a policy that opts in.
+      const floor = ctx.policy.planning?.dialogue_floor;
+      const floored = floor ? applyDialogueFloor(scenes, contract, floor) : undefined;
+      if (floored) {
+        scenes = floored.scenes;
+        for (const f of floored.findings)
+          if (f.repaired)
+            recordNormalization(f.rule === 'PLAN-DLG-01' ? 'dialogue_floor' : 'dialogue_partner');
+      }
       const ref = await saveArtifact(ctx, {
         step: 'scene_plan',
         kind: 'scene_plan',
         key: `${ch}:v${contract.version}`,
-        payload: { chapter_no: ch, contract_id: contract.id, scenes },
+        payload: {
+          chapter_no: ch,
+          contract_id: contract.id,
+          scenes,
+          ...(floored?.findings.length ? { dialogue_floor: floored.findings } : {}),
+        },
       });
       return { scenes, artifactId: ref.artifact_id };
     },
@@ -378,17 +394,26 @@ export async function draftScenes(
     scenes: readonly ScenePlan[];
     /** Registry names; with them a Korean writer under `scene_plan_format: labelled` reads the plan as text. */
     nameOf?: ((id: string) => string) | undefined;
+    /**
+     * ADR-0084 (U1): the secrets the reader must not learn yet, as the knowledge-leak checker lists them;
+     * appended to every scene plan the writer reads under `drafting.reader_secrets_in_plan`.
+     */
+    readerSecrets?: string | undefined;
   },
 ): Promise<{ drafts: SceneDraftRef[]; texts: string[] }> {
   const ch = input.contract.chapter_number;
   // ADR-0068: labelled Korean text instead of the plan object, only where the pinned policy says so.
   const nameOf = input.nameOf;
+  const ko = ctx.identity.outputLanguage.language === 'ko';
+  const secretsNote = input.readerSecrets?.trim()
+    ? ko
+      ? `\n\n독자에게 아직 밝히지 않는 비밀 (서술, 속마음, 대사 어디에서도 말하거나 암시하지 않는다):\n${input.readerSecrets.trim()}`
+      : `\n\nSecrets the reader must not learn yet (never state or hint them in narration, thought or dialogue):\n${input.readerSecrets.trim()}`
+    : '';
   const renderPlan = (scene: ScenePlan) =>
-    ctx.policy.planning?.scene_plan_format === 'labelled' &&
-    ctx.identity.outputLanguage.language === 'ko' &&
-    nameOf
+    (ctx.policy.planning?.scene_plan_format === 'labelled' && ko && nameOf
       ? renderScenePlanKo(scene, nameOf)
-      : JSON.stringify(scene);
+      : JSON.stringify(scene)) + secretsNote;
   const texts: string[] = [];
   const drafts: SceneDraftRef[] = [];
   const calibration = ctx.policy.length.scene_calibration;
@@ -419,25 +444,28 @@ export async function draftScenes(
       ctx,
       'scene_draft',
       async () => {
-        const call = await modelCall<SceneDraft | string>(ctx, {
-          step: 'scene_draft',
-          family: 'scene_writer',
-          activityId: `scene_draft:${ch}:${scene.scene_no}`,
-          variables: {
-            scene_plan: renderPlan(scene),
-            scene_no: String(scene.scene_no),
-            previous_text: previous,
-            length_target_words: String(scene.length_target.value),
-            // Where this scene sits in the episode curve (v4 writers close only the LAST scene on the 절단).
-            scene_total: String(input.scenes.length),
-            scene_role: sceneRole(
-              scene.scene_no,
-              input.scenes.length,
-              ctx.identity.outputLanguage.language ?? 'en',
-            ),
-          },
-          pack: packCallInput(input.pack),
-        });
+        const variables = {
+          scene_plan: renderPlan(scene),
+          scene_no: String(scene.scene_no),
+          previous_text: previous,
+          length_target_words: String(scene.length_target.value),
+          // Where this scene sits in the episode curve (v4 writers close only the LAST scene on the 절단).
+          scene_total: String(input.scenes.length),
+          scene_role: sceneRole(
+            scene.scene_no,
+            input.scenes.length,
+            ctx.identity.outputLanguage.language ?? 'en',
+          ),
+        };
+        const writeScene = (vars: typeof variables, activityId: string) =>
+          modelCall<SceneDraft | string>(ctx, {
+            step: 'scene_draft',
+            family: 'scene_writer',
+            activityId,
+            variables: vars,
+            pack: packCallInput(input.pack),
+          });
+        let call = await writeScene(variables, `scene_draft:${ch}:${scene.scene_no}`);
         // A prose-only (text-mode) writer answers with the manuscript itself; the envelope is built here
         // deterministically. A recorded (or well-formed) JSON draft is taken verbatim; a live draft whose
         // offsets or paragraph table disagree with its own prose is normalized from the prose.
@@ -447,6 +475,35 @@ export async function draftScenes(
           const perLine = paragraphPerLine(prose);
           if (perLine !== prose.trim()) recordNormalization('paragraph_per_line');
           prose = perLine;
+        }
+        // ADR-0084 (U6): a scene with someone to talk to that came back far below the talk band is
+        // re-drafted once with its measured share; the redraft is kept only when it talks more.
+        const redraftBelow = ctx.policy.planning?.dialogue_floor?.scene_redraft_below;
+        if (
+          redraftBelow !== undefined &&
+          typeof prose === 'string' &&
+          scene.participants.some((p) => p !== scene.pov.character_id)
+        ) {
+          const measured = sceneTalkShare(prose);
+          if (measured < redraftBelow) {
+            const retry = await writeScene(
+              {
+                ...variables,
+                scene_plan:
+                  variables.scene_plan +
+                  talkRedraftNote(measured, scene.dialogue_density_target ?? redraftBelow, ko),
+              },
+              `scene_draft:${ch}:${scene.scene_no}:talk`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting?.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (typeof again === 'string' && sceneTalkShare(again) > measured) {
+              prose = again;
+              call = retry;
+              recordNormalization('dialogue_redraft');
+            }
+          }
         }
         const draft =
           typeof prose === 'string'
@@ -751,4 +808,17 @@ export async function assembleChapter(
 
 export function contentHashOf(text: string): string {
   return `sha256:${createHash('sha256').update(toNfcText(text).text, 'utf8').digest('hex')}`;
+}
+
+/** Dialogue plus 속마음 as a share of a scene's characters (line breaks not counted), as the lint measures. */
+export function sceneTalkShare(prose: string): number {
+  return talkShareOf(prose, codePointLength(prose.replace(/\n/g, '')));
+}
+
+/** The note a scene redraft carries (ADR-0084): the measured share, the target, and what to change. */
+export function talkRedraftNote(measured: number, target: number, ko: boolean): string {
+  const pct = (x: number) => String(Math.round(x * 100));
+  return ko
+    ? `\n\n다시 쓰기: 직전 초고는 대사와 속마음이 글자 수의 ${pct(measured)}%뿐이었다(목표 약 ${pct(target)}%). 같은 사건과 비트를 지키되, 무대에 있는 인물끼리 주고받는 대사로 장면을 밀고, 서술은 대사 사이의 한 줄 비트로 줄인다.`
+    : `\n\nRewrite: the previous draft had only ${pct(measured)}% dialogue and thought (target about ${pct(target)}%). Keep the same events and beats; drive the scene with lines between the characters on stage and cut narration to one-line beats between them.`;
 }

@@ -99,6 +99,7 @@ EXAMPLES = [
     # ADR-0080/0081 Gemini run
     ("examples/production-policies/standard.v12.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v13.json", "production-policy.schema.json"),
+    ("examples/production-policies/standard.v14.json", "production-policy.schema.json"),
 ]
 # Bundles: JSON files whose top-level arrays hold instances of stored schemas (key → schema).
 BUNDLES = {

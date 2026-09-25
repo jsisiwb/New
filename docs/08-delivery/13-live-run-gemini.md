@@ -122,3 +122,42 @@ Excerpt (the pipeline's first three lines):
   plan (U1).
 - **G3-4 (judges):** the prose judge called "빌어먹을" a translated Western curse; it is one of book 1's tics.
   `standard@13` gives judges the operator's conventions (ADR-0083).
+
+## 4. G4 — the `standard.v13` checkpoint on both projects (01:21–01:48 UTC)
+
+Chapter 1 of two fresh projects on `standard@13` (the operator's voice, ADR-0083), run in parallel: the regression
+project (`phase-a-v7-intake.json`, G4r) and the academy/harem/possession/먼치킨 project
+(`phase-c-academy-intake.json`, G4a). Both identities composed `lang/ko@7`, copied `voice/operator@1` and pinned four of
+the operator's passages (hook, banter, status window, cliffhanger; one from book 2 for the status window).
+
+| | G4r (regression) | G4a (academy) |
+| --- | --- | --- |
+| Length | 5,407자 (+2 %) | 5,784자 (+9 %) |
+| First line | `서걱.` (a sound, as the voice profile asks) | `[모든 히든 스탯 한계 돌파가 완료되었습니다.]` (a status window) |
+| r0 gate | overall 74: prose 74.9 ✗, structure 72.5 ✗, genre 70 ✗, voice 100 | overall 81: prose 87.7, structure 75 ✗, genre 85, voice 100 |
+| Rounds | r0 to r3; r1 and r2 quarantined; best r3 overall 75 | r0 to r3; every patched round quarantined |
+| Blocking / major | r0 2 / 7 → r3 1 / 7 | r0 2 / 7 → r2 1 / 5 |
+| Result | not accepted (`needs_attention`) | not accepted (`needs_attention`) |
+| Likeness (C8) | 55 | — |
+| Calls / tokens | 39 / 147,577 in, 22,915 out; 1,347 s | 42 |
+
+Credits for both runs together: ws1 68.96 → 71.57 %, ws2 80.50 → 86.16 % (8.27 points, about 4.1 per run).
+
+**What blocked acceptance (r0 findings, both projects):**
+
+- **Dialogue (structure blocking in both):** 6 % (G4r) and 7 % (G4a) dialogue and 속마음. G4r's plan put the hero alone
+  in two of three scenes at 5–10 %; G4a's plan had scenes 2–3 at 30–40 % with three characters on stage and the
+  writer still returned 7 %. The writer does not follow the plan's talk target (G3b: 5 %).
+- **Reader secrets (G4r blocking, G4a three majors):** a secret scheduled for 화 50 stated in the hero's inner
+  narration (G4r); in G4a a doom scheduled for 화 10, the hero's destiny (화 50) and an instructor's lost arm (화 8).
+  The writer never sees the reveal schedule the knowledge-leak checker judges against (A-4 again).
+- **Device vocabulary (G4r genre major):** the regression hero calls his past life the 원작 (G-1).
+- Also: a contract criterion wanting the status alert within three sentences while the chapter opened on sound
+  lines (G4r); an F-rank body kicking down a steel door (G4r); a monster's state reversing within one scene (G4a
+  blocking, continuity); a stock figure and a 번역투 construction (G4r); world exposition (both).
+
+**What the voice layer changed.** Openings on a sound and on a status window instead of a death flashback (G1, G3b);
+talk share, paragraph rhythm and endings still outside the operator's band (likeness 55: dialogue 6 %, no present
+endings, no 그/그녀, conjunctions high, too few long sentences).
+
+These are the inputs to Phase U and V2 (ADR-0084, `standard@14`).

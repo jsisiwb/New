@@ -21,6 +21,7 @@ import {
 } from '@yeonjae/domain';
 import { exemplarsOf } from '@yeonjae/narrative';
 import {
+  codePointLength,
   checkDialogueRegister,
   checkOutputLanguage,
   compileModelPattern,
@@ -567,6 +568,29 @@ export async function evaluateVersion(
         );
       }
 
+      // ADR-0084 (U2): the words of another premise device (a regression serial's 원작, live defect G-1).
+      const device = ctx.identity.preferences?.story_device;
+      if (ko && device)
+        deviceLexiconFindings(nfc.text, device).forEach((f, i) =>
+          issues.push(
+            toIssue(
+              ctx,
+              v.id,
+              'lint:device',
+              'genre',
+              {
+                kind: 'terminology_violation',
+                severity: 'major',
+                confidence: 1,
+                claim: `‘${f.quote}’은(는) 이 작품의 장치(${DEVICE_LABEL_KO[device] ?? device})에 없는 어휘다. 이 작품의 장치 어휘로 바꾼다.`,
+                chapter_span: { start: f.start, end: f.end, quote: f.quote },
+                metric: { rule_id: 'KO-DEVICE-01', value: 1, threshold: 0 },
+              },
+              1100 + i,
+            ),
+          ),
+        );
+
       // ADR-0082 (C0.4): no span of a draft, patch or polish may reuse the operator's published sentences.
       const copyRule = policyEval?.corpus_copy;
       if (copyRule) {
@@ -641,6 +665,20 @@ export async function evaluateVersion(
         carry,
         smokeAfterPatches: ctx.policy.revision.smoke_after_patches,
         unanchored,
+        ...(carry && ctx.policy.revision.convergence?.rejudge_open_majors
+          ? {
+              openMajor: new Set(
+                evaluators.filter((e) =>
+                  carry.scorecard.issues.some(
+                    (i) =>
+                      i.source === SOURCE[e] &&
+                      i.status === 'open' &&
+                      (i.severity === 'blocking' || i.severity === 'major'),
+                  ),
+                ),
+              ),
+            }
+          : {}),
       });
       const runs = new Set(plan.rerun);
 
@@ -1246,7 +1284,50 @@ export function revisionTargets(scorecard: Scorecard): Issue[] {
   );
 }
 
+const DEVICE_LABEL_KO: Readonly<Record<string, string>> = {
+  regression: '회귀',
+  reincarnation: '환생',
+  game_possession: '게임 빙의',
+  novel_possession: '소설 빙의',
+  possession: '빙의',
+};
+
+/** Words that belong to another premise device (ADR-0084, U2); game possession may still name a 원작 game. */
+const FOREIGN_DEVICE_WORDS: Readonly<Record<string, RegExp | undefined>> = {
+  regression: /원작\s?주인공|원작|빙의/gu,
+  reincarnation: /원작\s?주인공|원작|빙의/gu,
+  game_possession: /원작\s?주인공|원작\s?소설/gu,
+  novel_possession: /회귀\s?전|지난\s?생/gu,
+  possession: undefined,
+};
+
+/** The first three uses of another device's words, as code-point spans with their quotes. */
+export function deviceLexiconFindings(
+  text: string,
+  device: string,
+): { start: number; end: number; quote: string }[] {
+  const re = FOREIGN_DEVICE_WORDS[device];
+  if (!re) return [];
+  const out: { start: number; end: number; quote: string }[] = [];
+  for (const m of text.matchAll(new RegExp(re.source, re.flags))) {
+    const start = codePointLength(text.slice(0, m.index));
+    out.push({ start, end: start + codePointLength(m[0]), quote: m[0] });
+    if (out.length === 3) break;
+  }
+  return out;
+}
+
+/** Gated dimensions whose scorecard section failed its threshold (ADR-0084, V2). */
+export function failingDimensions(scorecard: Scorecard): ReadonlySet<Issue['dimension']> {
+  const sections = scorecard.sections as Record<string, { passed?: boolean } | undefined>;
+  return new Set(
+    (['prose', 'structure', 'genre', 'voice'] as const).filter(
+      (d) => sections[d]?.passed === false,
+    ),
+  );
+}
+
 /** The bible (plan) id bound to a canon entity id, for matching bible propositions (ADR-0074). */
-function povPlanId(ctx: WorkflowContext, canonId: string): string {
+export function povPlanId(ctx: WorkflowContext, canonId: string): string {
   return Object.entries(ctx.bindings).find(([, v]) => v === canonId)?.[0] ?? canonId;
 }

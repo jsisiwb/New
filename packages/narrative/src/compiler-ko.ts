@@ -357,6 +357,29 @@ export function renderExemplarsKo(id: ComposedIdentity): string {
   return [...(userBlock ? [userBlock] : []), head, ...body].join('\n\n');
 }
 
+/**
+ * The premise device's vocabulary (ADR-0084, U2; live defect G-1): the operator's game-possession serials
+ * speak of the game, a regression serial of the hero's last life, and neither of a 원작.
+ */
+const DEVICE_KO: Readonly<Record<string, string>> = {
+  regression:
+    '이 작품의 장치는 회귀다. 주인공은 자기가 살았던 지난 생을 기억한다. 지난 생의 일은 ‘지난 생’, ‘회귀 전’, ‘그때’ 같은 말로 부른다. ‘원작’, ‘원작 주인공’, ‘빙의’처럼 소설 속으로 들어간 이야기의 어휘는 쓰지 않는다.',
+  reincarnation:
+    '이 작품의 장치는 환생이다. 주인공은 전생의 기억을 가지고 다시 태어났다. 전생의 일은 ‘전생’으로 부른다. ‘원작’, ‘원작 주인공’, ‘빙의’ 같은 어휘는 쓰지 않는다.',
+  game_possession:
+    '이 작품의 장치는 게임 빙의다. 주인공은 자기가 하던 게임 속 인물의 몸에 들어왔다. 앞날의 지식은 ‘게임’, ‘공략’, ‘회차’, ‘퀘스트’, ‘특성’, ‘플레이어’ 같은 게임 어휘로 말한다. ‘원작’, ‘원작 주인공’ 같은 소설 빙의 어휘는 쓰지 않는다.',
+  novel_possession:
+    '이 작품의 장치는 소설 빙의다. 주인공은 읽던 소설 속 인물의 몸에 들어왔다. 앞날의 지식은 ‘원작’, ‘원작 주인공’, ‘작가’로 말한다. ‘회귀’, ‘지난 생’ 같은 회귀 어휘는 쓰지 않는다.',
+  possession:
+    '이 작품의 장치는 빙의다. 주인공이 들어온 세계가 게임인지 소설인지는 첫 화에서 정하고, 그 뒤로는 그 한 가지 어휘만 쓴다.',
+};
+
+/** The project's premise device as a rule (ADR-0084); empty unless the identity records one. */
+export function renderDeviceKo(id: ComposedIdentity): string {
+  const d = id.preferences?.story_device;
+  return d ? (DEVICE_KO[d] ?? '') : '';
+}
+
 const VOICE_HEAD_KO: Readonly<Record<'writer' | 'planner' | 'judges', string>> = {
   writer: '이 작품의 작가가 자기 원고에서 지키는 문체다. 숫자는 작가의 원고에서 잰 값이다.',
   planner: '이 작품의 작가가 화를 짜는 방식이다.',
@@ -438,6 +461,7 @@ export const SECTION_TITLES_KO: Readonly<Record<string, string>> = {
   preferences: '프로젝트 문체 선호',
   avoid: '쓰지 않는 문장 (번역투·AI 상투구)',
   exemplars: '문체 견본 (리듬 참고용, 베끼기 금지)',
+  device: '장치 어휘 (절대)',
   voice: '작가 문체 (작가 원고에서 잰 기준)',
   voice_planner: '작가의 구성 습관',
   voice_judges: '이 작가의 문체 (결함 아님)',

@@ -31,7 +31,12 @@ import {
   type JobRow,
   type Pool,
 } from '@yeonjae/db';
-import { canonicalPolicyHash, promptCeilingOf, requirePolicy, type PolicyRef } from '@yeonjae/domain';
+import {
+  canonicalPolicyHash,
+  promptCeilingOf,
+  requirePolicy,
+  type PolicyRef,
+} from '@yeonjae/domain';
 import { type Gateway } from '@yeonjae/gateway';
 import { composeIdentity, ProfileStore, type ComposedIdentity } from '@yeonjae/narrative';
 import { PromptRegistry } from '@yeonjae/prompts';
@@ -52,7 +57,13 @@ import {
   type SceneDraftRef,
   type StoredPack,
 } from './drafting.js';
-import { evaluateVersion, revisionTargets, type Scorecard } from './evaluation.js';
+import {
+  evaluateVersion,
+  failingDimensions,
+  povPlanId,
+  revisionTargets,
+  type Scorecard,
+} from './evaluation.js';
 import { WorkflowError } from './errors.js';
 import { ensureArcSummary } from './arc-summary.js';
 import { composedRefFor, loadIntoStore } from './identity-from-intake.js';
@@ -70,6 +81,7 @@ import {
   type StorySpec,
 } from './planning.js';
 import { patchRegression, regressionArtifact, regressionReportId } from './comparison.js';
+import { readerSecrets } from './evaluator-inputs.js';
 import { pickRevisionDimension, reviseVersionMulti } from './revision.js';
 import {
   arcForChapter,
@@ -509,6 +521,19 @@ export async function produceChapter(
       pack: writerBuilt,
       scenes: plan.scenes,
       nameOf: (id) => registryNames.get(id) ?? id,
+      // ADR-0084 (U1): the writer sees the reader secrets the knowledge-leak checker will judge against.
+      ...(ctx.policy.drafting?.reader_secrets_in_plan
+        ? {
+            readerSecrets: readerSecrets(
+              chapterNo,
+              input.bible,
+              ctx.identity.outputLanguage.language === 'ko' ? 'ko' : 'en',
+              ctx.policy.evaluation?.pov_secrets_reader_visible
+                ? { povEntityId: povPlanId(ctx, contract.contract.pov.character_id) }
+                : {},
+            ),
+          }
+        : {}),
     });
     guard('scene_draft');
     const assembled = await assembleChapter(ctx, {
@@ -550,7 +575,12 @@ export async function produceChapter(
     let patchesSinceFull = 0;
     while (!evaluation.approvable && round < maxRounds) {
       const targets = revisionTargets(evaluation.scorecard);
-      const dimension = pickRevisionDimension(targets);
+      const dimension = pickRevisionDimension(
+        targets,
+        ctx.policy.revision.convergence?.prefer_failing_dimension
+          ? failingDimensions(evaluation.scorecard)
+          : undefined,
+      );
       if (!dimension) break;
       round++;
       const parent = current;

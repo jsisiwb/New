@@ -70,6 +70,30 @@ export interface IdentityCompositionOptions {
   readonly voice?: VoiceProfile | undefined;
   /** Corpus passages selected under `policy.identity.operator_exemplars` (ADR-0083, C5). */
   readonly operatorExemplars?: readonly OperatorExemplar[] | undefined;
+  /** `policy.identity.device_lexicon` (ADR-0084, U2): record the premise device from the intake. */
+  readonly deviceLexicon?: boolean | undefined;
+}
+
+export type StoryDevice = NonNullable<NonNullable<NarrativeProfile['preferences']>['story_device']>;
+
+/**
+ * The premise device an intake describes (ADR-0084, U2): possession by genre, told apart as game or novel
+ * possession by the premise's own words; otherwise regression or reincarnation by genre.
+ */
+export function storyDeviceOf(intake: StoryIntake): StoryDevice | undefined {
+  const genres = [intake.genre.primary, ...(intake.genre.secondary ?? [])];
+  const words = [intake.premise, intake.world_concept ?? '', intake.protagonist_type ?? ''].join(
+    ' ',
+  );
+  if (genres.includes('possession'))
+    return /게임|game/i.test(words)
+      ? 'game_possession'
+      : /소설|원작|novel/i.test(words)
+        ? 'novel_possession'
+        : 'possession';
+  if (genres.includes('regression')) return 'regression';
+  if (genres.includes('reincarnation')) return 'reincarnation';
+  return undefined;
 }
 
 export type OperatorExemplar = NonNullable<
@@ -126,6 +150,7 @@ export function identityProfileFromIntake(
   const primary = genres[0];
   const manuscriptLanguage = intake.manuscript_language === 'ko' ? 'ko' : 'en';
   const voice = opts.voice?.language === manuscriptLanguage ? opts.voice : undefined;
+  const device = storyDeviceOf(intake);
   const textual = [
     ...(intake.prose_preferences ?? []),
     // The terminology layer has no free-text field; the operator's note must still reach the model.
@@ -184,6 +209,7 @@ export function identityProfileFromIntake(
       ...(isKo && opts.operatorExemplars?.length
         ? { operator_exemplars: opts.operatorExemplars.map((e) => ({ ...e })) }
         : {}),
+      ...(isKo && opts.deviceLexicon && device ? { story_device: device } : {}),
     },
     calibration: { status: 'uncalibrated', notes: 'Composed from the intake at novel start.' },
   };
@@ -213,6 +239,7 @@ export async function ensureProjectIdentity(
     store?: ProfileStore | undefined;
     languageLayer?: string | undefined;
     voice?: VoiceProfile | undefined;
+    deviceLexicon?: boolean | undefined;
     /** Resolved only when the project has no pinned identity yet (it reads the corpus). */
     operatorExemplars?: (() => Promise<readonly OperatorExemplar[]>) | undefined;
   },
@@ -241,6 +268,7 @@ export async function ensureProjectIdentity(
       languageLayer: input.languageLayer,
       voice: input.voice,
       operatorExemplars: input.operatorExemplars ? await input.operatorExemplars() : undefined,
+      deviceLexicon: input.deviceLexicon,
     });
     const appended = await appendIdentityDocument(pool, {
       workspaceId: input.workspaceId,

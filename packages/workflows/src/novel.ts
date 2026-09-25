@@ -693,7 +693,10 @@ function pinnedVoiceOptions(
   policyRef: string,
   projectId: string,
   intake: StoryIntake,
-): Pick<Parameters<typeof ensureProjectIdentity>[1], 'voice' | 'operatorExemplars'> {
+): Pick<
+  Parameters<typeof ensureProjectIdentity>[1],
+  'voice' | 'operatorExemplars' | 'deviceLexicon'
+> {
   let identity;
   try {
     identity = requirePolicy(policyRef as PolicyRef).identity;
@@ -702,6 +705,7 @@ function pinnedVoiceOptions(
   }
   const pick = identity?.operator_exemplars;
   return {
+    ...(identity?.device_lexicon ? { deviceLexicon: true } : {}),
     ...(identity?.voice_profile ? { voice: requireVoiceProfile(identity.voice_profile) } : {}),
     ...(pick
       ? {

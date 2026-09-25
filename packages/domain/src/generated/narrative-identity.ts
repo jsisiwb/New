@@ -313,6 +313,11 @@ export type NarrativeIdentityProfile = {
       judges: string[];
     };
     /**
+     * ADR-0084 (U2, live defect G-1): the premise device, derived from the intake when the policy names identity.device_lexicon. It selects the device vocabulary writers, planners and the genre judge are given, and the words a deterministic check flags (a regression serial does not call its past the 원작).
+     */
+    story_device?:
+      'regression' | 'reincarnation' | 'game_possession' | 'novel_possession' | 'possession';
+    /**
      * ADR-0083 (C5): passages of the operator's own published chapters by scene function, pinned at novel start from corpus.passages when the project's policy names identity.operator_exemplars. They replace the studio's synthetic exemplars and are never copied (CORPUS-COPY-01, EXEMPLAR-NEAR).
      *
      * @maxItems 24

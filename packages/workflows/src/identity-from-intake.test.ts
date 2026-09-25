@@ -5,7 +5,7 @@ import {
   ProfileStore,
   requireVoiceProfile,
 } from '@yeonjae/narrative';
-import { identityProfileFromIntake } from './identity-from-intake.js';
+import { identityProfileFromIntake, storyDeviceOf } from './identity-from-intake.js';
 import { type StoryIntake } from './planning.js';
 
 const BASE: StoryIntake = {
@@ -320,5 +320,51 @@ describe('operator voice profile and corpus exemplars (ADR-0083)', () => {
     });
     expect(bare.preferences?.operator_voice).toBeUndefined();
     expect(bare.preferences?.operator_exemplars).toBeUndefined();
+  });
+});
+
+describe('premise device (ADR-0084, U2)', () => {
+  const koStore = ProfileStore.fromDirectory();
+  const ko = (genre: StoryIntake['genre'], premise: string): StoryIntake => ({
+    ...BASE,
+    manuscript_language: 'ko',
+    genre,
+    premise,
+  });
+
+  it('tells regression, game possession and novel possession apart from the intake', () => {
+    expect(storyDeviceOf(ko({ primary: 'regression' }, '마지막 생존자가 과거로 돌아온다.'))).toBe(
+      'regression',
+    );
+    expect(
+      storyDeviceOf(
+        ko({ primary: 'academy', secondary: ['possession'] }, '게임 속 아카데미에 빙의한다.'),
+      ),
+    ).toBe('game_possession');
+    expect(
+      storyDeviceOf(
+        ko({ primary: 'academy', secondary: ['possession'] }, '읽던 소설 속 악역에 빙의한다.'),
+      ),
+    ).toBe('novel_possession');
+    expect(storyDeviceOf(ko({ primary: 'academy' }, '아카데미에 입학한다.'))).toBeUndefined();
+  });
+
+  it('records the device only under the policy flag and gives writers, planners and the genre judge its vocabulary', () => {
+    const intake = ko({ primary: 'regression' }, '마지막 생존자가 과거로 돌아온다.');
+    expect(
+      identityProfileFromIntake('p-nodev', intake, koStore).preferences?.story_device,
+    ).toBeUndefined();
+    const profile = identityProfileFromIntake('p-dev', intake, koStore, { deviceLexicon: true });
+    expect(profile.preferences?.story_device).toBe('regression');
+    koStore.add(profile);
+    const identity = composeIdentity(koStore, 'project/p-dev@1', 'v');
+    for (const role of ['writer_full', 'planner_compact', 'judge_rubric_genre'] as const) {
+      const text = compileBlock(identity, { role, budgetTokens: 12000 }).text;
+      expect(text).toContain('## 장치 어휘 (절대)');
+      expect(text).toContain('이 작품의 장치는 회귀다');
+    }
+    expect(
+      compileBlock(identity, { role: 'judge_rubric_prose', budgetTokens: 8000 }).text,
+    ).not.toContain('장치 어휘');
   });
 });

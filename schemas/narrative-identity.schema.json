@@ -335,6 +335,11 @@
             "judges": { "type": "array", "items": { "type": "string" } }
           }
         },
+        "story_device": {
+          "type": "string",
+          "enum": ["regression", "reincarnation", "game_possession", "novel_possession", "possession"],
+          "description": "ADR-0084 (U2, live defect G-1): the premise device, derived from the intake when the policy names identity.device_lexicon. It selects the device vocabulary writers, planners and the genre judge are given, and the words a deterministic check flags (a regression serial does not call its past the 원작)."
+        },
         "operator_exemplars": {
           "type": "array",
           "maxItems": 24,

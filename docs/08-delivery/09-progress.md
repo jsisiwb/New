@@ -19,7 +19,8 @@ one per phase; the agent cannot merge, so a roll-up PR from the top branch close
 | 2 | G — Gemini baseline and same-model judging | `…--gemini-baseline` | done (ADR-0081, `standard@12`) |
 | 3 | C (part 1) — corpus import, statistics, voice analysis, copy detection | `…--corpus` | done (ADR-0082) |
 | 4 | C (part 2) — calibrated lint, voice profile, the operator's passages, likeness | `…--corpus--voice` | done (ADR-0083, `standard@13`) |
-| 5+ | U, V2, N, Q, M, I, E, W, B, D | stacked on C2 | pending |
+| 5 | U + V2 — upstream prevention and revision convergence | `…--voice--upstream` | done (ADR-0084, `standard@14`) |
+| 6+ | N, Q, M, I, E, W, B, D | stacked on U | pending |
 
 **Done in Phase 0.** Both model-id names (`YEONJAE_NOTION_MODEL` wins over `YEONJAE_MODEL_NOTION`); split error
 classes and a policy-gated same-route refusal rule; counted gateway JSON recoveries; `bridge:credits`;
@@ -38,23 +39,45 @@ Korean voice.
 sandbox database (the test kit resets what it is given; `RESET_REFUSED` now guards the permanent one). Live
 runs use the permanent `DATABASE_URL` from a separate worktree so a rebuild cannot change a running process.
 
-**Next step.** The live checkpoint of `standard@13` on both projects (regression:
-`ops/live-runs/phase-a-v7-intake.json`; academy/harem/possession/먼치킨: `ops/live-runs/phase-c-academy-intake.json`),
-then Phase U (dialogue beats and an on-stage counterpart in every chapter plan, the reveal schedule in the chapter
-plan, the device lexicon) and Phase V2 (a structural blocking re-plans and re-drafts the scene and re-judges
-structure, G3-1). The `standard@12` checkpoint (G3b, `13-live-run-gemini.md` §3) was not accepted: the structure
-judge's blocking (a chapter planned with the hero alone, 5 % dialogue) survived every revision round because
-targeted re-evaluation never re-ran the structure judge.
+**Next step.** The live checkpoint of `standard@14` on both projects (the regression intake
+`ops/live-runs/phase-a-v7-intake.json` and the academy intake `ops/live-runs/phase-c-academy-intake.json`), then
+Phase N (chapters 2–5, 6–15) on whichever project accepts chapter 1. The `standard@13` checkpoint (G4,
+`13-live-run-gemini.md` §4) accepted neither chapter: dialogue 6–7 % (structure blocking in both, even where the plan
+asked for 30–40 %), reader secrets revealed ahead of their chapters, and 원작 in the regression serial — the inputs
+to ADR-0084.
 
-**Budget.** Credits after G3b: ws1 68.96 %, ws2 80.50 % of the billing period ending 2026-10-09 (about 50 points
-left across both workspaces). A chapter-1 run from a fresh project costs about 3.2 points; a later chapter should
-cost less (no planning). 200 화 on two projects cannot be produced inside this billing period.
+**Budget.** Credits after G4: ws1 71.57 %, ws2 86.16 % of the billing period ending 2026-10-09 (about 42 points
+left across both workspaces). A chapter-1 run from a fresh project costs about 3.2–4.1 points. 200 화 on two
+projects cannot be produced inside this billing period.
 
-**Open defects carried in.** G3-1 (structure never re-judged in revision), G3-2 (chapter planned without a scene
-partner), A-4 / G3-3 (future knowledge recited ahead of the reveal schedule), G-1 (genre vocabulary: the
-`possession` genre maps to the 회빙환 overlay with 원작 vocabulary, wrong for game-빙의), the bible time frame
-(G3-4 skill before the system opens), the operator's POV architecture (1인칭 hero with 3인칭 cutaways) — Phases U
-and V2.
+**Open defects carried in.** The writer's talk share (5–7 % in three live runs; `standard@14` adds the plan floor
+and one scene redraft), the operator's POV architecture (1인칭 hero with 3인칭 cutaways), structural re-drafting of a
+scene after the plan meets the floor, the bible time frame (G3-4), contract criteria that fight the voice profile's
+openings (G4r AC-1).
+
+## Phase U + V2 — upstream prevention and revision convergence, `standard.v14` — 2026-09-25
+
+Branch `hoplite/hipponion-22b29187--gemini-baseline--corpus--voice--upstream` (stacked on Phase C part 2). ADR-0084
+records the decisions; `13-live-run-gemini.md` §3–§4 the evidence.
+
+**Built:** `revision.convergence` — evaluators with an open blocking/major finding on the parent re-run after every
+patch (G3-1), a round targets a failing dimension first; `planning.dialogue_floor` — scene plans below `chapter_min`
+talk are raised to it, the longest scene gets the contract's on-page partner when no scene has one (`PLAN-DLG-01`,
+`PLAN-PARTNER-01`, G3-2), and a scene with a partner that comes back below `scene_redraft_below` is re-drafted once
+with its measured share (kept only when it talks more); `drafting.reader_secrets_in_plan` — every scene plan ends
+with the knowledge-leak checker's reader-secret list (A-4, G3-3); `identity.device_lexicon` — the premise device
+(`preferences.story_device`) from the intake, its vocabulary in writer, editor, planner and genre-judge blocks, and
+`KO-DEVICE-01` (G-1); counters `dialogue_floor`, `dialogue_partner`, `dialogue_redraft`; `standard.v14`.
+
+**Measured (live, `standard@13`, G4 §4):** neither chapter 1 accepted; r0 overall 74 (regression) and 81 (academy);
+both blocked on dialogue (6 %, 7 %); reader secrets revealed early in both; 8.27 credit points for the pair.
+
+**Tests:** `dialogue-floor.test.ts` (floor, partner, device words, redraft note), `evaluation-plan.test.ts`
+(re-judging open majors), `identity-from-intake.test.ts` (device), `policy.test.ts` (v14), `novel-ko.integration.test.ts`
+(v14: voice sections, raised targets, reader secrets in the plan, no English in any prompt), `normalizers.test.ts`.
+
+**Not done (and why):** the chapter planner still does not read the reveal schedule (the writer and the checker now
+share one list); structural scene re-drafting and the POV cutaways wait for a live run that meets the floor.
 
 ## Phase C (part 2) — calibrated lint, voice profile, the operator's passages, likeness, `standard.v13` — 2026-09-25
 
