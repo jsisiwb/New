@@ -31,6 +31,7 @@ describe('cli commands', () => {
       'policy/standard@20',
       'policy/standard@21',
       'policy/standard@22',
+      'policy/standard@23',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',

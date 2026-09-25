@@ -124,6 +124,10 @@ export interface ProductionPolicy {
       net_improvement?: {
         blocking_weight: number;
         major_weight: number;
+        /**
+         * ADR-0095: the revision's weight leaves out findings of a new kind on text both versions share (judge variance on shared text, as span attribution reads it); a carried or introduced finding still counts.
+         */
+        exclude_variance?: boolean;
       };
     };
     /**
@@ -184,6 +188,10 @@ export interface ProductionPolicy {
      * ADR-0090 (live defect G8-7): in a Korean chapter whose measured 그/그녀 rate is below the language layer's pronoun warn threshold (KO-PRN-RATE-1P for a first-person project, else KO-PRN-RATE — the operator's p90), a prose-judge finding about those pronouns is recorded as minor; at or above it the judge's severity stands. G8a's last round had two such majors at 0.33 per 1,000자, below the operator's first-person p10. Absent or false: the judge's severity always stands.
      */
     pronoun_band_cap?: boolean;
+    /**
+     * ADR-0095: in a chapter whose measured talk share (dialogue and 속마음) is at or above the language layer's talk warn threshold — the operator's own p10 (KO-TALK-SHARE-1P in first person) — a judge's blocking or major finding about the amount of dialogue is recorded as minor; below it the judge's severity stands. Absent or false: the judge's severity always stands.
+     */
+    talk_band_cap?: boolean;
     /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */

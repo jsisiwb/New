@@ -12,6 +12,7 @@ const V15 = requirePolicy('policy/standard@15');
 const V19 = requirePolicy('policy/standard@19');
 const V20 = requirePolicy('policy/standard@20');
 const V21 = requirePolicy('policy/standard@21');
+const V23 = requirePolicy('policy/standard@23');
 
 interface IssueIn {
   id: string;
@@ -417,6 +418,47 @@ describe('net improvement and the length band (ADR-0093, G10-2, G10-4)', () => {
       issues: [{ id: U(8), dimension: 'voice', kind: 'voice_drift', span: { start: 8, end: 12 } }],
     });
     expect(patchRegression(V21, { ...input, after: register }).passed).toBe(false);
+  });
+
+  it('leaves new-kind findings on shared text out of the weight under v23 (ADR-0095)', () => {
+    const before = card({
+      prose: 90,
+      structure: 85,
+      issues: [
+        {
+          id: U(9),
+          dimension: 'continuity',
+          kind: 'relationship_inconsistency',
+          severity: 'blocking',
+          span: { start: 7, end: 14 },
+        },
+      ],
+    });
+    // The patch fixed the blocking finding; the judges also raised two new kinds on the unchanged third line.
+    const after = card({
+      prose: 90,
+      structure: 85,
+      issues: [
+        { id: U(10), dimension: 'genre', kind: 'repetitive_arc', span: { start: 18, end: 25 } },
+        { id: U(11), dimension: 'prose', kind: 'other', span: { start: 18, end: 25 } },
+        {
+          id: U(12),
+          dimension: 'voice',
+          kind: 'character_inconsistency',
+          span: { start: 8, end: 12 },
+        },
+      ],
+    });
+    const input = {
+      before,
+      after,
+      dimension: 'continuity' as const,
+      targetedIssueIds: [U(9)],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    // v21 weighs all three (3 against 2) and fails the new kind; v23 weighs only the introduced one (1 against 2).
+    expect(patchRegression(V21, input).passed).toBe(false);
+    expect(patchRegression(V23, input).passed).toBe(true);
   });
 
   it('fails a revision that took the length out of its band, whatever else it fixed (G10r r1)', () => {

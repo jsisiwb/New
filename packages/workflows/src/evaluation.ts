@@ -1018,6 +1018,20 @@ export async function evaluateVersion(
           issues.push(toIssue(ctx, v.id, SOURCE[e], EVALUATOR_DIMENSION[e], raw, i, anchor)),
         );
       }
+      // ADR-0095 (G11r r0, G9a r0, G7r): a judge's dialogue-share finding in a chapter whose measured talk share is
+      // inside the operator's own band (at or above the lint's warn line, the operator's p10) is minor.
+      if (policyEval?.talk_band_cap === true && det.ko_style?.metrics.v7) {
+        const band =
+          ctx.identity.outputLanguage.lint_thresholds?.[
+            ctx.identity.preferences?.pov === 'first' ? 'KO-TALK-SHARE-1P' : 'KO-TALK-SHARE'
+          ];
+        if (band)
+          issues.splice(
+            0,
+            issues.length,
+            ...capTalkFindings(issues, det.ko_style.metrics.v7.talk_share, band.warn),
+          );
+      }
       // ADR-0090 (G8-7): pronoun findings in a chapter inside the operator's own pronoun band are minor.
       if (policyEval?.pronoun_band_cap === true && det.ko_style) {
         const band =
@@ -1371,6 +1385,30 @@ export function capPronounFindings(
     i.source === 'judge:prose_judge' &&
     (i.severity === 'major' || i.severity === 'blocking') &&
     PRONOUN_CLAIM.test(i.claim)
+      ? { ...i, severity: 'minor' as const }
+      : i,
+  );
+}
+
+const TALK_CLAIM =
+  /대사\s?(?:비중|량|비율|분량)|대사가\s?(?:적|부족|거의 없)|대화\s?(?:비중|비율|량)|대화가\s?(?:적|부족|거의 없)|대사와 속마음 비중/u;
+
+/**
+ * ADR-0095: judges read a chapter's talk share against a rule of thumb; the operator's first-person chapters run from 12.6 %
+ * (p10) to 38.8 % (p90) of their characters in dialogue and 속마음 (`corpus-stats.md`). At or above the language layer's
+ * warn line (that p10) a judge's finding about the amount of dialogue is recorded as minor; below it the judge's severity
+ * stands, and the lint's own finding reports the band either way.
+ */
+export function capTalkFindings(
+  issues: readonly Issue[],
+  talkShare: number,
+  bandWarn: number,
+): Issue[] {
+  if (talkShare < bandWarn) return [...issues];
+  return issues.map((i) =>
+    (i.source ?? '').startsWith('judge:') &&
+    (i.severity === 'major' || i.severity === 'blocking') &&
+    TALK_CLAIM.test(i.claim)
       ? { ...i, severity: 'minor' as const }
       : i,
   );

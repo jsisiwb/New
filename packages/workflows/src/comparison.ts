@@ -742,9 +742,17 @@ export function patchRegression(
     'register',
     'length',
   ]);
+  // ADR-0095: with exclude_variance a finding of a new kind on text both versions share is judge variance, not the
+  // revision's weight (the parent was judged once; its own re-judging would surface the same).
+  const afterWeighed =
+    weights?.exclude_variance === true && attribution
+      ? afterOpenAll.filter(
+          (i) => introduced(i) || parentSignatures.has(`${i.dimension}|${i.kind}`),
+        )
+      : afterOpenAll;
   const netImproved =
     weights !== undefined &&
-    weigh(afterOpenAll) < weigh(beforeOpen) &&
+    weigh(afterWeighed) < weigh(beforeOpen) &&
     regressions.length === 0 &&
     missing.length === 0 &&
     dropped.length === 0 &&

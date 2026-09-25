@@ -23,6 +23,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@20',
       'policy/standard@21',
       'policy/standard@22',
+      'policy/standard@23',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -32,6 +33,25 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v23 is standard.v22 with the talk band cap and variance-free weights (ADR-0095)', () => {
+    const v22 = requirePolicy('policy/standard@22', policies);
+    const v23 = requirePolicy('policy/standard@23', policies);
+    expect(v23.evaluation).toEqual({ ...v22.evaluation, talk_band_cap: true });
+    expect(v23.revision).toEqual({
+      ...v22.revision,
+      convergence: {
+        ...v22.revision.convergence,
+        net_improvement: { blocking_weight: 2, major_weight: 1, exclude_variance: true },
+      },
+    });
+    const strip = (p: typeof v22) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, revision: _r, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v23)).toEqual(strip(v22));
+    expect(v23.gates).toEqual(v22.gates);
   });
 
   it('standard.v22 is standard.v21 with owner names and arc-plan stances (ADR-0094)', () => {
