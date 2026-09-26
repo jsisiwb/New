@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
-import { run } from './commands.js';
+import { DB_COMMANDS, run, USAGE } from './commands.js';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const ch09 = `${root}examples/fixture/manuscripts/ch09.accepted.txt`;
@@ -43,6 +43,8 @@ describe('cli commands', () => {
       'policy/standard@31',
       'policy/standard@32',
       'policy/standard@33',
+      'policy/standard@34',
+      'policy/standard@35',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -108,5 +110,13 @@ describe('cli commands', () => {
     expect(r.ok).toBe(false);
     expect(String(r.output)).toContain('yeonjae <command>');
     expect(String(r.output)).toContain('pack:build');
+  });
+
+  it('routes the read-only quality reports to the database runner and documents them', () => {
+    for (const cmd of ['quality:fix-rates', 'quality:findings']) {
+      expect(DB_COMMANDS.has(cmd), cmd).toBe(true);
+      expect(USAGE, cmd).toContain(cmd);
+    }
+    expect(USAGE).toContain('quality:findings <project> [--chapter=N] [--json]');
   });
 });

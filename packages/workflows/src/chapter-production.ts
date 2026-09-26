@@ -78,6 +78,7 @@ import {
   evaluateVersion,
   failingDimensions,
   povPlanId,
+  type EvaluationResult,
   revisionTargets,
   scoreTargets,
   type Issue,
@@ -101,6 +102,7 @@ import {
   type StorySpec,
 } from './planning.js';
 import { patchRegression, regressionArtifact, regressionReportId } from './comparison.js';
+import { stuckTargets, updateSurvival, withSurvivalNotes } from './escalation.js';
 import { readerSecrets } from './evaluator-inputs.js';
 import { pickRevisionDimension, reviseVersionMulti } from './revision.js';
 import {
@@ -607,6 +609,14 @@ export async function produceChapter(
     });
     scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
     guard('evaluate');
+    // ADR-0115: the text each evaluator last read, for the finding ledger; and whether the one confirmation ran.
+    const ledgerOn = ctx.policy.evaluation?.consensus?.ledger !== undefined;
+    let lastRead = new Map<string, string>();
+    const noteReads = (e: EvaluationResult, text: string) => {
+      for (const name of e.rerun ?? []) lastRead.set(name, text);
+    };
+    noteReads(evaluation, current.text);
+    let confirmed = false;
     let revision: ChapterProductionResult['revision'];
     // ADR-0064: rounds per manuscript language come from the policy when it says so; without that knob English
     // keeps one representative round and Korean takes up to max_rounds (ADR-0056).
@@ -624,6 +634,9 @@ export async function produceChapter(
     // ADR-0087: the scene-rewrite rung — kinds patches rarely repair are answered by drafting the scene again.
     const ladder = ctx.policy.revision.ladder;
     let sceneRewrites = 0;
+    // ADR-0116 (G21-1): the kept patch rounds each open finding survived, by its evaluator and quoted paragraphs.
+    const escalateAfter = ladder?.escalate_after_patches;
+    let survived = new Map<string, number>();
     // ADR-0092 (G9-5): the last quarantined attempt, so that no round repeats it unchanged.
     let lastQuarantined: QuarantinedAttempt | undefined;
     // ADR-0093 (G10-4): the rungs quarantined on one parent and target set, with the findings each introduced.
@@ -696,6 +709,21 @@ export async function produceChapter(
           };
         }
       }
+      // ADR-0116 (G21-1): a finding that survived `escalate_after_patches` kept patch rounds has its scene drafted again.
+      if (escalateAfter !== undefined && !rewriteAt && rewritesLeft) {
+        const stuck = stuckTargets(targets, survived, current.text, escalateAfter);
+        const spanless = ladder?.spanless_to_scene === true;
+        const at = stuck.length
+          ? sceneToRewrite(stuck, ranges, plan.scenes, current.text, spanless)
+          : undefined;
+        if (at) {
+          rewriteAt = at;
+          rewriteFindings = targets.filter((i) =>
+            findingInRange(i, at.range, current.text, spanless),
+          );
+          lengthTarget = undefined;
+        }
+      }
       let retryReasons: readonly string[] | undefined;
       // ADR-0093 (G10-4): on a quarantined attempt's parent and targets, take the untried rung; once both failed,
       // retry the one that introduced fewer findings with every rejection reason — never end the loop early.
@@ -747,6 +775,11 @@ export async function produceChapter(
         }
       }
       round++;
+      // ADR-0116: a target that survived a patch round tells the reviser to change the quoted sentence itself.
+      const noted =
+        escalateAfter !== undefined
+          ? withSurvivalNotes(targets, survived, current.text, manuscriptLang === 'ko')
+          : targets;
       const parent = current;
       const beforeEvaluation = evaluation;
       const beforeScorecard = evaluation.scorecard;
@@ -781,7 +814,7 @@ export async function produceChapter(
             chapterId: contract.chapterId,
             chapterNo,
             issues: withRejections(
-              scoreOnly.length ? [...targets, ...scoreOnly] : targets,
+              scoreOnly.length ? [...noted, ...scoreOnly] : noted,
               retryReasons,
             ),
             dimension,
@@ -797,6 +830,7 @@ export async function produceChapter(
       current = revised.version;
       guard('revise');
       patchesSinceFull++;
+      const readsBefore = new Map(lastRead);
       evaluation = await evaluateVersion(ctx, {
         version: current,
         contract: contract.contract,
@@ -811,8 +845,10 @@ export async function produceChapter(
           targetedDimension: dimension,
           changedClaims: revised.patch.changed_claims.length > 0 || revised.patch.scope === 'scene',
           patchesSinceFull,
+          ...(ledgerOn ? { lastReadTexts: Object.fromEntries(lastRead) } : {}),
         },
       });
+      noteReads(evaluation, current.text);
       if (evaluation.mode !== 'targeted') patchesSinceFull = 0;
       scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
 
@@ -903,6 +939,7 @@ export async function produceChapter(
         }
         current = parent;
         evaluation = beforeEvaluation;
+        lastRead = readsBefore;
         patchesSinceFull = Math.max(0, patchesSinceFull - 1);
         revision = { ...revision, discarded: [...discarded] };
         if (singleRound) break;
@@ -934,8 +971,24 @@ export async function produceChapter(
             recommendedActions: ['regenerate', 'edit_manually'],
           },
         );
+      if (escalateAfter !== undefined) {
+        const sent = new Set(targetedIssueIds);
+        survived = updateSurvival(
+          survived,
+          targets.filter((i) => sent.has(i.id)),
+          parentText,
+          evaluation.scorecard.issues,
+          current.text,
+        );
+      }
       // ADR-0086: a version approvable on a targeted re-evaluation is approved only if every evaluator agrees.
-      if (convergence?.confirm_full && evaluation.approvable && evaluation.mode === 'targeted') {
+      // ADR-0115: under the finding ledger that fresh full reading happens once per chapter, and a ledger-decided
+      // full re-reading (smoke) is not it.
+      const wantsConfirmation = ledgerOn
+        ? !confirmed && (evaluation.mode === 'targeted' || evaluation.ledger === true)
+        : evaluation.mode === 'targeted';
+      if (convergence?.confirm_full && evaluation.approvable && wantsConfirmation) {
+        confirmed = true;
         evaluation = await evaluateVersion(ctx, {
           version: current,
           contract: contract.contract,
@@ -947,6 +1000,7 @@ export async function produceChapter(
           confirm: true,
         });
         scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
+        noteReads(evaluation, current.text);
         patchesSinceFull = 0;
       }
       // The English lineage keeps the Checkpoint-5 single representative revision (its recorded fixtures

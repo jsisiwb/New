@@ -911,3 +911,110 @@ G21r and G22a stay as the record of `standard@31` and `standard@32` at the grant
 
 Credits 09:33 → 10:28 UTC: ws1 15.19 → 18.56 %, ws2 5.53 → 6.52 %, ws3 62.58 → 65.16 %, ws4 24.41 → 25.36 %, ws5 9.99 →
 15.62 %, ws6 12.13 → 16.45 % (17.84 points). Run 3 in all: 37.47 points since 08:12.
+
+## 19. Run 4 — why acceptance does not converge (2026-09-26, from 11:58 UTC)
+
+**Setup.** Until about 12:56 UTC the sandbox had none of the permanent database's or the bridge's variables, so run 4
+built `standard@34` and `standard@35` offline first (ADR-0115, ADR-0116). From 12:57: `db:migrate` (nothing to apply),
+`corpus:verify --database` `complete: true` (3 books, 1,138 spine chapters, 656 Korean main-story chapters), the bridge probe
+ok on R, P, M and C (5.2–6.2 s), credits at 12:58 UTC ws1 20.07 %, ws2 7.13 %, ws3 66.78 %, ws4 25.99 %, ws5 16.32 %, ws6
+17.89 %. G23r (`standard@33`) was found `producing` in chapter 1 (84 calls, the last at 10:54 UTC, when run 3's sandbox
+died), resumed and taken back at 13:00 by `novel:run --auto-resume=6` from `/tmp/hoplite/live5` at `66fbccc` (later fixes are
+policy-gated; `@33` replays unchanged). G24r (regression) and G24a (academy) were started on `standard@35` at 13:00 from the
+same intakes as G20–G23 (first concept, `--stop-after=5`).
+
+### 19.1 STEP 1.1 — every blocking and major finding of the six stored runs
+
+`quality:findings` on G17a (chapter 2), G19r, G20r, G21r, G22a and G23r (G23r as stored at 13:02). The per-finding tables —
+round, version, reading, evaluator, severity, kind, the span against the same evaluator's last reading, the second reading,
+the later fate, quote and claim — are `ops/live-runs/run4/step1/*-findings.md`. Summary (rows: blocking and major
+findings, and findings a second reading demoted):
+
+| Project (policy) | Rows | Full / targeted / confirmation reading | Passed unchanged before | Changed since last reading | First reading | Kept / dropped by a second reading | Fixed / came back / open at end |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| G17a ch 2 (`@28`) | 38 | 14 / 14 / 10 | 20 | 15 | 3 | 5 / 3 | 32 / 2 / 4 |
+| G19r (`@28`) | 36 | 20 / 16 / 0 | 16 | 13 | 6 | 0 / 0 | 26 / 1 / 9 |
+| G20r (`@29`) | 22 | 4 / 18 / 0 | 12 | 1 | 4 | 4 / 10 | 12 / 0 / 10 |
+| G21r (`@31`) | 35 | 10 / 21 / 4 | 22 | 3 | 7 | 9 / 21 | 29 / 3 / 3 |
+| G22a (`@32`) | 33 | 4 / 16 / 13 | 23 | 6 | 4 | 11 / 15 | 28 / 2 / 3 |
+| G23r (`@33`) | 34 | 14 / 20 / 0 | 12 | 12 | 10 | 1 / 4 | 29 / 0 / 5 |
+| **All** | **198** | 66 / 105 / 27 | **105 (53 %)** | 50 | 34 | 30 / 53 | 156 / 8 / 34 |
+
+(“Full” includes the smoke re-reading after three patches; a stored scorecard does not record its mode.)
+
+**The confirmation readings.** G17a chapter 2, G21r and G22a had confirmations: 22 blocking or major findings, **18 of
+them on paragraphs the same evaluator had read and passed unchanged**. Read against their quoted spans, about half are
+verifiable slips and half are taste judgments:
+
+| Run | Finding (evaluator, kind, severity) | Span | Verdict |
+| --- | --- | --- | --- |
+| G17a r4 v5 | continuity, character_inconsistency, blocking: the narrator calls a character a future perpetrator; canon has her a victim | passed unchanged | real slip (canon) |
+| G17a r4 v5 | genre, other, major ×3: flat villain, thin motivation, flat crisis | passed unchanged | taste |
+| G17a r4 v5 | voice, character_inconsistency, major: a character speaks his card's sample lines verbatim | passed unchanged | real (card) |
+| G17a r4 v5 | repetition, repeated_paragraph, major: chapter 1's facial-colour sentence again | passed unchanged | real (repeat) |
+| G17a r10 v11 | continuity, character_inconsistency, major: resolves to hold back, then smashes the platform | passed unchanged | ambiguous (may be the joke) |
+| G17a r10 v11 | genre, terminology_violation, major: “텍스트” in a game-possession story | passed unchanged | real (terminology) |
+| G17a r10 v11 | genre, other / repetition, repetitive_arc, major | changed | taste |
+| G21r r7 v8 | continuity, inventory_impossible, blocking: the money goes into the coat pocket and comes out of a plastic bag | passed unchanged | real slip |
+| G21r r7 v8 | genre, payoff_without_setup, major | passed unchanged | taste |
+| G22a r2 v3 | structure, late_hook and serial_drift, major | passed unchanged | taste |
+| G22a r4 v5 | voice, character_inconsistency, major: a 해요체/반말 character speaks 하십시오체 | passed unchanged | real (card) |
+| G22a r6 v7 | continuity, world_rule_violation, blocking: the expulsion rule against a perennial repeater | passed unchanged | real (world rule) |
+| G22a r6 v7 | prose, register_error, major: 하게체 and 하십시오체 in one line | passed unchanged | real (register) |
+| G22a r6 v7 | promise, canon_contradiction, major: the plan's set-up beat paid off early | passed unchanged | real (plan) |
+| G22a r6 v7 | genre, other, major: expository extra's line | passed unchanged | taste |
+| G22a r9 v10 | continuity, numeric_inconsistency, major: “학년별 상위 10명” against “전체 학생 중 단 10명” | passed unchanged | real slip |
+| G22a r9 v10 | structure, other and genre, other, major: the payoff deferred | changed | taste |
+
+### 19.2 STEP 1.3 — the answers
+
+- **New confirmation findings on text that had already passed unchanged:** 18 of 22; over all readings, 105 of 198
+  findings (53 %) were raised on paragraphs the same evaluator had read and passed.
+- **Real slips:** about 11 of the 22 confirmation findings (canon, card, register, world-rule, numeric, repeat and
+  terminology slips); the rest are taste judgments that one reading raises and the next does not.
+- **G21-1:** not a wrong span, a rejection or a missing attempt. The reviser patched the quoted sentence each time and the
+  contradiction moved to the next place: r8 made the bag “the bag stuffed in the pocket”, r9 fixed that sentence while the
+  following one still opened “the bag”, r10 removed it — and a new blocking slip (the unawakened hero kicking a steel door
+  off its hinges, G9-6) stopped the chapter at the cap. A two-place contradiction patched one place at a time.
+
+**STEP 1.2 — reading variance** (five readings of G22a v10, G21r v8, one G23r version): **not measured** in run 4; the
+readings tool was not built (next session).
+
+### 19.3 What `standard@34` and `standard@35` change
+
+`standard@34` (ADR-0115): every evaluator reads three times and a reviewer-class finding stands on two; hard kinds keep
+their one-reading rule; gated scores are medians. After a patch, a new finding on text that passed unchanged is held for
+the one final full reading, an open finding on unchanged text stays open, and the confirmation runs once. `standard@35`
+(ADR-0116): a finding still open after a kept patch round is named to the reviser as a survivor — change the quoted
+sentence itself and both places of a contradiction — and after two kept surviving rounds its scene is drafted again.
+Simulated: both G22-2 patterns stop at `APPROVAL_BLOCKED` under `@33` and are accepted under `@34`; the survivor note
+reaches round 2 under `@35` and not under `@34`. The live comparison is G24r / G24a (`@35`) against G23r (`@33`).
+
+### 19.4 Accepted chapters
+
+| | G23r chapter 1 (`standard@33`, sha256:a9755f9e…) |
+| --- | --- |
+| Length | 5,509자, 4,291 without spaces |
+| Rounds | r0 v1 80 (2 / 8) → r1 quarantined → r2 v3 83 (1 / 4) → r3 quarantined → r4 v5 82 (0 / 4, structure 77.5 below 78) → r5 v6 **approved**, 87, 0 / 0 / 15 → polish v7 quarantined; v6 accepted at 13:05 UTC after the resume |
+| Sub-scores and gates | prose 87.2 / 78, structure 86.3 / 78, genre 87.5 / 72, voice 82.5 / 76 — all passing |
+| corpus:likeness | 85 (first-person bands 70); outside: translation-weighted markers, pronoun rate, ending connectives (all below the operator's band) |
+| Lint | TRN-KO-14 ×2 (note), KO-TALK-SHARE-1P ×1 (minor) |
+| Calls / tokens / model time | 92 calls for the project so far (planning included) / 399,617 in, 41,079 out / 2,902 s |
+| Credits | not separable (the chapter spans run 3 and run 4); ≈ 6.6 points at 0.072 per call |
+
+Excerpt (the first three lines of the accepted v6, unedited):
+
+> 우직.
+> 심장을 꿰뚫는 서늘한 감각과 함께 눈을 번쩍 떴다.
+> “커억……!”
+
+### 19.5 Open: G19-3, the plan against its own reveal schedule
+
+Read in run 4 (no change yet). The plan critic (`plan_critic` 4.7.0, its only version) exempts exactly G18r's case: its
+`reveal_unsafe` rule says a beat in which the hero judges and acts on the knowledge is not a defect — ADR-0086 meant that
+for prior-life and source-work knowledge, the prompt applies it to every hidden secret, and in first person the hero's act
+is the reveal. A contract-stage finding gets one re-plan that is not critiqued again, and findings never block;
+PLAN-REVEAL-01 reads knowledge changes only, never `must_happen`. The smallest fix: a new plan-critic version that limits
+the exemption to prior-life and source-work layers and treats a beat that shows a later-dated secret, or contradicts what
+the bible records the character doing, as major; and a bounded re-plan → re-critique loop (up to `max_repairs`) that keeps
+the contract with the fewest serious findings.
