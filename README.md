@@ -61,6 +61,7 @@ version. For a new Korean project use the newest `standard`:
 | `standard@30` | a scene with no one beside its POV character is not raised to the dialogue floor; the scenes with a partner carry it | 0110 |
 | `standard@31` | a scene that mixes 존대 and 반말 inside quotations beyond the operator's p90 is re-drafted once with those lines named | 0111 |
 | `standard@32` | a scene drafted over 1.5× its planned length is re-drafted once toward the target | 0112 |
+| `standard@33` | the voice judge re-reads after any patch that changed dialogue (no carried voice score) | 0113 |
 
 **Watching a run.**
 

@@ -34,6 +34,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@30',
       'policy/standard@31',
       'policy/standard@32',
+      'policy/standard@33',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -42,6 +43,17 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v33 is standard.v32 with the voice re-read on changed dialogue (ADR-0113)', () => {
+    const v32 = requirePolicy('policy/standard@32', policies);
+    const v33 = requirePolicy('policy/standard@33', policies);
+    expect(v33.evaluation).toEqual({ ...v32.evaluation, voice_on_dialogue: true });
+    const strip = (p: typeof v32) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v33)).toEqual(strip(v32));
   });
 
   it('standard.v32 is standard.v31 with the length re-draft (ADR-0112)', () => {

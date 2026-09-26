@@ -76,6 +76,16 @@ corpus commands and reports touch the permanent `DATABASE_URL`, from live worktr
 every checkout and never checked out while its project runs; no full `pnpm check` while a live run is in flight (run 3
 ran package suites and relied on CI for the full check).
 
+## Run 3: G22-1, the voice re-read — `standard.v33` — 2026-09-26
+
+**Built (ADR-0113):** `evaluation.voice_on_dialogue` (`dialogueChanged`, `planReevaluation`): the voice judge re-runs after
+any patch that changed a quoted utterance. Traceability row `G22FIX-001`.
+
+**Measured:** G22a chapter 1 (`13-live-run-gemini.md` §18): v5 approved on a voice score carried from v3; the
+confirmation's two readings of v5 gave 71.7 against 76.
+
+**Tests:** `evaluation-plan.test.ts`, `policy.test.ts` (v33), `commands.test.ts`.
+
 ## Run 3: G20-1, the length re-draft — `standard.v32` — 2026-09-26
 
 **Built (ADR-0112):** `drafting.length_redraft` (`lengthRedraftNote`, normalization `length_redraft`): a scene drafted

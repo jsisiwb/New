@@ -873,3 +873,20 @@ its confirmation. What was left was measured, not read: the voice score.
 Credits: 08:47 → 09:33 UTC, ws1 13.58 → 15.19 %, ws2 4.22 → 5.53 %, ws3 61.03 → 62.58 %, ws4 23.65 → 24.41 %, ws5 6.44 →
 9.99 %, ws6 9.79 → 12.13 % (11.12 points: both chapters, 134 calls, and the two new projects' planning). Run 3 so far:
 19.63 points since 08:12.
+
+## 18. G21r and G22a — chapter 1 on `standard@31` and `standard@32` (09:24–10:05 UTC)
+
+| | G21r (regression, `@31`) | G22a (academy, `@32`) |
+| --- | --- | --- |
+| Rounds | r0 v1 82 (0 / 2), voice 63.7 → r1 v2 83, **0 / 0**, voice 74.7 → r2–r5 quarantined or 0 / 0 at voice 70.3–74.7 | r0 v1 82 (0 / 2) → r2 v3 **approved** (0 / 0) → confirmation 0 / 2 → r5 v5 **approved**, overall 91, every gate passing → confirmation: voice 71.7 |
+| Stopped on | the voice gate (74.7 / 76) with 0 / 0 | the voice gate (71.7 / 76) at the confirmation |
+| Re-drafts | one register re-draft (mixed utterances 6 → 3 per chapter, inside the operator's p90) | none needed (4,824자 v1; scenes 1,797 and 3,027) |
+| Second readings | 15 `:agree` calls | 12 `:agree` calls |
+
+G21r's remaining voice findings (all minor after the second readings) are card deviations: a character carded as strict
+하십시오체 sneering in 반말, a verbal tic in another character's mouth. Both chapters were granted five rounds at 09:57 and
+10:06 UTC.
+
+**G22-1: an approval on a carried voice score.** G22a's v4 and v5 carried v3's voice reading because the r3 and r4
+patches aimed at structure; the confirmation's two readings of v5 averaged 71.7. Fixed by ADR-0113 (`standard@33`): the
+voice judge re-reads after any patch that changed dialogue.

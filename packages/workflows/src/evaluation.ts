@@ -49,6 +49,7 @@ import {
   CORE_EVALUATORS,
   EVALUATOR_DIMENSION,
   lintComposite,
+  dialogueChanged,
   planReevaluation,
   reanchorIssues,
   rubricScore,
@@ -699,6 +700,9 @@ export async function evaluateVersion(
         carry,
         smokeAfterPatches: ctx.policy.revision.smoke_after_patches,
         unanchored,
+        ...(carry && policyEval?.voice_on_dialogue === true
+          ? { dialogueChanged: dialogueChanged(carry.versionText, v.text) }
+          : {}),
         ...(carry && ctx.policy.revision.convergence?.rejudge_open_majors
           ? {
               openMajor: new Set(

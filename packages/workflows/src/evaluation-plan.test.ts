@@ -3,6 +3,7 @@ import { segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import {
   composeDimensionScore,
   CORE_EVALUATORS,
+  dialogueChanged,
   lintComposite,
   planReevaluation,
   reanchorIssues,
@@ -249,5 +250,31 @@ describe('rubric scores and composites (drift-detection §2)', () => {
     expect(composeDimensionScore(0.6, 75, 100)).toBe(85);
     expect(composeDimensionScore(0.7, 50, 90)).toBe(62);
     expect(composeDimensionScore(1, 40, 0)).toBe(40);
+  });
+});
+
+describe('the voice judge re-reads changed dialogue (ADR-0113, G22-1)', () => {
+  const plan = (extra: Partial<Parameters<typeof planReevaluation>[0]> = {}) =>
+    planReevaluation({
+      evaluators: ALL,
+      reevaluation: 'targeted',
+      carry: carry(),
+      smokeAfterPatches: 3,
+      unanchored: new Set(),
+      ...extra,
+    });
+
+  it('carries the voice score after a patch that left the dialogue alone, and re-runs it otherwise', () => {
+    expect(plan().rerun).not.toContain('voice_judge');
+    expect(plan({ dialogueChanged: false }).rerun).not.toContain('voice_judge');
+    expect(plan({ dialogueChanged: true }).rerun).toEqual(['prose_judge', 'voice_judge']);
+  });
+
+  it('compares quoted utterances, not narration or order', () => {
+    const before = '문이 열렸다.\n“늦었네.”\n“미안해요.”';
+    expect(dialogueChanged(before, '문이 활짝 열렸다.\n“늦었네.”\n“미안해요.”')).toBe(false);
+    expect(dialogueChanged(before, '“미안해요.”\n문이 열렸다.\n“늦었네.”')).toBe(false);
+    expect(dialogueChanged(before, '문이 열렸다.\n“늦었군.”\n“미안해요.”')).toBe(true);
+    expect(dialogueChanged(before, '문이 열렸다.\n“늦었네.”')).toBe(true);
   });
 });
