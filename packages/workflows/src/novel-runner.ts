@@ -65,6 +65,12 @@ export class NovelRunner {
     let run = initial;
     const fence = run.runner_fence;
     const lost = { value: false };
+    // ADR-0109: a provider call in flight when the lease is lost is aborted as `lease_lost`, not as an operator's cancel.
+    const leaseAbort = new AbortController();
+    const loseLease = (): void => {
+      lost.value = true;
+      leaseAbort.abort();
+    };
     const heartbeat = setInterval(
       () => {
         void renewNovelRun(pool, {
@@ -74,12 +80,12 @@ export class NovelRunner {
           ttlSeconds: ttl,
         })
           .then((ok) => {
-            if (!ok) lost.value = true;
+            if (!ok) loseLease();
           })
           .catch(() => {
             // A failed renewal is indistinguishable from losing the lease. Stop before the next
             // checkpoint rather than allowing a network/database transient to run as a zombie.
-            lost.value = true;
+            loseLease();
           });
       },
       Math.max(1000, (ttl * 1000) / 3),
@@ -94,6 +100,7 @@ export class NovelRunner {
         const outcome = await advanceNovelRun(deps, run, {
           lease: { runner: this.opts.runnerId, fence } satisfies NovelRunLease,
           leaseLost: () => lost.value,
+          cancelSignals: [{ signal: leaseAbort.signal, reason: 'lease_lost' }],
           isCancelled: async () => {
             if (lost.value) return true;
             try {
@@ -115,13 +122,13 @@ export class NovelRunner {
                 row.lease_expires_at !== null &&
                 row.lease_expires_at > new Date();
               if (!ownsLease) {
-                lost.value = true;
+                loseLease();
                 return true;
               }
               return row.status === 'cancelled' || row.status === 'paused';
             } catch {
               // Ownership cannot be proven on a failed read; fail closed.
-              lost.value = true;
+              loseLease();
               return true;
             }
           },

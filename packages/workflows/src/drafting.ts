@@ -25,6 +25,7 @@ import {
   validatorFor,
 } from '@yeonjae/domain';
 import {
+  checkDialogueRegister,
   codePointLength,
   lintKoreanWebnovel,
   measure,
@@ -57,12 +58,13 @@ import {
   saveArtifact,
   type WorkflowContext,
 } from './runtime.js';
-import { applyDialogueFloor } from './dialogue-floor.js';
+import { applyDialogueFloor, isSoloScene } from './dialogue-floor.js';
 import {
   checkPlanConsistency,
   cutNote,
   ensureCutBeat,
   lineTargetNote,
+  soloLineTargetNote,
   renderPlanFeedback,
   renderScenesForCritic,
   sceneLineTargets,
@@ -593,6 +595,8 @@ export async function draftScenes(
     : undefined;
   // ADR-0086 (G5-2, G5-5): countable talk targets per scene and the cut as the last scene's end.
   const lineTargets = ctx.policy.planning?.dialogue_floor?.line_targets;
+  // ADR-0110 (G7-4): a scene with no one to talk to gets no quoted-line quota.
+  const soloScenes = ctx.policy.planning?.dialogue_floor?.solo_scenes === true;
   const chapterLines = lineTargets
     ? sceneLineTargets(
         {
@@ -605,13 +609,16 @@ export async function draftScenes(
   const planNotes = (planned: ScenePlan) => {
     let note = '';
     if (lineTargets)
-      note += lineTargetNote(
-        sceneLineTargets(planned, lineTargets),
-        planned.participants
-          .filter((p) => p !== planned.pov.character_id)
-          .map((p) => (nameOf ? nameOf(p) : p)),
-        chapterLines,
-      );
+      note +=
+        soloScenes && isSoloScene(planned)
+          ? soloLineTargetNote(sceneLineTargets(planned, lineTargets))
+          : lineTargetNote(
+              sceneLineTargets(planned, lineTargets),
+              planned.participants
+                .filter((p) => p !== planned.pov.character_id)
+                .map((p) => (nameOf ? nameOf(p) : p)),
+              chapterLines,
+            );
     if (ctx.policy.planning?.cut_design && planned.scene_no === input.scenes.length)
       note += cutNote(input.contract);
     return note;
@@ -786,6 +793,56 @@ export async function draftScenes(
               prose = again;
               call = retry;
               recordNormalization('pronoun_redraft');
+            }
+          }
+        }
+        // ADR-0111 (G16-2): a scene with more utterances that mix 존대 and 반말 than the operator's p90 allows for its
+        // length is re-drafted once with those utterances named; the re-draft is kept only when it mixes fewer.
+        const registerRedraft = ctx.policy.drafting?.register_redraft;
+        if (registerRedraft && ko && typeof prose === 'string') {
+          const mixedOf = (t: string) => checkDialogueRegister(toNfcText(t)).mixed;
+          const mixed = mixedOf(prose);
+          if (mixed.length > registerMixAllowance(prose, registerRedraft.per_1k_max)) {
+            const retry = await writeScene(
+              { ...variables, scene_plan: variables.scene_plan + registerRedraftNote(mixed) },
+              `scene_draft:${ch}:${scene.scene_no}:register`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting?.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (typeof again === 'string' && mixedOf(again).length < mixed.length) {
+              prose = again;
+              call = retry;
+              recordNormalization('register_redraft');
+            }
+          }
+        }
+        // ADR-0112 (G20-1): a scene drafted far over its planned length is re-drafted once toward the plan's target;
+        // the re-draft is kept only when it lands closer to it.
+        const lengthRedraft = ctx.policy.drafting?.length_redraft;
+        if (lengthRedraft && typeof prose === 'string') {
+          const target = planned.length_target.value;
+          const countOf = (t: string) =>
+            targetCount(measure(toNfcText(t)), planned.length_target.unit);
+          const measured = countOf(prose);
+          if (target > 0 && measured > target * lengthRedraft.over_ratio) {
+            const retry = await writeScene(
+              {
+                ...variables,
+                scene_plan: variables.scene_plan + lengthRedraftNote(measured, target, ko),
+              },
+              `scene_draft:${ch}:${scene.scene_no}:length`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting?.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (
+              typeof again === 'string' &&
+              Math.abs(countOf(again) - target) < Math.abs(measured - target)
+            ) {
+              prose = again;
+              call = retry;
+              recordNormalization('length_redraft');
             }
           }
         }
@@ -1137,6 +1194,31 @@ export function talkRedraftNote(measured: number, target: number, ko: boolean): 
 }
 
 /** ADR-0097 (G14-1): the pronoun redraft instruction, with the measure that triggered it. */
+/** ADR-0112 (G20-1): the writer's note for a scene drafted far over its planned length. */
+export function lengthRedraftNote(measured: number, target: number, ko: boolean): string {
+  const times = Math.round((measured / target) * 10) / 10;
+  return ko
+    ? `\n\n분량 다시 쓰기: 앞선 원고는 ${String(measured)}자로 이 장면의 목표 ${String(target)}자의 ${String(times)}배였다. 장면 설계의 비트를 빠짐없이 목표 분량 안에서 보여 준다. 같은 대화나 같은 장면을 되풀이하지 않고 비트마다 한 번씩만 지나가며, 장면의 사건과 결말은 그대로 둔다.`
+    : `\n\nLength re-draft: the previous draft ran ${String(measured)} against this scene's target of ${String(target)} (${String(times)}×). Cover every planned beat within the target, once each, without replaying an exchange; keep the scene's events and ending.`;
+}
+
+/** ADR-0111: mixed utterances a scene may keep — the operator's p90 per 1,000자 for its length, at least one. */
+export function registerMixAllowance(text: string, per1kMax: number): number {
+  const chars = Array.from(text.replace(/\n/gu, '')).length;
+  return Math.max(1, Math.floor((per1kMax * chars) / 1000));
+}
+
+/** ADR-0111 (G16-2): the writer's Korean note naming the utterances that mix 존대 and 반말. */
+export function registerRedraftNote(mixed: readonly { readonly quote: string }[]): string {
+  return [
+    '',
+    '',
+    '말높이 다시 쓰기: 앞선 원고에서 아래 발화들은 한 따옴표 안에서 존댓말과 반말이 섞였다.',
+    ...mixed.slice(0, 8).map((m) => `- ${m.quote}`),
+    '인물마다 인물 설계의 말투를 상대별 말높이로 지키고, 같은 장면에서 같은 상대에게는 한 말높이로만 말한다. 말높이를 바꾸려면 계기(도발, 신분 확인, 관계 변화)를 지면에 먼저 보이고 그 뒤로는 바뀐 말높이를 유지한다. 한 발화 안에서는 존댓말과 반말을 오가지 않는다. 장면의 사건과 비트, 분량은 그대로 둔다.',
+  ].join('\n');
+}
+
 export function pronounRedraftNote(ratePer1k: number, warn: number): string {
   return `\n\n대명사 다시 쓰기: 직전 초고는 ‘그/그녀’가 1,000자에 ${String(ratePer1k)}번이었다(운영자 원고의 경고선 ${String(warn)}). 서술의 ‘그는·그녀는·그녀의’를 인물의 이름이나 호칭으로 바꾸거나 주어를 생략한다. 사건·비트·대사는 그대로 둔다.`;
 }
@@ -1213,13 +1295,15 @@ export async function rewriteScene(
           : []),
       ].join('\n');
       const targetsNote = lineTargets
-        ? lineTargetNote(
-            sceneLineTargets(input.scene, lineTargets),
-            input.scene.participants
-              .filter((p) => p !== input.scene.pov.character_id)
-              .map((p) => (nameOf ? nameOf(p) : p)),
-            undefined,
-          )
+        ? ctx.policy.planning?.dialogue_floor?.solo_scenes === true && isSoloScene(input.scene)
+          ? soloLineTargetNote(sceneLineTargets(input.scene, lineTargets))
+          : lineTargetNote(
+              sceneLineTargets(input.scene, lineTargets),
+              input.scene.participants
+                .filter((p) => p !== input.scene.pov.character_id)
+                .map((p) => (nameOf ? nameOf(p) : p)),
+              undefined,
+            )
         : '';
       const cut =
         ctx.policy.planning?.cut_design && input.scene.scene_no === input.sceneTotal

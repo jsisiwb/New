@@ -112,6 +112,14 @@
 | [0103](0103-extraction-repair-keeps-valid-fields.md) | A top-level field that validated in the extractor answer being repaired and fails in the repaired one is taken back from that answer; the repair note renders the shapes of the top-level fields errors name |
 | [0104](0104-story-present-reaches-last-paragraph.md) | For future validity at chapter acceptance, a contract window inside its own chapter ends no earlier than the chapter's last paragraph, because in-chapter ordinals follow paragraph order |
 | [0105](0105-asserted-fact-takes-its-item-clock.md) | At chapter acceptance, an asserted fact without its own `valid_from` is valid from its item's `story_clock`; a fact with neither clock is rejected by the verifier |
+| [0106](0106-checker-agreement.md) | `standard.v29`: the continuity and knowledge checkers' reviewer-class findings join ADR-0100's second reading; a checker finding stands only when the second reading reproduces its kind or span, else it is a minor doubt |
+| [0107](0107-rejected-extraction-asks-again.md) | A resume after a rejected extraction asks the extractor again: each rejection is recorded and the next attempt's activity ids carry its number |
+| [0108](0108-stuck-chapters-stay-as-the-record.md) | G14a, G14r (`standard@24`), G17a chapter 2, G18r and G19r (`standard@28`) stay as the record of their policies at the grant cap: no override, no regeneration on the old pins; the lines continue on fresh `standard@29` projects |
+| [0109](0109-unattended-runs-auto-resume.md) | Unattended runs, part 2: `novel:run --auto-resume=N` resumes a run failed on a curable fault (bridge outage, rate limit, rejected extraction) after a doubling wait, with the reason in the event log and status file; a call aborted by a lost lease is recorded as `lease_lost` |
+| [0110](0110-solo-scenes-under-the-dialogue-floor.md) | `standard.v30`: a scene with no one beside its POV character is not raised to the dialogue floor (at most `solo_max`, no quoted-line quota); the scenes with a partner carry the chapter's floor |
+| [0111](0111-register-redraft.md) | `standard.v31`: a Korean scene with more utterances mixing 존대 and 반말 inside one quotation than the operator's p90 (0.725 per 1,000자) allows is re-drafted once with those utterances named |
+| [0112](0112-length-redraft.md) | `standard.v32`: a scene drafted over 1.5× its planned length is re-drafted once toward the target and kept only if closer |
+| [0113](0113-voice-rereads-changed-dialogue.md) | `standard.v33`: under targeted re-evaluation the voice judge re-runs after any patch that changed a quoted utterance, so its gated score is never carried across changed dialogue |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

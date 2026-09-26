@@ -31,6 +31,7 @@ import { Gateway, MemoryBudget, resolveProvidersFromEnv } from '@yeonjae/gateway
 import {
   advanceNovelRun,
   approveConcept,
+  autoResumeDecision,
   ArtifactLlmOutputStore,
   cancelNovelRun,
   collectRunProgress,
@@ -214,7 +215,9 @@ export async function runNovelCommand(
         const statusFile = flag(args, 'status-file');
         const stuckMin = flag(args, 'stuck-after-min');
         const stuckAfterMs = stuckMin ? Number(stuckMin) * 60_000 : undefined;
-        const beatState = { busy: false };
+        const beatState: { busy: boolean; waiting?: { reason: string; resume_at: string } } = {
+          busy: false,
+        };
         const beat = async (): Promise<void> => {
           if (!statusFile || beatState.busy) return;
           beatState.busy = true;
@@ -223,7 +226,10 @@ export async function runNovelCommand(
               pid: process.pid,
               stuckAfterMs,
             });
-            writeHeartbeatFile(statusFile, hb);
+            writeHeartbeatFile(
+              statusFile,
+              beatState.waiting ? { ...hb, waiting: beatState.waiting } : hb,
+            );
             if (hb.stuck) {
               await failStuckRun(pool, projectId, hb);
               writeHeartbeatFile(statusFile, { ...hb, run_status: 'failed' });
@@ -245,21 +251,50 @@ export async function runNovelCommand(
         // ADR-0091: a lease this process lost (a database blip) is taken back once it expires, a bounded number of
         // times; a lease another live process holds is never waited on.
         let retries = Number(flag(args, 'lease-retries') ?? '3');
+        // ADR-0109: `--auto-resume=N` resumes, up to N times, a run that failed on a fault a resume can cure (a bridge
+        // outage, a rate limit, a rejected extraction), after a doubling wait; anything else rests for the operator.
+        const resumeOpts = {
+          maxResumes: Number(flag(args, 'auto-resume') ?? '0'),
+          baseDelayMs: Number(flag(args, 'resume-base-sec') ?? '120') * 1000,
+          maxDelayMs: Number(flag(args, 'resume-max-sec') ?? '1800') * 1000,
+        };
+        let resumed = 0;
         for (;;) {
-          // Drive until nothing is claimable: the run rests (completed, paused, needs_attention, failed).
-          while (await runner.tick()) {
-            tick += 1;
-            if (metricsLog)
-              appendFileSync(
-                metricsLog,
-                `${JSON.stringify({ at: new Date().toISOString(), pid: process.pid, tick, normalizations: normalizationCounts() })}\n`,
-              );
+          for (;;) {
+            // Drive until nothing is claimable: the run rests (completed, paused, needs_attention, failed).
+            while (await runner.tick()) {
+              tick += 1;
+              if (metricsLog)
+                appendFileSync(
+                  metricsLog,
+                  `${JSON.stringify({ at: new Date().toISOString(), pid: process.pid, tick, normalizations: normalizationCounts() })}\n`,
+                );
+            }
+            const waitMs = lostLeaseWaitMs(
+              await getNovelRun(pool, projectId),
+              runnerId,
+              new Date(),
+            );
+            if (waitMs === undefined || retries <= 0) break;
+            retries -= 1;
+            console.error(`lease lost; retaking it in ${String(Math.round(waitMs / 1000))} s`);
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
           }
-          const waitMs = lostLeaseWaitMs(await getNovelRun(pool, projectId), runnerId, new Date());
-          if (waitMs === undefined || retries <= 0) break;
-          retries -= 1;
-          console.error(`lease lost; retaking it in ${String(Math.round(waitMs / 1000))} s`);
-          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          const rest = await getNovelRun(pool, projectId);
+          const decision = rest ? autoResumeDecision(rest, resumed, resumeOpts) : undefined;
+          if (!decision?.resume) break;
+          resumed += 1;
+          console.error(
+            `auto-resume: ${decision.reason}; waiting ${String(Math.round(decision.delayMs / 1000))} s`,
+          );
+          beatState.waiting = {
+            reason: decision.reason,
+            resume_at: new Date(Date.now() + decision.delayMs).toISOString(),
+          };
+          await beat();
+          await new Promise((resolve) => setTimeout(resolve, decision.delayMs));
+          delete beatState.waiting;
+          await resumeNovelRun(pool, { projectId, reason: `auto-resume: ${decision.reason}` });
         }
         if (beatTimer) clearInterval(beatTimer);
         await beat();
@@ -353,6 +388,7 @@ Novel lifecycle (DATABASE_URL + YEONJAE_PROVIDER_MODE required; live mode needs 
   novel:approve <project> <concept-id> [--one-chapter-at-a-time] [--stop-after=N]
                                                approve a direction; queues full-bible planning then production
   novel:run <project> [--once] [--metrics-log=<file>] [--status-file=<file>] [--stuck-after-min=<n>]
+                      [--auto-resume=<n>] [--resume-base-sec=<s>] [--resume-max-sec=<s>]
                                                drive the run: build the bible, then write chapters until it rests;
                                                --metrics-log appends cumulative normalizer counters after each step
                                                --status-file rewrites a heartbeat every 30 s; a run with no call, step

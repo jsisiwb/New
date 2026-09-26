@@ -201,6 +201,14 @@ export interface ProductionPolicy {
      */
     major_agreement?: boolean;
     /**
+     * ADR-0113 (live defect G22-1): under targeted re-evaluation, the voice judge re-runs after any patch that changed a quoted utterance, so its gated score is never carried across changed dialogue. Absent or false: the voice judge re-runs only by the targeted-dimension, open-major and anchoring rules.
+     */
+    voice_on_dialogue?: boolean;
+    /**
+     * ADR-0106 (live defects G19-1, G19-2): with major_agreement, the continuity and knowledge checkers' reviewer-class findings (major or blocking) join the second reading. When every blocking or major finding of an evaluation is either such a checker finding or a taste judge's reviewer-class major, each implicated checker reads the text once more too; a checker finding stands only when the second reading rates a finding of the same kind, or one whose span overlaps it, major or blocking — else it is a low-confidence doubt (docs/05-generation/02-evaluation-and-revision-pipeline.md §3) and is recorded as minor with a note. Findings outside the reviewer class (canon_contradiction, timeline_error, knowledge_leak, …), lint findings and carried findings leave the evaluation as it is. Absent or false: one checker reading decides.
+     */
+    checker_agreement?: boolean;
+    /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */
     judge_calibration?: {
@@ -223,6 +231,24 @@ export interface ProductionPolicy {
      * ADR-0097 (live defect G14-1): in a Korean project, a scene whose measured 그/그녀 rate is at or above the language layer's pronoun warn threshold (KO-PRN-RATE-1P for a first-person project when the layer has it, else KO-PRN-RATE — the operator's p90) is re-drafted once with that measure; the redraft is kept only when its rate is lower (pronoun_redraft).
      */
     pronoun_redraft?: boolean;
+    /**
+     * ADR-0112 (live defect G20-1): a scene draft longer than over_ratio × its planned length target (the stored plan's target, not the calibrated request) is re-drafted once with the measured and target lengths and the rule to cover every beat once within the target; the re-draft is kept only when it lands closer to the target. Absent: no length re-draft.
+     */
+    length_redraft?: {
+      /**
+       * Starting value 1.5 (G20a chapter 1: scene 2 drafted at 2.05× its target, the chapter at +40 %).
+       */
+      over_ratio: number;
+    };
+    /**
+     * ADR-0111 (live defect G16-2): a Korean scene draft with more quoted utterances that mix 존대 (합쇼체/해요체) and 반말 inside one quotation (the voice judge's deterministic register report) than max(1, floor(per_1k_max × its 자 / 1,000)) is re-drafted once with those utterances named and the one-level-per-addressee rule; the re-draft is kept only when it mixes fewer. Absent: no register re-draft.
+     */
+    register_redraft?: {
+      /**
+       * Starting value 0.725: the operator's p90 of mixed utterances per 1,000자 over the 656 Korean main-story chapters (run 3).
+       */
+      per_1k_max: number;
+    };
     /**
      * ADR-0088 (live defect G6-3): an assembled chapter's line that repeats the line right before it word for word, and is at least ten characters with a space in it, is dropped (a generation glitch; short sound lines such as '덜컹 덜컹.' may repeat on purpose), counted as repeated_line.
      */
@@ -337,6 +363,14 @@ export interface ProductionPolicy {
        * ADR-0086 (G5-2): scene must_not lines that forbid talking (e.g. no talk during a fight) are removed from scene plans, recorded as PLAN-DLG-02.
        */
       strip_talk_bans?: boolean;
+      /**
+       * ADR-0110 (live defect G7-4): a scene with no one beside its POV character on stage is not raised to chapter_min; its dialogue target is the planner's, at most solo_max (속마음 only), and the writer gets no quoted-line quota for it. The scenes with a partner carry the floor: each is raised to chapter_min, then together until the chapter's length-weighted share reaches it (at most 0.6 each). A partner placed by partner_required is placed first. Absent or false: every scene is raised to chapter_min.
+       */
+      solo_scenes?: boolean;
+      /**
+       * ADR-0110: the largest dialogue target of a scene with no partner under solo_scenes (starting value 0.05: the operator's 속마음 cap of about 2 lines per 1,000자).
+       */
+      solo_max?: number;
       /**
        * ADR-0086 (G5-2): the writer is given countable targets instead of a share: quoted dialogue lines per 1,000자 (median and minimum, the operator's p50 and p10) scaled by the scene's planned share against the operator's median share, and a ceiling of 속마음 lines per 1,000자 (the operator's p90).
        */

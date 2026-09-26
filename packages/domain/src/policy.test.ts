@@ -29,7 +29,12 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@26',
       'policy/standard@27',
       'policy/standard@28',
+      'policy/standard@29',
       'policy/standard@3',
+      'policy/standard@30',
+      'policy/standard@31',
+      'policy/standard@32',
+      'policy/standard@33',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -38,6 +43,70 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v33 is standard.v32 with the voice re-read on changed dialogue (ADR-0113)', () => {
+    const v32 = requirePolicy('policy/standard@32', policies);
+    const v33 = requirePolicy('policy/standard@33', policies);
+    expect(v33.evaluation).toEqual({ ...v32.evaluation, voice_on_dialogue: true });
+    const strip = (p: typeof v32) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v33)).toEqual(strip(v32));
+  });
+
+  it('standard.v32 is standard.v31 with the length re-draft (ADR-0112)', () => {
+    const v31 = requirePolicy('policy/standard@31', policies);
+    const v32 = requirePolicy('policy/standard@32', policies);
+    expect(v32.drafting).toEqual({ ...v31.drafting, length_redraft: { over_ratio: 1.5 } });
+    const strip = (p: typeof v31) => {
+      const { version: _v, name: _n, content_hash: _h, drafting: _d, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v32)).toEqual(strip(v31));
+  });
+
+  it('standard.v31 is standard.v30 with the register re-draft (ADR-0111)', () => {
+    const v30 = requirePolicy('policy/standard@30', policies);
+    const v31 = requirePolicy('policy/standard@31', policies);
+    expect(v31.drafting).toEqual({ ...v30.drafting, register_redraft: { per_1k_max: 0.725 } });
+    const strip = (p: typeof v30) => {
+      const { version: _v, name: _n, content_hash: _h, drafting: _d, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v31)).toEqual(strip(v30));
+  });
+
+  it('standard.v30 is standard.v29 with solo scenes under the dialogue floor (ADR-0110)', () => {
+    const v29 = requirePolicy('policy/standard@29', policies);
+    const v30 = requirePolicy('policy/standard@30', policies);
+    expect(v30.planning.dialogue_floor).toEqual({
+      ...v29.planning.dialogue_floor,
+      solo_scenes: true,
+      solo_max: 0.05,
+    });
+    const strip = (p: typeof v29) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v30)).toEqual(strip(v29));
+    const { dialogue_floor: _a, ...plan30 } = v30.planning;
+    const { dialogue_floor: _b, ...plan29 } = v29.planning;
+    expect(plan30).toEqual(plan29);
+  });
+
+  it('standard.v29 is standard.v28 with checker agreement (ADR-0106)', () => {
+    const v28 = requirePolicy('policy/standard@28', policies);
+    const v29 = requirePolicy('policy/standard@29', policies);
+    expect(v29.evaluation).toEqual({ ...v28.evaluation, checker_agreement: true });
+    const strip = (p: typeof v28) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v29)).toEqual(strip(v28));
+    expect(v29.gates).toEqual(v28.gates);
+    expect(v29.override_matrix).toEqual(v28.override_matrix);
   });
 
   it('standard.v28 is standard.v27 with larger checker and extractor pack budgets (ADR-0101)', () => {

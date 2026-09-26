@@ -780,3 +780,134 @@ was granted five rounds (ADR-0098) on `f7271d1`.
 Credits at 23:15: ws1 7.02 %, ws2 1.61 %, ws3 56.74 %, ws4 21.88 % (`rate-limited`), ws5 2.38 %, ws6 3.66 %
 (`rate-limited`). ws5 and ws6 are new in this period. Against the 22:20 reading, G17a's acceptance and G18r's planning
 and five rounds cost about 8 points across the six workspaces.
+
+## 16. Run 3 — the resume point and the continuity checker's second opinion (2026-09-26, from 08:10 UTC)
+
+Run 3 started on `547741f` (the default branch after run 2's merge). The permanent database was reachable and
+migrated, and the bridge probe passed on all four classes. `novel:status` found more than run 2's handoff recorded,
+because run 2 kept going after its last report:
+
+| Project | Policy | State at 08:12 UTC |
+| --- | --- | --- |
+| G17a (academy) | `standard@28` | chapter 1 accepted (canon v3); chapter 2 `APPROVAL_BLOCKED` after its five rounds: v6 at 0 blocking / 1 major, a structure `excessive_exposition` that the agreement reading (ADR-0100) reproduced; all four gates passing (prose 87.7, structure 81.3, genre 80, voice 100) |
+| G18r (regression) | `standard@28` | chapter 1 `APPROVAL_BLOCKED` with its grant used up (5 of 5): v9 was approved at 0 / 0, its confirmation found 2 majors, and v10 and v11 each ended on a new continuity finding (v11: 1 blocking) |
+| G19r (regression) | `standard@28` | created by run 2 at 23:29 UTC and not in its handoff: chapter 1 `APPROVAL_BLOCKED` after five rounds, v6 at 0 / 2 (a continuity `inventory_impossible`, a prose `other`), all four gates passing |
+
+G17a's chapter 2 and G19r's chapter 1 were granted five rounds each (ADR-0098) at 08:20 UTC.
+
+**G18r, rounds r6–r10.** r5 v6 89 (0 / 1) → v7 91 (1 / 1) → v8 91 (0 / 2) → v9 91 **0 / 0, approved** → the confirmation of
+v9: 92 (0 / 2) → v10 92 (0 / 1) → v11 92 (1 / 0). 109 calls in all (109 attempts), 431,531 input / 40,257 output tokens,
+3,270 s (22:30–23:25 UTC). Every version from v7 on passed all four taste gates. The findings that stopped each version,
+read against its text:
+
+| Version | Finding | Reading |
+| --- | --- | --- |
+| v7 | continuity `timeline_error` (blocking): the landlord says “아침부터” on a call made before 23:10 | right: a time word the rewrite introduced |
+| v7 | knowledge `reader_knowledge_violation` (major): the hero sees through the broker's lowball, a secret scheduled for 화 6 | right, and planned: the contract's MH-2 has the hero face down the lowball in 화 1 (G19-3) |
+| v8 | continuity `numeric_inconsistency` (major): a threat to take less money from the deposit he is owed | right |
+| v8 | knowledge `knowledge_ignorance` (major): “생애 첫 시스템 상태창” for a regressor | right |
+| v9 (confirmation) | continuity `canon_contradiction` (major): the bible's “knows and lets it pass” against the extortion | right, and planned (G19-3) |
+| v10 | continuity `inventory_impossible` (major): the phone pushed across the counter rings in his pocket | right, a slip; major by the severity policy (§3 lists inventory mismatches) |
+| v11 | continuity `world_rule_violation` (blocking): the broker “has a rare skill” ten days before the system | right in wording (the same chapter says the skill has not awakened); blocking is above the policy's severity for a world rule |
+
+So the checker was right about the slips. What failed is the loop around it:
+
+- **G19-1: one reading does not establish a finding.** G17a chapter 2's v5 was read by the continuity checker after round
+  4 (23:40:47 UTC) with nothing above minor, and was approved. The confirmation read the same text 52 seconds later and
+  the checker raised a blocking `character_inconsistency`. G18r's v9: nothing in r8's reading, a major in the
+  confirmation's.
+- **G19-2: every confirmation contradicted the reading that approved.** G17a chapter 2 (v5: 0 / 0, then 1 blocking and 5
+  majors from four evaluators), G18r (v9: 0 / 0, then 2 majors). Every later round rewrote text for the new findings, and
+  every rewrite was read once more by a checker whose next reading found another slip.
+- **G19-3: a plan that contradicts its own schedule.** G18r's contract (MH-2) has the hero subdue the broker who lowballs
+  him in 화 1, while the bible schedules “the hero already sees through him” for 화 6 and records that he lets it pass. The
+  knowledge and continuity checkers raised it in v1, v4, v7 and v9; no revision can fix a contract.
+
+**Fixed in code.** G19-1 and G19-2 by ADR-0106 (`standard@29`): the continuity and knowledge checkers' reviewer-class
+findings join ADR-0100's second reading, and a finding the second reading does not reproduce is a minor doubt. Canon
+contradictions, timeline errors and leaks still block on one reading, so G19-3 still stops a chapter. ADR-0107 closes
+ADR-0103's deferred item: a resume after a rejected extraction asks the extractor again.
+
+**G19r's granted rounds (08:20–08:29 UTC)** ended the same way: v7 and v8 quarantined, v9 at 2 blocking, v10 at 1 blocking /
+1 major (all continuity `inventory_impossible`), v11 quarantined; 38 calls. **G18r and G19r stay as the record of
+`standard@28` at the grant cap, as G14a and G14r do for `standard@24`** (ADR-0108). The regression line continues on a
+fresh `standard@29` project.
+
+Credits at 08:12 UTC: ws1 10.97 %, ws2 3.29 %, ws3 59.40 %, ws4 23.18 %, ws5 5.16 %, ws6 8.20 % (none rate-limited).
+Against run 2's last reading (23:15 UTC) that is 16.87 points, spent by run 2 after its report (G17a chapter 2, G18r's
+granted rounds and G19r).
+
+## 17. G20a and G20r — chapter 1 on `standard@29` (08:47–09:30 UTC), and the next fixes
+
+Two fresh projects on `standard@29` (ADR-0106), from the same intakes as G17a (`ops/live-runs/phase-c-academy-intake.json`)
+and G18r / G19r (`ops/live-runs/phase-a-v7-intake.json`), the first concept approved, `--stop-after=5`, run in parallel
+from `/tmp/hoplite/live3` at `167b74d`.
+
+| | G20a (academy) | G20r (regression) |
+| --- | --- | --- |
+| r0 | v1 87 (1 / 4); 7,436자, +40.3 % | v1 87, **0 / 0** after the agreement readings (four one-reading findings recorded as minor); voice 69 against its gate of 76 |
+| Rounds | r1 quarantined, r2 89 (0 / 3), r3 quarantined (prose 23), r4 89 (0 / 3), r5 88 (0 / 4) | r1 and r2 quarantined, r3 87 (0 / 0, voice 70.5), r4 quarantined |
+| Stopped on | a length lint major (v6 7,437자, +40 %) with two continuity slips and one prose finding; the lint major kept ADR-0106 from applying | the voice gate alone (70.5 / 76), with every finding minor |
+| Length | v1 7,436 / 5,879자 (with / without spaces); v6 7,437 / 5,880 | v1 6,353 / 4,967; v4 (best) 6,353 |
+| Likeness (corpus:likeness, last version) | 60 | 45 (a quarantined version) |
+| Calls / tokens / time | 67 calls (67 attempts) / 305,843 in, 34,958 out / 2,021 s | 67 calls (67 attempts) / 302,863 in, 33,026 out / 1,933 s |
+
+**What `standard@29` changed.** In G20r the second readings did what ADR-0106 set out to do: the continuity checker's and
+the voice and genre judges' one-reading majors were re-read (`continuity:1:r2:agree`, `continuity:1:r3:agree`, …) and
+recorded as minor, and the chapter reached 0 / 0 in r0 and r3 — something no `standard@28` regression chapter did after
+its confirmation. What was left was measured, not read: the voice score.
+
+**Defects.**
+
+- **G20-1: a scene drafted at twice its length.** G20a's scene 2 came back at 5,421자 against 2,650 planned (scene 1 at
+  2,015). The chapter stayed at +40 % through five rounds; the scene rewrites the length rung sent were quarantined.
+  Fixed by ADR-0112 (`standard@32`): a scene over 1.5× its planned length is re-drafted once toward the target.
+- **G16-2 (open since G16r): the voice gate.** G20r's versions mixed 존대 and 반말 inside one quotation six times
+  (0.94 per 1,000자); the voice judge's register report caps `register_consistency` at 3 for such lines. The operator's
+  656 chapters, read with the same check: median 0 per chapter, p90 4, p90 0.725 per 1,000자. Fixed by ADR-0111
+  (`standard@31`): a scene above the operator's p90 is re-drafted once with those lines named.
+
+**Next projects.** G21r (regression, `standard@31`) from 09:24 and G22a (academy, `standard@32`) from 09:33 UTC, both
+`--stop-after=5 --auto-resume=6` (ADR-0109), from `/tmp/hoplite/live4` (`8104f82`) and `/tmp/hoplite/live3` (`c1beaf6`).
+
+Credits: 08:47 → 09:33 UTC, ws1 13.58 → 15.19 %, ws2 4.22 → 5.53 %, ws3 61.03 → 62.58 %, ws4 23.65 → 24.41 %, ws5 6.44 →
+9.99 %, ws6 9.79 → 12.13 % (11.12 points: both chapters, 134 calls, and the two new projects' planning). Run 3 so far:
+19.63 points since 08:12.
+
+## 18. G21r and G22a — chapter 1 on `standard@31` and `standard@32` (09:24–10:05 UTC)
+
+| | G21r (regression, `@31`) | G22a (academy, `@32`) |
+| --- | --- | --- |
+| Rounds | r0 v1 82 (0 / 2), voice 63.7 → r1 v2 83, **0 / 0**, voice 74.7 → r2–r5 quarantined or 0 / 0 at voice 70.3–74.7 | r0 v1 82 (0 / 2) → r2 v3 **approved** (0 / 0) → confirmation 0 / 2 → r5 v5 **approved**, overall 91, every gate passing → confirmation: voice 71.7 |
+| Stopped on | the voice gate (74.7 / 76) with 0 / 0 | the voice gate (71.7 / 76) at the confirmation |
+| Re-drafts | one register re-draft (mixed utterances 6 → 3 per chapter, inside the operator's p90) | none needed (4,824자 v1; scenes 1,797 and 3,027) |
+| Second readings | 15 `:agree` calls | 12 `:agree` calls |
+
+G21r's remaining voice findings (all minor after the second readings) are card deviations: a character carded as strict
+하십시오체 sneering in 반말, a verbal tic in another character's mouth. Both chapters were granted five rounds at 09:57 and
+10:06 UTC.
+
+**G22-1: an approval on a carried voice score.** G22a's v4 and v5 carried v3's voice reading because the r3 and r4
+patches aimed at structure; the confirmation's two readings of v5 averaged 71.7. Fixed by ADR-0113 (`standard@33`): the
+voice judge re-reads after any patch that changed dialogue.
+
+**The granted rounds (09:57–10:27 UTC).**
+
+- **G21r** (115 calls, 465,905 in / 43,791 out, 2,767 s in all): voice passed from r6 (76.9) and v8 was **approved** at 0 / 0
+  with every gate passing (voice 87.8). The confirmation found a real slip that the reproducing reading kept — the
+  hero's 7 million won goes into his coat pocket and comes out of a plastic bag — and a genre major; the reviser left the
+  slip in v9 and v10, while its rewrites changed the contracted closing status window (a contract failure) and, in v11,
+  had the unawakened hero kick a steel door off its hinges (G9-6 again). Stopped at the cap (1 / 1).
+- **G22a** (129 calls, 503,601 in / 46,240 out, 3,478 s in all): approved four times in all (v3, v5, v7, and v10 at overall
+  91, voice 95.7); every confirmation raised new majors. Stopped at the cap on one reproduced continuity
+  `power_rule_violation` (0 / 1).
+
+**Defects.** G21-1: a reproduced slip survives two patch rounds (the reviser rewrites elsewhere and breaks the contract's
+closing line instead). G22-2: an approval is followed by new, reproduced majors at the confirmation in every project —
+the confirmation reads the whole chapter fresh, the round's targeted readings do not. Both open.
+
+G21r and G22a stay as the record of `standard@31` and `standard@32` at the grant cap (ADR-0108). **G23r** (regression,
+`standard@33`) was started at 10:23 UTC from `/tmp/hoplite/live4` at `7719a2c` (`--stop-after=5 --auto-resume=6`).
+
+Credits 09:33 → 10:28 UTC: ws1 15.19 → 18.56 %, ws2 5.53 → 6.52 %, ws3 62.58 → 65.16 %, ws4 24.41 → 25.36 %, ws5 9.99 →
+15.62 %, ws6 12.13 → 16.45 % (17.84 points). Run 3 in all: 37.47 points since 08:12.

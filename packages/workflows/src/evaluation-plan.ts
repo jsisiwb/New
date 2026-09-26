@@ -143,6 +143,8 @@ export function planReevaluation(input: {
    * finding that blocks acceptance is re-checked on the new text instead of carried forever.
    */
   readonly openMajor?: ReadonlySet<EvaluatorName> | undefined;
+  /** ADR-0113 (G22-1): the patch changed a quoted utterance, so the voice judge re-runs instead of carrying its score. */
+  readonly dialogueChanged?: boolean | undefined;
 }): ReevaluationPlan {
   const carry = input.carry;
   if (input.reevaluation === 'full' || !carry || carry.patchesSinceFull >= input.smokeAfterPatches)
@@ -158,6 +160,7 @@ export function planReevaluation(input: {
       (e === 'contract_checker' && (carry.changedClaims || failedCriterion)) ||
       input.unanchored.has(e) ||
       input.openMajor?.has(e) === true ||
+      (input.dialogueChanged === true && e === 'voice_judge') ||
       !section ||
       typeof section.evaluator_call_id !== 'string';
     (must ? rerun : carried).push(e);
@@ -243,4 +246,13 @@ export function composeDimensionScore(
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
+}
+
+/** ADR-0113: whether two texts differ in any quoted utterance (“…”), compared as multisets. */
+export function dialogueChanged(before: string, after: string): boolean {
+  const lines = (t: string) =>
+    [...t.normalize('NFC').matchAll(/“[^”]*”/gu)].map((m) => m[0]).sort();
+  const a = lines(before);
+  const b = lines(after);
+  return a.length !== b.length || a.some((x, i) => x !== b[i]);
 }

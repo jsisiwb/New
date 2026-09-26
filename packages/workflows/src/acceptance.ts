@@ -237,7 +237,17 @@ export async function extractCanon(
         }
         return { rawItems, envelope, v: validateDelta(envelope) };
       };
-      let attempt = await extractOnce(`extract:${input.contract.chapter_number}`, '');
+      // ADR-0107: every rejection of this version's extraction is recorded, and the next attempt's activity ids carry
+      // its number, so a resume asks the extractor again instead of replaying the answers that were rejected.
+      const rejected = await ctx.pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM workflow_artifacts
+          WHERE project_id = $1 AND step = 'extract' AND kind = 'extraction_rejection'
+            AND payload->>'manuscript_version_id' = $2`,
+        [ctx.projectId, version.id],
+      );
+      const retry = Number(rejected.rows[0]?.n ?? '0');
+      const base = `extract:${input.contract.chapter_number}${retry > 0 ? `:retry${String(retry)}` : ''}`;
+      let attempt = await extractOnce(base, '');
       // ADR-0102 (G17-2): at most two repairs, as the gateway bounds its own — each with the answer's top-level errors,
       // each item's own errors and the schema's shapes for the types it used; a repaired answer is anchored,
       // envelope-checked and validated exactly like the first.
@@ -251,7 +261,7 @@ export async function extractCanon(
           .map((i) => (i as { type?: unknown }).type)
           .filter((t): t is string => typeof t === 'string');
         attempt = await extractOnce(
-          `extract:${input.contract.chapter_number}:repair${repair === 1 ? '' : String(repair)}`,
+          `${base}:repair${repair === 1 ? '' : String(repair)}`,
           extractionRepairNote(
             [...new Set(topLevel), ...extractionItemErrors(attempt.rawItems)],
             types,
@@ -280,12 +290,23 @@ export async function extractCanon(
         if (attempt.v.ok) recordNormalization('extraction_repair');
       }
       const v = attempt.v;
-      if (!v.ok)
+      if (!v.ok) {
+        await saveArtifact(ctx, {
+          step: 'extract',
+          kind: 'extraction_rejection',
+          key: `${version.id}:${String(retry)}`,
+          payload: {
+            manuscript_version_id: version.id,
+            attempt: retry,
+            errors: v.errors.slice(0, 40).map((e) => `${e.path} ${e.message}`),
+          },
+        });
         throw new WorkflowError(
           'EXTRACTION_REJECTED',
           `extractor output does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
           { step: 'extract', recommendedActions: ['regenerate'] },
         );
+      }
       const ref = await saveArtifact(ctx, {
         step: 'extract',
         kind: 'canon_delta',
