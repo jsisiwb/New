@@ -79,7 +79,7 @@ export interface IdentityCompositionOptions {
   /** `policy.identity.device_lexicon` (ADR-0084, U2): record the premise device from the intake. */
   readonly deviceLexicon?: boolean | undefined;
   /** `policy.identity.device_rules` (ADR-0090): the device rule's wording the identity records. */
-  readonly deviceRules?: 2 | undefined;
+  readonly deviceRules?: 2 | 3 | undefined;
   /** `policy.identity.protagonist_type` (ADR-0090): record the intake's protagonist type. */
   readonly protagonistType?: boolean | undefined;
 }
@@ -232,8 +232,8 @@ export function identityProfileFromIntake(
         ? { operator_exemplars: opts.operatorExemplars.map((e) => ({ ...e })) }
         : {}),
       ...(isKo && opts.deviceLexicon && device ? { story_device: device } : {}),
-      ...(isKo && opts.deviceLexicon && device && opts.deviceRules === 2
-        ? { story_device_rules: 2 as const }
+      ...(isKo && opts.deviceLexicon && device && opts.deviceRules
+        ? { story_device_rules: opts.deviceRules }
         : {}),
       ...(isKo && opts.protagonistType && protagonistTypeOf(intake)
         ? { protagonist_type: 'munchkin' as const }
@@ -269,7 +269,7 @@ export async function ensureProjectIdentity(
     genreLayers?: readonly string[] | undefined;
     voice?: VoiceProfile | undefined;
     deviceLexicon?: boolean | undefined;
-    deviceRules?: 2 | undefined;
+    deviceRules?: 2 | 3 | undefined;
     protagonistType?: boolean | undefined;
     /** Resolved only when the project has no pinned identity yet (it reads the corpus). */
     operatorExemplars?: (() => Promise<readonly OperatorExemplar[]>) | undefined;

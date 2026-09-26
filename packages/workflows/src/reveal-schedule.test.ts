@@ -6,7 +6,9 @@ import {
   readerStatus,
   renderRevealSchedule,
   revealSchedule,
+  secretDatesOf,
 } from './reveal-schedule.js';
+import { secretDatesKo } from '@yeonjae/context';
 
 // Synthetic one-line statements (test strings, not manuscript).
 const bible = {
@@ -170,5 +172,42 @@ describe('reveal schedule (U1, G5-1)', () => {
     });
     // A secret the narrator does not know keeps its date.
     expect(after.find((x) => x.localId === 'H2')).toMatchObject({ readerFrom: 40 });
+  });
+});
+
+describe('the schedule in the canon lines (ADR-0092, G9-1)', () => {
+  it('keys both dates by the NFC statement and renders them for the chapter', () => {
+    const dates = secretDatesOf([
+      {
+        localId: 'bad-ending',
+        statement: '원작 게임에서는 배드 엔딩을 맞는다.',
+        ownerIds: ['heroine'],
+        knowerIds: ['heroine', 'hero'],
+        layer: 'source_work',
+        readerFrom: 1,
+        othersFrom: 15,
+        narratorOwn: false,
+        narratorKnows: true,
+      },
+      {
+        localId: 'habit',
+        statement: '몰래 사탕을 먹는다.',
+        ownerIds: ['heroine'],
+        knowerIds: ['heroine'],
+        layer: 'current',
+        readerFrom: 8,
+        othersFrom: 8,
+        narratorOwn: false,
+      },
+    ]);
+    const known = dates.get('원작 게임에서는 배드 엔딩을 맞는다.');
+    expect(known).toEqual({ readerFrom: 1, othersFrom: 15 });
+    expect(secretDatesKo(known ?? {}, 1)).toBe(
+      '; 독자는 이미 안다(서술해도 됨); 다른 인물에게 15화 이전 공개 금지',
+    );
+    expect(secretDatesKo(dates.get('몰래 사탕을 먹는다.') ?? {}, 1)).toBe(
+      '; 독자에게 8화 이전 공개 금지; 다른 인물에게 8화 이전 공개 금지',
+    );
+    expect(secretDatesKo({}, 3)).toBe('; 독자에게 공개 일정 없음');
   });
 });

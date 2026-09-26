@@ -1,0 +1,159 @@
+=== scorecard r0 v1 overall={"score":88,"note_count":0,"major_count":7,"minor_count":13,"blocking_count":0}
+  section genre: score=85 passed=true issues=3
+  section prose: score=89.3 passed=true issues=7
+  section voice: score=65 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=2
+  section structure: score=87.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 0.9)
+      claim: 앞선 106문단에서 강민호가 세 번째 부하의 머리통을 밟아 기절시켰고 90문단에서 첫 번째 부하도 거품을 물고 고꾸라졌으나, 133문단에서는 부하들이 멀쩡히 의식을 차리고 바닥을 기어 물러나는 것으로 묘사되어 인물의 상태가 앞뒤가 맞지 않습니다.
+      quote: 방금 전까지 나를 비웃던 부하들은 피 묻은 입을 틀어막고 바닥을 기어 뒤로 물러났다.
+  [major/open] continuity injury_forgotten (judge:continuity_checker, confidence 0.95)
+      claim: 123-125문단에서 강민호가 서랍을 열려던 오태식의 손등을 구두 굽으로 짓밟고 오른팔을 등 뒤로 꺾어 부러뜨렸음에도, 166문단과 181문단에서는 심각한 부상을 입은 팔과 손에 대한 제약 묘사 없이 서류를 집어 들고 마우스를 움직여 송금을 완료한다고 서술되어 방금 전의 부상 설정이 잊혔습니다.
+      quote: 오태식이 마우스를 움직여 인터넷 뱅킹 송금 절차를 마쳤다.
+  [major/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 0.95)
+      claim: 1화.0 기준 정사에 따르면 오태식은 이미 강민호가 준 하급 마석과 장비를 가지고 뒷골목을 장악하고 있는 상태여야 합니다. 따라서 오태식이 자신에게 장비를 준 강민호를 전혀 모르는 사람처럼 묻는 것은 확정된 사실을 무시한 설정 충돌입니다.
+      quote: 내가 사장인데. 넌 누구냐?
+  [major/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 0.95)
+      claim: 정사(1화.0 기준)에서 강민호는 오태식에게 마석과 장비를 주어 초인 행세를 하게 만든 인물입니다. 그러나 강민호가 오태식을 그저 푼돈을 굴리는 사채업자로 생각하며 과거의 기억만으로 처음 찾아간 사냥감처럼 독백하는 것은 본인이 알고 있어야 할 현재의 설정을 무시한 것입니다.
+      quote: 지금은 그저 뒷골목에서 푼돈이나 굴리며 불법 사채를 일삼는 벌레들에 불과하겠지.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 상황이 완전히 정리되고 주인공이 퇴장하는 형태로 끝나 다음 화를 향한 궁금증이나 위기감이 부족하다.
+      quote: 대답을 기다리지 않고 피투성이가 된 사무실 문을 열어 나섰다.
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 녹화용 존댓말 질문에 대한 어색한 반말 단답
+      quote: “동의한다.”
+  [major/open] voice character_inconsistency (judge:voice_judge, confidence 0.9)
+      claim: 공포에 질려 항복한 상태임에도 '비굴한 합쇼체'가 아닌 건조한 반말 사용
+      quote: “거절하면?”
+=== scorecard r1 v2 overall={"score":87,"note_count":0,"major_count":5,"minor_count":14,"blocking_count":0}
+  section genre: score=85 passed=true issues=3
+  section prose: score=89.3 passed=true issues=7
+  section voice: score=69.4 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=85 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity injury_forgotten (judge:continuity_checker, confidence 1)
+      claim: 오태식은 직전 장면에서 구두 굽으로 손등을 무자비하게 짓밟히고(p123), 오른팔이 등 뒤로 꺾여 뼈가 부러지는 중상('우두둑', p124~125)을 입었습니다. 이 상태에서 자연스럽게 펜을 쥐고 서명(p179)하며 마우스를 움직여 송금 절차를 마치는(p181) 것은 물리적으로 개연성이 매우 떨어집니다. 또한, 손등에 부상을 입었으므로 카메라에 상처가 노출되어 합법적인 영상으로 위장하기도 어렵습니다.
+      quote: 오태식이 덜덜 떨리는 손으로 계약서를 집어 들고 서류의 항목을 소리 내어 읽어 내려갔다.
+  [major/open] knowledge reader_knowledge_violation (judge:knowledge_leak_checker, confidence 1)
+      claim: 오태식이 각성 능력이 없는 일반인이지만 강민호가 준 마석과 장비로 초인 행세를 한다는 설정은 2화 이전에는 독자에게 공개되어서는 안 되나, 주인공의 속마음 서술을 통해 1화에서 미리 누출되었습니다.
+      quote: 내가 직접 마석과 장비를 쥐여 주며 초인 행세를 시켰던 쓸 만한 장기말이기도 했지.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 하나의 에피소드가 남는 질문이나 새로운 위협 없이 깔끔하게 종결되어 연재물의 필수 장치인 절단 신공이 매우 약함.
+      quote: 대답을 기다리지 않고 피투성이가 된 사무실 문을 열어 나섰다.
+  [major/open] voice other (judge:voice_judge, confidence 0.9)
+      claim: 합법적 대출로 위장하기 위해 카메라 앞에서 질의응답을 하는 상황에서 강민호의 질문이 존댓말(강요받았습니까)에서 반말(송금도 본인 판단이고)로 갑자기 바뀝니다.
+      quote: “송금도 본인 판단이고?”
+  [major/open] voice other (judge:voice_judge, confidence 0.9)
+      claim: 영상 녹화 중 오태식이 강민호의 존댓말 질문에 '아니다', '그렇다' 식의 반말로 대답하여 합법적 서류 작성이라는 상황 연출과 어긋납니다.
+      quote: “아니다.”
+=== scorecard r2 v3 overall={"score":90,"note_count":0,"major_count":3,"minor_count":15,"blocking_count":2}
+  section genre: score=85 passed=true issues=3
+  section prose: score=89.3 passed=true issues=7
+  section voice: score=56.3 passed=false issues=4
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=90 passed=true issues=3
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity world_rule_violation (judge:continuity_checker, confidence 1)
+      claim: 회차 계약의 '절대 일어나면 안 되는 일(MNH-2)'에 따라 게이트 발현 전에 시스템 알림이나 상태창이 등장해서는 안 되며, 세계 규칙(rule_six)상 상태창은 첫 게이트 발생과 동시에 개방되는데 시스템 알림이 등장했습니다.
+      quote: [특정 조건이 달성되어 ‘최초의 게이트’ 생성이 앞당겨집니다.] [남은 시간 - 00 : 05 : 00]
+  [blocking/open] voice voice_drift (judge:voice_judge, confidence 1)
+      claim: 오태식의 대사가 설정(비굴하고 싹싹한 조폭)과 달리 시종일관 딱딱한 번역투 반말(해라체)로 일관합니다.
+      quote: “조건을 말해.”
+  [major/open] voice register_error (judge:voice_judge, confidence 1)
+      claim: 압도적인 무력으로 제압당해 목숨을 구걸해야 하는 처지임에도 반말을 유지하여 서열에 따른 말높이 변화가 반영되지 않았습니다.
+      quote: “거절하면?”
+  [major/open] voice register_error (judge:voice_judge, confidence 1)
+      claim: 동영상 녹화를 의식해 강민호가 존댓말로 묻는데, 오태식이 해라체로 대답하다가 나중에야 존댓말을 쓰는 등 말높이가 이유 없이 흔들립니다.
+      quote: “그렇다.”
+  [major/open] voice address_term_error (judge:voice_judge, confidence 1)
+      claim: 설정표에 명시된 오태식의 호칭('형님', '큰형님')이 전혀 등장하지 않습니다.
+      quote: “무슨 일을 시키려는 거냐?”
+=== scorecard r3 v4 (quarantined) overall={"score":90,"note_count":0,"major_count":7,"minor_count":10,"blocking_count":1}
+  section genre: score=70 passed=false issues=3
+  section prose: score=89.3 passed=true issues=7
+  section voice: score=60.7 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=90 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity world_rule_violation (judge:continuity_checker, confidence 1)
+      claim: 게이트 발현 전이므로 상태창이나 시스템 알림이 등장해서는 안 된다는 절대 금지 사항(MNH-2)을 위반했습니다. 직후에 환각으로 치부하는 서술이 이어지나, 시각적으로 시스템 알림이 떠오르는 연출 자체가 계약 위반입니다.
+      quote: 시야 한가운데로 기분 나쁜 핏빛 글씨가 떠올랐다.
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 0.9)
+      claim: 사무실 카메라에 '합법적인 대출 영상 증거'를 남기기 위해 [p167]부터 강민호와 오태식이 철저히 존댓말 문답을 주고받고 있었습니다. 그러나 녹화 마지막에 강민호가 돌연 반말 투로 묻고([p175]), 공포에 질린 오태식이 '바꾸지 않겠다'며 딱딱한 평어체로 답하는 것은 앞선 상황의 개연성을 깨뜨리며 캐릭터의 심리 상태와도 맞지 않습니다.
+      quote: 바꾸지 않겠다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: '발걸음은 ~ 뻗어가고 있었다'는 사물을 주어로 하는 번역투 문장이다. 주어를 생략하거나 '나는 ~ 향했다'로 고치는 것이 자연스럽다.
+      quote: 발걸음은 이미 먹잇감이 숨통을 내놓고 기다리는 영등포를 향해 뻗어가고 있었다.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 마지막 장면에서 새로운 위협(상태창 이상)이 나타나는 듯하다가 단순 환각으로 수습되고 애매한 속마음으로 끝나 다음 화에 대한 궁금증이 약해진다.
+      quote: 주머니 속 휴대전화 진동이 아니었다. 시야 한가운데로 기분 나쁜 핏빛 글씨가 떠올랐다. 눈을 한 번 깜빡이자 허공을 어지럽히던 붉은 잔상이 연기처럼 흩어졌다. 피비린내가 만들어 낸 단순한 환각.
+  [major/open] genre western_novel_drift (judge:genre_judge, confidence 0.9)
+      claim: 일본 서브컬처 관용구의 어색한 직역투 대사 사용
+      quote: “이자 쳐서 갚을 테니, 목숨은 씻어 놔라.”
+  [major/open] genre forbidden_development (judge:genre_judge, confidence 0.9)
+      claim: 독자에게 답답함을 주는 주인공의 억지스러운 장치 인식 지연
+      quote: 피비린내가 만들어 낸 단순한 환각.
+  [major/open] voice register_error (judge:voice_judge, confidence 1)
+      claim: 오태식이 폭력에 굴복하여 존댓말(p143)을 쓴 직후, 대출 조건을 물을 때는 상황에 맞지 않게 다시 반말(p146, p148, p156)을 씁니다.
+      quote: “그 돈을 그냥 내놓으라고?”
+  [major/open] voice register_error (judge:voice_judge, confidence 1)
+      claim: 카메라 앞에서 강압에 의해 존댓말로 문답을 주고받던 오태식이 마지막 다짐에서는 뜬금없이 반말을 씁니다.
+      quote: “바꾸지 않겠다.”
+=== scorecard r4 v5 (quarantined) overall={"score":80,"note_count":8,"major_count":8,"minor_count":9,"blocking_count":0}
+  section genre: score=100 passed=true issues=1
+  section prose: score=74.3 passed=false issues=18
+  section voice: score=60.7 passed=false issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=85 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity other (judge:continuity_checker, confidence 0.9)
+      claim: 강민호가 오태식을 무력으로 제압한 뒤 자신이 원하는 대출 조건을 강제하는 상황인데, 오태식에게 '조건을 말해'라고 지시하는 것은 이어지는 대화 흐름과 맞지 않습니다. 이후 대화에서 구체적인 조건(30억, 14일, 선이자 등)을 제시하는 쪽은 강민호이므로 화자의 의도와 대사가 모순됩니다.
+      quote: “조건을 말해.”
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '목 닦고 기다려라'를 어색하게 변형한 비문이다.
+      quote: 목숨은 씻어 놔라.
+  [major/open] prose register_error (judge:prose_judge, confidence 1)
+      claim: 구어체 대화에서 '동의해'나 '동의합니다'가 아닌 문어체를 사용하여 매우 기계적이다.
+      quote: “동의한다.”
+  [major/open] prose register_error (judge:prose_judge, confidence 1)
+      claim: 구어체 대화에서 쓰지 않는 딱딱한 문어체 대답이다.
+      quote: “아니다.”
+  [major/open] prose register_error (judge:prose_judge, confidence 1)
+      claim: 구어체 대화에서 쓰지 않는 딱딱한 문어체 대답이다.
+      quote: “그렇다.”
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: 무생물 주어를 사용한 영어 물주구문을 직역한 듯한 어색한 표현이다.
+      quote: 발걸음은 이미 먹잇감이 숨통을 내놓고 기다리는 영등포를 향해 뻗어가고 있었다.
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.9)
+      claim: 조폭 두목인 오태식의 대사가 시종일관 감정이 배제된 정돈된 반말로 일관되어, 설정된 '비굴하고 싹싹한 조폭 말투'가 드러나지 않고 주인공의 건조한 어조와 완전히 겹칩니다.
+      quote: “무슨 일을 시키려는 거냐?”
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 사채업자가 스스로 서류에 서명하는 합법적 증거를 남기고자 사무적인 하십시오체를 쓰던 강민호가, 녹화가 계속되는 도중에 갑자기 반말로 전환하여 연출의 의도를 스스로 깹니다.
+      quote: “송금도 본인 판단이고?”

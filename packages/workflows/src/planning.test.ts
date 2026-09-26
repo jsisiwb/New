@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { validateContract } from './planning.js';
+import { specCategoryOf, validateContract } from './planning.js';
 
 const CONTRACT = JSON.parse(
   readFileSync(
@@ -9,6 +9,23 @@ const CONTRACT = JSON.parse(
     'utf8',
   ),
 ) as Parameters<typeof validateContract>[0];
+
+describe('story-spec requirement categories (ADR-0099, G15-1)', () => {
+  it('keeps schema categories and reads an interpreter word as its nearest one', () => {
+    expect(specCategoryOf('forbidden_development')).toBe('forbidden_development');
+    expect(specCategoryOf(' Romance ')).toBe('romance');
+    // G15a's story spec: items/2/category was `relationship`.
+    expect(specCategoryOf('relationship')).toBe('character');
+    expect(specCategoryOf('world-building')).toBe('world');
+    expect(specCategoryOf('taboo')).toBe('forbidden_development');
+  });
+
+  it('falls back to the schema’s catch-all, and never promotes a sub-genre to the genre', () => {
+    expect(specCategoryOf('subgenre')).toBe('other');
+    expect(specCategoryOf('관계')).toBe('other');
+    expect(specCategoryOf(undefined)).toBe('other');
+  });
+});
 
 describe('contract length-unit consistency (ADR-0054)', () => {
   const knownEntities = new Set<string>([

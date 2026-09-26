@@ -1,0 +1,132 @@
+{
+  "project_id": "01a0da20-e0e9-7a56-bb3a-4e3a9e2db71d",
+  "title": "G16a 아카데미 standard27",
+  "policy": "policy/standard@27",
+  "lineage": {
+    "genres": [
+      "genre/academy@3",
+      "genre/harem@2",
+      "genre/regression@4"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/academy@3",
+    "output_language": "lang/ko@9"
+  },
+  "run": {
+    "status": "failed",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "PACK_FAILED",
+      "step": "pack",
+      "message": "critical (T1) context for pack.continuity_checker still needs 35114 tokens after the degradation ladder [none applicable] against a budget of 34000; T1 is never dropped — raise the budget or split the chapter's participant set",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "revalidate_contract"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "drafted",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 5245,
+    "chars_no_spaces": 4095,
+    "quoted_dialogue_lines": 37,
+    "quoted_inner_lines": 8,
+    "talk_share": 0.271,
+    "first_lines": [
+      "“퇴교 명령을 집행한다.”",
+      "차가운 선언과 함께 두루마리가 활짝 펼쳐졌다.",
+      "빳빳한 양피지 위로 붉은 밀랍 봉인이 으깨지며 바닥으로 떨어져 내렸다."
+    ],
+    "deviation_pct": -1,
+    "dialogue_lines_per_1k": 7.1
+  },
+  "last_version": {
+    "version_no": 1,
+    "status": "working",
+    "chars": 5245,
+    "chars_no_spaces": 4095,
+    "quoted_dialogue_lines": 37,
+    "quoted_inner_lines": 8,
+    "talk_share": 0.271,
+    "first_lines": [
+      "“퇴교 명령을 집행한다.”",
+      "차가운 선언과 함께 두루마리가 활짝 펼쳐졌다.",
+      "빳빳한 양피지 위로 붉은 밀랍 봉인이 으깨지며 바닥으로 떨어져 내렸다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.35,
+      "measured_share": 0.247,
+      "chars": 3519
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.3,
+      "measured_share": 0.322,
+      "chars": 1726
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "장면 1.6이나 1.7에 카일이 레오노라를 보며 원작에서의 암살 운명이나 마력 회로 불치병이라는 약점을 공략할 퀘스트로 짧게 상기하는 1인칭 속마음을 추가하세요.",
+      "kind": "structure_off",
+      "claim": "작가의 구조 목표에 따르면 히로인이 등장할 때 '주인공이 아는 그녀의 운명과 건드릴 약점이나 퀘스트'를 함께 제시해야 하나, 레오노라 등장 비트(1.6~1.7)에는 외모와 신분만 묘사되어 있고 카일이 그녀의 운명을 떠올리는 내용이 누락되어 있습니다.",
+      "target": "장면 1",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-DLG-02",
+      "target": "장면 1",
+      "message": "대화를 막는 금지 사항 1줄을 지웠다",
+      "repaired": true,
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-DLG-02",
+      "target": "장면 2",
+      "message": "대화를 막는 금지 사항 1줄을 지웠다",
+      "repaired": true,
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 1개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 75,
+      "first_person": 70
+    }
+  ],
+  "totals": {
+    "calls": 20,
+    "attempts": 25,
+    "failed_attempts": 6,
+    "tokens": {
+      "input": 159998,
+      "output": 35540
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T19:53:07.551Z",
+    "last_call_at": "2026-09-25T20:29:17.677Z",
+    "seconds": 2170
+  }
+}

@@ -1,0 +1,177 @@
+=== scorecard r0 v1 overall={"score":74,"note_count":0,"major_count":8,"minor_count":15,"blocking_count":4}
+  section genre: score=80 passed=true issues=3
+  section prose: score=73.3 passed=false issues=9
+  section voice: score=90.4 passed=true issues=3
+  section length: score=100 passed=true issues=1
+  section promises: score=0 passed=false issues=2
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=75.5 passed=false issues=3
+  section continuity: score=0 passed=false issues=4
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity canon_contradiction (judge:continuity_checker, confidence 1)
+      claim: 엘리스의 배드 엔딩에 대한 정보는 정사 설정상 15화 이전 공개가 금지되어 있으나, 1화 서술에서 독자에게 명시적으로 유출되었습니다.
+      quote: 지금이야 콧대 높은 1학년 수석이지만 2학기만 되어도 나락으로 떨어져 비참한 배드 엔딩을 맞을 운명이었다.
+  [blocking/open] continuity canon_contradiction (judge:continuity_checker, confidence 1)
+      claim: 엘리스가 스트레스로 막대사탕을 먹는 단것 중독자라는 사실은 8화 이전 공개가 금지되어 있으나, 1화 서술에서 직접적으로 공개되었습니다.
+      quote: 극심한 스트레스 탓에 남몰래 막대사탕을 씹어 먹은 흔적이 묻어난 것이다.
+  [blocking/open] continuity canon_contradiction (judge:continuity_checker, confidence 1)
+      claim: 카일 루멘의 불법 마약 복용(24화 이전 공개 금지)과 마수 타락(25화 이전 공개 금지)에 대한 핵심 스포일러가 1화에서 전부 유출되었습니다.
+      quote: 실력도 없으면서 불법 마약을 처먹고 마력을 뻥튀기하다가, 나중에 부작용으로 마수로 타락해 토벌당하는 그 쓰레기 선배였다.
+  [major/open] knowledge reader_knowledge_violation (judge:knowledge_leak_checker, confidence 0.95)
+      claim: 엘리스가 극심한 스트레스로 인해 남몰래 막대사탕을 먹으며 푸는 심각한 단것 중독자라는 설정은 8화부터 독자에게 공개되어야 할 비밀이나, 현재 시간선의 서술에서 그 사실이 그대로 명시되어 독자 지식 공개 일정을 위반했습니다.
+      quote: 극심한 스트레스 탓에 남몰래 막대사탕을 씹어 먹은 흔적이 묻어난 것이다.
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: 금지된 AI 상투구 '정적이 내려앉았다'가 쓰였습니다. 인물들의 구체적인 반응으로 묘사해야 합니다.
+      quote: 연무장 전체에 기괴한 정적이 내려앉았다.
+  [major/open] structure late_hook (judge:structure_judge, confidence 0.9)
+      claim: 첫 화면에서 인물의 처지나 걸린 판돈이 등장하지 않고 풍경과 배경 설명이 이어진다.
+      quote: 제1연무장을 가득 채운 백여 명의 신입생들이 뿜어내는 열기가 뜨거웠다.
+  [blocking/open] structure excessive_exposition (judge:structure_judge, confidence 0.95)
+      claim: 상황에 맞지 않게 등장인물의 미래 행적과 원작 설정을 연속된 서술 문단으로 길게 읊어 호흡이 처진다.
+      quote: 지금이야 콧대 높은 1학년 수석이지만 2학기만 되어도 나락으로 떨어져 비참한 배드 엔딩을 맞을 운명이었다.
+  [major/open] structure serial_drift (judge:structure_judge, confidence 0.85)
+      claim: 결정적 검사에서 대사 비중이 19%로 낮게 측정되었고, 서술에 지나치게 의존하여 극을 끌어간다.
+      quote: 나는 원작 게임의 빙의자다.
+  [major/open] genre terminology_violation (judge:genre_judge, confidence 0.9)
+      claim: 마법사 캐릭터에 잘못된 무력 용어(오러) 혼용
+      quote: 시퍼런 오러가 미친 듯이 솟구쳐 올랐다
+  [major/open] genre other (judge:genre_judge, confidence 0.9)
+      claim: 장르 관습에 어긋나는 억지스러운 반말 지적
+      quote: 저 오늘 입학했는데 왜 자꾸 반말이신지 모르겠네요.
+  [major/open] promise canon_contradiction (judge:promise_checker, confidence 0.95)
+      claim: 카일 루멘은 '2학년 마법부 수석'이자 마약을 먹고 '마력'을 뻥튀기한 인물로 소개되었음에도 불구하고, 직후 주인공을 위협하며 기운을 뿜어낼 때는 검사의 기운인 '오러'를 두른다고 묘사되었습니다. 마법사가 별도의 부연 설명 없이 오러를 사용하는 것은 독자들에게 설정 충돌이나 오기로 지적받기 쉽습니다.
+      quote: 단상의 바닥이 거미줄처럼 쩍 갈라지며 그의 몸 주위로 시퍼런 오러가 미친 듯이 솟구쳐 올랐다.
+  [major/open] promise canon_contradiction (judge:promise_checker, confidence 0.9)
+      claim: 주인공이 측정석을 칠 때 분명 '악력은 제로', '모기 한 마리도 잡지 못할 솜털 같은 터치', '살포시 갖다 대는 수준'이라며 힘을 전혀 주지 않았다고 묘사했으나, 돌이 부서진 직후에는 '999에 달하는 순수 근력을 계산에 넣지 못해 힘 조절에 실패했다'고 서술하여 앞뒤 묘사가 모순됩니다. 힘 자체를 가하지 않았는데 패시브 스탯이 높다는 이유만으로 물건이 파괴되는 것은 개연성에 어긋납니다.
+      quote: 마력을 억누르는 데만 집중하느라, 마찬가지로 999에 달하는 순수 근력을 완벽하게 계산에 넣지 못한 것이다.
+=== scorecard r1 v2 overall={"score":80,"note_count":0,"major_count":3,"minor_count":19,"blocking_count":2}
+  section genre: score=90 passed=true issues=2
+  section prose: score=71.7 passed=false issues=11
+  section voice: score=89.5 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=false issues=2
+  section knowledge: score=0 passed=false issues=2
+  section structure: score=87.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity world_rule_violation (judge:continuity_checker, confidence 0.9)
+      claim: 세계 규칙에 따르면 아카데미 내에서는 명목상 신분 차별을 금지하고 '모두 평어(높이지도 낮추지도 않는 말)를 써야 한다'고 명시되어 있습니다. 따라서 카일이 반말을 하는 것은 학칙 위반이 아니며, 류안이 반말 사용을 학칙 위반이라며 지적하는 것은 설정과 모순됩니다.
+      quote: 저 오늘 입학했는데 왜 자꾸 반말이신지 모르겠네요. 이거 아카데미 학칙 위반 아닙니까.
+  [blocking/open] knowledge reader_knowledge_violation (judge:knowledge_leak_checker, confidence 1)
+      claim: 엘리스가 단것 중독자라는 사실은 류안의 지식 목록에 없으며, 8화 이전에는 독자에게 공개가 금지된 설정임에도 주인공의 서술에서 사실 그대로 직접 진술되었습니다.
+      quote: 하지만 극심한 스트레스를 남몰래 막대사탕을 씹어 먹으며 푸는 중증 단것 중독자다.
+  [blocking/open] knowledge reader_knowledge_violation (judge:knowledge_leak_checker, confidence 1)
+      claim: 카일이 실력으로 수석을 차지한 것이 아니라 불법 마약을 복용해 마력을 증폭시켰다는 사실은 류안이 알 수 없는 지식이며, 24화 이전에 독자 공개가 금지된 설정임에도 주인공의 속마음을 통해 직접 진술되었습니다.
+      quote: 실력도 없으면서 불법 마약을 처먹고 마력을 뻥튀기하다가
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 엘리스와 카일 등 주요 인물이 등장할 때마다 주인공이 원작 게임의 미래 설정과 TMI를 3~4문단에 걸쳐 줄글로 설명하여 장면의 리듬이 무거워집니다.
+      quote: 나중엔 원인 불명의 통증 때문에 마력 회로까지 갉아먹히게 될 운명.
+  [major/open] promise canon_contradiction (judge:promise_checker, confidence 0.9)
+      claim: 카일 루멘의 주력 능력 묘사가 일관되지 않습니다. 카일은 '마법부 수석'으로 소개되었고 주변에서도 '마력의 폭풍'을 느낀다고 서술되었으나, 본인의 기세를 뿜어낼 때는 검사의 힘인 '오러'를 쓴다고 반복적으로 서술되어 마력과 오러의 설정이 혼용되고 있습니다.
+      quote: 단상의 바닥이 거미줄처럼 쩍 갈라지며 그의 몸 주위로 시퍼런 오러가 미친 듯이 솟구쳐 올랐다.
+=== scorecard r2 v3 (quarantined) overall={"score":82,"note_count":0,"major_count":5,"minor_count":17,"blocking_count":0}
+  section genre: score=80 passed=true issues=2
+  section prose: score=79.2 passed=true issues=11
+  section voice: score=94.9 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=1
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=85 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity world_rule_violation (judge:continuity_checker, confidence 0.9)
+      claim: 정사에 따르면 원작 게임 시스템을 반영한 상태창 스탯은 '근력, 민첩, 체력, 마력' 4가지이나, 원고의 상태창 표기에는 '체력' 항목이 누락되어 있습니다.
+      quote: [민첩: 999 (MAX)]
+  [major/open] knowledge reader_knowledge_violation (judge:knowledge_leak_checker, confidence 1)
+      claim: [공개 일정]에 따르면 엘리스 폰 클라이든이 스트레스를 막대사탕으로 푸는 단것 중독자라는 설정은 8화부터 독자에게 밝혀져야 합니다. 한 번의 에두른 암시가 아니라 주인공의 서술과 속마음을 통해 설정이 사실 그대로 직접 서술되었으므로 지식 누출에 해당합니다.
+      quote: 하지만 극심한 스트레스를 남몰래 막대사탕을 씹어 먹으며 푸는 중증 단것 중독자다.
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '옮겼다'의 오탈자입니다. 독자가 바로 댓글로 지적할 오류입니다.
+      quote: 단상 위로 걸음을 옮렸다.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 위협이 등장하는 절단이지만 주인공의 속마음으로 끝나면서 상황의 반전이나 강한 당김이 부족함
+      quote: ‘아, 진짜 귀찮게 하네.’
+  [major/open] genre repetitive_arc (judge:genre_judge, confidence 1)
+      claim: 측정석이 부서진 직후 조교, 신입생, 교수, 엘리스가 경악하는 반응 장치(extra_observer)가 p108~p112에 나온 뒤, p123~p128에서 거의 동일한 구도와 문장 구조로 불필요하게 반복되었습니다.
+      quote: 심지어 방금 전까지 나를 한심하게 여기던 수석 영애 엘리스마저 입을 살짝 벌린 채 굳어 있었다.
+=== scorecard r3 v4 (quarantined) overall={"score":78,"note_count":0,"major_count":4,"minor_count":17,"blocking_count":0}
+  section genre: score=85 passed=true issues=2
+  section prose: score=78.6 passed=true issues=9
+  section voice: score=89.5 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=77.5 passed=false issues=3
+  section continuity: score=0 passed=false issues=3
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: 류안은 단상에 올라온 이후 누구에게도 측정석이 불량품이라고 말한 적이 없는데, 이전에 말했던 것처럼 대사를 합니다.
+      quote: “거봐요. 제가 불량품이라고 했…….”
+  [major/open] prose other (judge:prose_judge, confidence 0.9)
+      claim: 한 목적어에 여러 수식어('거칠게 펄럭이는 화려한 금발을 털어내며', '오러를 두른 채 폭언을 쏟아내는')가 복잡하게 얽혀 있어 문장 구조가 부자연스럽습니다. 행동을 나누어 짧게 끊는 것이 좋습니다.
+      quote: 나는 거칠게 펄럭이는 화려한 금발을 털어내며 오러를 두른 채 폭언을 쏟아내는 카일의 앞을 마주 보았다.
+  [major/open] structure late_hook (judge:structure_judge, confidence 0.9)
+      claim: 도입부에 긴장감이나 목표가 제시되지 않고, 주인공의 피곤함과 연무장의 소음 등 일상적인 묘사로 10문단 이상을 소모해 초반 당김이 약하다.
+      quote: ‘아, 졸려 죽겠네.’ 시끌벅적한 제1연무장. 사방에서 웅성거리는 소리가 고막을 피곤하게 두드렸다.
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 엘리스와 카일이 등장할 때마다 원작 게임의 설정을 늘어놓는 서술 문단이 3문장 이상 연속되어 극적 긴장감을 떨어뜨린다.
+      quote: 원작 게임의 중간고사 히든 보스. 실력도 없으면서 무리하게 마력을 뻥튀기하다가, 나중에 부작용으로 마수로 타락해 토벌당하는 그 쓰레기 선배였다.
+=== scorecard r4 v5 overall={"score":84,"note_count":0,"major_count":5,"minor_count":17,"blocking_count":0}
+  section genre: score=80 passed=true issues=3
+  section prose: score=82.4 passed=true issues=8
+  section voice: score=93.9 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=1
+  section knowledge: score=0 passed=false issues=2
+  section structure: score=85 passed=true issues=3
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity world_rule_violation (judge:continuity_checker, confidence 1)
+      claim: 세계 규칙에 따르면 상태창 스탯 항목은 근력, 민첩, 체력, 마력 4가지로 이루어져야 하지만, 원고의 상태창 표기에서는 '체력' 항목이 누락되었습니다.
+      quote: [민첩: 999 (MAX)]
+  [major/open] continuity power_rule_violation (judge:continuity_checker, confidence 1)
+      claim: 세계 규칙의 상태창 표기 예시에서 특성의 정확한 명칭은 '나른한 지배자(EX)'로 설정되어 있으나, 원고에서는 '나태한 지배자(EX)'로 잘못 기재되었습니다.
+      quote: [특성: 나태한 지배자(EX)]
+  [major/open] knowledge reader_knowledge_violation (judge:knowledge_leak_checker, confidence 0.9)
+      claim: 독자에게 24화 이전까지 공개가 금지된 카일 루멘의 비밀('실력으로 2학년 수석을 차지한 것이 아니라, 수명이 깎이는 불법 금단 마약을 복용해 마력을 증폭시켜 왔다')이 주인공의 서술을 통해 독자에게 너무 일찍 직접적으로 진술되었습니다.
+      quote: 실력도 없으면서 금기된 힘을 탐하다가, 나중에 부작용으로 마수로 타락해 토벌당하는 그 쓰레기 선배였다.
+  [major/open] prose other (judge:prose_judge, confidence 0.9)
+      claim: 관형절이 과도하게 중첩되어 문장의 뜻이 한 번에 들어오지 않는 비문.
+      quote: 나는 거칠게 펄럭이는 화려한 금발을 털어내며 오러를 두른 채 폭언을 쏟아내는 카일의 앞을 마주 보았다.
+  [major/open] genre other (judge:genre_judge, confidence 0.9)
+      claim: 세계관의 신분제 및 학년 서열과 어긋나는 현대 한국식 대화 방식 혼입 (말높이 규칙 위반)
+      quote: 저 오늘 입학했는데 왜 자꾸 반말이신지 모르겠네요.
+=== scorecard r5 v6 (quarantined) overall={"score":79,"note_count":0,"major_count":3,"minor_count":17,"blocking_count":1}
+  section genre: score=75 passed=true issues=3
+  section prose: score=82.4 passed=true issues=9
+  section voice: score=89.5 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=2
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=75 passed=false issues=3
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity character_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 류안은 설정상 흑발을 가지고 있으나, 원고에서는 카일의 외형 특징인 '금발'을 류안 본인이 털어내는 것으로 잘못 묘사되어 있습니다.
+      quote: 나는 거칠게 흩날리는 금발을 대충 털어냈다.
+  [major/open] structure late_hook (judge:structure_judge, confidence 0.9)
+      claim: 첫 열 문단이 넘도록 긴장이나 판돈이 드러나지 않고 상황 묘사로만 이어집니다.
+      quote: 저 돌덩이를 쳐서 마력을 측정하고 1학년 반을 배정받는다.
+  [major/open] genre terminology_violation (judge:genre_judge, confidence 0.9)
+      claim: [FACT] 웹소설 관습상 마법사는 마력을, 기사는 오러를 씁니다. [EVIDENCE] 원문 [p134]에서 카일 루멘을 '마법부 수석'이라 칭해놓고 [p166]에서는 '오러'를 뿜어낸다고 서술하여 설정 어휘가 충돌했습니다.
+      quote: 그의 몸 주위로 시퍼런 오러가 미친 듯이 솟구쳐 올랐다.
+  [major/open] genre other (judge:genre_judge, confidence 0.95)
+      claim: [EVIDENCE] [p108]에서 교수진이 평가표를 채우고 있다고 명시했음에도, [p159]~[p171]에서 2학년 학생이 단상에 뛰어올라 살기를 뿜고 폭주하는 동안 아무도 제지하지 않는 것은 최소한의 개연성을 해칩니다.
+      quote: 네놈은 오늘 여기서 반 죽여놓고 직접 자백을 받아내 주마!

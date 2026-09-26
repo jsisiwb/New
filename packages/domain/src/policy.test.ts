@@ -20,6 +20,15 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@18',
       'policy/standard@19',
       'policy/standard@2',
+      'policy/standard@20',
+      'policy/standard@21',
+      'policy/standard@22',
+      'policy/standard@23',
+      'policy/standard@24',
+      'policy/standard@25',
+      'policy/standard@26',
+      'policy/standard@27',
+      'policy/standard@28',
       'policy/standard@3',
       'policy/standard@4',
       'policy/standard@5',
@@ -29,6 +38,171 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v28 is standard.v27 with larger checker and extractor pack budgets (ADR-0101)', () => {
+    const v27 = requirePolicy('policy/standard@27', policies);
+    const v28 = requirePolicy('policy/standard@28', policies);
+    expect(v28.context).toEqual({
+      ...v27.context,
+      input_budget_tokens: {
+        ...v27.context.input_budget_tokens,
+        'pack.continuity_checker': 48000,
+        'pack.extractor': 44000,
+      },
+    });
+    const strip = (p: typeof v27) => {
+      const { version: _v, name: _n, content_hash: _h, context: _c, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v28)).toEqual(strip(v27));
+    expect(v28.gates).toEqual(v27.gates);
+  });
+
+  it('standard.v27 is standard.v26 with major agreement (ADR-0100)', () => {
+    const v26 = requirePolicy('policy/standard@26', policies);
+    const v27 = requirePolicy('policy/standard@27', policies);
+    expect(v27.evaluation).toEqual({ ...v26.evaluation, major_agreement: true });
+    const strip = (p: typeof v26) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v27)).toEqual(strip(v26));
+    expect(v27.gates).toEqual(v26.gates);
+  });
+
+  it('standard.v26 is standard.v25 with story-spec categories normalized (ADR-0099)', () => {
+    const v25 = requirePolicy('policy/standard@25', policies);
+    const v26 = requirePolicy('policy/standard@26', policies);
+    expect(v26.planning).toEqual({ ...v25.planning, normalize_spec_categories: true });
+    const strip = (p: typeof v25) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v26)).toEqual(strip(v25));
+    expect(v26.gates).toEqual(v25.gates);
+  });
+
+  it('standard.v25 is standard.v24 with the pronoun redraft and device rules 3 (ADR-0097)', () => {
+    const v24 = requirePolicy('policy/standard@24', policies);
+    const v25 = requirePolicy('policy/standard@25', policies);
+    expect(v25.drafting).toEqual({ ...v24.drafting, pronoun_redraft: true });
+    expect(v25.identity).toEqual({ ...v24.identity, device_rules: 3 });
+    const strip = (p: typeof v24) => {
+      const { version: _v, name: _n, content_hash: _h, drafting: _d, identity: _i, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v25)).toEqual(strip(v24));
+    expect(v25.gates).toEqual(v24.gates);
+  });
+
+  it('standard.v24 is standard.v23 with arc-plan beat types and the pronoun band lint (ADR-0096)', () => {
+    const v23 = requirePolicy('policy/standard@23', policies);
+    const v24 = requirePolicy('policy/standard@24', policies);
+    expect(v24.planning).toEqual({ ...v23.planning, normalize_arc_beats: true });
+    expect(v24.evaluation).toEqual({ ...v23.evaluation, pronoun_band_lint: true });
+    const strip = (p: typeof v23) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _p, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v24)).toEqual(strip(v23));
+    expect(v24.gates).toEqual(v23.gates);
+  });
+
+  it('standard.v23 is standard.v22 with the talk band cap and variance-free weights (ADR-0095)', () => {
+    const v22 = requirePolicy('policy/standard@22', policies);
+    const v23 = requirePolicy('policy/standard@23', policies);
+    expect(v23.evaluation).toEqual({ ...v22.evaluation, talk_band_cap: true });
+    expect(v23.revision).toEqual({
+      ...v22.revision,
+      convergence: {
+        ...v22.revision.convergence,
+        net_improvement: { blocking_weight: 2, major_weight: 1, exclude_variance: true },
+      },
+    });
+    const strip = (p: typeof v22) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, revision: _r, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v23)).toEqual(strip(v22));
+    expect(v23.gates).toEqual(v22.gates);
+  });
+
+  it('standard.v22 is standard.v21 with owner names and arc-plan stances (ADR-0094)', () => {
+    const v21 = requirePolicy('policy/standard@21', policies);
+    const v22 = requirePolicy('policy/standard@22', policies);
+    expect(v22.context).toEqual({ ...v21.context, secret_names: true });
+    expect(v22.planning).toEqual({ ...v21.planning, normalize_arc_knowledge: true });
+    const strip = (p: typeof v21) => {
+      const { version: _v, name: _n, content_hash: _h, context: _c, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v22)).toEqual(strip(v21));
+    expect(v22.gates).toEqual(v21.gates);
+  });
+
+  it('standard.v21 is standard.v20 with the G10 fixes (ADR-0093)', () => {
+    const v20 = requirePolicy('policy/standard@20', policies);
+    const v21 = requirePolicy('policy/standard@21', policies);
+    expect(v21.planning).toEqual({ ...v20.planning, meeting_time_frames: true });
+    expect(v21.identity).toEqual({ ...v20.identity, language_layer: 'lang/ko@9' });
+    expect(v21.revision).toEqual({
+      ...v20.revision,
+      convergence: {
+        ...v20.revision.convergence,
+        length_protection: true,
+        net_improvement: { blocking_weight: 2, major_weight: 1 },
+      },
+      ladder: { ...v20.revision.ladder, switch_rung: true, length_to_scene: true },
+    });
+    const strip = (p: typeof v20) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        identity: _i,
+        revision: _r,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v21)).toEqual(strip(v20));
+    expect(v21.gates).toEqual(v20.gates);
+  });
+
+  it('standard.v20 is standard.v19 with the G9 fixes (ADR-0092)', () => {
+    const v19 = requirePolicy('policy/standard@19', policies);
+    const v20 = requirePolicy('policy/standard@20', policies);
+    expect(v20.planning).toEqual({
+      ...v19.planning,
+      reveal_schedule: { ...v19.planning?.reveal_schedule, canon_lines: true },
+    });
+    expect(v20.identity).toEqual({ ...v19.identity, voice_profile: 'voice/operator@3' });
+    expect(v20.revision).toEqual({
+      ...v19.revision,
+      convergence: { ...v19.revision.convergence, score_attribution: true },
+      ladder: {
+        ...v19.revision.ladder,
+        spanless_to_scene: true,
+        no_repeat: true,
+        rewrite_checks: true,
+      },
+    });
+    const strip = (p: typeof v19) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _p,
+        identity: _i,
+        revision: _r,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(v20)).toEqual(strip(v19));
+    expect(v20.gates).toEqual(v19.gates);
   });
 
   it('standard.v19 is standard.v18 with the G8 fixes (ADR-0090)', () => {

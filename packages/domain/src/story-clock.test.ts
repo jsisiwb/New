@@ -4,6 +4,7 @@ import {
   compareNarrative,
   compareWorld,
   narrativeOrd,
+  storyPresentEnd,
   withinValidity,
   type StoryClock,
 } from './story-clock.js';
@@ -16,6 +17,16 @@ const c = (chapter_no: number, ordinal: number, extra: Partial<StoryClock> = {})
 });
 
 describe('StoryClock (ADR-0040)', () => {
+  it('a chapter’s own story-present reaches at least its last paragraph (ADR-0104)', () => {
+    // G17a's contract planned 1.0 → 1.1; its extractor dated a relationship from 1.2 in a chapter of many paragraphs.
+    expect(storyPresentEnd(c(1, 1), 1, 150)).toEqual(c(1, 150));
+    // The fixture's 1.99 window over a 59-paragraph chapter stands, so 1.100 is still after it.
+    expect(storyPresentEnd(c(1, 99), 1, 59)).toEqual(c(1, 99));
+    expect(narrativeOrd(c(1, 100)) > narrativeOrd(storyPresentEnd(c(1, 99), 1, 59))).toBe(true);
+    // A window ending in another chapter's story-present is not this chapter's to widen.
+    expect(storyPresentEnd(c(0, 3), 1, 150)).toEqual(c(0, 3));
+  });
+
   it('narrative order is total and uses the derived ord key', () => {
     expect(narrativeOrd(c(9, 46))).toBe(9_000_046);
     expect(compareNarrative(c(9, 46), c(9, 80))).toBe(-1);

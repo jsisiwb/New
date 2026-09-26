@@ -21,6 +21,7 @@ export * from './run-report.js';
 export * from './blind-packet.js';
 export * from './fix-rates.js';
 export * from './reveal-schedule.js';
+export * from './ladder.js';
 export * from './plan-prevention.js';
 export * from './relint.js';
 export * from './run-heartbeat.js';

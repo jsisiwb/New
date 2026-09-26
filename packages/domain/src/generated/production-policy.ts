@@ -40,6 +40,26 @@ export interface ProductionPolicy {
        * @minItems 1
        */
       scene_rewrite_kinds: [string, ...string[]];
+      /**
+       * ADR-0092 (live defect G9-4): a judge's blocking or major finding with no quote (a failed contract criterion such as an opening requirement) joins the scene-rewrite findings; its scene is the one holding the paragraph its claim names ([pN]), else the first scene for an opening claim and the last for a cut or ending claim. Absent or false: such a finding stays untargeted while quoted findings exist.
+       */
+      spanless_to_scene?: boolean;
+      /**
+       * ADR-0092 (live defect G9-5): after a quarantined round, a round that would send the same targets to the same parent at the same rung escalates instead — a patch round to a scene rewrite of the scene holding most targets (while max_scene_rewrites allows), with the rejected attempt's reasons in the writer's note; a scene rewrite, or a patch with no rewrite left, ends the revision loop (needs_attention with the closest version). Absent or false: the round repeats.
+       */
+      no_repeat?: boolean;
+      /**
+       * ADR-0092 (live defect G9-7): a scene rewrite gets the drafting pass's deterministic checks before any judge reads it — quote marks folded as in drafting, lines repeating a line elsewhere in the chapter dropped, and in a first-person Korean project a third-person drift (thirdPersonDrift) re-drafted once, the redraft kept only when it no longer drifts. The rewritten scene's own text also replaces the old one for locating scene ranges in later rounds. Absent or false: the rewrite is used as returned.
+       */
+      rewrite_checks?: boolean;
+      /**
+       * ADR-0093 (live defect G10-4): with no_repeat, a round on the parent and targets of a quarantined attempt takes the rung not yet tried there — a patch round after a failed scene rewrite, a scene rewrite after a failed patch round while max_scene_rewrites allows — and once both failed it retries the rung with the fewest introduced findings, the rejected attempts' reasons in the note, instead of ending the loop; rounds end at max_rounds. Absent or false: no_repeat as ADR-0092 decides it.
+       */
+      switch_rung?: boolean;
+      /**
+       * ADR-0093 (live defect G10-3): an open length finding (the chapter outside its length band) is answered by rewriting the scene furthest from its planned length, told its target in 자, while max_scene_rewrites allows. Absent or false: the finding stays untargeted while quoted findings exist.
+       */
+      length_to_scene?: boolean;
     };
     /**
      * ADR-0087 (STEP 3): patches drafted per cluster of a multi-patch round; the one that brings the fewest new lint pattern hits (번역투 markers, AI stock phrases, calques) into its span is kept before any judge runs, the first on a tie. Absent or 1: one patch per cluster, as before.
@@ -90,6 +110,25 @@ export interface ProductionPolicy {
        * ADR-0086: a version that becomes approvable after a targeted re-evaluation is re-evaluated by every evaluator before approval; it is approved only if the full scorecard passes too. Absent or false: the targeted scorecard decides.
        */
       confirm_full?: boolean;
+      /**
+       * ADR-0092 (live defect G9-3): with span_attribution, a blocking or major finding whose dimension and kind stood open on the parent is carried, not introduced, even where the patch rewrote the passage it now quotes; and a gated dimension whose score fell with no blocking/major finding introduced on it, ending no more than regression_tolerance_points below its gate, moved by judge variance on shared text — it is neither a protected regression nor a targeted worsening. Absent or false: score changes are read as ADR-0086 reads them.
+       */
+      score_attribution?: boolean;
+      /**
+       * ADR-0093 (live defect G10-2): a revision whose parent's length section passed fails its regression check (protection `length`) when the revision's length section fails — a length finding carries no quote, so no other check sees a rewrite that cuts a quarter of the chapter. Absent or false: length is judged only at approval.
+       */
+      length_protection?: boolean;
+      /**
+       * ADR-0093 (live defects G10-4, G9a r2, G10r r2): a revision whose open blocking and major findings weigh less than its parent's (blocking_weight per blocking finding, major_weight per major) is kept even when it wrote a new finding, which becomes a target of the next round; the hard protections still fail it — output language, the translation, Westernization and register kind guards, the length band, a gated dimension that regressed, a missing or dropped gated dimension. Absent: every new blocking/major kind fails the check (ADR-0014).
+       */
+      net_improvement?: {
+        blocking_weight: number;
+        major_weight: number;
+        /**
+         * ADR-0095: the revision's weight leaves out findings of a new kind on text both versions share (judge variance on shared text, as span attribution reads it); a carried or introduced finding still counts.
+         */
+        exclude_variance?: boolean;
+      };
     };
     /**
      * ADR-0077 (V1): a revision round asks the reviser for one patch per cluster of the targeted issues' spans (issues within merge_gap_chars of each other share a cluster; at most max_patches clusters, never more than max_patches_per_round) instead of one patch over the union of every span, and applies the usable patches together as one revision. A patch that cannot be anchored or validated is recorded and dropped; the round fails only when none is usable. Absent: one patch over the union of the targeted spans.
@@ -150,6 +189,18 @@ export interface ProductionPolicy {
      */
     pronoun_band_cap?: boolean;
     /**
+     * ADR-0095: in a chapter whose measured talk share (dialogue and 속마음) is at or above the language layer's talk warn threshold — the operator's own p10 (KO-TALK-SHARE-1P in first person) — a judge's blocking or major finding about the amount of dialogue is recorded as minor; below it the judge's severity stands. Absent or false: the judge's severity always stands.
+     */
+    talk_band_cap?: boolean;
+    /**
+     * ADR-0096 (live defect G12-1): in a Korean chapter whose measured 그/그녀 rate is below the language layer's pronoun warn threshold (KO-PRN-RATE-1P for a first-person project when the layer has it, else KO-PRN-RATE — the operator's p90), each per-hit pronoun marker (TRN-KO-14) is recorded as a note, which keeps its span and costs the prose lint composite nothing, and the prose judge's lint digest names the band in one line instead of listing the hits; at or above the threshold every hit stays minor and the rate rule's own finding stands. Absent or false: every hit is minor inside the band as well.
+     */
+    pronoun_band_lint?: boolean;
+    /**
+     * ADR-0100 (live defect G14-4): when every blocking or major finding of an evaluation is a reviewer-class major raised by a taste judge (prose, structure, genre, voice or repetition) that ran in it, each such judge reads the text once more; a major stands only when the second reading rates a finding of its kind major or blocking, else it is recorded as minor with a note, and the two readings' rubric sub-scores and judge scores are averaged. A blocking finding, a checker's, a lint's or a carried finding leaves the evaluation as it is. Absent or false: one reading decides.
+     */
+    major_agreement?: boolean;
+    /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */
     judge_calibration?: {
@@ -168,6 +219,10 @@ export interface ProductionPolicy {
      * ADR-0090 (live defect G8-5): in a Korean first-person project, a scene whose narration names the POV character as subject or object at least three times and says ‘나’ at most once was narrated in the third person; it is re-drafted once with that measure and the redraft is kept only when it no longer drifts, counted as pov_redraft. KO-POV-01 reads the whole chapter, so one first-person scene hid two third-person ones. Absent or false: no per-scene check.
      */
     pov_redraft?: boolean;
+    /**
+     * ADR-0097 (live defect G14-1): in a Korean project, a scene whose measured 그/그녀 rate is at or above the language layer's pronoun warn threshold (KO-PRN-RATE-1P for a first-person project when the layer has it, else KO-PRN-RATE — the operator's p90) is re-drafted once with that measure; the redraft is kept only when its rate is lower (pronoun_redraft).
+     */
+    pronoun_redraft?: boolean;
     /**
      * ADR-0088 (live defect G6-3): an assembled chapter's line that repeats the line right before it word for word, and is at least ten characters with a space in it, is dropped (a generation glitch; short sound lines such as '덜컹 덜컹.' may repeat on purpose), counted as repeated_line.
      */
@@ -217,6 +272,10 @@ export interface ProductionPolicy {
        * ADR-0090 (live defect G8-1): with narrator_knowledge, a present-timeline secret (knowledge layer current) the first-person narrator knows at the start — a rival's habit or a classmate's side business he knows from the game or a prior life — is the reader's from 화 1 as well, unless the bible gives it a reader date; the other characters keep the bible's date. Absent: only prior-life and source-work secrets are.
        */
       narrator_current_knowledge?: boolean;
+      /**
+       * ADR-0092 (live defect G9-1): a Korean pack's canon lines render each secret with the schedule's two dates (whether the reader already knows it or from which 화; from which 화 the other characters may learn it) instead of the bible's single reveal chapter, so the writer and every checker read one schedule. Absent or false: the bible's reveal chapter, as before.
+       */
+      canon_lines?: boolean;
     };
     /**
      * ADR-0086 (U7, U8): before any drafting call the contract and scene plans are checked deterministically for self-consistency (participants, the final scene ending on the hook, dialogue beats with a partner, length) and by a plan_critic call (reveal safety, repeated exposition, character state against the schedule, the operator's structure targets). Blocking or major findings send the scene plan back to the scene planner with the findings, at most max_repairs times; the findings are recorded with the plan.
@@ -232,6 +291,22 @@ export interface ProductionPolicy {
      * ADR-0089 (live defect G7-3): a cast register whose since_chapter is N ≥ 1 (the 화 in which the relationship begins — a first meeting, becoming a disciple or a subordinate) is planned, not seeded as canon: the voice judge's 호칭 matrix leaves it out before 화 N and marks it as beginning in 화 N, and canon records the relationship from the accepted text. Absent or false: every register is canon from before 화 1, so a checker demands the settled register (사부님, 형님) from the first line of the chapter in which the relationship forms.
      */
     register_time_frames?: boolean;
+    /**
+     * ADR-0093 (live defect G10-1): with time_frames, a bible secret whose statement names a character its owner first meets in 화 N (the relationship's since_chapter, ADR-0089) becomes true no earlier than 화 N + 1 unless the designer dated it later, so the packs of 화 N do not present the aftermath of that meeting as already known. Absent or false: only the designer's true_from_chapter dates a secret.
+     */
+    meeting_time_frames?: boolean;
+    /**
+     * ADR-0094 (live defect G11-1): an arc plan's planned knowledge changes keep only the stances the schema knows — an exact value stays, a planner's alias (believes) becomes its nearest stance (suspects), an unknown one drops that change — instead of failing the arc plan (ARC_PLAN_INVALID, which a resume replays from the recorded answer). Absent or false: the arc plan is validated as written.
+     */
+    normalize_arc_knowledge?: boolean;
+    /**
+     * ADR-0096 (live defect G13-1): an arc plan's beat types are read as the schema knows them — an exact type stays, a planner's word (cliffhanger, twist, payoff) becomes its nearest type, a beat with an unreadable type is kept as escalation (the type is a label nothing downstream computes with) — instead of failing the arc plan (ARC_PLAN_INVALID, which a resume replays from the recorded answer). Absent or false: the arc plan is validated as written.
+     */
+    normalize_arc_beats?: boolean;
+    /**
+     * ADR-0099 (live defect G15-1): a story spec's requirement categories are read as the schema knows them — an exact category stays, an interpreter's word (relationship, setting, theme) becomes its nearest category, anything else becomes other, the schema's catch-all — instead of failing the spec (SPEC_INVALID at novel:start, which a retry replays from the recorded answer). The requirement's text, kind and scope are untouched. Absent or false: the spec is validated as written.
+     */
+    normalize_spec_categories?: boolean;
     /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
      */
@@ -290,9 +365,9 @@ export interface ProductionPolicy {
      */
     protagonist_type?: boolean;
     /**
-     * ADR-0090 (live defect G8-2): under device_lexicon a new project records story_device_rules 2 — a game-possession serial may call the game itself the 원작, as the operator does; the other devices' wording is unchanged. Absent: the ADR-0084 wording, which forbids 원작 outright in a game-possession serial.
+     * ADR-0090 (live defect G8-2): under device_lexicon a new project records story_device_rules 2 — a game-possession serial may call the game itself the 원작, as the operator does; the other devices' wording is unchanged. 3 (ADR-0097, live defect G14-2): wording 2, and in the possession devices only the hero knows the world is a game or a novel — their meta words (게임, 플레이어, 엑스트라, 원작 …) stay in the hero's narration and 속마음, never in another character's line. Absent: the ADR-0084 wording, which forbids 원작 outright in a game-possession serial.
      */
-    device_rules?: 2;
+    device_rules?: 2 | 3;
     /**
      * ADR-0089 (live defect G7-2): genre overlay versions a new Korean project composes instead of the newest one it would take without asking, e.g. genre/regression@4 (the 회빙환 overlay with device variants, read in the words of the premise device identity.device_lexicon records). A listed overlay applies only when the intake selects its genre. Absent: genre/regression up to @3, as before.
      */
@@ -424,6 +499,10 @@ export interface ProductionPolicy {
     active_constraints_cap_tokens: number;
     writer_input_budget_tokens?: number;
     l1_summary_max_words?: number;
+    /**
+     * ADR-0094 (live defect G10-5): the canon lines name a secret's owners and knowers from the registry even when they are not in the chapter's cast, instead of their raw ids. Absent or false: names only for the chapter's cast, as before.
+     */
+    secret_names?: boolean;
     /**
      * ADR-0076: hierarchical story memory. With arc_summaries, when a chapter's arc starts, every earlier scheduled arc whose chapters are all accepted gets one arc summary (L2) from its accepted L1 summaries (the arc_summarizer role, at most l2_max_chars), and the story-so-far section gives the writer, the chapter planner and the continuity checker the L1 summaries of the last recent_chapters accepted chapters in blocks of ten and one L2 item for each older arc. Absent: the story so far is every L1 summary in blocks of ten (ADR-0061).
      */

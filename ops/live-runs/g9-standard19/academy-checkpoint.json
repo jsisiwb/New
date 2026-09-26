@@ -1,0 +1,372 @@
+{
+  "project_id": "01a0d86d-c0b0-7d1f-a924-94a0acbaf7c3",
+  "title": "G9 아카데미 standard19",
+  "policy": "policy/standard@19",
+  "lineage": {
+    "genres": [
+      "genre/academy@3",
+      "genre/harem@2",
+      "genre/regression@4"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/academy@3",
+    "output_language": "lang/ko@8"
+  },
+  "run": {
+    "status": "needs_attention",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "APPROVAL_BLOCKED",
+      "step": "approve",
+      "message": "version 01a0d88d-2f42-792b-991e-e25a1a60a950 has 0 blocking and 5 major issues; dimensions: prose 82.4/78 ok, structure 85/78 ok, genre 80/72 ok, voice 93.9/76 ok",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "regenerate",
+        "edit_manually",
+        "accept_with_override"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "revising",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 5952,
+    "chars_no_spaces": 4635,
+    "quoted_dialogue_lines": 42,
+    "quoted_inner_lines": 9,
+    "talk_share": 0.219,
+    "first_lines": [
+      "웅성웅성. 시끌벅적.",
+      "제1연무장을 가득 채운 백여 명의 신입생들이 뿜어내는 열기가 뜨거웠다.",
+      "입학식 직후에 치러지는 마력 측정 평가."
+    ],
+    "deviation_pct": 12.3,
+    "dialogue_lines_per_1k": 7.1
+  },
+  "last_version": {
+    "version_no": 6,
+    "status": "quarantined",
+    "chars": 5355,
+    "chars_no_spaces": 4203,
+    "quoted_dialogue_lines": 38,
+    "quoted_inner_lines": 11,
+    "talk_share": 0.226,
+    "first_lines": [
+      "‘아, 졸려 죽겠네.’",
+      "시끌벅적한 제1연무장.",
+      "사방에서 웅성거리는 소리가 고막을 피곤하게 두드렸다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.2,
+      "measured_share": 0.198,
+      "chars": 3725
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.4,
+      "measured_share": 0.255,
+      "chars": 2227
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "장면 1의 1번 비트를 학생들의 웅성거리는 소리나 류안의 나른한 대사 혹은 속마음으로 시작하도록 수정한다.",
+      "kind": "structure_off",
+      "claim": "구조 목표에 따르면 화의 첫 비트는 목소리(소리, 용어, 대사)로 열어야 하지만, 장면 1의 1번 비트는 거대한 마력 측정석 앞에 선 류안의 상황과 행동 묘사로 시작하고 있습니다.",
+      "target": "장면 1",
+      "severity": "major"
+    },
+    {
+      "fix": "엘리스가 등장하는 3번 비트에 그녀의 외모(은발 등) 묘사와 류안이 떠올리는 그녀의 예정된 불행한 운명(마력을 잃는 배드 엔딩)을 추가한다.",
+      "kind": "structure_off",
+      "claim": "구조 목표에 따르면 히로인 등장 시 외모 한두 조각, 집안과 위치, 주인공이 아는 그녀의 운명이나 비밀이 서술되어야 하나, 장면 1의 3번 비트에서 엘리스는 이름과 직위(수석)만 제시될 뿐 외모나 류안이 아는 그녀의 원작 속 배드 엔딩 설정이 누락되어 있습니다.",
+      "target": "장면 1",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 2개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 74,
+      "dimensions": {
+        "prose": {
+          "score": 73.3,
+          "passed": false
+        },
+        "structure": {
+          "score": 75.5,
+          "passed": false
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 90.4,
+          "passed": true
+        }
+      },
+      "scopes": [],
+      "blocking": 4,
+      "major": 8,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 1
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 80,
+      "dimensions": {
+        "prose": {
+          "score": 71.7,
+          "passed": false
+        },
+        "structure": {
+          "score": 87.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 89.5,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 2,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 2,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 2,
+      "version_no": 3,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 82,
+      "dimensions": {
+        "prose": {
+          "score": 79.2,
+          "passed": true
+        },
+        "structure": {
+          "score": 85,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 94.9,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 0,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 1
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 3,
+      "version_no": 4,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 78,
+      "dimensions": {
+        "prose": {
+          "score": 78.6,
+          "passed": true
+        },
+        "structure": {
+          "score": 77.5,
+          "passed": false
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 89.5,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 4,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 4,
+      "version_no": 5,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 84,
+      "dimensions": {
+        "prose": {
+          "score": 82.4,
+          "passed": true
+        },
+        "structure": {
+          "score": 85,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 93.9,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 1
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 5,
+      "version_no": 6,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 79,
+      "dimensions": {
+        "prose": {
+          "score": 82.4,
+          "passed": true
+        },
+        "structure": {
+          "score": 75,
+          "passed": false
+        },
+        "genre": {
+          "score": 75,
+          "passed": true
+        },
+        "voice": {
+          "score": 89.5,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 1,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 70,
+      "first_person": 80
+    },
+    {
+      "version_no": 2,
+      "status": "working",
+      "score": 80,
+      "first_person": 75
+    },
+    {
+      "version_no": 3,
+      "status": "quarantined",
+      "score": 60,
+      "first_person": 60
+    },
+    {
+      "version_no": 4,
+      "status": "quarantined",
+      "score": 85,
+      "first_person": 75
+    },
+    {
+      "version_no": 5,
+      "status": "working",
+      "score": 80,
+      "first_person": 75
+    },
+    {
+      "version_no": 6,
+      "status": "quarantined",
+      "score": 80,
+      "first_person": 75
+    }
+  ],
+  "totals": {
+    "calls": 83,
+    "attempts": 85,
+    "failed_attempts": 2,
+    "tokens": {
+      "input": 334809,
+      "output": 35390
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T11:57:50.258Z",
+    "last_call_at": "2026-09-25T12:38:29.878Z",
+    "seconds": 2440
+  }
+}

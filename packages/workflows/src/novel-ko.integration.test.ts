@@ -2419,3 +2419,765 @@ run(
     }, 300_000);
   },
 );
+
+run(
+  'Korean novel run under standard.v25: a scene above the pronoun warn line is re-drafted (ADR-0097)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G14a r0: 4.41 그/그녀 per 1,000자 against the first-person warn line 2.57. Each first draft opens with twelve
+    // pronoun lines (two G12a draft lines the prose judge quoted, alternating); the pronoun redraft answers without them.
+    const lines = [
+      '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.',
+      '그녀의 목소리는 방금 전 레이몬드를 꾸짖을 때보다 훨씬 더 매서웠다.',
+    ];
+    const pronounsFirst = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      const head = req.user.includes('대명사 다시 쓰기')
+        ? []
+        : Array.from({ length: 12 }, (_, i) => lines[i % 2] ?? '');
+      return { text: [...head, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return pronounsFirst(req, batchedScript(req, script(req)));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v25-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@25',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('re-drafts each pronoun-heavy scene once and keeps the redraft', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v25-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+      const redrafts = writers.filter((r) => (r.trace?.activityId ?? '').endsWith(':pronoun'));
+      expect(redrafts.length).toBeGreaterThan(0);
+      for (const r of redrafts) expect(r.user).toContain('대명사 다시 쓰기: 직전 초고는');
+      const drafts = await pool.query<{ text: string }>(
+        "SELECT payload->>'text' AS text FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scene_draft'",
+        [projectId],
+      );
+      expect(drafts.rows.length).toBeGreaterThan(0);
+      for (const d of drafts.rows) expect(d.text).not.toContain(lines[0]);
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v28: a chapter that passes its gates is polished and accepted (G17-1)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G17a: the chapter passed its confirmation, and the polish round then stopped with INTERNAL because the reviser
+    // was given the lint's minor findings without naming them as targets. One G12a draft line the prose judge quoted
+    // gives every scene a 번역투 marker for the polish round to address.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return withMarker(req, batchedScript(req, script(req)));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('runs the polish round on the lint findings and accepts chapter 1', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const run = await getNovelRun(pool, projectId);
+      expect(run?.last_error ?? null).toBeNull();
+      const polish = await pool.query<{ payload: { lint_before: number } }>(
+        "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'polish_report'",
+        [projectId],
+      );
+      expect(polish.rows.length).toBeGreaterThan(0);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v28: an extractor answer off the canon-delta schema is repaired once (ADR-0102)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G17a: the live extractor wrote event participants as bare ids. The first extraction here does the same; the
+    // repair call (activity `:repair`) answers with the script's own valid items.
+    const bareParticipants = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'canon_extractor' || !out || !('json' in out)) return out;
+      if (req.trace.activityId.endsWith(':repair')) return out;
+      const json = out.json as {
+        items?: { type?: string; payload?: { participants?: unknown[] } }[];
+      };
+      return {
+        json: {
+          ...json,
+          items: (json.items ?? []).map((i) =>
+            i.type === 'event' && Array.isArray(i.payload?.participants)
+              ? {
+                  ...i,
+                  payload: {
+                    ...i.payload,
+                    participants: i.payload.participants.map((p) =>
+                      p && typeof p === 'object' ? (p as { entity_id: string }).entity_id : p,
+                    ),
+                  },
+                }
+              : i,
+          ),
+        },
+      };
+    };
+    // The polish run's writer line, so the chapter reaches extraction the same way.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return bareParticipants(req, withMarker(req, batchedScript(req, script(req))));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-extract');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('re-asks the extractor with its errors and the schema shapes, and accepts chapter 1', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-extract-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      expect((await getNovelRun(pool, projectId))?.last_error ?? null).toBeNull();
+      const extractors = seen.filter((r) => r.trace?.role === 'canon_extractor');
+      const repairs = extractors.filter((r) => (r.trace?.activityId ?? '').endsWith(':repair'));
+      expect(repairs).toHaveLength(1);
+      expect(repairs[0]?.user).toContain('participants/0 must be object');
+      expect(repairs[0]?.user).toContain(
+        '"role!":"agent|patient|witness|speaker|hearer|mentioned"',
+      );
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v28: a field the extractor repair broke is taken back from the answer it repaired (ADR-0103)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G17a: the first extraction has bare-id participants (as in ADR-0102's run); the repair fixes them and writes
+    // `hypothesis_results` in the shape G17a's second repair invented, where the first answer had an empty list.
+    const drift = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'canon_extractor' || !out || !('json' in out)) return out;
+      const json = out.json as {
+        items?: { type?: string; payload?: { participants?: unknown[] } }[];
+      };
+      if (req.trace.activityId.endsWith(':repair'))
+        return {
+          json: {
+            ...json,
+            hypothesis_results: [
+              {
+                hypothesis_id: 'MH-1',
+                status: 'confirmed',
+                note: 'as designed',
+                evidence_quotes: [],
+              },
+            ],
+          },
+        };
+      return {
+        json: {
+          ...json,
+          items: (json.items ?? []).map((i) =>
+            i.type === 'event' && Array.isArray(i.payload?.participants)
+              ? {
+                  ...i,
+                  payload: {
+                    ...i.payload,
+                    participants: i.payload.participants.map((p) =>
+                      p && typeof p === 'object' ? (p as { entity_id: string }).entity_id : p,
+                    ),
+                  },
+                }
+              : i,
+          ),
+        },
+      };
+    };
+    // The polish run's writer line, so the chapter reaches extraction the same way.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return drift(req, withMarker(req, batchedScript(req, script(req))));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-restore');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('accepts chapter 1 after one repair, with the first answer’s hypothesis results', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-restore-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      expect((await getNovelRun(pool, projectId))?.last_error ?? null).toBeNull();
+      const activities = seen
+        .filter((r) => r.trace?.role === 'canon_extractor')
+        .map((r) => (r.trace?.activityId ?? '').replace(/^.*:(extract:)/u, '$1'));
+      expect(activities.filter((a) => a.includes(':repair'))).toEqual(['extract:1:repair']);
+      const delta = await pool.query<{ payload: { hypothesis_results?: unknown } }>(
+        `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'canon_delta'`,
+        [projectId],
+      );
+      expect(delta.rows.map((r) => r.payload.hypothesis_results)).toEqual([[]]);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v28: G17a’s delta shapes — a 1.0 → 1.1 window, a fact dated 1.2, a fact dated only by its item — commit (ADR-0104, ADR-0105)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    // G17a: the planner wrote story time 1.0 → 1.1, the extractor dated a relationship from 1.2 and gave two facts only
+    // their items' clocks.
+    const narrowWindow = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (!out || !('json' in out)) return out;
+      if (req.trace?.role === 'chapter_planner') {
+        const json = out.json as { story_time: { end: Record<string, unknown> } };
+        return {
+          json: {
+            ...json,
+            story_time: { ...json.story_time, end: { ...json.story_time.end, ordinal: 1 } },
+          },
+        };
+      }
+      if (req.trace?.role !== 'canon_extractor') return out;
+      const json = out.json as {
+        items: { evidence: unknown[]; payload: { participants?: { entity_id: string }[] } }[];
+      };
+      const [event] = json.items;
+      const hero = event?.payload.participants?.[0]?.entity_id;
+      if (!event || !hero) return out;
+      const at = { chapter_no: 1, ordinal: 2, precision: 'exact' };
+      const fact = {
+        local_id: 'f-seat',
+        type: 'fact',
+        op: 'assert',
+        frame: 'canonical',
+        confidence: 1,
+        importance: 'minor',
+        story_clock: at,
+        payload: { entity_id: hero, attribute: 'status.seat', value: 'front_row', valid_from: at },
+        evidence: event.evidence,
+      };
+      const later = { chapter_no: 1, ordinal: 3, precision: 'exact' };
+      const undated = {
+        ...fact,
+        local_id: 'f-class',
+        story_clock: later,
+        payload: { entity_id: hero, attribute: 'status.class', value_text: 'F' },
+      };
+      return { json: { ...json, items: [...json.items, fact, undated] } };
+    };
+    // The polish run's writer line, so the chapter reaches extraction the same way.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) =>
+      narrowWindow(req, withMarker(req, batchedScript(req, script(req)))),
+    );
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-window');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('commits the fact from 1.2 and the undated fact at its item’s clock, and accepts chapter 1', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-window-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      expect((await getNovelRun(pool, projectId))?.last_error ?? null).toBeNull();
+      const contract = await pool.query<{ payload: { story_time: { end: { ordinal: number } } } }>(
+        `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'chapter_contract'`,
+        [projectId],
+      );
+      expect(contract.rows.map((r) => r.payload.story_time.end.ordinal)).toEqual([1]);
+      const facts = await pool.query<{ attribute: string; ord: string }>(
+        `SELECT attribute, valid_from_ord::text AS ord FROM facts
+          WHERE project_id = $1 AND attribute IN ('status.seat', 'status.class') ORDER BY attribute`,
+        [projectId],
+      );
+      expect(facts.rows).toEqual([
+        { attribute: 'status.class', ord: '1000003' },
+        { attribute: 'status.seat', ord: '1000002' },
+      ]);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v20: a quoteless contract finding is rewritten in the scene it names (ADR-0092)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // G9r: the contract checker failed an opening criterion with no quote in every scorecard, and no round could
+    // target it. Here the first evaluation fails it (the claim names [p1] and the opening); later ones pass it.
+    let failedOnce = false;
+    const openingCriterion = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'contract_checker' || failedOnce) return out;
+      failedOnce = true;
+      return {
+        json: {
+          criteria: [
+            {
+              criterion_id: 'AC-MH-1',
+              passed: false,
+              evidence_paragraph_ids: ['p1'],
+              note: '첫 문장([p1])이 회차의 사건으로 바로 들어가지 않는다.',
+            },
+          ],
+        },
+      };
+    };
+    const sentencePerLine = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !('json' in out)) return out;
+      const draft = out.json as { text?: unknown };
+      return typeof draft.text === 'string'
+        ? { ...out, json: { ...draft, text: draft.text.replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') } }
+        : out;
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = sentencePerLine(req, openingCriterion(req, batchedScript(req, script(req))));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v20-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@20',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('sends the failed criterion to a rewrite of scene 1, renders the schedule in the canon lines and completes', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v20-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+      const rewrites = seen.filter((r) =>
+        (r.trace?.activityId ?? '').startsWith('scene_rewrite:1:1:'),
+      );
+      expect(rewrites.length).toBe(1);
+      expect(rewrites[0]?.user).toContain('첫 문장');
+      // G9-1: no pack renders a secret with the bible's single reveal chapter any more.
+      for (const r of seen) expect(`${r.system}\n${r.user}`).not.toMatch(/; \d+화 이전 공개 금지/);
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);
+
+run(
+  'Korean novel run under standard.v22: secret owners are named in every canon line (ADR-0094)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const modelWords = new Set<string>();
+    // G9r: the contract checker failed an opening criterion with no quote in every scorecard, and no round could
+    // target it. Here the first evaluation fails it (the claim names [p1] and the opening); later ones pass it.
+    let failedOnce = false;
+    const openingCriterion = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'contract_checker' || failedOnce) return out;
+      failedOnce = true;
+      return {
+        json: {
+          criteria: [
+            {
+              criterion_id: 'AC-MH-1',
+              passed: false,
+              evidence_paragraph_ids: ['p1'],
+              note: '첫 문장([p1])이 회차의 사건으로 바로 들어가지 않는다.',
+            },
+          ],
+        },
+      };
+    };
+    const sentencePerLine = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !('json' in out)) return out;
+      const draft = out.json as { text?: unknown };
+      return typeof draft.text === 'string'
+        ? { ...out, json: { ...draft, text: draft.text.replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') } }
+        : out;
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = sentencePerLine(req, openingCriterion(req, batchedScript(req, script(req))));
+      for (const m of JSON.stringify(out).matchAll(/[A-Za-z][A-Za-z'’-]+/g)) modelWords.add(m[0]);
+      return out;
+    });
+    const intake = { ...INTAKE, pov: 'third_limited' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v22-e2e');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@22',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('names every secret owner, sends the failed criterion to scene 1 and completes', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v22-runner',
+        leaseSeconds: 30,
+      });
+      while (await runner.tick()) {
+        const r = await getNovelRun(pool, projectId);
+        if (r?.status === 'paused') await resumeNovelRun(pool, { projectId, autoContinue: true });
+        if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+      }
+      const after = await getNovelRun(pool, projectId);
+      expect(after?.last_error ?? null).toBeNull();
+      expect(after?.status).toBe('completed');
+      const rewrites = seen.filter((r) =>
+        (r.trace?.activityId ?? '').startsWith('scene_rewrite:1:1:'),
+      );
+      expect(rewrites.length).toBe(1);
+      expect(rewrites[0]?.user).toContain('첫 문장');
+      // G9-1: no pack renders a secret with the bible's single reveal chapter any more.
+      for (const r of seen) expect(`${r.system}\n${r.user}`).not.toMatch(/; \d+화 이전 공개 금지/);
+      // G10-5: every secret's owner is a name, never a raw id.
+      for (const r of seen)
+        expect(`${r.system}\n${r.user}`).not.toMatch(/소유자: [0-9a-f]{8}-[0-9a-f]{4}-/);
+      expect(seen.some((r) => r.user.includes('비밀 (소유자: '))).toBe(true);
+      const leaks = seen.flatMap((r) =>
+        englishLeaks(`${r.system}\n${r.user}`, modelWords).map(
+          (w) => `${r.trace?.role ?? '?'}: ${w}`,
+        ),
+      );
+      expect([...new Set(leaks)]).toEqual([]);
+    }, 300_000);
+  },
+);

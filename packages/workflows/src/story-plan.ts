@@ -495,6 +495,191 @@ const REL_TYPES = new Set([
  * Generate the complete bible for the approved concept. Idempotent: every model call is checkpointed and
  * the assembled bible is a content-addressed artifact keyed by spec version + concept id.
  */
+/**
+ * ADR-0093 (live defect G10-1): the 화 before which a character's secret cannot be true because it names someone the
+ * owner first meets in 화 N (a dated register, ADR-0089): N + 1. Undefined when it names nobody met later.
+ */
+export function secretMeetingFloors(
+  characters: readonly {
+    readonly display_name?: string | undefined;
+    readonly short_forms?: readonly string[] | undefined;
+    readonly aliases?: readonly string[] | undefined;
+    readonly registers?:
+      | readonly {
+          readonly toward?: string | undefined;
+          readonly since_chapter?: number | undefined;
+        }[]
+      | undefined;
+  }[],
+  resolve: (name: string | undefined) => string | undefined,
+): (ownerId: string, statement: string | undefined) => number | undefined {
+  const meetings = new Map<string, number>();
+  const namesOf = new Map<string, string[]>();
+  for (const c of characters) {
+    const from = resolve(c.display_name);
+    if (!from) continue;
+    namesOf.set(
+      from,
+      [c.display_name, ...(c.short_forms ?? []), ...(c.aliases ?? [])].filter(
+        (n): n is string => typeof n === 'string' && n.trim().length >= 2,
+      ),
+    );
+    for (const r of c.registers ?? []) {
+      const to = resolve(r.toward);
+      if (!to || to === from || typeof r.since_chapter !== 'number' || r.since_chapter < 1)
+        continue;
+      for (const key of [`${from}|${to}`, `${to}|${from}`])
+        meetings.set(key, Math.min(meetings.get(key) ?? r.since_chapter, r.since_chapter));
+    }
+  }
+  return (ownerId, statement) => {
+    if (!statement) return undefined;
+    let floor: number | undefined;
+    for (const [other, names] of namesOf) {
+      if (other === ownerId || !names.some((n) => statement.includes(n))) continue;
+      const met = meetings.get(`${ownerId}|${other}`);
+      if (met !== undefined) floor = Math.max(floor ?? 0, met + 1);
+    }
+    return floor;
+  };
+}
+
+const ARC_BEAT_TYPES = new Set([
+  'setup',
+  'escalation',
+  'reversal',
+  'cider',
+  'revelation',
+  'emotional',
+  'progression',
+  'climax',
+  'aftermath',
+  'comedic',
+  'relationship',
+]);
+// A live planner's beat word read as the nearest type the schema knows (G13r wrote `cliffhanger`).
+const ARC_BEAT_ALIASES: Readonly<Record<string, string>> = {
+  cliffhanger: 'escalation',
+  hook: 'escalation',
+  threat: 'escalation',
+  conflict: 'escalation',
+  confrontation: 'escalation',
+  crisis: 'escalation',
+  tension: 'escalation',
+  suspense: 'escalation',
+  battle: 'escalation',
+  fight: 'escalation',
+  action: 'escalation',
+  setback: 'escalation',
+  rising_action: 'escalation',
+  inciting_incident: 'escalation',
+  twist: 'reversal',
+  turning_point: 'reversal',
+  reveal: 'revelation',
+  discovery: 'revelation',
+  foreshadowing: 'setup',
+  payoff: 'cider',
+  reward: 'cider',
+  catharsis: 'cider',
+  saida: 'cider',
+  sida: 'cider',
+  climactic: 'climax',
+  finale: 'climax',
+  romance: 'relationship',
+  bonding: 'relationship',
+  rivalry: 'relationship',
+  comedy: 'comedic',
+  humor: 'comedic',
+  humour: 'comedic',
+  comic: 'comedic',
+  emotion: 'emotional',
+  resolution: 'aftermath',
+  falling_action: 'aftermath',
+  denouement: 'aftermath',
+  epilogue: 'aftermath',
+  growth: 'progression',
+  training: 'progression',
+  power_up: 'progression',
+  level_up: 'progression',
+  introduction: 'setup',
+  intro: 'setup',
+  exposition: 'setup',
+};
+
+/**
+ * ADR-0096 (live defect G13-1): an arc beat's type as the schema knows it — an exact type, or a planner's word read as
+ * its nearest type — else undefined. The type is a label nothing downstream computes with, so the caller keeps an
+ * unreadable beat as `escalation` rather than losing the event it describes.
+ */
+export function arcBeatTypeOf(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const key = v
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/gu, '_');
+  if (ARC_BEAT_TYPES.has(key)) return key;
+  return ARC_BEAT_ALIASES[key];
+}
+
+const ARC_STANCES = new Set([
+  'knows',
+  'suspects',
+  'believes_false',
+  'pretends',
+  'unaware',
+  'forgot',
+  'doubts',
+]);
+// A live planner's free-text stance, read as the nearest one the schema knows; anything else is dropped.
+const ARC_STANCE_ALIASES: Readonly<Record<string, string>> = {
+  believes: 'suspects',
+  believe: 'suspects',
+  thinks: 'suspects',
+  suspect: 'suspects',
+  know: 'knows',
+  learns: 'knows',
+  learned: 'knows',
+  knew: 'knows',
+  misbelieves: 'believes_false',
+  believes_wrongly: 'believes_false',
+  false_belief: 'believes_false',
+  forgets: 'forgot',
+  doubt: 'doubts',
+  pretend: 'pretends',
+};
+
+/**
+ * ADR-0094 (live defect G11-1): an arc plan's planned knowledge changes with the stances the schema knows — an exact
+ * value is kept, a planner's alias (`believes`) becomes its nearest stance, an unknown one drops the change rather
+ * than failing the arc plan.
+ */
+export function normalizeArcKnowledge(changes: readonly unknown[]): Record<string, unknown>[] {
+  const stanceOf = (v: unknown): string | undefined => {
+    if (typeof v !== 'string') return undefined;
+    const key = v
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/gu, '_');
+    if (ARC_STANCES.has(key)) return key;
+    return ARC_STANCE_ALIASES[key];
+  };
+  return changes.flatMap((c): Record<string, unknown>[] => {
+    if (typeof c !== 'object' || c === null) return [];
+    const r = c as Record<string, unknown>;
+    const to = stanceOf(r.to_stance);
+    if (!to || r.knower === undefined || typeof r.proposition_ref !== 'string') return [];
+    // The schema allows exactly these fields; a planner's extras (a from_stance) would fail it as well.
+    return [
+      {
+        knower: r.knower,
+        proposition_ref: r.proposition_ref,
+        to_stance: to,
+        ...(typeof r.channel === 'string' ? { channel: r.channel } : {}),
+      },
+    ];
+  });
+}
+
 export async function buildFullBible(
   ctx: WorkflowContext,
   input: { intake: StoryIntake; spec: StorySpec; concept: Concept; mainTimelineId: string },
@@ -754,6 +939,11 @@ export async function buildFullBible(
   const secretHolders: { knowerId: string; localId: string; fromChapter?: number }[] = [];
   const chapterAtLeast1 = (v: unknown): number | undefined =>
     typeof v === 'number' && Number.isInteger(v) && v >= 1 ? v : undefined;
+  // ADR-0093 (G10-1): a secret about someone its owner has not met yet is not true before that meeting.
+  const meetingFloor =
+    ctx.policy.planning?.time_frames === true && ctx.policy.planning.meeting_time_frames === true
+      ? secretMeetingFloors(characters, resolve)
+      : () => undefined;
   for (const c of characters) {
     const ownerId = resolve(c.display_name);
     if (!ownerId) continue;
@@ -766,7 +956,9 @@ export async function buildFullBible(
       // (4.7.0); older designer answers carry none, so their bibles are unchanged.
       const readerFrom =
         typeof s === 'string' ? undefined : chapterAtLeast1(s.reader_reveal_chapter);
-      const trueFrom = typeof s === 'string' ? undefined : chapterAtLeast1(s.true_from_chapter);
+      const designed = typeof s === 'string' ? undefined : chapterAtLeast1(s.true_from_chapter);
+      const floor = meetingFloor(ownerId, statement);
+      const trueFrom = floor !== undefined ? Math.max(designed ?? 0, floor) : designed;
       const layer =
         typeof s !== 'string' &&
         (s.layer === 'current' || s.layer === 'prior_loop' || s.layer === 'source_work')
@@ -1277,6 +1469,19 @@ export async function planArcFromBlueprint(
         ),
         ...(b.participants ? { participants: onlyKnown(b.participants) } : {}),
         ...(b.promise_refs ? { promise_refs: onlyPromises(b.promise_refs) } : {}),
+        // ADR-0096 (G13-1): a beat's type is one the schema knows; the beat itself is always kept.
+        ...(ctx.policy.planning?.normalize_arc_beats
+          ? { type: arcBeatTypeOf(b.type) ?? 'escalation' }
+          : {}),
+        // ADR-0094 (G11-1): a planned knowledge change keeps only the stances the schema knows.
+        ...(ctx.policy.planning?.normalize_arc_knowledge &&
+        Array.isArray((b as { knowledge_changes_planned?: unknown }).knowledge_changes_planned)
+          ? {
+              knowledge_changes_planned: normalizeArcKnowledge(
+                (b as { knowledge_changes_planned: unknown[] }).knowledge_changes_planned,
+              ),
+            }
+          : {}),
       }));
       // Live planners write the two check objects as prose; keep the prose in their notes fields.
       const repetition: unknown = raw.repetition_check;

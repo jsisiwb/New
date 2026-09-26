@@ -1,0 +1,460 @@
+{
+  "project_id": "01a0d996-a923-7751-b57d-04490955efd9",
+  "title": "G14r 회귀 standard24",
+  "policy": "policy/standard@24",
+  "lineage": {
+    "genres": [
+      "genre/regression@4",
+      "genre/hunter-gate@2"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/regression@4",
+    "output_language": "lang/ko@9"
+  },
+  "run": {
+    "status": "failed",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "MODEL_CALL_FAILED",
+      "step": "revise",
+      "message": "PROVIDER_FAILED: provider notion returned HTTP 401 [failure_class=non_retryable_request]",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "retry_step"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "revising",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 6022,
+    "chars_no_spaces": 4701,
+    "quoted_dialogue_lines": 47,
+    "quoted_inner_lines": 3,
+    "talk_share": 0.198,
+    "first_lines": [
+      "징, 지징.",
+      "허벅지를 찌르는 둔탁하고 거친 진동.",
+      "마신 바알의 아가리에 반신이 뜯겨 나간 끔찍한 고통이 아직 살갗에 들러붙어 있었다."
+    ],
+    "deviation_pct": 13.6,
+    "dialogue_lines_per_1k": 7.8
+  },
+  "last_version": {
+    "version_no": 8,
+    "status": "working",
+    "chars": 6018,
+    "chars_no_spaces": 4700,
+    "quoted_dialogue_lines": 48,
+    "quoted_inner_lines": 4,
+    "talk_share": 0.199,
+    "first_lines": [
+      "징, 지징.",
+      "허벅지를 찌르는 둔탁하고 거친 진동.",
+      "마신 바알의 아가리에 반신이 뜯겨 나간 절단면이 타들어 가는 통증이 아직 살갗에 들러붙어 있었다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.2,
+      "measured_share": 0.033,
+      "chars": 2702
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.45,
+      "measured_share": 0.333,
+      "chars": 3320
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "비명이나 거친 숨소리, 혹은 억눌린 대사를 문단 맨 앞에 배치하여 소리로 1화를 열도록 수정한다.",
+      "kind": "structure_off",
+      "claim": "화의 첫 비트는 목소리(소리, 용어, 대사)로 열어야 한다는 구조 목표와 달리, 고통 속에서 상체를 일으키는 행동 묘사로 문단이 시작되고 있습니다.",
+      "target": "장면 1",
+      "severity": "minor"
+    },
+    {
+      "fix": "주인공이 회귀를 자각하며 깨어나는 장소를 남산 타워 지하 3층 흥신소 앞 복도 등으로 설정하여 시간 건너뜀을 방지한다.",
+      "kind": "time_inconsistent",
+      "claim": "1~25화에서는 시간을 건너뛰지 않는다는 구조 목표가 무색하게, 잠에서 깨어난 곳에서 남산 타워 지하 3층 흥신소까지 이동하는 시간과 공간이 비트 3과 4 사이에서 도약하고 있습니다.",
+      "target": "장면 1",
+      "severity": "major"
+    },
+    {
+      "fix": "신경 제압은 문을 막아서는 부하들을 쓰러뜨리는 데 사용하고, 철문은 거칠게 걷어차거나 밀고 들어가는 정도로 묘사를 수정한다.",
+      "kind": "state_contradiction",
+      "claim": "생명체의 급소에 작용하는 '신경 제압의 요령'으로 무생물인 철문을 부술 듯 연다는 묘사는 논리에 맞지 않으며, 비각성자의 몸으로 육중한 철문을 부수듯 여는 것은 초인적인 완력 묘사 금지에 위배됩니다.",
+      "target": "장면 1",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 2개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 79,
+      "dimensions": {
+        "prose": {
+          "score": 72.6,
+          "passed": false
+        },
+        "structure": {
+          "score": 85.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 66.3,
+          "passed": false
+        }
+      },
+      "scopes": [],
+      "blocking": 0,
+      "major": 8,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 80,
+      "dimensions": {
+        "prose": {
+          "score": 74.8,
+          "passed": false
+        },
+        "structure": {
+          "score": 85.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 79.7,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 1,
+      "major": 11,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 2,
+      "version_no": 3,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 83,
+      "dimensions": {
+        "prose": {
+          "score": 80.2,
+          "passed": true
+        },
+        "structure": {
+          "score": 85.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 83.8,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 0,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 3,
+      "version_no": 4,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 87,
+      "dimensions": {
+        "prose": {
+          "score": 88.8,
+          "passed": true
+        },
+        "structure": {
+          "score": 85.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 95,
+          "passed": true
+        },
+        "voice": {
+          "score": 80.4,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "dialogue"
+      ],
+      "blocking": 1,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 1,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 4,
+      "version_no": 5,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 85,
+      "dimensions": {
+        "prose": {
+          "score": 81.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 88,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 81.5,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 0,
+      "major": 6,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 5,
+      "version_no": 6,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 88,
+      "dimensions": {
+        "prose": {
+          "score": 87.2,
+          "passed": true
+        },
+        "structure": {
+          "score": 88,
+          "passed": true
+        },
+        "genre": {
+          "score": 75,
+          "passed": true
+        },
+        "voice": {
+          "score": 77.1,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "dialogue"
+      ],
+      "blocking": 0,
+      "major": 4,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 6,
+      "version_no": 7,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 86,
+      "dimensions": {
+        "prose": {
+          "score": 83.4,
+          "passed": true
+        },
+        "structure": {
+          "score": 88,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 90.2,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 2,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 7,
+      "version_no": 8,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 86,
+      "dimensions": {
+        "prose": {
+          "score": 83.4,
+          "passed": true
+        },
+        "structure": {
+          "score": 88,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 85.8,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 80,
+      "first_person": 70
+    },
+    {
+      "version_no": 2,
+      "status": "quarantined",
+      "score": 85,
+      "first_person": 70
+    },
+    {
+      "version_no": 3,
+      "status": "working",
+      "score": 80,
+      "first_person": 70
+    },
+    {
+      "version_no": 4,
+      "status": "working",
+      "score": 80,
+      "first_person": 70
+    },
+    {
+      "version_no": 5,
+      "status": "working",
+      "score": 80,
+      "first_person": 70
+    },
+    {
+      "version_no": 6,
+      "status": "working",
+      "score": 75,
+      "first_person": 70
+    },
+    {
+      "version_no": 7,
+      "status": "working",
+      "score": 75,
+      "first_person": 75
+    },
+    {
+      "version_no": 8,
+      "status": "working",
+      "score": 75,
+      "first_person": 75
+    }
+  ],
+  "totals": {
+    "calls": 101,
+    "attempts": 109,
+    "failed_attempts": 10,
+    "tokens": {
+      "input": 387794,
+      "output": 39074
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T17:22:09.254Z",
+    "last_call_at": "2026-09-25T18:38:37.975Z",
+    "seconds": 4589
+  }
+}

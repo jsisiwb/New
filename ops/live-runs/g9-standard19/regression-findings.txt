@@ -1,0 +1,163 @@
+=== scorecard r0 v1 overall={"score":87,"note_count":0,"major_count":7,"minor_count":14,"blocking_count":0}
+  section genre: score=90 passed=true issues=3
+  section prose: score=89.3 passed=true issues=6
+  section voice: score=87.5 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=85 passed=true issues=3
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=3
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=0 passed=false issues=1
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-1 failed: 상태창 알림은 14번째 문단(p14)에서 등장하며, 첫 3문장(p1~p3)은 죽음의 감각만을 묘사하고 있어 조건에 부합하지 않습니다.
+  [major/open] continuity canon_contradiction (judge:continuity_checker, confidence 0.95)
+      claim: 주인공은 [p40]에서 아직 각성 전이라 초인적인 근력이 없으며 얇은 합판 문 정도만 요령과 체중을 실어 부술 수 있다고 명확히 독백했습니다. 하지만 [p131]에서 '굳게 닫힌 철문'으로 묘사된 대부업체 지하 사무실 문을 고시원 때와 동일하게 단 한 번 발로 걷어차서 거칠게 열어젖히는 것은 앞서 설정한 신체 능력의 한계와 정면으로 충돌하는 개연성 오류입니다. 각성 전 평범한 성인 남성의 근력으로는 잠긴 철문을 걷어차서 열 수 없습니다.
+      quote: 지하 통로를 쩌렁쩌렁 울리는 굉음과 함께, 묵직한 문이 거칠게 열어젖혀졌다.
+  [major/open] knowledge knowledge_leak (judge:knowledge_leak_checker, confidence 0.9)
+      claim: 이번 생에서는 초면인 서유리에게 소개도 받기 전에 그녀의 사적인 빚 문제와 알바 상황을 아는 것처럼 직접적으로 언급했습니다. 회귀 전 지식을 타인에게 부주의하게 노출한 지식 누출에 해당합니다.
+      quote: 태준 대부에 진 빚. 다 갚고 알바하는 거냐고 물었습니다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 1)
+      claim: 라이브 초안에서 자주 등장하는 의미심장한 표정 상투구입니다. 뻔한 미소 대신 구체적인 행동이나 짧은 독백으로 처리해야 합니다.
+      quote: 서늘한 미소가 입가에 번졌다.
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 등장인물(서유리, 박태준)과 아이템(포식의 반지)에 대한 배경 정보가 인물의 행동이나 자연스러운 대화가 아닌 주인공의 긴 속마음 서술로 처리되어 이야기의 속도감을 떨어뜨린다.
+      quote: 저 여자는 훗날 대한민국의 모든 헌터들을 통틀어 최고 수준의 마력 회로를 꽃피우게 될 천재 헌터다.
+  [major/open] genre other (judge:genre_judge, confidence 1)
+      claim: [EVIDENCE] 원고의 결말부에 지침에서 금지한 전형적인 AI 상투구('서늘한 미소가 입가에 번졌다')가 그대로 등장합니다.
+      quote: 서늘한 미소가 입가에 번졌다.
+  [major/open] genre other (judge:genre_judge, confidence 0.9)
+      claim: [FACT] 인물에 대한 미래 지식(서유리의 재능과 비참한 말로)을 서사시적 해설로 길게 풀어서 묘사하고 있어, 속마음에 짧게 녹이라는 장르 관습에 어긋납니다.
+      quote: 비록 그 재능을 제대로 피워보지도 못한 채, 박태준의 빚에 묶여 끔찍한 생체 실험체로 소모되어 버리지만.
+=== scorecard r1 v2 (quarantined) overall={"score":83,"note_count":0,"major_count":7,"minor_count":16,"blocking_count":4}
+  section genre: score=90 passed=true issues=1
+  section prose: score=75.4 passed=false issues=12
+  section voice: score=78.9 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=90 passed=true issues=3
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=false issues=3
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=0 passed=false issues=2
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-1 failed: [EVIDENCE] 원문의 첫 3문장([p1]~[p3])은 가슴뼈가 부서지는 감각과 단말마를 묘사하는 데 쓰였습니다. 상태창 알림은 14번째 문단([p14]), 회귀에 대한 확신은 19번째 문단([p19])에 등장합니다. [FACT] 첫 3문장 안에 회귀와 상태창을 명확히 제시해 도입부 템포를 극대화하려는 계약 요건을 위반했습니다.
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-3 failed: deterministic
+  [blocking/open] continuity other (judge:continuity_checker, confidence 1)
+      claim: 하드 요구사항 [REQ-011]에 따라 작품은 1인칭 시점으로 서술되어야 하나, 원고의 절반(p114) 이후부터 주인공을 '진우는', '진우가'로 지칭하며 3인칭 시점으로 서술하고 있습니다.
+      quote: 진우는 무심한 눈으로 인파를 헤치며 걸었다.
+  [blocking/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: 한 장면 안에서의 앞뒤 모순입니다. 이미 p138~p144에서 사채 사무실 진입과 함께 청소 중이던 서유리가 주저앉았고, p154에서 박태준 사장의 부재를 확인했습니다. 그러나 p212~214에서는 내부 사장실 문을 부수면서 마치 사무실에 처음 진입한 것처럼 묘사가 반복되고 질문이 중복되고 있습니다.
+      quote: 명동 사채 사무실 문이 산산조각 나며 열렸다. 빚에 찌들어 청소하던 서유리가 비명을 삼키며 주저앉자,
+  [major/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 1)
+      claim: 강진우는 앞선 대화에서 박태준 사장이 있는지 물었고 서유리로부터 '지금 안 계신다'는 대답을 들어 사장이 없다는 사실을 이미 인지했습니다. 그럼에도 사장실 문을 부수고 들어가 다시 사장이 출근 안 했냐고 묻는 것은, 방금 전 자신이 직접 묻고 얻어낸 지식을 스스로 무시하는 명백한 오류입니다. (중복 작성된 씬의 흔적으로 보입니다)
+      quote: 박태준 사장, 출근 안 했습니까?
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 라이브 초안의 금지된 표정 상투구 '서늘한 미소' 사용
+      quote: 서늘한 미소를 지으며
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: 상황이 바뀔 때마다 '발바닥에 체중을 완벽하게 실어(실었다)'는 문장이 기계적으로 반복됨
+      quote: 발바닥에 체중을 완벽하게 실었다.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 마지막 장면에서 이미 사장이 없는 것을 알고 사장실 문을 부수고 들어갔음에도, 폼을 잡기 위해 앞서 서유리에게 했던 질문을 반복하여 절단의 긴장감이 흐지부지됨.
+      quote: “박태준 사장, 출근 안 했습니까?”
+  [blocking/open] genre repetitive_arc (judge:genre_judge, confidence 0.99)
+      claim: AI 특유의 기계적인 묘사 반복과 맥락 망각. 문을 부수는 묘사가 세 번 똑같이 등장하며, 결말부에서는 이미 끝난 첫 만남의 상황과 대사가 문맥 없이 다시 반복된다.
+      quote: 박태준 사장, 출근 안 했습니까?
+  [blocking/open] voice other (judge:voice_judge, confidence 1)
+      claim: 상황 초기화 및 대사 반복 (AI 환각). 사장이 없다는 서유리와의 긴 대화 직후에 사장실 문을 부수고는 다시 처음 만난 것처럼 똑같은 대사를 던집니다.
+      quote: “박태준 사장, 출근 안 했습니까?”
+  [major/open] repetition repeated_scene (judge:repetition_judge, confidence 0.99)
+      claim: [EVIDENCE] 사장실 문을 부수고 열었을 때, 앞서 지하실 철문을 부수고 들어와 서유리를 처음 만난 장면의 상황(청소하던 서유리가 주저앉음)과 대사가 뜬금없이 재반복되고 있습니다. 이본(다른 초고)이 잘못 병합된 작법상 오류로 보입니다.
+      quote: 박태준 사장, 출근 안 했습니까?
+=== scorecard r2 v3 (quarantined) overall={"score":88,"note_count":0,"major_count":5,"minor_count":16,"blocking_count":1}
+  section genre: score=90 passed=true issues=3
+  section prose: score=80.8 passed=true issues=9
+  section voice: score=89.5 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=95 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=false issues=2
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=0 passed=false issues=2
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-1 failed: 첫 3문장(p1~p3)에는 과거 죽음의 순간만이 묘사되어 있으며, 상태창은 p14에, 회귀 사실 인지는 p19에 등장하여 기준을 충족하지 못했습니다.
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-3 failed: deterministic
+  [blocking/open] continuity timeline_error (judge:continuity_checker, confidence 1)
+      claim: 이미 [p141]에서 사무실 철문을 열고 들어와 서유리와 긴 대화를 나누었으며, [p198~p199]에서 박태준 사장이 아직 출근 전이라는 대답까지 들었습니다. 하지만 사장실 문을 부순 직후인 [p223]~[p225]에서 갑자기 처음 사무실에 진입한 것처럼 묘사되며 같은 질문을 반복해 한 장면 안에서 앞뒤 상황이 완전히 충돌합니다.
+      quote: 명동 사채 사무실 문이 산산조각 나며 열렸다. 빚에 찌들어 청소하던 서유리가 비명을 삼키며 주저앉자, 나는 서늘한 미소를 지으며 물었다. “박태준 사장, 출근 안 했습니까?”
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: AI 초안에서 습관적으로 등장하는 표정 상투구('서늘한 미소')입니다. 상투적인 표정 대신 행동이나 대사로 분위기를 살려야 합니다.
+      quote: 서늘한 미소를 지으며 물었다.
+  [major/open] genre other (judge:genre_judge, confidence 0.95)
+      claim: 금지된 AI 상투적 표현('서늘한 미소') 사용으로 인한 문장 질적 저하
+      quote: 나는 서늘한 미소를 지으며 물었다.
+  [major/open] repetition repeated_scene (judge:repetition_judge, confidence 0.95)
+      claim: 한 회차 안에서 잠긴 문을 발바닥에 체중을 실어 걷어차 부수고 들어가는 장면 연출과 묘사가 고시원 303호와 사채 사무실 사장실에서 두 번 거의 똑같은 흐름(체중을 실어 발차기 -> '쾅!' 파열음 -> 문짝 부서짐)으로 반복됩니다.
+      quote: 발바닥에 체중을 싣고 주저 없이 걷어찼다.
+=== scorecard r3 v4 (quarantined) overall={"score":89,"note_count":0,"major_count":2,"minor_count":15,"blocking_count":0}
+  section genre: score=85 passed=true issues=2
+  section prose: score=90.9 passed=true issues=4
+  section voice: score=83.2 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=87.5 passed=true issues=3
+  section continuity: score=0 passed=true issues=1
+  section repetition: score=0 passed=true issues=3
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=0 passed=false issues=1
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-1 failed: [EVIDENCE] 원문의 첫 3문장(p1~p3)은 죽음 직전의 고통 묘사에 할애되었습니다. 상태창은 [p14], 회귀 자각은 [p20]에 이르러서야 등장하므로 '첫 3문장 안'이라는 조건을 충족하지 못했습니다.
+  [major/open] voice voice_drift (judge:voice_judge, confidence 0.9)
+      claim: 상대방과 상황이 완전히 다른데도 앞 장면의 특정 대사 패턴과 말버릇을 그대로 복붙하듯 반복함.
+      quote: “그거 참 다행이네요.”
+=== scorecard r4 v5 (quarantined) overall={"score":87,"note_count":0,"major_count":4,"minor_count":15,"blocking_count":0}
+  section genre: score=85 passed=true issues=2
+  section prose: score=90.9 passed=true issues=6
+  section voice: score=87.5 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=82.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=3
+  section repetition: score=0 passed=true issues=3
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=0 passed=false issues=1
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-1 failed: [EVIDENCE] 첫 3문장이 아닌 14번째 문단([p14])에 이르러서야 상태창이 등장하고, 19번째 문단([p19])에서 회귀를 인지합니다. 도입부 묘사가 길어 조건을 충족하지 못했습니다.
+  [major/open] continuity numeric_inconsistency (judge:continuity_checker, confidence 0.9)
+      claim: 40~41문단에서 주인공은 현재 초인적인 근력이 없어서 '합판 문' 정도만 체중과 요령으로 부술 수 있다고 스스로 한계를 명확히 했습니다. 하지만 136~138문단에서는 사채업체의 굳게 닫힌 '철문' 잠금장치를 맨몸의 발차기 한 번으로 거칠게 뜯어내며 열고 있어 앞선 묘사와 신체 능력 수준이 크게 모순됩니다.
+      quote: 철문 앞까지 걸어간 나는, 잠금장치가 물려 있는 문고리 바로 옆을 발바닥으로 강하게 걷어찼다.
+  [major/open] prose literary_drift (judge:prose_judge, confidence 1)
+      claim: 문단 끝에 붙는 불필요한 관조형 교훈/아포리즘
+      quote: 번화가의 이면은 언제나 도시의 썩은 내를 품고 있는 법이다.
+  [major/open] genre repetitive_arc (judge:genre_judge, confidence 0.9)
+      claim: 주인공이 상대를 제압하거나 압도할 때 사용하는 대사 패턴('~노렸어야지', '그거 참 다행이네요')이 한 화 안에서 동일하게 반복되어 AI가 생성한 듯한 기계적인 느낌을 줍니다.
+      quote: 사람을 찌르고 싶으면 급소를 제대로 노렸어야지.
+=== scorecard r5 v6 (quarantined) overall={"score":91,"note_count":0,"major_count":3,"minor_count":15,"blocking_count":0}
+  section genre: score=85 passed=true issues=2
+  section prose: score=89.3 passed=true issues=6
+  section voice: score=96.3 passed=true issues=2
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=92.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=0 passed=true issues=3
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=0 passed=false issues=1
+  [major/open] contract missing_required_event (judge:contract_checker, confidence 0.9)
+      claim: acceptance criterion AC-1 failed: 첫 3문장은 사망 당시의 고통 묘사에 할애되었으며, 상태창 알림과 회귀 사실은 중반부인 14~15번째 문단에 이르러서야 등장하여 기준을 위반했습니다.
+  [major/open] continuity canon_contradiction (judge:continuity_checker, confidence 0.95)
+      claim: p40~41에서 주인공은 현재 초인적인 근력이 없어 합판 문 정도만 체중과 요령을 실어 열 수 있다고 서술했습니다. 그러나 p136~p138에서 굳게 닫힌 금고 사무실의 무거운 '철문' 잠금장치를 평범한 상태의 발차기 한 번으로 부수고 들어가는 것은 앞선 서술과 모순되며 개연성이 떨어집니다.
+      quote: 헐거워진 잠금장치가 부서지며 낡은 철문이 거칠게 열어젖혀졌다.
+  [major/open] genre repetitive_arc (judge:genre_judge, confidence 0.9)
+      claim: 주인공이 상대를 제압하거나 윽박지를 때 사용하는 대사 패턴('그거 참 다행이네요', '~노렸어야지')이 한 회차 안에서 반복 소비되어 촌스럽고 기계적인 인상을 줌.
+      quote: 찍을 거면 머리를 노렸어야지.

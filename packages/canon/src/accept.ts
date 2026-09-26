@@ -60,7 +60,8 @@ export async function acceptChapter(pool: Pool, input: AcceptChapterInput): Prom
   }
   const manuscripts = new Map([[version.id, toNfcText(version.text)]]);
   const statuses = new Map([[version.id, version.status]]);
-  const verdict = verifyDelta(input.delta, {
+  const delta = withFactClocks(input.delta);
+  const verdict = verifyDelta(delta, {
     source: 'chapter_acceptance',
     manuscripts,
     manuscriptStatus: statuses,
@@ -70,7 +71,7 @@ export async function acceptChapter(pool: Pool, input: AcceptChapterInput): Prom
     knownEntityIds: input.knownEntityIds,
   });
   if (!verdict.ok) throw new DeltaRejectedError(verdict.issues);
-  const base = (input.delta as { base_canon_version?: unknown }).base_canon_version;
+  const base = (delta as { base_canon_version?: unknown }).base_canon_version;
   if (typeof base !== 'number' || !Number.isInteger(base) || base < 0)
     throw new DeltaRejectedError([
       {
@@ -82,11 +83,29 @@ export async function acceptChapter(pool: Pool, input: AcceptChapterInput): Prom
     projectId: input.projectId,
     parentVersion: base,
     source: 'chapter_acceptance',
-    delta: input.delta,
+    delta,
     actor: input.actor ?? {},
     chapterId: input.chapterId,
     manuscriptVersionId: input.manuscriptVersionId,
     clockMax: input.clockMax,
     ...(input.lease ? { lease: input.lease } : {}),
   });
+}
+
+/**
+ * ADR-0105 (G17-5): an asserted fact without its own `valid_from` is valid from its item's `story_clock`, as a closed fact
+ * is closed at its item's clock (`factProposal`). A stored fact requires the clock and the proposal does not, so G17a's
+ * two facts reached the insert without one.
+ */
+export function withFactClocks(delta: unknown): unknown {
+  const items = (delta as { items?: unknown } | null)?.items;
+  if (!Array.isArray(items)) return delta;
+  const out = items.map((raw: unknown): unknown => {
+    const item = raw as { type?: unknown; op?: unknown; story_clock?: unknown; payload?: unknown };
+    const payload = item.payload as Record<string, unknown> | undefined;
+    if (item.type !== 'fact' || (item.op !== 'assert' && item.op !== 'supersede')) return raw;
+    if (!payload || payload.valid_from !== undefined || item.story_clock === undefined) return raw;
+    return { ...item, payload: { ...payload, valid_from: item.story_clock } };
+  });
+  return out.some((x, i) => x !== items[i]) ? { ...(delta as object), items: out } : delta;
 }

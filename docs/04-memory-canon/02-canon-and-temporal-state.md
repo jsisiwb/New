@@ -45,6 +45,8 @@ formality/address terms/titles per pair).
 chapter 14" still returns the ch.10 injury after it heals in ch.18). Facts are never deleted; only
 corrections, retcons, rollbacks and system-time retractions set `retracted_at_version` (system time) so "as
 of canon version v" queries work. Extraction may never emit a retraction for an in-story change.
+An extracted fact asserted without its own `valid_from` is valid from its item's `story_clock`, the clock a
+`close` uses; a fact with neither is rejected by the verifier (ADR-0105).
 
 ### 1.4 Story clock (ADR-0040)
 `StoryClock { chapter_no: int, ordinal: int (< 1,000,000), calendar?: gregorian|relative_days|era:<name>,
@@ -119,7 +121,8 @@ is updated in the same transaction with an optimistic check (`WHERE canon_versio
 - After commit, `PlanningHorizonWorkflow` compares the delta against the contract's planned deltas and
   marks each planned item `realized|partially_realized|unrealized` — explicit, never inferred.
 - Facts have no `future` validity: `valid_from` must be ≤ the chapter's `story_time.end`. Predictions are
-  frame `prediction` knowledge items.
+  frame `prediction` knowledge items. In-chapter ordinals follow paragraph order, which the planner cannot know,
+  so a window planned inside the chapter's own story-present ends no earlier than its last paragraph (ADR-0104).
 
 ## 4. Chapter lifecycle (state machine; ADR-0037)
 

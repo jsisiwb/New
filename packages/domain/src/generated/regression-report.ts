@@ -126,7 +126,8 @@ export interface PatchRegressionReport {
       | 'structure'
       | 'westernization'
       | 'translation_like'
-      | 'no_new_blocking_major';
+      | 'no_new_blocking_major'
+      | 'length';
     applicable: boolean;
     passed: boolean;
     detail?: string;
