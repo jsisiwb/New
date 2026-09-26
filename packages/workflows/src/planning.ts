@@ -29,6 +29,7 @@ import {
   renderPlanFeedback,
   structureTargets,
   type PlanFinding,
+  type PlanCriticIssue,
 } from './plan-prevention.js';
 import {
   hiddenFromReader,
@@ -766,61 +767,84 @@ export async function generateContract(
           repaired,
         });
       }
-      // ADR-0088 (live defect G6-2): the contract itself is critiqued before any scene is planned — a hook built on
+      // ADR-0088 (live defect G6-2), ADR-0117: the contract itself is critiqued before any scene is planned — a hook built on
       // a fact the reader may not learn yet, or on knowledge the hero cannot have, is a contract defect that no
-      // scene plan can repair.
+      // scene plan can repair. A bounded loop up to criticPolicy.max_repairs keeps the candidate with the fewest serious findings.
       if (issues.length === 0 && ctx.policy.planning?.plan_critic?.contract) {
-        const critic = await modelCall<{ issues?: unknown }>(ctx, {
-          step: 'chapter_contract',
-          family: 'plan_critic',
-          activityId: `plan_critic:${String(input.chapterNo)}:contract`,
-          variables: {
-            chapter_contract: JSON.stringify(candidate),
-            scene_plans: '(장면 설계 전이다. 계약만 검수한다.)',
-            reveal_schedule: schedule
-              ? (renderRevealSchedule(schedule, input.chapterNo, 'planner', {
-                  nameOf: (id) => nameOfEntity.get(id) ?? id,
-                  hintBudget: ctx.policy.planning.reveal_schedule?.hint_budget,
-                }) ?? '(설정에 기록된 비밀 없음)')
-              : '(설정에 기록된 비밀 없음)',
-            canon_state: input.bible
-              ? renderBibleState(input.bible, ctx.bindings, lang)
-              : '(정사 상태 없음)',
-            structure_targets: structureTargets({
-              chapterNo: input.chapterNo,
-              lineTargets: ctx.policy.planning.dialogue_floor?.line_targets,
-              lengthTarget: input.lengthTarget.value,
-              plannerVoice: ctx.identity.preferences?.operator_voice?.planner,
-            }),
-          },
-        });
-        const serious = parsePlanCriticIssues(critic.output.issues).filter(
-          (i) => i.severity !== 'minor',
-        );
-        if (serious.length > 0) {
+        const maxRepairs = ctx.policy.planning.plan_critic.max_repairs ?? 1;
+        let bestCandidate = candidate;
+        let fewestSerious = Number.POSITIVE_INFINITY;
+        let allSeriousFindings: PlanCriticIssue[] = [];
+
+        const runCritic = async (cand: ChapterContract, suffix: string) => {
+          const critic = await modelCall<{ issues?: unknown }>(ctx, {
+            step: 'chapter_contract',
+            family: 'plan_critic',
+            activityId: `plan_critic:${String(input.chapterNo)}:contract${suffix}`,
+            variables: {
+              chapter_contract: JSON.stringify(cand),
+              scene_plans: '(장면 설계 전이다. 계약만 검수한다.)',
+              reveal_schedule: schedule
+                ? (renderRevealSchedule(schedule, input.chapterNo, 'planner', {
+                    nameOf: (id) => nameOfEntity.get(id) ?? id,
+                    hintBudget: ctx.policy.planning?.reveal_schedule?.hint_budget,
+                  }) ?? '(설정에 기록된 비밀 없음)')
+                : '(설정에 기록된 비밀 없음)',
+              canon_state: input.bible
+                ? renderBibleState(input.bible, ctx.bindings, lang)
+                : '(정사 상태 없음)',
+              structure_targets: structureTargets({
+                chapterNo: input.chapterNo,
+                lineTargets: ctx.policy.planning?.dialogue_floor?.line_targets,
+                lengthTarget: input.lengthTarget.value,
+                plannerVoice: ctx.identity.preferences?.operator_voice?.planner,
+              }),
+            },
+          });
+          return parsePlanCriticIssues(critic.output.issues).filter(
+            (i) => i.severity !== 'minor',
+          );
+        };
+
+        let serious = await runCritic(candidate, '');
+        fewestSerious = serious.length;
+        bestCandidate = candidate;
+        allSeriousFindings = serious;
+
+        for (let attempt = 1; attempt <= maxRepairs && serious.length > 0; attempt++) {
+          const suffix = attempt === 1 ? ':critic' : `:critic:repair${String(attempt)}`;
           const retry = await planOnce(
             renderPlanFeedback(
               serious.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
             ),
-            ':critic',
+            suffix,
           );
           const partnerKept =
-            !ctx.policy.planning.dialogue_floor?.partner_in_contract ||
+            !ctx.policy.planning?.dialogue_floor?.partner_in_contract ||
             contractHasPartner(retry.candidate);
-          const repaired = retry.issues.length === 0 && partnerKept;
-          if (repaired) {
-            ({ candidate, issues } = retry);
+          if (retry.issues.length === 0 && partnerKept) {
             recordNormalization('contract_repair');
+            const again = await runCritic(retry.candidate, `:repair${String(attempt)}`);
+            if (again.length < fewestSerious) {
+              fewestSerious = again.length;
+              bestCandidate = retry.candidate;
+              allSeriousFindings = again;
+            }
+            candidate = retry.candidate;
+            serious = again;
+          } else {
+            break;
           }
-          for (const i of serious)
-            planFindings.push({
-              rule: 'PLAN-CRITIC-CONTRACT',
-              severity: i.severity,
-              target: i.target,
-              message: `${i.kind}: ${i.claim}`,
-              repaired,
-            });
         }
+        candidate = bestCandidate;
+        for (const i of allSeriousFindings)
+          planFindings.push({
+            rule: 'PLAN-CRITIC-CONTRACT',
+            severity: i.severity,
+            target: i.target,
+            message: `${i.kind}: ${i.claim}`,
+            repaired: fewestSerious === 0,
+          });
       }
       if (issues.length > 0)
         throw new WorkflowError('CONTRACT_INVALID', issues.join('; '), {

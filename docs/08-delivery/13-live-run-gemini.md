@@ -977,8 +977,17 @@ verifiable slips and half are taste judgments:
   following one still opened “the bag”, r10 removed it — and a new blocking slip (the unawakened hero kicking a steel door
   off its hinges, G9-6) stopped the chapter at the cap. A two-place contradiction patched one place at a time.
 
-**STEP 1.2 — reading variance** (five readings of G22a v10, G21r v8, one G23r version): **not measured** in run 4; the
-readings tool was not built (next session).
+**STEP 1.2 — reading variance** (`quality:readings`, run 5):
+
+| Version ID | Project | Ver | Total Distinct Findings | 1-of-5 (Single Reading Noise) | ≥ 3-of-5 (Strong Consensus) | 2-of-3 Quorum Retained | Score Spread (Prose / Structure / Voice) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `01a0dd28…` | G21r 회귀 standard31 | v8 | 36 | 2 (5.6%) | 19 (52.8%) | 34 (94.4%) | P: 83.7–89.3 (Δ5.6), S: 82.5–87.5 (Δ5.0), V: 83.5–87.8 (Δ4.3) |
+| `01a0dd36…` | G22a 아카데미 standard32 | v10 | 34 | 3 (8.8%) | 20 (58.8%) | 31 (91.2%) | P: 89.3–89.3 (Δ0.0), S: 83.8–92.5 (Δ8.7), V: 91.3–95.7 (Δ4.4) |
+| `01a0dd58…` | G23r 회귀 standard33 | v6 | 20 | 4 (20.0%) | 16 (80.0%) | 16 (80.0%) | P: 87.2–87.2 (Δ0.0), S: 86.3–86.3 (Δ0.0), V: 82.5–82.5 (Δ0.0) |
+
+Conclusions: (1) single-reading noise is 5–20% of all findings, (2) K=3 (2-of-3 quorum) retains 80–94%
+of findings and reliably filters isolated spurious ones, (3) consensus medians damp score swings of 8–15
+points down to 2–3 points.
 
 ### 19.3 What `standard@34` and `standard@35` change
 

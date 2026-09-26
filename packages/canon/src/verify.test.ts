@@ -56,6 +56,19 @@ describe('deterministic delta verification', () => {
     ]);
   });
 
+  it('normalizes op: create to assert for non-entity items (event, relationship_state, etc.)', () => {
+    const raw = {
+      ...delta,
+      items: [
+        { ...delta.items[0], type: 'event', op: 'create' },
+        { ...delta.items[0], type: 'relationship_state', op: 'create' },
+      ],
+    };
+    const normalized = withFactClocks(raw) as typeof delta;
+    expect(normalized.items[0]?.op).toBe('assert');
+    expect(normalized.items[1]?.op).toBe('assert');
+  });
+
   it('rejects a paraphrased quote and an off-by-one span with item-level detail', () => {
     const bad = structuredClone(delta);
     const ev = (bad.items[0] as { evidence: { quote: string; start: number; end: number }[] })

@@ -36,6 +36,45 @@ export function claimAnchor(claim: string, text: string): number | undefined {
   return undefined;
 }
 
+/**
+ * The code-point span ({ start, end }) a quoteless finding points at:
+ * paragraph range (e.g. `p1~p3` -> start of p1 to end of p3, `[p14]` -> p14),
+ * opening claims -> start of p1 to end of p3 (or p1),
+ * ending claims -> start to end of last paragraph.
+ */
+export function claimSpan(claim: string, text: string): { start: number; end: number } | undefined {
+  const paragraphs = segmentParagraphs(toNfcText(text));
+  if (paragraphs.length === 0) return undefined;
+  const cleaned = claim.replace(/\[|\]/gu, ' ');
+  const rangeRef = /\bp(\d{1,4})\s*[~-]\s*p?(\d{1,4})\b/u.exec(cleaned);
+  if (rangeRef) {
+    const sIdx = Number(rangeRef[1]) - 1;
+    const eIdx = Number(rangeRef[2]) - 1;
+    const pStart = paragraphs[sIdx];
+    const pEnd = paragraphs[eIdx] ?? paragraphs[paragraphs.length - 1];
+    if (pStart && pEnd && pStart.start < pEnd.end) return { start: pStart.start, end: pEnd.end };
+    if (pStart) return { start: pStart.start, end: pStart.end };
+  }
+  const singleRef = /\bp(\d{1,4})\b/u.exec(cleaned);
+  if (singleRef) {
+    const n = Number(singleRef[1]);
+    const p = paragraphs[n - 1];
+    if (p) return { start: p.start, end: p.end };
+  }
+  if (OPENING.test(claim)) {
+    const pStart = paragraphs[0];
+    if (!pStart) return undefined;
+    const endIdx = /첫\s*(?:[33]|세)\s*(?:문장|문단|줄)/u.test(claim) ? Math.min(2, paragraphs.length - 1) : 0;
+    const pEnd = paragraphs[endIdx] ?? pStart;
+    return { start: pStart.start, end: pEnd.end };
+  }
+  if (ENDING.test(claim)) {
+    const last = paragraphs.at(-1);
+    if (last) return { start: last.start, end: last.end };
+  }
+  return undefined;
+}
+
 /** A judge's blocking or major finding with no quote: the ones `spanless_to_scene` sends to a scene rewrite. */
 export function isSpanlessJudgeFinding(f: LadderFinding): boolean {
   return (

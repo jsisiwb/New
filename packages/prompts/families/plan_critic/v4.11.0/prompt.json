@@ -1,0 +1,35 @@
+{
+  "family": "plan_critic",
+  "version": "4.11.0",
+  "role": "plan_critic",
+  "purpose": "Korean webnovel prompt for plan-level prevention in the operator's voice (ADR-0117), 4.11.0.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plans",
+    "reveal_schedule",
+    "canon_state",
+    "structure_targets"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 3000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.11.0 — plan critic bounded re-plan loop and narrowed reveal exemption (ADR-0117): reveal_unsafe limits exemption to prior-life and source-work knowledge only; acts showing later secrets or contradicting bible are major.",
+  "regression_cases": [
+    "plan_critic.fixture.smoke"
+  ],
+  "content_hash": "sha256:d5099afdd3d3b65b815f36298ad6b8a71bca2631b32bd3a1caea84434635f33b"
+}

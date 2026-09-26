@@ -198,19 +198,31 @@ export async function extractCanon(
         const anchoredItems = anchorEvidence(
           nfcVersion,
           version.id,
-          rawItems.map((item) => ({
-            ...item,
-            evidence: Array.isArray(item.evidence)
-              ? item.evidence.map((ev) => ({
-                  ...ev,
-                  manuscript_version_id:
-                    typeof ev.manuscript_version_id === 'string' &&
-                    knownVersionIds.has(ev.manuscript_version_id)
-                      ? ev.manuscript_version_id
-                      : version.id,
-                }))
-              : [],
-          })),
+          rawItems.map((item) => {
+            let op = (item as { op?: unknown }).op;
+            if (
+              op === 'create' &&
+              ['event', 'fact', 'knowledge_state', 'relationship_state', 'proposition_truth'].includes(
+                String((item as { type?: unknown }).type),
+              )
+            ) {
+              op = 'assert';
+            }
+            return {
+              ...item,
+              op,
+              evidence: Array.isArray(item.evidence)
+                ? item.evidence.map((ev) => ({
+                    ...ev,
+                    manuscript_version_id:
+                      typeof ev.manuscript_version_id === 'string' &&
+                      knownVersionIds.has(ev.manuscript_version_id)
+                        ? ev.manuscript_version_id
+                        : version.id,
+                  }))
+                : [],
+            };
+          }),
         );
         const envelope: CanonDelta = {
           ...(call.output as CanonDelta),
