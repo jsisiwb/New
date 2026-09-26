@@ -114,7 +114,7 @@
 | [0105](0105-asserted-fact-takes-its-item-clock.md) | At chapter acceptance, an asserted fact without its own `valid_from` is valid from its item's `story_clock`; a fact with neither clock is rejected by the verifier |
 | [0106](0106-checker-agreement.md) | `standard.v29`: the continuity and knowledge checkers' reviewer-class findings join ADR-0100's second reading; a checker finding stands only when the second reading reproduces its kind or span, else it is a minor doubt |
 | [0107](0107-rejected-extraction-asks-again.md) | A resume after a rejected extraction asks the extractor again: each rejection is recorded and the next attempt's activity ids carry its number |
-| [0108](0108-stuck-chapters-stay-as-the-record.md) | G14a, G14r (`standard@24`), G18r and G19r (`standard@28`) stay as the record of their policies at the grant cap: no override, no regeneration on the old pins; the lines continue on fresh `standard@29` projects |
+| [0108](0108-stuck-chapters-stay-as-the-record.md) | G14a, G14r (`standard@24`), G17a chapter 2, G18r and G19r (`standard@28`) stay as the record of their policies at the grant cap: no override, no regeneration on the old pins; the lines continue on fresh `standard@29` projects |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
