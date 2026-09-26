@@ -398,7 +398,9 @@ run(
       const planning = await getNovelRun(pool, thirdId);
       if (!planning) throw new Error('run expected');
       const lease = new AbortController();
-      setTimeout(() => lease.abort(), 200);
+      setTimeout(() => {
+        lease.abort();
+      }, 200);
       const held = makeDeps(
         { projectId: thirdId },
         new MockProvider((req) => script(req)).injectFault({
