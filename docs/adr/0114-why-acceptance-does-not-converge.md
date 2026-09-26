@@ -1,6 +1,6 @@
 # ADR-0114: Why chapter acceptance does not converge — the diagnosis from run 3's record
 
-- **Status:** Accepted (provisional: the reading-variance measurement of run 4's STEP 1.2 has not run)
+- **Status:** Accepted (STEP 1.1 measured on the stored runs; the five-reading variance of STEP 1.2 is still to measure)
 - **Date:** 2026-09-26
 - **Deciders:** engineering (autonomous run; the operator reviews through the roll-up PR)
 - **Relates to:** ADR-0086 (the confirmation), ADR-0100 and ADR-0106 (second readings), ADR-0108, ADR-0115;
@@ -12,10 +12,9 @@ Run 3 accepted no chapter. G21r (`standard@31`) and G22a (`standard@32`) reached
 overall 91 with every gate passing — and each confirmation raised new majors that a second reading kept (G22-2); the
 reviser left one real slip in place for two rounds (G21-1). Run 4's STEP 1 asked for this to be measured from the stored
 runs (G17a chapter 2, G19r, G20r, G21r, G22a, G23r) and from five independent readings of frozen versions before any
-protocol change. In run 4 the permanent database and the bridge were unreachable from the sandbox (their variables were
-absent; `09-progress.md`), so neither measurement ran. `quality:findings` (the per-finding trace of STEP 1.1) was built
-and tested so that it runs on the stored runs as soon as the database is reachable. This ADR records what the
-repository's own record already establishes, and marks what only the measurement can answer.
+protocol change. The database and the bridge became reachable only at 12:56 UTC; `quality:findings` (the per-finding trace
+of STEP 1.1) then ran on the six stored runs (`13-live-run-gemini.md` §19.1, `ops/live-runs/run4/step1/`). This ADR records
+what the record established first and what the trace then measured.
 
 ## What the record establishes
 
@@ -47,17 +46,21 @@ next full reading draws a new sample. The chapter converges only when a whole re
 round cap rarely allows. The fix is in the protocol, not in the gates or the cap: decide a finding by several readings,
 tie a finding's standing to the text it quotes, and read the whole text fresh once, at the end (ADR-0115).
 
-## The questions of STEP 1.3, as far as the record answers them
+## The questions of STEP 1.3, answered from the stored runs (§19)
 
-- **New confirmation findings on text that had already passed unchanged:** at least G17a chapter 2's v5, G18r's v9 and
-  G14a's r9 are recorded as the same text read twice; the count over the six named runs needs `quality:findings` on the
-  stored runs (**BLOCKED**).
-- **How many were real slips:** in G18r, six of seven were real as written and one was real with an inflated severity;
-  G21r's reproduced confirmation slip was real; G22a's are not recorded by span (**BLOCKED** for the rest).
-- **Why the reviser failed on G21-1:** the record shows the patch was attempted, the slip survived v9 and v10, and the
-  rewrite changed the contract's closing status window instead — consistent with a patch on the wrong span or on one of
-  the two spans of a two-place contradiction; which of wrong span, rejected patch, new slip or no attempt needs the stored
-  patches (**BLOCKED**).
+- **New confirmation findings on text that had already passed unchanged:** 18 of the 22 blocking or major findings of the
+  confirmations of G17a chapter 2, G21r and G22a. Over every reading of the six runs, 105 of 198 findings (53 %) were
+  raised on paragraphs the same evaluator had read and passed unchanged.
+- **How many were real slips:** about 11 of the 22 (canon, voice-card, register, world-rule, numeric, repeated-sentence and
+  terminology slips, each checkable against its quoted span); the other half are taste judgments (genre `other`, late
+  hook, deferred payoff) that one reading raises and the next does not.
+- **Why the reviser failed on G21-1:** not a wrong span, a rejected patch or a missing attempt. Each patch rewrote the
+  quoted sentence and the contradiction moved to the next place (r8: the bag “stuffed in the pocket”; r9: that sentence
+  fixed, the next still opening the bag; r10: removed), while a new slip (G9-6) stopped the chapter at the cap — a
+  two-place contradiction patched one place at a time.
+
+These numbers confirm the diagnosis: most findings that stop a chapter are new samples of text that had passed, about
+half of them real.
 
 ## Consequences
 

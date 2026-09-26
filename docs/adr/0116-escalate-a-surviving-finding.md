@@ -8,9 +8,11 @@
 
 ## Context
 
-**G21-1.** G21r's confirmation found a real slip that a second reading kept. The next two rounds were kept — they
-improved other findings — while the quoted sentence stayed as it was; the reviser rewrote elsewhere and broke the
-contract's closing status window, and the chapter ended at the cap. The ladder escalates only a *quarantined* attempt
+**G21-1.** G21r's confirmation found a real slip that a second reading kept: the money goes into the coat pocket and
+comes out of a plastic bag. The stored patches (`13-live-run-gemini.md` §19.2) show each round rewriting the quoted
+sentence while the contradiction moved to the next place — r8 made it “the bag stuffed in the pocket”, r9 fixed that
+sentence while the next still opened the bag, r10 removed it — and the chapter ended at the cap on a new slip. The rounds
+were kept, since other findings improved. The ladder escalates only a *quarantined* attempt
 (`no_repeat`, `switch_rung`: a round on the same parent and targets takes the untried rung). A kept round that leaves one
 finding in place is not an attempt that failed, so the same patch rung comes back every round. Under ADR-0115 the ledger
 keeps such a finding open for as long as its text stands, which makes the repetition certain rather than likely.
