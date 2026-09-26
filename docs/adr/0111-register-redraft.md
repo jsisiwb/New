@@ -27,7 +27,7 @@
 (and after the pronoun re-draft), the register report is run on it. A scene with more mixed utterances than
 `max(1, floor(per_1k_max × its 자 / 1,000))` (`registerMixAllowance`) is re-drafted once (activity
 `scene_draft:<n>:<scene>:register`) with a note that quotes the mixed utterances (at most eight) and states the rule: each
-character keeps the cast card's speech level toward each addressee, one level per addressee within a scene, a shift
+character keeps the cast card's dialogue register toward each addressee, one level per addressee within a scene, a shift
 only after an on-page trigger (provocation, a revealed rank, a changed relationship) and kept afterwards, and no switch
 inside one utterance; the scene's events, beats and length stay (`registerRedraftNote`). The re-draft is kept only when
 it mixes fewer utterances. Counted as `register_redraft`.
