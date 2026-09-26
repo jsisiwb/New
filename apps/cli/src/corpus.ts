@@ -116,8 +116,8 @@ export function statsSource(layer = 'lang/ko@6'): KoStyleSource {
  * chapter match, so the source files can be retired once it holds.
  *
  * `corpus:verify --database [--json]` (run 3) needs no source files: every stored chapter is measured again from its own
- * stored text, and each book's chapter count is checked. The source repository is needed only when this reports a
- * mismatch.
+ * stored text, and each book's recorded main-story count and gapless spine are checked. The source repository is needed
+ * only when this reports a mismatch.
  */
 async function verifyCmd(pool: Pool, args: readonly string[]): Promise<Result> {
   const [target] = args;
@@ -249,7 +249,9 @@ async function verifyDatabaseCmd(pool: Pool): Promise<Result> {
       .map((r) => ({ spine_index: r.spine_index, fields: storedChapterMismatches(r) }))
       .filter((m) => m.fields.length > 0);
     const main = rows.rows.filter((r) => r.kind === 'chapter' || r.kind === 'prologue').length;
-    const ok = mismatches.length === 0 && rows.rows.length === b.chapter_count;
+    // The importer stores the main-story count (prologue and chapters) and numbers the spine from 1 without gaps.
+    const contiguous = rows.rows.every((r, i) => r.spine_index === i + 1);
+    const ok = mismatches.length === 0 && main === b.chapter_count && contiguous;
     if (!ok) complete = false;
     totals.spine_chapters += rows.rows.length;
     totals.main_chapters += main;
@@ -257,8 +259,9 @@ async function verifyDatabaseCmd(pool: Pool): Promise<Result> {
     out.push({
       title: b.title,
       chapters_database: rows.rows.length,
-      chapter_count: b.chapter_count,
       main_chapters: main,
+      main_chapters_recorded: b.chapter_count,
+      spine_contiguous: contiguous,
       chars_with_spaces: rows.rows.reduce((n, r) => n + r.chars_with_spaces, 0),
       voice_eligible: b.voice_eligible,
       is_translation: b.is_translation,
