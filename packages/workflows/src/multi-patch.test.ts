@@ -34,6 +34,32 @@ describe('multi-patch revision helpers (ADR-0077)', () => {
     ]);
   });
 
+  it('anchors spanless issues with paragraph claim anchors when text is provided', () => {
+    const text = '첫 문장이다.\n\n두 번째 문장이다.\n\n세 번째 문장이다.\n\n네 번째 문장이다.';
+    const cps = Array.from(text).length;
+    const p13Issue = {
+      id: 'req1',
+      claim: '첫 3문장 이내에 회귀를 명시적으로 인지해야 하나 현재 p1~p3은 부족하다',
+    };
+    const c = clusterIssueSpans([p13Issue], cps, 0, text);
+    expect(c.length).toBe(1);
+    expect(c[0]?.start).toBe(0);
+    expect(c[0]?.issues[0]?.id).toBe('req1');
+    expect(c[0]?.end).toBeGreaterThan(15);
+  });
+
+  it('does not cluster unanchored or length_out_of_range issues into whole text when text is provided', () => {
+    const text = '첫 문장이다.\n\n두 번째 문장이다.';
+    const cps = Array.from(text).length;
+    const lenIssue = {
+      id: 'len1',
+      kind: 'length_out_of_range',
+      claim: '분량 7000자 초과',
+    };
+    const c = clusterIssueSpans([lenIssue], cps, 0, text);
+    expect(c).toEqual([]);
+  });
+
   it('merges patches right to left in code points and reports the envelope', () => {
     // Synthetic test string, not manuscript prose.
     const parent = '가나다라마바사아자차';

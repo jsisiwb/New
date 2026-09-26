@@ -30,3 +30,4 @@ export * from './auto-resume.js';
 export * from './cast-batches.js';
 export * from './arc-summary.js';
 export * from './ops-tools.js';
+export * from './readings-variance.js';

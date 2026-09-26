@@ -35,7 +35,7 @@ const REQUIRED_FAMILIES = [
   // ADR-0086
   'plan_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 318;
+const TOTAL_PROMPT_VERSIONS = 319;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
@@ -429,8 +429,17 @@ describe('prompt registry (ADR-0016)', () => {
     const writer = reg.get('scene_writer@4.10.0').system_template;
     expect(writer).toContain('말투만 따르고 그 문장을 원고에 그대로 옮기지 않는다');
     expect(writer).toContain('처음 만난 상대의 이름을 부르지 않는다');
-    // 4.10.0 sorts after 4.9.0 numerically, and without a ceiling it is the newest active set.
-    expect(reg.activeSet().mapping).toEqual(v410);
+  });
+
+  it('a policy ceiling of 4.11.0 changes only the plan critic (ADR-0117)', () => {
+    const v410 = reg.activeSet('4.10.0').mapping;
+    const v411 = reg.activeSet('4.11.0').mapping;
+    const changed = Object.keys(v411).filter((f) => v411[f] !== v410[f]);
+    expect(changed).toEqual(['plan_critic']);
+    const critic = reg.get('plan_critic@4.11.0').system_template;
+    expect(critic).toContain('주인공이 ‘회귀 전 기억’이나 ‘원작 지식’으로 판단하고 움직이는 비트만 예외');
+    // 4.11.0 sorts after 4.10.0 numerically, and without a ceiling it is the newest active set.
+    expect(reg.activeSet().mapping).toEqual(v411);
   });
 
   it('pins the full-bible contracts in the revised planning prompts', () => {

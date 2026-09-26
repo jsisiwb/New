@@ -5,9 +5,23 @@
  * and the usable patches are merged into one revision. Pure functions: code-point offsets into NFC text.
  */
 
+import { segmentParagraphs, toNfcText } from '@yeonjae/prose';
+import { claimSpan } from './ladder.js';
+
 export interface SpanIssue {
   readonly id: string;
-  readonly chapter_span?: { readonly start?: number; readonly end?: number } | undefined;
+  readonly kind?: string | undefined;
+  readonly dimension?: string | undefined;
+  readonly claim?: string | undefined;
+  readonly chapter_span?:
+    | {
+        readonly start?: number | undefined;
+        readonly end?: number | undefined;
+        readonly quote?: string | undefined;
+        readonly paragraph_ids?: readonly string[] | undefined;
+      }
+    | null
+    | undefined;
 }
 
 export interface IssueCluster<T extends SpanIssue> {
@@ -16,23 +30,71 @@ export interface IssueCluster<T extends SpanIssue> {
   readonly issues: readonly T[];
 }
 
+export function resolveIssueSpan<T extends SpanIssue>(
+  issue: T,
+  total: number,
+  text?: string,
+): { start: number; end: number } | undefined {
+  if (
+    issue.chapter_span?.start !== undefined &&
+    issue.chapter_span?.end !== undefined &&
+    issue.chapter_span.start < issue.chapter_span.end &&
+    issue.chapter_span.start >= 0 &&
+    issue.chapter_span.end <= total
+  ) {
+    return { start: issue.chapter_span.start, end: issue.chapter_span.end };
+  }
+  if (text !== undefined) {
+    if (issue.kind === 'length_out_of_range' || issue.dimension === 'length') return undefined;
+    if (issue.chapter_span?.paragraph_ids && issue.chapter_span.paragraph_ids.length > 0) {
+      const paragraphs = segmentParagraphs(toNfcText(text));
+      const ids = new Set(issue.chapter_span.paragraph_ids);
+      const matched = paragraphs.filter((p) => ids.has(p.id));
+      if (matched.length > 0) {
+        const first = matched[0];
+        const last = matched[matched.length - 1];
+        if (first && last && first.start < last.end) {
+          return { start: first.start, end: last.end };
+        }
+      }
+    }
+    if (issue.claim) {
+      const span = claimSpan(issue.claim, text);
+      if (span && span.start < span.end && span.start >= 0 && span.end <= total) {
+        return span;
+      }
+    }
+  }
+  return undefined;
+}
+
 /**
  * Cluster issues by span: sorted by start, an issue within `gap` code points of the cluster before it joins
- * it. Issues without a usable span join no cluster; when no issue has one, the whole text is one cluster.
+ * it. Issues without a usable span join no cluster; when no issue has one and text is not provided, the whole
+ * text is one cluster. When text is provided, spanless issues are resolved via claim anchors or paragraph ids;
+ * unresolvable issues (such as length_out_of_range) do not cluster the entire text.
  */
 export function clusterIssueSpans<T extends SpanIssue>(
   issues: readonly T[],
   total: number,
   gap: number,
+  text?: string,
 ): IssueCluster<T>[] {
   const spanned = issues
-    .map((i) => ({ i, s: i.chapter_span?.start, e: i.chapter_span?.end }))
+    .map((i) => ({ i, span: resolveIssueSpan(i, total, text) }))
     .filter(
-      (x): x is { i: T; s: number; e: number } =>
-        x.s !== undefined && x.e !== undefined && x.s < x.e && x.s >= 0 && x.e <= total,
+      (x): x is { i: T; span: { start: number; end: number } } =>
+        x.span !== undefined &&
+        x.span.start < x.span.end &&
+        x.span.start >= 0 &&
+        x.span.end <= total,
     )
+    .map((x) => ({ i: x.i, s: x.span.start, e: x.span.end }))
     .sort((a, b) => a.s - b.s || a.e - b.e || (a.i.id < b.i.id ? -1 : 1));
-  if (spanned.length === 0) return issues.length ? [{ start: 0, end: total, issues }] : [];
+  if (spanned.length === 0) {
+    if (text !== undefined) return [];
+    return issues.length ? [{ start: 0, end: total, issues }] : [];
+  }
   const out: { start: number; end: number; issues: T[] }[] = [];
   for (const x of spanned) {
     const last = out[out.length - 1];

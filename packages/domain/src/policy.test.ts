@@ -37,6 +37,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@33',
       'policy/standard@34',
       'policy/standard@35',
+      'policy/standard@36',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -45,6 +46,19 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v36 is standard.v35 with bounded plan critic loop and prompt ceiling 4.11.0 (ADR-0117)', () => {
+    const v35 = requirePolicy('policy/standard@35', policies);
+    const v36 = requirePolicy('policy/standard@36', policies);
+    expect(v36.planning?.plan_critic).toEqual({ ...v35.planning?.plan_critic, max_repairs: 2 });
+    expect(v36.prompts).toEqual({ max_version: '4.11.0' });
+    const strip = (p: typeof v35) => {
+      const { version: _v, name: _n, content_hash: _h, planning, prompts: _pr, ...rest } = p;
+      const { plan_critic: _pc, ...pl } = planning ?? {};
+      return { ...rest, pl };
+    };
+    expect(strip(v36)).toEqual(strip(v35));
   });
 
   it('standard.v35 is standard.v34 with the escalation of a surviving finding (ADR-0116)', () => {

@@ -88,6 +88,7 @@ import {
   buildRunReport,
   fixRates,
   findingTrace,
+  measureVersionVariance,
   callRows,
   inspectPack,
   projectCost,
@@ -493,6 +494,18 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
           chapter ? { chapter: Number(chapter) } : {},
         );
         return { ok: true, output: flags.includes('--json') ? rows : renderFindingTrace(rows) };
+      }
+      case 'quality:readings': {
+        // Run 5 STEP 1.2: reading variance across evaluator readings on frozen manuscript versions.
+        const defaultTargets = [
+          '01a0dd28-a8ce-70d3-9321-49c2dee70837',
+          '01a0dd36-4a3a-7165-b5a9-87a7e53395a6',
+          '01a0dd58-3bc9-7d5b-a7a9-b9a2f3bd7fc9',
+        ];
+        const targets = rest.filter((a) => !a.startsWith('--'));
+        const versionIds = targets.length > 0 ? targets : defaultTargets;
+        const report = await measureVersionVariance(pool, versionIds);
+        return { ok: true, output: rest.includes('--json') ? report.rows : report.markdown };
       }
       case 'pack:inspect': {
         // ADR-0079: rebuild a chapter's pack from its stored contract; every section against the budget.
@@ -1701,6 +1714,7 @@ export const DB_COMMANDS = new Set([
   'quality:run-report',
   'quality:fix-rates',
   'quality:findings',
+  'quality:readings',
   'quality:lint-ko',
   'pack:inspect',
   'story:state',
@@ -1881,6 +1895,7 @@ Database commands (DATABASE_URL required):
   quality:findings <project> [--chapter=N] [--json]
                                                per blocking/major finding: round, version, reading, judge or checker,
                                                its span against that evaluator's last reading, second reading, later fate
+  quality:readings [versionId...] [--json]     evaluator score variance across readings on frozen manuscript versions (Run 5)
   quality:checkpoint <project> [--chapter=N] [--out=<dir>] [--label=<name>] [--json]
                                                a chapter run's live-checkpoint record (length, scenes and talk, rounds,
                                                gates, reader-secret, device and copy findings, likeness, calls); --out

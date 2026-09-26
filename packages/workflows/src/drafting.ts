@@ -470,6 +470,15 @@ export async function planScenes(
             cutDesign: ctx.policy.planning?.cut_design,
             partnerRequired: floor?.partner_in_contract,
           });
+          criticIssues = await runPlanCritic(ctx, {
+            chapterNo: ch,
+            contract,
+            scenes,
+            pack: input.pack,
+            nameOf,
+            scheduleText,
+            activitySuffix: `:repair${String(attempt)}`,
+          });
           planFindings.push({
             rule: 'PLAN-REPAIR',
             severity: 'minor',
@@ -477,9 +486,14 @@ export async function planScenes(
             message: `결함 ${String(serious.length)}개로 장면 설계를 다시 받았다(${String(attempt)}회차)`,
             repaired: true,
           });
-          serious = again
-            .filter((f) => f.severity !== 'minor' && !f.repaired)
-            .map((f) => ({ target: f.target, message: f.message }));
+          serious = [
+            ...again
+              .filter((f) => f.severity !== 'minor' && !f.repaired)
+              .map((f) => ({ target: f.target, message: f.message })),
+            ...criticIssues
+              .filter((i) => i.severity !== 'minor' && !i.target.includes('계약'))
+              .map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+          ];
           recordNormalization('plan_repair');
         }
       }
@@ -502,7 +516,7 @@ export async function planScenes(
   );
 }
 
-/** ADR-0086 (U8): the pre-flight plan critic over the contract and scene plans; malformed items are dropped. */
+/** ADR-0086 (U8), ADR-0117: the pre-flight plan critic over the contract and scene plans; malformed items are dropped. */
 async function runPlanCritic(
   ctx: WorkflowContext,
   input: {
@@ -512,12 +526,13 @@ async function runPlanCritic(
     pack: StoredPack;
     nameOf: (id: string) => string;
     scheduleText: string | undefined;
+    activitySuffix?: string | undefined;
   },
 ): Promise<PlanCriticIssue[]> {
   const call = await modelCall<{ issues?: unknown }>(ctx, {
     step: 'scene_plan',
     family: 'plan_critic',
-    activityId: `plan_critic:${String(input.chapterNo)}`,
+    activityId: `plan_critic:${String(input.chapterNo)}${input.activitySuffix ?? ''}`,
     variables: {
       scene_plans: renderScenesForCritic(input.scenes, input.nameOf),
       reveal_schedule: input.scheduleText ?? '(설정에 기록된 비밀 없음)',

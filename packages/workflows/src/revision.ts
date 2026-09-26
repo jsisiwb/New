@@ -151,7 +151,9 @@ export function pickRevisionDimension(
   issues: readonly Issue[],
   failing?: ReadonlySet<Issue['dimension']>,
 ): Issue['dimension'] | undefined {
-  const open = issues.filter((i) => i.severity === 'blocking' || i.severity === 'major');
+  const open = issues.filter(
+    (i) => (i.severity === 'blocking' || i.severity === 'major') && i.dimension !== 'length',
+  );
   const pool =
     failing && open.some((i) => failing.has(i.dimension))
       ? open.filter((i) => failing.has(i.dimension))
@@ -480,9 +482,11 @@ export async function reviseVersionMulti(
     async () => {
       const targeted = input.issues.filter(
         (i) =>
-          input.extraTargetIds?.has(i.id) === true ||
-          ((input.allDimensions === true || i.dimension === input.dimension) &&
-            (i.severity === 'blocking' || i.severity === 'major')),
+          i.kind !== 'length_out_of_range' &&
+          i.dimension !== 'length' &&
+          (input.extraTargetIds?.has(i.id) === true ||
+            ((input.allDimensions === true || i.dimension === input.dimension) &&
+              (i.severity === 'blocking' || i.severity === 'major'))),
       );
       if (targeted.length === 0)
         throw new WorkflowError(
@@ -493,7 +497,10 @@ export async function reviseVersionMulti(
       const nfc = toNfcText(input.version.text);
       const total = codePointLength(nfc.text);
       const limit = Math.min(cfg.max_patches, ctx.policy.revision.max_patches_per_round);
-      const clusters = clusterIssueSpans(targeted, total, cfg.merge_gap_chars).slice(0, limit);
+      const clusters = clusterIssueSpans(targeted, total, cfg.merge_gap_chars, nfc.text).slice(
+        0,
+        limit,
+      );
       const language: 'en' | 'ko' = ctx.identity.outputLanguage.language ?? 'en';
       await bind(ctx, {
         [`patch.${input.chapterNo}.r${input.round}`]: patchId(ctx, input.version.id, input.round),
