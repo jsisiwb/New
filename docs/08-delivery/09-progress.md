@@ -57,8 +57,7 @@ evaluation three times: expect roughly twice the calls per 화 until the live ra
 findings get one un-re-critiqued re-plan; the design is in `13-live-run-gemini.md` §19.5: a new plan-critic version and
 a bounded re-plan → re-critique loop), G9-6 (recurred in G21r v11), G12-2, G9-8, G5-8, the 3인칭 cutaway half of G7-4. G21-1 and
 G22-2 are addressed by `@35` / `@34` pending live evidence. **BLOCKED:** vector retrieval (`EMBEDDING_PROVIDER_*` unset).
-**Not done:** STEP 1.2 (five readings of G22a v10, G21r v8 and a G23r version: needs a readings tool), STEP 3's packet,
-STEP 4.
+**Not done:** STEP 3's packet, STEP 4.
 
 **Resume point.**
 
@@ -79,6 +78,35 @@ STEP 4.
 **Safety rules.** Unchanged: tests only against the sandbox databases through the wrapper; only live runs, corpus commands
 and reports touch the permanent `DATABASE_URL`, from live worktrees; a live worktree is rebuilt after every checkout and
 never checked out while its project runs; no full `pnpm check` while a live run is in flight.
+
+## Run 5: STEP 1.2 — reading variance, `quality:readings` — 2026-09-26
+
+**Built:** `measureVersionVariance` (`readings-variance.ts`): five independent readings of each frozen manuscript
+version, measuring single-reading noise (1-of-5), strong consensus (≥3-of-5), 2-of-3 quorum retention, and score
+spread per dimension. `quality:readings [versionId...] [--json]` CLI command.
+
+**Measured:** G21r v8 (36 findings, 5.6% single-reading noise, 94.4% 2-of-3 retained), G22a v10 (34, 8.8%, 91.2%),
+G23r v6 (20, 20.0%, 80.0%). Score spreads: structure has the widest swing at Δ8.7 for G22a (`13-live-run-gemini.md`
+§19.2). Conclusion: K=3 quorum (2-of-3) reliably filters spurious single-reading findings while preserving consistent
+slips.
+
+**Tests:** `readings-variance.test.ts`.
+
+## Run 5: STEP 1.3 — plan critic bounded loop, multi-patch claim anchor fix — `standard.v36` — 2026-09-26
+
+**Built (ADR-0117):** `plan_critic@4.11.0` (narrows `reveal_unsafe` exemption to prior-life/source-work knowledge),
+`planning.plan_critic.max_repairs` (bounded re-plan → re-critique loop up to `max_repairs`); `claimSpan` (`ladder.ts`)
+resolves paragraph anchors (`p1~p3`, `opening`, `ending`) to code-point spans; `clusterIssueSpans` (`multi-patch.ts`)
+anchors spanless issues via `claimSpan` and excludes `length_out_of_range` from patch clusters;
+`pickRevisionDimension` (`revision.ts`) excludes `dimension === 'length'`. Traceability: G24r round-10 stall
+(the targeted_reviser received the entire manuscript as a single patch → truncated output → `patch_regressed`).
+
+**Measured:** G24r chapter 1 rounds 8–11 quarantined by the bug; fixed and extended (+5 rounds) with the claim anchor
+fix. G24a chapter 1 accepted (8 rounds, `standard@35`). G23r chapters 1–3 accepted (`standard@33`), chapter 4
+in flight.
+
+**Tests:** `policy.test.ts` (39/39), `registry.test.ts` (21/21), `multi-patch.test.ts` (7/7),
+`readings-variance.test.ts` (1/1).
 
 ## Run 4: STEP 0 — setup — 2026-09-26
 
