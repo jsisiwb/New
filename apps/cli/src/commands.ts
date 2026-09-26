@@ -87,6 +87,7 @@ import {
   auditSeries,
   buildRunReport,
   fixRates,
+  findingTrace,
   callRows,
   inspectPack,
   projectCost,
@@ -97,6 +98,7 @@ import {
   readHeartbeatFile,
   renderRunReport,
   renderFixRates,
+  renderFindingTrace,
   simulatedProvider,
   exportAccepted,
   ExportRefusedError,
@@ -478,6 +480,19 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
           .filter(Boolean);
         const report = await fixRates(pool, projects);
         return { ok: true, output: rest.includes('--json') ? report : renderFixRates(report) };
+      }
+      case 'quality:findings': {
+        // Run 4 STEP 1.1: per blocking/major finding, its span against the evaluator's last reading, whether a
+        // second reading kept it, and its fate in later readings. Reads only; safe beside a live run.
+        const [projectId, ...flags] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        const chapter = flags.find((f) => f.startsWith('--chapter='))?.slice('--chapter='.length);
+        const rows = await findingTrace(
+          pool,
+          projectId,
+          chapter ? { chapter: Number(chapter) } : {},
+        );
+        return { ok: true, output: flags.includes('--json') ? rows : renderFindingTrace(rows) };
       }
       case 'pack:inspect': {
         // ADR-0079: rebuild a chapter's pack from its stored contract; every section against the budget.
@@ -1685,6 +1700,7 @@ export const DB_COMMANDS = new Set([
   'series:audit',
   'quality:run-report',
   'quality:fix-rates',
+  'quality:findings',
   'quality:lint-ko',
   'pack:inspect',
   'story:state',
@@ -1862,6 +1878,9 @@ Database commands (DATABASE_URL required):
                                                story-time regressions, repeated openings (accepted canon only)
   quality:run-report <project> [--metrics-log=<file>] [--status-file=<file>] [--json]
   quality:fix-rates [--projects=<id,id>] [--json]   per finding kind, the share of targeted findings a revision round resolved (ADR-0087)
+  quality:findings <project> [--chapter=N] [--json]
+                                               per blocking/major finding: round, version, reading, judge or checker,
+                                               its span against that evaluator's last reading, second reading, later fate
   quality:checkpoint <project> [--chapter=N] [--out=<dir>] [--label=<name>] [--json]
                                                a chapter run's live-checkpoint record (length, scenes and talk, rounds,
                                                gates, reader-secret, device and copy findings, likeness, calls); --out

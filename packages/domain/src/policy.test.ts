@@ -35,6 +35,8 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@31',
       'policy/standard@32',
       'policy/standard@33',
+      'policy/standard@34',
+      'policy/standard@35',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -43,6 +45,32 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v35 is standard.v34 with the escalation of a surviving finding (ADR-0116)', () => {
+    const v34 = requirePolicy('policy/standard@34', policies);
+    const v35 = requirePolicy('policy/standard@35', policies);
+    expect(v35.revision.ladder).toEqual({ ...v34.revision.ladder, escalate_after_patches: 2 });
+    const strip = (p: typeof v34) => {
+      const { version: _v, name: _n, content_hash: _h, revision, ...rest } = p;
+      const { ladder: _l, ...rev } = revision;
+      return { ...rest, rev };
+    };
+    expect(strip(v35)).toEqual(strip(v34));
+  });
+
+  it('standard.v34 is standard.v33 with consensus readings and the finding ledger (ADR-0115)', () => {
+    const v33 = requirePolicy('policy/standard@33', policies);
+    const v34 = requirePolicy('policy/standard@34', policies);
+    expect(v34.evaluation).toEqual({
+      ...v33.evaluation,
+      consensus: { readings: 3, quorum: 2, ledger: { window_paragraphs: 1 } },
+    });
+    const strip = (p: typeof v33) => {
+      const { version: _v, name: _n, content_hash: _h, evaluation: _e, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v34)).toEqual(strip(v33));
   });
 
   it('standard.v33 is standard.v32 with the voice re-read on changed dialogue (ADR-0113)', () => {

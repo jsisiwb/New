@@ -57,6 +57,10 @@ export interface ProductionPolicy {
        */
       switch_rung?: boolean;
       /**
+       * ADR-0116 (live defect G21-1): a blocking or major finding that is still open after a kept patch round that targeted it has survived that round (a finding is its evaluator and the text of the paragraphs it quotes, or its kind when it quotes nothing). The next round tells the reviser so — change the quoted sentence itself, and both places of a contradiction — and a finding that survived this many kept patch rounds is answered by drafting the scene holding it again while max_scene_rewrites allows. A quarantined patch is never repeated (no_repeat, switch_rung). Absent: kept rounds that leave a finding in place repeat the patch rung. Starting value 2.
+       */
+      escalate_after_patches?: number;
+      /**
        * ADR-0093 (live defect G10-3): an open length finding (the chapter outside its length band) is answered by rewriting the scene furthest from its planned length, told its target in 자, while max_scene_rewrites allows. Absent or false: the finding stays untargeted while quoted findings exist.
        */
       length_to_scene?: boolean;
@@ -208,6 +212,25 @@ export interface ProductionPolicy {
      * ADR-0106 (live defects G19-1, G19-2): with major_agreement, the continuity and knowledge checkers' reviewer-class findings (major or blocking) join the second reading. When every blocking or major finding of an evaluation is either such a checker finding or a taste judge's reviewer-class major, each implicated checker reads the text once more too; a checker finding stands only when the second reading rates a finding of the same kind, or one whose span overlaps it, major or blocking — else it is a low-confidence doubt (docs/05-generation/02-evaluation-and-revision-pipeline.md §3) and is recorded as minor with a note. Findings outside the reviewer class (canon_contradiction, timeline_error, knowledge_leak, …), lint findings and carried findings leave the evaluation as it is. Absent or false: one checker reading decides.
      */
     checker_agreement?: boolean;
+    /**
+     * ADR-0115 (live defects G19-1, G19-2, G22-2): every model evaluator that runs in an evaluation reads the text `readings` times. Its findings are grouped across the readings (overlapping spans whatever the kind, or the same kind when neither quotes the text); a reviewer-class finding stands at the highest severity that at least `quorum` readings rate it at or above, else it is recorded as minor with a note; a finding outside the reviewer class (canon_contradiction, timeline_error, knowledge_leak, …) stands on one reading as before. Gated scores are the medians of the readings, and a contract criterion fails only when `quorum` readings fail it. With consensus, major_agreement and checker_agreement are not applied. `ledger`: in an evaluation with a parent scorecard (a re-reading after a patch, never the confirmation), a blocking or major finding on paragraphs unchanged since its evaluator last read the chapter, more than `window_paragraphs` from a changed paragraph, counts only when it re-raises an open finding — otherwise it is held as minor for the final full reading; an open finding on unchanged paragraphs stays open whatever the re-reading says; one on changed text is resolved unless the re-reading raises it again; and revision.convergence.confirm_full runs the confirmation at most once per chapter. Absent: one reading decides.
+     */
+    consensus?: {
+      /**
+       * Readings per evaluator. Starting value 3.
+       */
+      readings: number;
+      /**
+       * Readings that must rate a reviewer-class finding blocking or major. Starting value 2.
+       */
+      quorum: number;
+      ledger?: {
+        /**
+         * Paragraphs on each side of a changed paragraph still judged as new text. Starting value 1.
+         */
+        window_paragraphs: number;
+      };
+    };
     /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */

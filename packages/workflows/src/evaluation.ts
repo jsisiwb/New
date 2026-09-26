@@ -83,6 +83,13 @@ import {
 } from './planning.js';
 import { renderRevealSchedule } from './reveal-schedule.js';
 import { modelCall, runStep, saveArtifact, type WorkflowContext } from './runtime.js';
+import {
+  applyLedger,
+  changedParagraphIds,
+  consensusCriteria,
+  consensusIssues,
+  medianReadings,
+} from './consensus.js';
 
 export type Scorecard = Generated.ScorecardSchema.Scorecard;
 export type Issue = Generated.IssueSchema.Issue;
@@ -506,6 +513,11 @@ export interface EvaluationResult {
    */
   readonly mode?: 'full' | 'targeted' | undefined;
   readonly rerun?: readonly EvaluatorName[] | undefined;
+  /**
+   * ADR-0115: the finding ledger decided this evaluation (it had a parent scorecard): its fresh findings on unchanged
+   * text were held, so it is not the chapter's fresh full reading.
+   */
+  readonly ledger?: boolean | undefined;
 }
 
 const SOURCE: Readonly<Record<EvaluatorName, string>> = {
@@ -951,6 +963,108 @@ export async function evaluateVersion(
         const r = done[i];
         if (r) results.set(e, r);
       });
+      // ADR-0115 (`evaluation.consensus`): every evaluator that ran reads K times; its findings are decided by a quorum
+      // of the readings and its scores are their medians. The first reading keeps its activity id.
+      const consensus = policyEval?.consensus;
+      const consensusFound = new Map<EvaluatorName, Issue[]>();
+      if (consensus && consensus.readings > 1) {
+        const readings = new Map<EvaluatorName, EvaluatorOutput[]>(
+          [...results].map(([e, r]) => [e, [r.output]]),
+        );
+        for (let k = 2; k <= consensus.readings; k++) {
+          actSuffix = `:c${String(k)}`;
+          const more = await runBounded(
+            toRun.map((e) => () => call(e)),
+            policyEval.max_parallel_evaluators,
+          );
+          toRun.forEach((e, i) => {
+            const r = more[i];
+            if (!r) return;
+            evaluatorCalls.push(r.llmCallId);
+            readings.get(e)?.push(r.output);
+          });
+        }
+        actSuffix = '';
+        const reviewer = new Set<string>(ctx.policy.override_matrix.reviewer);
+        for (const [e, outs] of readings) {
+          const first = results.get(e);
+          if (!first) continue;
+          consensusFound.set(
+            e,
+            consensusIssues(
+              outs.map((o, r) =>
+                (o.issues ?? []).map((raw, i) =>
+                  toIssue(ctx, v.id, SOURCE[e], EVALUATOR_DIMENSION[e], raw, r * 1000 + i, anchor),
+                ),
+              ),
+              {
+                quorum: consensus.quorum,
+                reviewer,
+                ko,
+                classFor: (kind, severity) => overrideClassFor(ctx.policy, kind, severity),
+              },
+            ),
+          );
+          const merged = medianReadings(outs);
+          results.set(e, {
+            ...first,
+            output:
+              e === 'contract_checker'
+                ? {
+                    ...merged,
+                    criteria: consensusCriteria(
+                      outs.map((o) => o.criteria),
+                      consensus.quorum,
+                    ),
+                  }
+                : merged,
+          });
+        }
+      }
+      // ADR-0115: with a parent scorecard, each re-reading goes through the finding ledger (never the confirmation).
+      const ledgerRule =
+        consensus?.ledger && carry && !input.confirm ? consensus.ledger : undefined;
+      const ledgerFor = (e: EvaluatorName, fresh: Issue[]): Issue[] => {
+        if (!ledgerRule || !carry) return fresh;
+        const lastText = carry.lastReadTexts?.[e] ?? carry.versionText;
+        const beforeParagraphs = segmentParagraphs(toNfcText(lastText));
+        const parentParagraphs = segmentParagraphs(toNfcText(carry.versionText));
+        const prior = carry.scorecard.issues
+          .filter((i) => i.source === SOURCE[e])
+          .map((i): Issue => {
+            const { chapter_span: span, ...rest } = i;
+            if (!span) return rest;
+            if (span.quote) {
+              const found = anchorIssueQuote(nfc, paragraphs, span.quote);
+              return found
+                ? { ...rest, chapter_span: { ...found, manuscript_version_id: v.id } }
+                : rest;
+            }
+            // A quoteless span follows its paragraphs' text into this version.
+            const moved = (span.paragraph_ids ?? []).map((id) => {
+              const text = parentParagraphs.find((p) => p.id === id)?.text;
+              return paragraphs.find((p) => p.text === text)?.id;
+            });
+            return moved.length && moved.every((id) => id !== undefined)
+              ? {
+                  ...rest,
+                  chapter_span: { manuscript_version_id: v.id, paragraph_ids: moved },
+                }
+              : rest;
+          });
+        const out = applyLedger({
+          fresh,
+          prior,
+          changed: changedParagraphIds(beforeParagraphs, paragraphs),
+          paragraphs,
+          window: ledgerRule.window_paragraphs,
+          ko,
+        });
+        let n = 0;
+        return out.issues.map((i) =>
+          out.carried.includes(i) ? { ...i, id: issueIdFor(ctx, v.id, SOURCE[e], 5000 + n++) } : i,
+        );
+      };
       const carriedFrom = (e: EvaluatorName) =>
         results.has(e) || !carry ? {} : { carried_from: carry.scorecard.id };
       const carriedIssues = (e: EvaluatorName): Issue[] => {
@@ -1032,6 +1146,11 @@ export async function evaluateVersion(
           continue;
         }
         evaluatorCalls.push(r.llmCallId);
+        const agreed = consensusFound.get(e);
+        if (agreed) {
+          issues.push(...ledgerFor(e, agreed));
+          continue;
+        }
         (r.output.issues ?? []).forEach((raw, i) =>
           issues.push(toIssue(ctx, v.id, SOURCE[e], EVALUATOR_DIMENSION[e], raw, i, anchor)),
         );
@@ -1067,7 +1186,8 @@ export async function evaluateVersion(
       // each such judge reads the text once more; a major stands only when the second reading reproduces its kind as
       // major or blocking, and the two readings' rubric sub-scores are averaged.
       // ADR-0106 (`checker_agreement`): the continuity and knowledge checkers' reviewer-class findings join them.
-      if (policyEval?.major_agreement === true) {
+      // ADR-0115: K consensus readings supersede the two-reading agreement.
+      if (policyEval?.major_agreement === true && consensusFound.size === 0) {
         const reviewer = new Set<string>(ctx.policy.override_matrix.reviewer);
         const checkers = policyEval.checker_agreement === true ? AGREEMENT_CHECKERS : [];
         const implicated = agreementJudges(issues, results, reviewer, checkers);
@@ -1416,6 +1536,7 @@ export async function evaluateVersion(
         approvable: autoApprovable,
         packs: { checker: checker.ref.pack_id, checker_hash: checker.ref.pack_hash },
         ...(policyEval ? { mode: plan.mode, rerun: plan.rerun } : {}),
+        ...(ledgerRule ? { ledger: true } : {}),
       };
     },
     `${v.id}${tag}`,

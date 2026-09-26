@@ -103,6 +103,11 @@ export interface EvaluationCarry {
   readonly changedClaims: boolean;
   /** Patches applied since every evaluator last ran on the whole chapter. */
   readonly patchesSinceFull: number;
+  /**
+   * ADR-0115: the text each evaluator last read (absent: the parent's), so the finding ledger measures what changed
+   * since that reading rather than since the parent.
+   */
+  readonly lastReadTexts?: Readonly<Partial<Record<EvaluatorName, string>>> | undefined;
 }
 
 export interface ReevaluationPlan {
