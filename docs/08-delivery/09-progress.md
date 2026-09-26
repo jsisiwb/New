@@ -84,6 +84,20 @@ then `novel:run`. A chapter that ends one step short gets `novel:extend`. After 
 then run the unattended batch 6–15 and the 15-화 audit. Open: G16-2 (not seen in G18r), G12-2, G9-6, G9-8, G7-4, G5-8. A
 rejected extraction still replays its recorded answers on resume (ADR-0103, deferred).
 
+## Run 3: unattended runs part 2, `corpus:verify --database` — 2026-09-26
+
+**Built:** ADR-0109: `novel:run --auto-resume=N [--resume-base-sec] [--resume-max-sec]` (`autoResumeDecision`): a run
+failed on a curable fault resumes by itself after a doubling wait, the wait in the status file (`waiting`) and the
+reason in the `run.resumed` event; the runner's lost lease aborts in-flight calls as `lease_lost` (`cancelSignals`).
+`corpus:verify --database` (`storedChapterMismatches`): every stored chapter measured again from its own text (SHA-256,
+자 with and without spaces, paragraphs) and each book's main-story count checked, no source files needed.
+
+**Measured:** `corpus:verify --database` on the permanent database, 08:46 UTC: `complete: true` — 3 books, 1,138 spine
+chapters, 1,000 main-story chapters, 656 of them Korean (335 + 321; the third book is the translation), every stored
+measure reproduced. The fallback repository was not needed.
+
+**Tests:** `auto-resume.test.ts`, `novel.integration.test.ts` (lease_lost), `apps/cli/src/corpus-verify.test.ts`.
+
 ## Run 3: checker agreement (`standard.v29`), rejected extractions, stuck chapters — 2026-09-26
 
 **Built:** ADR-0106 (`standard@29`): `evaluation.checker_agreement` (`AGREEMENT_CHECKERS`, `agreementJudges(…, checkers)`,

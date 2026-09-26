@@ -33,7 +33,7 @@ import {
   type Pool,
 } from '@yeonjae/db';
 import { requirePolicy, type PolicyRef } from '@yeonjae/domain';
-import { type Gateway } from '@yeonjae/gateway';
+import { type CancellationInput, type Gateway } from '@yeonjae/gateway';
 import { requireVoiceProfile } from '@yeonjae/narrative';
 import { selectOperatorExemplars } from '@yeonjae/prose';
 import { produceChapter } from './chapter-production.js';
@@ -253,13 +253,18 @@ export async function advanceNovelRun(
      * lease read). A cancellation then writes nothing: the run stays claimable and resumes from its checkpoints.
      */
     leaseLost?: (() => boolean) | undefined;
+    /**
+     * ADR-0109: upstream aborts labelled with their reason (the runner's lost lease), so a provider call aborted by
+     * them is recorded with that reason rather than as an operator's cancellation.
+     */
+    cancelSignals?: readonly CancellationInput[] | undefined;
   } = {},
 ): Promise<AdvanceOutcome> {
   // Do not start another durable stage after an operator pause/cancel or a lost run lease.
   if (opts.isCancelled && (await opts.isCancelled())) return { kind: 'idle', run };
   if (run.status === 'planning') {
     try {
-      const planned = await planNovel(deps, run, opts.isCancelled);
+      const planned = await planNovel(deps, run, opts.isCancelled, opts.cancelSignals);
       if (opts.isCancelled && (await opts.isCancelled())) {
         return { kind: 'idle', run: (await getNovelRun(deps.pool, run.project_id)) ?? run };
       }
@@ -357,7 +362,14 @@ export async function advanceNovelRun(
         specVersion: stored.plan.spec_version,
         approvedBy: 'workflow:novel_run',
         ...(extraRounds > 0 ? { extraRounds } : {}),
-        ...(opts.isCancelled ? { cancellation: { isDurablyCancelled: opts.isCancelled } } : {}),
+        ...(opts.isCancelled || opts.cancelSignals
+          ? {
+              cancellation: {
+                ...(opts.isCancelled ? { isDurablyCancelled: opts.isCancelled } : {}),
+                ...(opts.cancelSignals ? { signals: opts.cancelSignals } : {}),
+              },
+            }
+          : {}),
       },
     );
     if (!result.accepted) {
@@ -534,6 +546,8 @@ export async function resumeNovelRun(
     projectId: string;
     stopAfterChapter?: number | null | undefined;
     autoContinue?: boolean | undefined;
+    /** ADR-0109: why the run is resumed (an unattended runner's own resume names the fault it waited out). */
+    reason?: string | undefined;
   },
 ): Promise<NovelRunRow> {
   const run = await getNovelRun(pool, input.projectId);
@@ -577,7 +591,10 @@ export async function resumeNovelRun(
           : {}),
         ...(input.autoContinue !== undefined ? { autoContinue: input.autoContinue } : {}),
       },
-      event: { kind: 'run.resumed' },
+      event: {
+        kind: 'run.resumed',
+        ...(input.reason ? { payload: { reason: input.reason } } : {}),
+      },
     });
     return r.run;
   });
@@ -628,7 +645,12 @@ export async function cancelNovelRun(pool: Pool, projectId: string): Promise<Nov
 
 // ---------------------------------------------------------------------------------------------------------
 
-async function planNovel(deps: NovelDeps, run: NovelRunRow, isCancelled?: () => Promise<boolean>) {
+async function planNovel(
+  deps: NovelDeps,
+  run: NovelRunRow,
+  isCancelled?: () => Promise<boolean>,
+  signals?: readonly CancellationInput[],
+) {
   const project = await getProject(deps.pool, run.project_id);
   const existing = project.settings.story_plan as StoredStoryPlan | undefined;
   if (existing?.concept_id === run.approved_concept_id) {
@@ -658,7 +680,12 @@ async function planNovel(deps: NovelDeps, run: NovelRunRow, isCancelled?: () => 
   const { ctx, mainTimelineId } = await makePlanContext(
     deps,
     run.project_id,
-    isCancelled ? { isDurablyCancelled: isCancelled } : undefined,
+    isCancelled || signals
+      ? {
+          ...(isCancelled ? { isDurablyCancelled: isCancelled } : {}),
+          ...(signals ? { signals } : {}),
+        }
+      : undefined,
   );
   await updateJob(deps.pool, ctx.job.id, { status: 'running', currentStep: 'plan' });
   const spec = await loadArtifactByKey(ctx, 'story_spec', 'story_spec', `v${run.spec_version}`);
