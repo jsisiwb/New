@@ -62,6 +62,7 @@ version. For a new Korean project use the newest `standard`:
 | `standard@31` | a scene that mixes 존대 and 반말 inside quotations beyond the operator's p90 is re-drafted once with those lines named | 0111 |
 | `standard@32` | a scene drafted over 1.5× its planned length is re-drafted once toward the target | 0112 |
 | `standard@33` | the voice judge re-reads after any patch that changed dialogue (no carried voice score) | 0113 |
+| `standard@34` | every evaluator reads three times and a reviewer-class finding stands on two; a new finding on text that passed unchanged waits for the one final full reading | 0115 |
 
 **Watching a run.**
 

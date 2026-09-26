@@ -911,3 +911,29 @@ G21r and G22a stay as the record of `standard@31` and `standard@32` at the grant
 
 Credits 09:33 → 10:28 UTC: ws1 15.19 → 18.56 %, ws2 5.53 → 6.52 %, ws3 62.58 → 65.16 %, ws4 24.41 → 25.36 %, ws5 9.99 →
 15.62 %, ws6 12.13 → 16.45 % (17.84 points). Run 3 in all: 37.47 points since 08:12.
+
+## 19. Run 4 — why acceptance does not converge (2026-09-26, from 11:58 UTC)
+
+**No live call in run 4.** The sandbox had none of the permanent database's or the bridge's variables (`09-progress.md`),
+so STEP 0.2–0.3 (migrate, `corpus:verify --database`, the bridge probe, credits, G23r's resume) and every measurement below
+that reads the stored runs or calls the model are **BLOCKED**. G23r's state is unknown.
+
+**STEP 1.1 — the per-finding table (G17a chapter 2, G19r, G20r, G21r, G22a, G23r).** `quality:findings <project>` builds it
+from the stored scorecards and version texts: for every blocking or major finding (and every one a second reading
+demoted), its round and version, the reading (full, targeted, confirmation), the evaluator, whether the paragraphs it
+quotes changed since that evaluator's last reading or had been read and passed unchanged, whether a second reading kept
+it, and whether it was later fixed, came back or was never addressed; the real-slip verdict is the analyst's, from the
+quoted span. **BLOCKED:** not run on the six projects. What §13 and §15–§18 already record is summarized in ADR-0114.
+
+**STEP 1.2 — reading variance** (five full readings of G22a v10, G21r v8 and one G23r version; per judge: finding count,
+share seen in at least three of five readings, score spread): **BLOCKED.**
+
+**STEP 1.3 — diagnosis:** ADR-0114. The acceptance decision is taken by the last single reading while every reading
+samples a different set of findings on the same text; many of those findings are real (G18r, G21r), some are not.
+
+**What `standard@34` changes (ADR-0115).** Every evaluator reads three times and a reviewer-class finding stands on two;
+hard kinds keep their one-reading rule; gated scores are medians. After a patch, a new finding on text that passed
+unchanged is held for the one final full reading, an open finding on unchanged text stays open, and the confirmation runs
+once. The simulated runs of `novel-ko.integration.test.ts` reproduce both G22-2 patterns: under `standard@33` each stops
+at `APPROVAL_BLOCKED` with every gate passing (one after six reproduced majors on five different paragraphs), under
+`standard@34` each is accepted. The live A/B on the same seeds is **BLOCKED**.

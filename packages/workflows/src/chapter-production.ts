@@ -78,6 +78,7 @@ import {
   evaluateVersion,
   failingDimensions,
   povPlanId,
+  type EvaluationResult,
   revisionTargets,
   scoreTargets,
   type Issue,
@@ -607,6 +608,14 @@ export async function produceChapter(
     });
     scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
     guard('evaluate');
+    // ADR-0115: the text each evaluator last read, for the finding ledger; and whether the one confirmation ran.
+    const ledgerOn = ctx.policy.evaluation?.consensus?.ledger !== undefined;
+    let lastRead = new Map<string, string>();
+    const noteReads = (e: EvaluationResult, text: string) => {
+      for (const name of e.rerun ?? []) lastRead.set(name, text);
+    };
+    noteReads(evaluation, current.text);
+    let confirmed = false;
     let revision: ChapterProductionResult['revision'];
     // ADR-0064: rounds per manuscript language come from the policy when it says so; without that knob English
     // keeps one representative round and Korean takes up to max_rounds (ADR-0056).
@@ -797,6 +806,7 @@ export async function produceChapter(
       current = revised.version;
       guard('revise');
       patchesSinceFull++;
+      const readsBefore = new Map(lastRead);
       evaluation = await evaluateVersion(ctx, {
         version: current,
         contract: contract.contract,
@@ -811,8 +821,10 @@ export async function produceChapter(
           targetedDimension: dimension,
           changedClaims: revised.patch.changed_claims.length > 0 || revised.patch.scope === 'scene',
           patchesSinceFull,
+          ...(ledgerOn ? { lastReadTexts: Object.fromEntries(lastRead) } : {}),
         },
       });
+      noteReads(evaluation, current.text);
       if (evaluation.mode !== 'targeted') patchesSinceFull = 0;
       scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
 
@@ -903,6 +915,7 @@ export async function produceChapter(
         }
         current = parent;
         evaluation = beforeEvaluation;
+        lastRead = readsBefore;
         patchesSinceFull = Math.max(0, patchesSinceFull - 1);
         revision = { ...revision, discarded: [...discarded] };
         if (singleRound) break;
@@ -935,7 +948,13 @@ export async function produceChapter(
           },
         );
       // ADR-0086: a version approvable on a targeted re-evaluation is approved only if every evaluator agrees.
-      if (convergence?.confirm_full && evaluation.approvable && evaluation.mode === 'targeted') {
+      // ADR-0115: under the finding ledger that fresh full reading happens once per chapter, and a ledger-decided
+      // full re-reading (smoke) is not it.
+      const wantsConfirmation = ledgerOn
+        ? !confirmed && (evaluation.mode === 'targeted' || evaluation.ledger === true)
+        : evaluation.mode === 'targeted';
+      if (convergence?.confirm_full && evaluation.approvable && wantsConfirmation) {
+        confirmed = true;
         evaluation = await evaluateVersion(ctx, {
           version: current,
           contract: contract.contract,
@@ -947,6 +966,7 @@ export async function produceChapter(
           confirm: true,
         });
         scorecards.push(summarizeScorecard(evaluation.scorecard, evaluation.scorecardArtifactId));
+        noteReads(evaluation, current.text);
         patchesSinceFull = 0;
       }
       // The English lineage keeps the Checkpoint-5 single representative revision (its recorded fixtures

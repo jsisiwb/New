@@ -120,6 +120,8 @@
 | [0111](0111-register-redraft.md) | `standard.v31`: a Korean scene with more utterances mixing 존대 and 반말 inside one quotation than the operator's p90 (0.725 per 1,000자) allows is re-drafted once with those utterances named |
 | [0112](0112-length-redraft.md) | `standard.v32`: a scene drafted over 1.5× its planned length is re-drafted once toward the target and kept only if closer |
 | [0113](0113-voice-rereads-changed-dialogue.md) | `standard.v33`: under targeted re-evaluation the voice judge re-runs after any patch that changed a quoted utterance, so its gated score is never carried across changed dialogue |
+| [0114](0114-why-acceptance-does-not-converge.md) | Why chapter acceptance does not converge: the acceptance decision is taken by the last single reading, while each reading samples a different set of findings on the same text (diagnosis from run 3's record; the live measurement pending) |
+| [0115](0115-consensus-readings-and-the-finding-ledger.md) | `standard.v34`: every evaluator reads three times and a reviewer-class finding stands on two; a new finding on unchanged text is held for the one final full reading, and an open finding on unchanged text stays open |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

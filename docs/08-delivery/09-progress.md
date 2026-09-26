@@ -98,6 +98,20 @@ sandbox (presence-only checks; no `.env`, nothing in the process environment). S
 `corpus:verify --database` on the permanent database, the bridge probe, the ws1–ws6 readings and G23r's resume (STEP
 0.2–0.3) did not run, and G23r's state is unknown. Reported to the platform; retried during the run.
 
+## Run 4: G22-2, consensus readings and the finding ledger — `standard.v34` — 2026-09-26
+
+**Built (ADR-0114, ADR-0115):** ADR-0114 records the diagnosis from run 3's record (the live measurement is BLOCKED).
+`evaluation.consensus` (`consensus.ts`: `consensusIssues`, `medianReadings`, `consensusCriteria`, `applyLedger`,
+`changedParagraphIds`): every evaluator that runs reads three times (`:c2`, `:c3`), a reviewer-class finding stands at the
+severity two readings agree on, hard kinds stand on one reading, gated scores are medians; under `consensus.ledger` a new
+finding on paragraphs unchanged since its evaluator last read them is held as minor, an open finding on unchanged text
+stays open, and the confirmation runs once per chapter. Traceability row `G22FIX-002`.
+
+**Measured:** nothing live (BLOCKED). Simulated: both G22-2 patterns stop at `APPROVAL_BLOCKED` under `standard@33` and are
+accepted under `standard@34` (`13-live-run-gemini.md` §19).
+
+**Tests:** `consensus.test.ts`, `novel-ko.integration.test.ts` (four runs), `policy.test.ts` (v34), `commands.test.ts`.
+
 ## Run 3: G22-1, the voice re-read — `standard.v33` — 2026-09-26
 
 **Built (ADR-0113):** `evaluation.voice_on_dialogue` (`dialogueChanged`, `planReevaluation`): the voice judge re-runs after

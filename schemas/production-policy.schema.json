@@ -112,6 +112,24 @@
         "major_agreement": {"type": "boolean", "description": "ADR-0100 (live defect G14-4): when every blocking or major finding of an evaluation is a reviewer-class major raised by a taste judge (prose, structure, genre, voice or repetition) that ran in it, each such judge reads the text once more; a major stands only when the second reading rates a finding of its kind major or blocking, else it is recorded as minor with a note, and the two readings' rubric sub-scores and judge scores are averaged. A blocking finding, a checker's, a lint's or a carried finding leaves the evaluation as it is. Absent or false: one reading decides."},
         "voice_on_dialogue": {"type": "boolean", "description": "ADR-0113 (live defect G22-1): under targeted re-evaluation, the voice judge re-runs after any patch that changed a quoted utterance, so its gated score is never carried across changed dialogue. Absent or false: the voice judge re-runs only by the targeted-dimension, open-major and anchoring rules."},
         "checker_agreement": {"type": "boolean", "description": "ADR-0106 (live defects G19-1, G19-2): with major_agreement, the continuity and knowledge checkers' reviewer-class findings (major or blocking) join the second reading. When every blocking or major finding of an evaluation is either such a checker finding or a taste judge's reviewer-class major, each implicated checker reads the text once more too; a checker finding stands only when the second reading rates a finding of the same kind, or one whose span overlaps it, major or blocking — else it is a low-confidence doubt (docs/05-generation/02-evaluation-and-revision-pipeline.md §3) and is recorded as minor with a note. Findings outside the reviewer class (canon_contradiction, timeline_error, knowledge_leak, …), lint findings and carried findings leave the evaluation as it is. Absent or false: one checker reading decides."},
+        "consensus": {
+          "type": "object",
+          "description": "ADR-0115 (live defects G19-1, G19-2, G22-2): every model evaluator that runs in an evaluation reads the text `readings` times. Its findings are grouped across the readings (overlapping spans whatever the kind, or the same kind when neither quotes the text); a reviewer-class finding stands at the highest severity that at least `quorum` readings rate it at or above, else it is recorded as minor with a note; a finding outside the reviewer class (canon_contradiction, timeline_error, knowledge_leak, …) stands on one reading as before. Gated scores are the medians of the readings, and a contract criterion fails only when `quorum` readings fail it. With consensus, major_agreement and checker_agreement are not applied. `ledger`: in an evaluation with a parent scorecard (a re-reading after a patch, never the confirmation), a blocking or major finding on paragraphs unchanged since its evaluator last read the chapter, more than `window_paragraphs` from a changed paragraph, counts only when it re-raises an open finding — otherwise it is held as minor for the final full reading; an open finding on unchanged paragraphs stays open whatever the re-reading says; one on changed text is resolved unless the re-reading raises it again; and revision.convergence.confirm_full runs the confirmation at most once per chapter. Absent: one reading decides.",
+          "required": ["readings", "quorum"],
+          "additionalProperties": false,
+          "properties": {
+            "readings": {"type": "integer", "minimum": 2, "description": "Readings per evaluator. Starting value 3."},
+            "quorum": {"type": "integer", "minimum": 1, "description": "Readings that must rate a reviewer-class finding blocking or major. Starting value 2."},
+            "ledger": {
+              "type": "object",
+              "required": ["window_paragraphs"],
+              "additionalProperties": false,
+              "properties": {
+                "window_paragraphs": {"type": "integer", "minimum": 0, "description": "Paragraphs on each side of a changed paragraph still judged as new text. Starting value 1."}
+              }
+            }
+          }
+        },
         "judge_calibration": {
           "type": "object",
           "description": "ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.",
