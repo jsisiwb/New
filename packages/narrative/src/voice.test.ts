@@ -9,7 +9,11 @@ describe('operator voice profiles', () => {
   const profiles = loadVoiceProfiles();
 
   it('ships voice/operator@1 with writer, planner and judge lines in Korean', () => {
-    expect([...profiles.keys()].sort()).toEqual(['voice/operator@1', 'voice/operator@2']);
+    expect([...profiles.keys()].sort()).toEqual([
+      'voice/operator@1',
+      'voice/operator@2',
+      'voice/operator@3',
+    ]);
     const v = requireVoiceProfile('voice/operator@1', profiles);
     expect(v.language).toBe('ko');
     expect(v.writer.length).toBeGreaterThanOrEqual(10);
@@ -30,6 +34,19 @@ describe('operator voice profiles', () => {
     expect(v2.judges.join('\n')).toContain('상위 10%가 2.6회');
     expect(v2.judges.join('\n')).toContain('착각의 아이러니');
     for (const line of [...v2.writer, ...v2.judges]) expect(line).not.toMatch(/[A-Za-z]/);
+  });
+
+  it('ships voice/operator@3: v2 with the heroine formula bounded by the reveal schedule (ADR-0092)', () => {
+    const v2 = requireVoiceProfile('voice/operator@2', profiles);
+    const v3 = requireVoiceProfile('voice/operator@3', profiles);
+    expect(v3.writer).toEqual(v2.writer);
+    expect(v3.judges).toEqual(v2.judges);
+    expect(v3.planner.length).toBe(v2.planner.length);
+    const changed = v3.planner.filter((line, i) => line !== v2.planner[i]);
+    expect(changed).toHaveLength(1);
+    expect(changed[0]).toContain('공개 일정이 독자에게 허락한 것만');
+    expect(changed[0]).not.toContain('운명이나 비밀');
+    for (const line of v3.planner) expect(line).not.toMatch(/[A-Za-z]/);
   });
 
   it('rejects an unknown ref', () => {

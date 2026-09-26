@@ -1,0 +1,54 @@
+=== scorecard r0 v1 overall={"score":80,"note_count":0,"major_count":3,"minor_count":21,"blocking_count":1}
+  section genre: score=95 passed=true issues=2
+  section prose: score=74.4 passed=false issues=12
+  section voice: score=81.7 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=1
+  section knowledge: score=0 passed=false issues=2
+  section structure: score=85 passed=true issues=3
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity relationship_inconsistency (judge:continuity_checker, confidence 0.95)
+      claim: 로이드와 아델은 이번 회차가 첫 만남입니다. 로이드가 방금 아델의 이름을 처음 들었음에도 불구하고, 명단을 확인하는 동작 없이 신입생 중 한 명인 아델의 가문 사정(남작가 장남, 몰락함)을 즉시 상세하게 읊는 것은 부자연스럽습니다. 로이드가 명단이 적힌 양피지를 쥐고 있다는 묘사는 한참 뒤인 [p62]에서야 등장합니다.
+      quote: “그래, 아델. 남작가의 장남이라던데. 가문이 쫄딱 망하더니 네놈의 썩어빠진 정신머리도 같이 무너진 모양이군.”
+  [blocking/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 1)
+      claim: 설정상 로이드는 이미 실기 평가에서 아델에게 참패하여 밤마다 그의 움직임을 흉내 내며 맹훈련하고 있다는 사실을 알고 있습니다(1화.0 기준 객관적 참). 그러나 원문에서는 로이드가 아델을 처음 보는 것처럼 이름을 묻고 그의 실력을 전혀 모르는 하수 취급하며 자신이 아는 사실을 무시하고 있습니다.
+      quote: 이름.
+  [major/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 1)
+      claim: 로이드는 이미 아델에게 실기 평가에서 참패해 그의 압도적인 실력을 알고 있음에도 불구하고, 마치 아델의 실력을 처음 확인하려는 듯이 행동하며 자신이 아는 지식을 무시하고 있습니다.
+      quote: 그래, 네놈 실력이 얼마나 대단한지 똑똑히 지켜봐 주마. 첫 번째 평가자! 아델! 당장 단상으로 올라와!
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 주인공과 조교가 대치하는 도중에 빙의 배경과 스탯을 설명하는 내면 서술이 너무 길게 이어져 장면이 멈춥니다.
+      quote: 이곳은 내가 하던 게임, 《아카데미의 파멸》 속 세계다.
+=== scorecard r1 v2 (quarantined) overall={"score":82,"note_count":0,"major_count":5,"minor_count":19,"blocking_count":1}
+  section genre: score=80 passed=true issues=4
+  section prose: score=76 passed=false issues=11
+  section voice: score=92.7 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=87.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=3
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] genre terminology_violation (lint:device, confidence 1)
+      claim: ‘원작 주인공’은(는) 이 작품의 장치(게임 빙의)에 없는 어휘다. 이 작품의 장치 어휘로 바꾼다.
+      quote: 원작 주인공
+  [blocking/open] continuity location_error (judge:continuity_checker, confidence 0.95)
+      claim: 앞선 상황(p66 등)에서 로이드는 단상 위에 있었고 아델은 단상 아래 연무장 중앙에 있습니다. 로이드가 목검 잔해를 확인하기 위해 아델에게 다가온다면 '단상 위를 향해'가 아니라 '단상에서 내려와' 걸어와야 위치가 맞습니다.
+      quote: 로이드가 얼빠진 얼굴로 단상 위를 향해 걸어왔다.
+  [major/open] continuity location_error (judge:continuity_checker, confidence 0.9)
+      claim: 이 시점에서 로이드는 단상에서 내려와 연무장 중앙에 서 있는 아델의 앞(발밑의 가루를 찍어 올림)에 대치하고 있습니다. 두 사람이 있는 장소는 단상 아래이므로, 소리가 '단상 위로' 퍼진다는 서술은 현재 인물들의 위치 상황과 맞지 않습니다.
+      quote: 이빨을 까득 깨무는 소리가 단상 위로 뚜렷하게 퍼졌다.
+  [major/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 0.95)
+      claim: 설정상 로이드는 이미 실기 평가에서 아델에게 참패한 뒤 밤마다 그의 움직임을 몰래 흉내 내며 맹훈련하고 있을 정도로 아델의 압도적인 실력을 인지하고 있습니다. 그러나 본문에서는 아델을 '형편없는 실력'을 가진 '쓰레기'로 매도하며 그의 진짜 실력을 전혀 모르는 것처럼 행동하고 있어, 자신이 가진 지식과 완전히 모순됩니다.
+      quote: 네놈이 얼마나 형편없는 실력을 가졌는지 모든 생도들 앞에서 똑똑히 증명해 주지. 앞으로 나와라.
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 세계관과 주인공의 정체를 설명하는 서술 문단이 길게 이어져 장면을 멈추게 한다.
+      quote: 이곳은 게임 《아카데미의 파멸》 속 세계다.
+  [major/open] genre terminology_violation (judge:genre_judge, confidence 1)
+      claim: 게임 빙의물 지침에서 명시적으로 금지한 '원작 주인공'이라는 어휘가 쓰였다.
+      quote: 파멸 루트나 세상을 구하는 영웅 노릇은 잘난 원작 주인공들이 알아서 할 일이었다.

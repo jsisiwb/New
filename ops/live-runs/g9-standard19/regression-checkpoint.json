@@ -1,0 +1,378 @@
+{
+  "project_id": "01a0d86d-faaf-7a1a-a7cc-8a1d6de03fc6",
+  "title": "G9 회귀 standard19",
+  "policy": "policy/standard@19",
+  "lineage": {
+    "genres": [
+      "genre/regression@4",
+      "genre/hunter-gate@2"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/regression@4",
+    "output_language": "lang/ko@8"
+  },
+  "run": {
+    "status": "needs_attention",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "APPROVAL_BLOCKED",
+      "step": "approve",
+      "message": "version 01a0d87e-ceb3-70bf-878a-f5b9a2a35a37 has 0 blocking and 7 major issues; dimensions: prose 89.3/78 ok, structure 85/78 ok, genre 90/72 ok, voice 87.5/76 ok",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "regenerate",
+        "edit_manually",
+        "accept_with_override"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "revising",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 5529,
+    "chars_no_spaces": 4340,
+    "quoted_dialogue_lines": 47,
+    "quoted_inner_lines": 11,
+    "talk_share": 0.216,
+    "first_lines": [
+      "우드득.",
+      "가슴뼈가 통째로 부서지는 감각.",
+      "심장을 꿰뚫고 지나간 거대한 발톱의 서늘함이 생생했다. 핏물이 식도를 타고 역류하며 단말마의 비명조차 삼켜버렸다."
+    ],
+    "deviation_pct": 4.3,
+    "dialogue_lines_per_1k": 8.5
+  },
+  "last_version": {
+    "version_no": 6,
+    "status": "quarantined",
+    "chars": 5518,
+    "chars_no_spaces": 4335,
+    "quoted_dialogue_lines": 47,
+    "quoted_inner_lines": 12,
+    "talk_share": 0.223,
+    "first_lines": [
+      "우드득.",
+      "가슴뼈가 통째로 부서지는 감각.",
+      "심장을 꿰뚫고 지나간 거대한 발톱의 서늘함이 생생했다. 핏물이 식도를 타고 역류하며 단말마의 비명조차 삼켜버렸다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.2,
+      "measured_share": 0.109,
+      "chars": 3304
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.4,
+      "measured_share": 0.374,
+      "chars": 2225
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "벽과 문을 산산조각 내는 묘사를 지우고, 체중을 실어 문고리를 차서 부수거나 거칠게 문을 열어젖히는 등 일반인의 신체로 납득할 수 있는 물리적 행동으로 수정합니다.",
+      "kind": "state_contradiction",
+      "claim": "주인공은 아직 기연을 얻지 못한 평범한 성인 남성의 신체 상태임에도, 고시원의 벽과 문을 걷어차 박살내고(장면 1) 사채 사무실 문을 산산조각 내며 진입하는(장면 2) 등 각성자 수준의 초인적인 근력을 행사하도록 설계되어 있습니다.",
+      "target": "장면 1, 장면 2",
+      "severity": "major"
+    },
+    {
+      "fix": "진우가 내뱉는 거친 숨소리나 상태창이 떠오르는 시스템 알림음 등 명확한 '소리' 지문으로 원고의 첫 문장을 시작하도록 수정합니다.",
+      "kind": "structure_off",
+      "claim": "구조 목표상 화의 첫 비트는 목소리(소리, 용어, 대사)로 열어야 하나, 현재 설계의 1번 비트는 죽음의 감각과 상태에 대한 서술 묘사로 시작하고 있습니다.",
+      "target": "장면 1",
+      "severity": "minor"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-DLG-02",
+      "target": "장면 2",
+      "message": "대화를 막는 금지 사항 1줄을 지웠다",
+      "repaired": true,
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 1개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 87,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 85,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 87.5,
+          "passed": true
+        }
+      },
+      "scopes": [],
+      "blocking": 0,
+      "major": 7,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 1
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 83,
+      "dimensions": {
+        "prose": {
+          "score": 75.4,
+          "passed": false
+        },
+        "structure": {
+          "score": 90,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 78.9,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 4,
+      "major": 7,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 2,
+      "version_no": 3,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 88,
+      "dimensions": {
+        "prose": {
+          "score": 80.8,
+          "passed": true
+        },
+        "structure": {
+          "score": 95,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 89.5,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 1,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 3,
+      "version_no": 4,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 89,
+      "dimensions": {
+        "prose": {
+          "score": 90.9,
+          "passed": true
+        },
+        "structure": {
+          "score": 87.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 83.2,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 2,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 4,
+      "version_no": 5,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 87,
+      "dimensions": {
+        "prose": {
+          "score": 90.9,
+          "passed": true
+        },
+        "structure": {
+          "score": 82.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 87.5,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 4,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 5,
+      "version_no": 6,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 91,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 92.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 85,
+          "passed": true
+        },
+        "voice": {
+          "score": 96.3,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "paragraph"
+      ],
+      "blocking": 0,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 70,
+      "first_person": 55
+    },
+    {
+      "version_no": 2,
+      "status": "quarantined",
+      "score": 65,
+      "first_person": 60
+    },
+    {
+      "version_no": 3,
+      "status": "quarantined",
+      "score": 50,
+      "first_person": 55
+    },
+    {
+      "version_no": 4,
+      "status": "quarantined",
+      "score": 65,
+      "first_person": 55
+    },
+    {
+      "version_no": 5,
+      "status": "quarantined",
+      "score": 65,
+      "first_person": 55
+    },
+    {
+      "version_no": 6,
+      "status": "quarantined",
+      "score": 55,
+      "first_person": 50
+    }
+  ],
+  "totals": {
+    "calls": 79,
+    "attempts": 80,
+    "failed_attempts": 1,
+    "tokens": {
+      "input": 332188,
+      "output": 36282
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T11:58:05.368Z",
+    "last_call_at": "2026-09-25T12:35:57.317Z",
+    "seconds": 2272
+  }
+}

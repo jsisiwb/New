@@ -341,7 +341,8 @@ export type ProtectionName =
   | 'structure'
   | 'westernization'
   | 'translation_like'
-  | 'no_new_blocking_major';
+  | 'no_new_blocking_major'
+  | 'length';
 
 export interface ProtectionOutcome {
   readonly protection: ProtectionName;
@@ -543,14 +544,6 @@ export function patchRegression(
     const t = thresholdOf(d.dimension);
     return t === undefined || d.after < t;
   };
-  const regressions = deltas.filter(
-    (d) =>
-      d.dimension !== input.dimension &&
-      d.delta < -tolerance &&
-      (!convergence?.threshold_protection || belowGate(d)),
-  );
-  const targetedDelta = deltas.find((d) => d.dimension === input.dimension);
-
   const beforeOpen = openBlockingMajor(input.before);
   const afterOpenAll = openBlockingMajor(input.after);
   // ADR-0086 (G5-3b/c): a finding on text the patch did not touch is variance of the judge on text both versions
@@ -561,9 +554,33 @@ export function patchRegression(
     if (typeof start !== 'number' || typeof end !== 'number') return false;
     return ranges.some((r) => start < r.end && r.start < end);
   };
-  const introduced = (i: Issue) => !attribution || overlaps(i, attribution.child);
+  // ADR-0092 (G9-3): with score attribution a finding whose dimension and kind already stood open on the parent is
+  // carried, not introduced, even where the patch rewrote the text it now quotes (judges re-anchor a chapter-level
+  // complaint to whichever passage they read last).
+  const scoreAttribution = convergence?.score_attribution === true && attribution !== undefined;
+  const parentSignatures = new Set(beforeOpen.map((i) => `${i.dimension}|${i.kind}`));
+  const carried = (i: Issue) =>
+    scoreAttribution && parentSignatures.has(`${i.dimension}|${i.kind}`);
+  const introduced = (i: Issue) => !attribution || (overlaps(i, attribution.child) && !carried(i));
   const touchedBefore = (i: Issue) => !attribution || overlaps(i, attribution.parent);
   const afterOpen = afterOpenAll.filter(introduced);
+  // ADR-0092 (G9-3): a judge's score moves in rubric steps larger than the tolerance. Under score attribution a
+  // dimension that fell with no blocking/major finding introduced on it, and ends no more than the tolerance below
+  // its gate, moved by judge variance on text both versions share: it is neither a regression nor a worsening.
+  const varianceOnly = (d: DimensionDelta) => {
+    if (!scoreAttribution) return false;
+    const t = thresholdOf(d.dimension);
+    if (t === undefined || d.after < t - tolerance) return false;
+    return !afterOpenAll.some((i) => i.dimension === d.dimension && introduced(i));
+  };
+  const regressions = deltas.filter(
+    (d) =>
+      d.dimension !== input.dimension &&
+      d.delta < -tolerance &&
+      (!convergence?.threshold_protection || belowGate(d)) &&
+      !varianceOnly(d),
+  );
+  const targetedDelta = deltas.find((d) => d.dimension === input.dimension);
   const targetedIds =
     input.targetedIssueIds ??
     beforeOpen.filter((i) => i.dimension === input.dimension).map((i) => i.id);
@@ -590,7 +607,8 @@ export function patchRegression(
     // ADR-0086: within tolerance and still passing, a targeted score's wobble is not a worsening.
     (!convergence?.threshold_protection ||
       (targetedDelta !== undefined &&
-        (targetedDelta.delta < -tolerance || belowGate(targetedDelta))));
+        (targetedDelta.delta < -tolerance || belowGate(targetedDelta)))) &&
+    !(targetedDelta !== undefined && varianceOnly(targetedDelta));
   // "Materially improved" = the targeted issues are gone, or the score rose and no targeted issue remains
   // that the patch was asked to repair. A flat score with unresolved targeted issues is NOT an improvement.
   const materiallyImproved =
@@ -689,16 +707,69 @@ export function patchRegression(
     ...(newIssueKinds.length ? { issueKinds: newIssueKinds } : {}),
   });
 
+  // ADR-0093 (live defect G10-2): a revision may not take the chapter's length out of its band — a finding without a
+  // quote is never "introduced", so a rewrite that cut a quarter of the chapter passed every other check.
+  if (convergence?.length_protection) {
+    const beforeLength = sectionPassed(input.before, 'length');
+    const afterLength = sectionPassed(input.after, 'length');
+    if (beforeLength === true)
+      protections.push({
+        protection: 'length',
+        applicable: true,
+        passed: afterLength !== false,
+        ...(afterLength === false
+          ? { detail: 'the revision took the length out of its band' }
+          : {}),
+      });
+  }
+  // ADR-0093 (live defects G10-4, G9a r2, G10r r2): a revision whose open blocking/major findings weigh less than its
+  // parent's moved the chapter toward approval even if it wrote one new finding — that finding is next round's target.
+  // Hard protections still hold: output language, the 번역투/Westernization/register kind guards, the length band and
+  // every gated dimension (a regression fails as before).
+  const weights = convergence?.net_improvement;
+  const weigh = (issues: readonly Issue[]) =>
+    weights
+      ? issues.reduce(
+          (n, i) =>
+            n + (i.severity === 'blocking' ? weights.blocking_weight : weights.major_weight),
+          0,
+        )
+      : 0;
+  const HARD: ReadonlySet<ProtectionName> = new Set([
+    'output_language',
+    'westernization',
+    'translation_like',
+    'register',
+    'length',
+  ]);
+  // ADR-0095: with exclude_variance a finding of a new kind on text both versions share is judge variance, not the
+  // revision's weight (the parent was judged once; its own re-judging would surface the same).
+  const afterWeighed =
+    weights?.exclude_variance === true && attribution
+      ? afterOpenAll.filter(
+          (i) => introduced(i) || parentSignatures.has(`${i.dimension}|${i.kind}`),
+        )
+      : afterOpenAll;
+  const netImproved =
+    weights !== undefined &&
+    weigh(afterWeighed) < weigh(beforeOpen) &&
+    regressions.length === 0 &&
+    missing.length === 0 &&
+    dropped.length === 0 &&
+    !protections.some((p) => p.applicable && !p.passed && HARD.has(p.protection));
   const failures: RegressionFailure[] = [];
-  if (!materiallyImproved) failures.push('targeted_not_improved');
-  if (worsened) failures.push('targeted_worsened');
-  // Required policy-gated evidence that no scorecard carries fails the report rather than only being
-  // recorded: a gate whose judge is unwired must never let a patch through (ADR-0041).
-  if (missing.length > 0) failures.push('gated_dimension_missing');
-  if (dropped.length > 0) failures.push('dimension_dropped');
-  if (regressions.length > 0) failures.push('protected_dimension_regressed');
-  if (newIssueKinds.length > 0) failures.push('new_blocking_or_major_issue');
-  if (protections.some((p) => p.applicable && !p.passed)) failures.push('protection_failed');
+  // Under net improvement (above) the soft failures are waived; the hard ones cannot occur by construction.
+  if (!netImproved) {
+    if (!materiallyImproved) failures.push('targeted_not_improved');
+    if (worsened) failures.push('targeted_worsened');
+    // Required policy-gated evidence that no scorecard carries fails the report rather than only being
+    // recorded: a gate whose judge is unwired must never let a patch through (ADR-0041).
+    if (missing.length > 0) failures.push('gated_dimension_missing');
+    if (dropped.length > 0) failures.push('dimension_dropped');
+    if (regressions.length > 0) failures.push('protected_dimension_regressed');
+    if (newIssueKinds.length > 0) failures.push('new_blocking_or_major_issue');
+    if (protections.some((p) => p.applicable && !p.passed)) failures.push('protection_failed');
+  }
 
   return {
     targetedDimension: input.dimension,

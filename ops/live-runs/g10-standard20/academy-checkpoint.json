@@ -1,0 +1,210 @@
+{
+  "project_id": "01a0d91b-c6f5-7f98-8a32-521a60daf33e",
+  "title": "G10a 아카데미 standard20",
+  "policy": "policy/standard@20",
+  "lineage": {
+    "genres": [
+      "genre/academy@3",
+      "genre/harem@2",
+      "genre/regression@4"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/academy@3",
+    "output_language": "lang/ko@8"
+  },
+  "run": {
+    "status": "needs_attention",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "APPROVAL_BLOCKED",
+      "step": "approve",
+      "message": "version 01a0d92d-e652-7892-a589-a3505c23d3a6 has 1 blocking and 3 major issues; dimensions: prose 74.4/78 FAIL, structure 85/78 ok, genre 95/72 ok, voice 81.7/76 ok",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "regenerate",
+        "edit_manually",
+        "accept_with_override"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "revising",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 5319,
+    "chars_no_spaces": 4175,
+    "quoted_dialogue_lines": 47,
+    "quoted_inner_lines": 12,
+    "talk_share": 0.284,
+    "first_lines": [
+      "“신입생들! 똑바로 서라!”",
+      "쩌렁쩌렁한 목소리가 제3연무장의 낡은 대리석 바닥을 쾅쾅 울렸다.",
+      "은빛이 도는 회색 머리. 먹잇감을 노리는 듯한 날카로운 삼백안."
+    ],
+    "deviation_pct": 0.4,
+    "dialogue_lines_per_1k": 8.8
+  },
+  "last_version": {
+    "version_no": 2,
+    "status": "quarantined",
+    "chars": 5035,
+    "chars_no_spaces": 3948,
+    "quoted_dialogue_lines": 37,
+    "quoted_inner_lines": 8,
+    "talk_share": 0.247,
+    "first_lines": [
+      "“기강이 빠졌군! 엘리시온 아카데미에 기어들어 왔으면 그 썩어빠진 정신 상태부터 고쳐라!”",
+      "제3연무장이 쩌렁쩌렁 울렸다.",
+      "은빛이 도는 회색 머리카락. 날카로운 삼백안을 부리부리하게 뜬 사내가 단상에서 신입생들을 내려다보고 있었다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.4,
+      "measured_share": 0.283,
+      "chars": 2733
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.4,
+      "measured_share": 0.285,
+      "chars": 2586
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "로이드가 아델의 실력을 '마력 통제력'으로 정확히 파악했다는 서술을 삭제하고, 단순히 목검이 가루가 된 기이한 현상 자체에 영문을 몰라 경악하고 당혹스러워하는 반응으로 수정하세요.",
+      "kind": "knowledge_impossible",
+      "claim": "지식 가드에 따르면 로이드는 아델의 마력 통제력이 시스템 한계 돌파 상태임을 알면 안 되며, 계획된 지식 변화에서도 단순한 '의심' 단계로 설정되어 있습니다. 그러나 계약의 절단과 장면 2의 5번 비트에서는 로이드가 '말도 안 되는 (규격 외의) 마력 통제력'을 눈앞에서 목격하고 그 실력을 직접 인지한 것처럼 서술되어 있어 지식 가드를 위반하고 향후 착각물 전개를 방해합니다.",
+      "target": "계약, 장면 2",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-DLG-02",
+      "target": "장면 1",
+      "message": "대화를 막는 금지 사항 1줄을 지웠다",
+      "repaired": true,
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-DLG-03",
+      "target": "장면 2",
+      "message": "상대가 있는 장면에 대사 비트가 없다",
+      "severity": "major"
+    },
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 1개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 80,
+      "dimensions": {
+        "prose": {
+          "score": 74.4,
+          "passed": false
+        },
+        "structure": {
+          "score": 85,
+          "passed": true
+        },
+        "genre": {
+          "score": 95,
+          "passed": true
+        },
+        "voice": {
+          "score": 81.7,
+          "passed": true
+        }
+      },
+      "scopes": [],
+      "blocking": 1,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 82,
+      "dimensions": {
+        "prose": {
+          "score": 76,
+          "passed": false
+        },
+        "structure": {
+          "score": 87.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 80,
+          "passed": true
+        },
+        "voice": {
+          "score": 92.7,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 1,
+      "major": 5,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 1,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 85,
+      "first_person": 80
+    },
+    {
+      "version_no": 2,
+      "status": "quarantined",
+      "score": 70,
+      "first_person": 75
+    }
+  ],
+  "totals": {
+    "calls": 37,
+    "attempts": 37,
+    "failed_attempts": 0,
+    "tokens": {
+      "input": 181957,
+      "output": 28512
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T15:07:56.285Z",
+    "last_call_at": "2026-09-25T15:31:50.254Z",
+    "seconds": 1434
+  }
+}

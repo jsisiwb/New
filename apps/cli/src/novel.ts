@@ -7,6 +7,7 @@
  *   novel:run     <project> [--once]                                    drive the run to rest (or one step)
  *   novel:status  <project>
  *   novel:pause | novel:resume | novel:cancel <project>
+ *   novel:extend  <project> [--rounds=N] [--reason=<text>]             more revision rounds for a chapter needing attention
  *
  * `novel:start` composes the project's Narrative Identity from the intake when none is pinned, so a project
  * created with `project:create` is usable without an extra step; `--identity` pins a repository profile.
@@ -33,6 +34,7 @@ import {
   ArtifactLlmOutputStore,
   cancelNovelRun,
   collectRunProgress,
+  extendChapterRevision,
   failStuckRun,
   heartbeatOf,
   NovelRunner,
@@ -279,6 +281,17 @@ export async function runNovelCommand(
         });
         return { ok: true, output: { run: run.status, next_chapter: run.next_chapter } };
       }
+      case 'novel:extend': {
+        const rounds = flag(args, 'rounds');
+        if (rounds !== undefined && !/^\d+$/.test(rounds)) return { ok: false, output: usage };
+        const grant = await extendChapterRevision(pool, {
+          projectId,
+          rounds: rounds === undefined ? undefined : Number(rounds),
+          reason: flag(args, 'reason'),
+        });
+        const run = await resumeNovelRun(pool, { projectId });
+        return { ok: true, output: { ...grant, run: run.status, next_chapter: run.next_chapter } };
+      }
       case 'novel:cancel':
         return { ok: true, output: { run: (await cancelNovelRun(pool, projectId)).status } };
       default:
@@ -324,6 +337,7 @@ export const NOVEL_COMMANDS = new Set([
   'novel:pause',
   'novel:resume',
   'novel:cancel',
+  'novel:extend',
 ]);
 
 export const NOVEL_USAGE = `
@@ -345,6 +359,10 @@ Novel lifecycle (DATABASE_URL + YEONJAE_PROVIDER_MODE required; live mode needs 
                                                or event for --stuck-after-min (default 150) ends failed: RUN_STUCK
   novel:status <project>                       run state, chapter progress, recent events
   novel:pause <project> | novel:resume <project> [--stop-after=N] | novel:cancel <project>
+  novel:extend <project> [--rounds=N] [--reason=<text>]
+                                               grant the chapter a needs_attention run stopped on more revision rounds
+                                               under its pinned policy (at most the policy's max_rounds in all) and
+                                               queue the run; novel:run then continues the chapter's revision
 `;
 
 /**

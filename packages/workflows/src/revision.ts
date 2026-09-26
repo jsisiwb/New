@@ -185,9 +185,14 @@ export async function reviseVersion(
     allDimensions?: boolean | undefined;
     /** ADR-0086 (G5-3e): minor issues that are targets of this round too (a score-only failure's passages). */
     extraTargetIds?: ReadonlySet<string> | undefined;
+    /**
+     * ADR-0098: the highest round this call may run — the pinned budget plus any rounds an operator granted the
+     * chapter, and one more for the polish round (ADR-0073). Absent: `policy.revision.max_rounds`.
+     */
+    roundLimit?: number | undefined;
   },
 ): Promise<RevisionResult> {
-  const maxRounds = ctx.policy.revision.max_rounds;
+  const maxRounds = input.roundLimit ?? ctx.policy.revision.max_rounds;
   if (input.round > maxRounds)
     throw new WorkflowError(
       'REVISION_LIMIT',
@@ -462,7 +467,7 @@ export async function reviseVersionMulti(
 ): Promise<RevisionResult> {
   const cfg = ctx.policy.revision.multi_patch;
   if (!cfg) return reviseVersion(ctx, input);
-  const maxRounds = ctx.policy.revision.max_rounds;
+  const maxRounds = input.roundLimit ?? ctx.policy.revision.max_rounds;
   if (input.round > maxRounds)
     throw new WorkflowError(
       'REVISION_LIMIT',

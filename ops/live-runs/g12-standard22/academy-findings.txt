@@ -1,0 +1,177 @@
+=== scorecard r0 v1 overall={"score":66,"note_count":0,"major_count":3,"minor_count":26,"blocking_count":3}
+  section genre: score=70 passed=false issues=3
+  section prose: score=51.4 passed=false issues=20
+  section voice: score=84.1 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=80 passed=true issues=3
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity other (judge:continuity_checker, confidence 0.95)
+      claim: 회차 계약의 연출 지시문('중얼거리는 순간 컷')이 소설 본문 서술에 여과 없이 그대로 노출되어 독자의 몰입을 심각하게 깹니다.
+      quote: 거대한 3단계 히든 몬스터가 침을 질질 흘리며 이안을 덮치려는 찰나. 비명소리가 난무하는 가운데 이안이 바닥에 굴러다니던 앙상한 나뭇가지 하나를 집어 들며 “아, 진짜 귀찮게 하네.”라고 중얼거리는 순간 컷.
+  [blocking/open] prose format_drift (judge:prose_judge, confidence 1)
+      claim: 소설의 묘사가 아닌 대본이나 콘티의 지시문처럼 서술이 끊겼습니다. 구체적인 절단 장면 묘사로 수정해야 합니다.
+      quote: 중얼거리는 순간 컷.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: '에 대한'은 영어 전치사를 직역한 어색한 표현입니다. '다른 생도들을 모욕하는 짓입니다' 등으로 바로 이어 쓰는 것이 낫습니다.
+      quote: 다른 생도들에 대한 모욕입니다.
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 주요 인물이 등장할 때마다 화자가 원작의 미래 설정까지 한 번에 브리핑하는 요약 서술이 반복됨
+      quote: 그리고 원작 1학년 2학기 중간고사 도중, 마인화된 교수에게 기습을 당해 마력 회로가 끊어지는 배드 엔딩을 맞이할 비운의 히로인.
+  [blocking/open] genre other (judge:genre_judge, confidence 1)
+      claim: 회차의 마지막 문단이 소설 서술이 아닌 대본 지문('순간 컷.') 형식으로 작성되어 웹소설 서사 전통을 크게 위반함
+      quote: 중얼거리는 순간 컷.
+  [major/open] genre payoff_without_setup (judge:genre_judge, confidence 0.9)
+      claim: 착각 연출 장치를 쓸 때 독자가 목격하지 않은 과거의 사건('아까 기초 마력 테스트')을 근거로 제시해 장르적 재미가 반감됨
+      quote: 아까 기초 마력 테스트 때 귀찮아서 대충 뭉뚱그려 방출했던 마나를 두고 단단히 착각한 모양이었다.
+=== scorecard r1 v2 (quarantined) overall={"score":69,"note_count":0,"major_count":6,"minor_count":16,"blocking_count":5}
+  section genre: score=80 passed=true issues=2
+  section prose: score=63.1 passed=false issues=13
+  section voice: score=66.2 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=75 passed=false issues=3
+  section continuity: score=0 passed=false issues=5
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity rank_incorrect (judge:continuity_checker, confidence 1)
+      claim: [FACT] 정사에 따르면 이안 페르테스는 '몰락 가문의 장남'으로 귀족 신분입니다. 그러나 레이몬드가 이안을 향해 '평민'이라고 지칭하고 있어 잠긴 사실과 정면으로 모순됩니다. 이는 [PLANNED] 계약의 '평민 출신'이라는 서술을 맹목적으로 따르다 발생한 설정 충돌입니다.
+      quote: 몰락한 가문의 촌뜨기 평민 주제에 운 좋게 여기까지 올라왔으면, 바닥에 납작 엎드려 감사할 줄 알아야지.
+  [major/open] continuity relationship_inconsistency (judge:continuity_checker, confidence 1)
+      claim: [RELATIONSHIP] 정사에 따르면 세리아와 레이몬드는 이번 회차가 첫 만남이며, 통성명이나 소개 전에는 서로의 이름을 알지 못해야 합니다. 그러나 세리아가 등장하자마자 자연스럽게 레이몬드를 '카셀 영식'이라고 부르고 있어 앞뒤 관계 설정에 맞지 않습니다.
+      quote: 신성한 실기 평가장입니다. 귀족의 체면을 스스로 깎아내리는 천박한 경거망동은 삼가시길 바랍니다, 카셀 영식.
+  [major/open] continuity world_rule_violation (judge:continuity_checker, confidence 1)
+      claim: [FACT] 세계 규칙에 지정된 상태창 표기 형식은 콜론(:) 앞에 공백이 없어야 하며, 수치는 숫자로만 표기해야 합니다(예: [이름: 미정], [근력: 999]). 그러나 원고(p11~p14)에서는 콜론 앞에 공백이 들어가 있고, 숫자 뒤에 '(MAX)' 문자가 추가되어 있어 세계관 내 UI 규칙을 위반했습니다.
+      quote: [이름 : 이안 페르테스]
+  [major/open] continuity other (judge:continuity_checker, confidence 1)
+      claim: 원고의 마지막 문장에 [PLANNED] 회차 계약의 연출 지시문인 '순간 컷.'이라는 작가용 메타 텍스트가 서술에 그대로 유출되었습니다. 소설 내 서술로 적합하지 않습니다.
+      quote: 거대한 3단계 히든 몬스터가 침을 질질 흘리며 이안을 덮치려는 찰나. 비명소리가 난무하는 가운데 이안이 바닥에 굴러다니던 앙상한 나뭇가지 하나를 집어 들며 “아, 진짜 귀찮게 하네.”라고 중얼거리는 순간 컷.
+  [blocking/open] prose format_drift (judge:prose_judge, confidence 1)
+      claim: 마지막 문단이 연재소설의 서술이 아닌 대본 지문이나 시놉시스 요약처럼 끝납니다.
+      quote: 중얼거리는 순간 컷.
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '짐짓'은 '마음과는 다르게 겉으로는 일부러'라는 뜻이므로, 공포에 질려 굳어버린 상황에는 전혀 맞지 않는 오용입니다.
+      quote: 그녀의 다리도 짐짓 굳어 있는 것이 보였다.
+  [major/open] structure late_hook (judge:structure_judge, confidence 0.9)
+      claim: 주인공의 처지(만렙 빙의)와 현재 상황의 긴장감이 10문단을 넘어선 시점에야 비로소 제시됩니다.
+      quote: “하아암─.”
+  [blocking/open] structure other (judge:structure_judge, confidence 1)
+      claim: 엔딩 연출을 묘사하는 대신 대본 지시문('순간 컷')처럼 서술하여 극적 몰입감을 크게 해칩니다.
+      quote: 중얼거리는 순간 컷.
+  [blocking/open] genre other (judge:genre_judge, confidence 1)
+      claim: 대본식 연출 지시어 노출로 인한 서사 몰입 붕괴
+      quote: 중얼거리는 순간 컷.
+  [blocking/open] voice voice_drift (judge:voice_judge, confidence 1)
+      claim: 1인칭 시점 원칙을 심각하게 위반했습니다. 주인공이 서술에서 스스로를 '이안'이라고 지칭했으며, 글의 마무리에 '순간 컷'이라는 메타적이고 대본 지문 같은 표현을 써서 작품의 시점과 문체가 완전히 붕괴되었습니다.
+      quote: 거대한 3단계 히든 몬스터가 침을 질질 흘리며 이안을 덮치려는 찰나. 비명소리가 난무하는 가운데 이안이 바닥에 굴러다니던 앙상한 나뭇가지 하나를 집어 들며 “아, 진짜 귀찮게 하네.”라고 중얼거리는 순간 컷.
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 엘레노어 교수의 대사에서 존댓말과 반말이 뚜렷한 연출적 이유 없이 자주 섞입니다. 위급한 상황이라 하더라도 한 문장에서 '대피해!'(해체)와 '물러서세요!'(해요체)가 교차하는 것은 깐깐한 캐릭터의 일관성을 훼손합니다. [p128]과 [p194]에서도 비슷한 혼용이 발생합니다.
+      quote: 전원 대피해! 학생들 모두 당장 뒤로 물러서세요!
+=== scorecard r2 v3 overall={"score":69,"note_count":0,"major_count":4,"minor_count":26,"blocking_count":2}
+  section genre: score=80 passed=true issues=3
+  section prose: score=54.6 passed=false issues=17
+  section voice: score=84.1 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=82.5 passed=true issues=3
+  section continuity: score=0 passed=false issues=4
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity relationship_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 세리아와 레이몬드는 정사상 이번 회차가 첫 만남이므로 통성명 전에 서로의 이름이나 사정을 알 수 없습니다. 그러나 레이몬드가 자신을 소개(p60)하기도 전인 등장 시점(p49)에 세리아가 이미 '카셀 영식'이라며 가문의 이름을 부릅니다.
+      quote: 천박하군요, 카셀 영식.
+  [blocking/open] continuity relationship_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 세리아와 이안은 정사상 이번 회차가 첫 만남이며, 이안이 이름을 밝힌 적이 없음에도 세리아가 정확히 '페르테스 생도'라고 부릅니다. 정사 규칙(소개 전 상대 이름 인지 불가)에 위배됩니다.
+      quote: 그 오만한 태도가 언제까지 가는지 지켜보겠습니다, 페르테스 생도.
+  [major/open] continuity timeline_error (judge:continuity_checker, confidence 0.9)
+      claim: 현재 시점이 아카데미 입학 실기 평가 당일이며 이안은 대기석에서 줄곧 자신의 차례를 기다리다 처음 호출받는 상황(p97~101)인데, 이안이 이미 레이몬드의 입학시험에 난입해 몬스터를 잡아주었다는 과거 시제 서술이 등장하여 한 장면 내의 시간선과 상황이 모순됩니다.
+      quote: 입학시험에서 자기가 고전하던 몬스터를 내가 지나가다 대충 툭 쳐서 잡은 걸 두고, 앙심을 품은 놈이었다.
+  [major/open] continuity location_error (judge:continuity_checker, confidence 0.9)
+      claim: 도입부(p3)에서는 이안이 '제1대연무장 한가운데' 서 있다고 묘사하였으나, 이후 서술(p103, p105)에서는 대기석에서 한참을 기다리다가 엘레노어의 호출을 받고 연무장 중앙으로 걸어나간다고 서술하여 한 회차 내에서 인물의 시작 위치가 충돌합니다.
+      quote: 거대한 제1대연무장 한가운데.
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '눈을 가늘게 떴다'는 초고마다 되풀이되는 표정 상투구입니다. 구체적인 다른 행동으로 묘사해야 합니다.
+      quote: 나는 눈을 가늘게 뜨고 놈의 얼굴을 뜯어보았다.
+  [major/open] structure other (judge:structure_judge, confidence 0.8)
+      claim: 이번 화에서 터져야 할 카타르시스(보상)가 나뭇가지를 집어 드는 예고 단계에서 멈추어 독자의 해소감을 다음 화로 미루었다.
+      quote: 비명소리가 난무하는 가운데, 나는 바닥에 굴러다니던 앙상한 나뭇가지 하나를 집어 들었다.
+=== scorecard r3 v4 overall={"score":71,"note_count":0,"major_count":1,"minor_count":27,"blocking_count":1}
+  section genre: score=80 passed=true issues=3
+  section prose: score=59.9 passed=false issues=18
+  section voice: score=84.3 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=0 passed=true issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=82.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity relationship_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 이안과 레이몬드는 이번 회차가 첫 만남이므로 과거에 얽힌 일이 있어서는 안 됩니다. 더욱이 이안은 '입학 실기 평가 당일(오늘)' 빙의했으므로, 얼마 전 예비 고사에서 만렙의 무력으로 몬스터를 쉽게 잡았다는 것은 빙의 시점 및 만년 꼴찌라는 설정과도 모순됩니다.
+      quote: 얼마 전 치러진 예비 고사에서 자기가 고전하던 몬스터를 내가 지나가다 대충 툭 쳐서 잡은 걸 두고 앙심을 품은 놈이었다.
+  [major/open] structure other (judge:structure_judge, confidence 0.9)
+      claim: 주인공의 압도적인 힘을 보여주는 실질적인 사이다(보상)가 다음 화로 미루어지며 이번 화 안에서 카타르시스가 온전히 해소되지 않았습니다.
+      quote: 비명소리가 난무하는 가운데, 나는 바닥에 굴러다니던 앙상한 나뭇가지 하나를 집어 들었다.
+=== scorecard r4 v5 overall={"score":72,"note_count":0,"major_count":5,"minor_count":18,"blocking_count":1}
+  section genre: score=95 passed=true issues=1
+  section prose: score=63.1 passed=false issues=14
+  section voice: score=75.5 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=80 passed=true issues=3
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity canon_contradiction (judge:continuity_checker, confidence 1)
+      claim: 주인공 이안의 사전 지식과 정사 설정에 따르면, 레이몬드가 암살 길드와 결탁한 동기는 '열등감에 찌들어'가 아니라 '빚더미에 앉은 가문을 살리기 위해'입니다. '검술의 벽을 넘지 못해 열등감에 빠졌다가' 타락하는 인물(유나 린델)의 설정과 뒤섞여 서술되었습니다.
+      quote: 백작가의 차남이자, 훗날 열등감에 찌들어 뒷세계 암살 길드와 결탁하는 엑스트라 악역.
+  [major/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 0.95)
+      claim: 주인공이 레이몬드 카셀에 대한 원작 지식을 떠올리는 서술에서 다른 인물(유나 린델)의 설정이 섞여 있습니다. 정사에 따르면 레이몬드는 '빚더미에 앉은 가문을 살리기 위해' 암살 길드와 결탁하는 인물이며, '열등감에 빠져' '엑스트라 악역'으로 전락하는 인물은 유나 린델입니다. 주인공이 자신이 알고 있어야 할 원작 설정을 잘못 혼동하여 서술하고 있습니다.
+      quote: 백작가의 차남이자, 훗날 열등감에 찌들어 뒷세계 암살 길드와 결탁하는 엑스트라 악역.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: 영어식 지각동사 수동태 번역투 ('~이 보였다')
+      quote: 짐짓 굳어 있는 것이 보였다.
+  [major/open] structure late_hook (judge:structure_judge, confidence 0.9)
+      claim: 도입부가 하품과 주변 풍경 묘사로 시작되어, 주인공이 먼치킨 빙의자라는 핵심 정보와 처지가 10문단째에야 드러납니다.
+      quote: “하아암─.”
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 엘레노어의 대사에서 해요체와 반말이 이유 없이 한 문장 안에서 섞여 어색합니다.
+      quote: 건방 떨지 마세요. 내 눈은 속여도 이 아카데미의 법칙은 못 속이니까.
+  [major/open] voice address_term_error (judge:voice_judge, confidence 0.9)
+      claim: 레이몬드의 해라체 어미가 지나치게 사극풍이거나 번역 소설식 클리셰로 작성되어 어색합니다.
+      quote: 감히 내 말이 아직 끝나지 않았거늘-!
+=== scorecard r5 v6 overall={"score":78,"note_count":0,"major_count":4,"minor_count":17,"blocking_count":0}
+  section genre: score=95 passed=true issues=1
+  section prose: score=66.9 passed=false issues=13
+  section voice: score=72 passed=false issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=90 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=1
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] continuity character_inconsistency (judge:continuity_checker, confidence 0.9)
+      claim: 정사 설정상 엘레노어가 이안을 대마법사(강자)로 착각하는 계기는 '실기 평가에서 이안이 대충 날린 엉터리 마법을 본 후'입니다. 현재 시점에서는 아직 평가 전이므로 엘레노어는 이안을 단지 '건방진 무능한 학생'으로 여기고 있으며([p117] "건방 떨지 마십시오" 등), 이안이 벌써부터 그녀가 자신을 강자로 착각했다고 독백하는 것은 설정된 인물 간의 착각 발생 시점 및 상황과 맞지 않습니다.
+      quote: 그걸 대단한 실력을 숨긴 강자의 여유라고 단단히 착각한 모양이었다.
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '짐짓'은 '마음과는 다르게 일부러'라는 뜻이므로, 괴물의 살기에 압도되어 다리가 굳는 상황에 전혀 맞지 않는 명백한 단어 오용입니다.
+      quote: 짐짓 굳어 있는 것이 보였다
+  [major/open] prose other (judge:prose_judge, confidence 1)
+      claim: '눈은 먹잇감을 고정하고 있었다'는 호응이 맞지 않는 비문입니다. '먹잇감에 시선을 고정하고 있었다' 혹은 '먹잇감을 노리고 있었다'로 수정해야 합니다.
+      quote: 붉은 눈은 이미 가장 가까이에 있는 먹잇감을 고정하고 있었다
+  [major/open] voice register_error (judge:voice_judge, confidence 0.9)
+      claim: 긴급 상황을 묘사하기 위한 의도일 수 있으나, 동일한 대상을 향한 한 마디 안에서 반말과 존댓말이 무분별하게 혼용되었습니다.
+      quote: 전원 대피해! 학생들 모두 당장 뒤로 물러서세요!

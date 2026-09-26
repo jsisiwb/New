@@ -16,7 +16,7 @@ names only).
 ```bash
 pnpm install && pnpm build && pnpm cli db:migrate
 export YEONJAE_PROVIDER_MODE=notion          # or live / genspark / simulated / replay
-pnpm cli project:create "제목" --policy=policy/standard@15
+pnpm cli project:create "제목" --policy=policy/standard@28
 pnpm cli novel:start <project> intake.json    # intake → story spec → two story directions
 pnpm cli novel:approve <project> <concept-id> --stop-after=3
 pnpm cli novel:run <project> --status-file=run.json
@@ -44,6 +44,19 @@ version. For a new Korean project use the newest `standard`:
 | `standard@13` | the operator's voice: corpus-calibrated `lang/ko@7`, voice profile, the operator's passages as exemplars, the corpus copy check | 0082, 0083 |
 | `standard@14` | dialogue floor and scene partner, reader secrets in the scene plan, the premise device's vocabulary, re-judging open majors | 0084 |
 | `standard@15` | reveal schedule, talk partner and countable talk targets, the cut as the last beat, time frames, the plan critic, findings attributed to the patch, full confirmation before approval | 0086 |
+| `standard@16` | the escalation ladder: two candidate patches per cluster chosen by lint, a scene rewrite for the kinds patches rarely fix | 0087 |
+| `standard@17` | the narrator's remembered knowledge is the reader's, the contract critic, repeated lines dropped, `voice/operator@2`, five Korean rounds | 0088 |
+| `standard@18` | relationships dated and not canon before they begin, the 회빙환 overlay in the device's own words, provenance tags stripped, `lang/ko@8` | 0089 |
+| `standard@19` | the narrator's present knowledge, the operator's device words, the 먼치킨 premise, a per-scene point-of-view redraft, pronouns inside the operator's band | 0090 |
+| `standard@20` | the reveal schedule in every canon line, the heroine formula inside it (`voice/operator@3`), score attribution, quoteless findings rewritten in their scene, no repeated round, checked scene rewrites | 0092 |
+| `standard@21` | the untried rung before any stop, net improvement with hard protections, the length band protected and length findings rewritten in their scene, secrets dated by the meeting they presuppose, `lang/ko@9` | 0093 |
+| `standard@22` | secret owners named in the canon lines, arc-plan stances normalized | 0094 |
+| `standard@23` | the talk band cap (judges' dialogue-amount findings inside the operator's band are minor), variance-free revision weights | 0095 |
+| `standard@24` | arc-plan beat types normalized, per-hit pronoun markers inside the operator's pronoun band recorded as notes | 0096 |
+| `standard@25` | a scene above the pronoun warn line re-drafted once, possession meta words kept out of other characters' lines (device rules 3) | 0097 |
+| `standard@26` | story-spec requirement categories normalized | 0099 |
+| `standard@27` | a taste judge's reviewer-class major must be reproduced by a second reading to block | 0100 |
+| `standard@28` | larger continuity-checker and extractor pack budgets | 0101 |
 
 **Watching a run.**
 

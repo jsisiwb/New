@@ -419,3 +419,364 @@ blocking findings twice.
 - **Observations, not fixed:** the regression designer listed a non-regressor as remembering the prior loop (one
   continuity finding); a status-window line judged against the world rule's formatting example (G8a r4, blocking);
   G7-4 (solo scenes raised to the talk floor) recurred in the plan but not as a finding.
+
+## 9. G9 — the `standard.v19` checkpoint on both projects (STEP 1 of this run; 11:57–12:38 UTC)
+
+Chapter 1 of two fresh projects on `standard@19` (ADR-0090: the narrator's present knowledge, the operator's own device
+words, the 먼치킨 premise, the per-scene POV redraft, pronouns inside the operator's band, writer 4.10.0), started by the
+previous session at 11:57 UTC from the tree of `0b010a3` — one minute after the `standard@19` commit and before
+ADR-0091 (migration 0025 was first applied to the permanent database at 13:55 UTC by this run's `db:migrate`, so the
+runs used the old claim). The session ended before recording them. As with G5 (ADR-0085 §2), the recorded pair is the
+`standard@19` checkpoint; nothing later on the branch changes prose behaviour. The metrics below come from
+`quality:checkpoint` (new in this run: the same measures for every checkpoint, read from the database); the run
+reports, every blocking/major finding and the metrics JSON are in `ops/live-runs/g9-standard19/`.
+
+| | G9a (academy) | G9r (regression) |
+| --- | --- | --- |
+| ADR-0090 on live data | `KO-DEVICE-01` 0 and no genre finding for `원작` (G8-2); no finding against the 먼치킨 hero's power (G8-4); no pronoun major (G8-7); three scene-writer redrafts for two scenes | `KO-DEVICE-01` 0; no third-person scene in the kept draft (G8-5); two scene-writer redrafts for two scenes |
+| Length (v1) | 5,952자 (+12.3 %), 4,635 without spaces | 5,529자 (+4.3 %), 4,340 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 20 % → 19.8 %, 40 % → 25.5 % | 2: 20 % → 10.9 %, 40 % → 37.4 % |
+| Quoted dialogue lines | 42 (7.1 per 1,000자) | 47 (8.5 per 1,000자) |
+| Quoted 속마음 lines | 9 | 11 |
+| Plan critic / repairs | two critic majors on the scene plan (open on a voice; give the heroine's entrance "the fate or secret the hero knows"), the plan re-asked once | the critic flagged an unawakened hero breaking walls and doors and a non-voice opening; `PLAN-DLG-02` removed one talk ban; the plan re-asked once; three chapter-planner calls |
+| First line | `웅성웅성. 시끌벅적.` (a sound line) | `우드득.` (a sound line) |
+| r0 gate | overall 74: prose 73.3 ✗, structure 75.5 ✗, genre 80, voice 90.4; continuity and knowledge ✗ | overall 87: prose 89.3, structure 85, genre 90, voice 87.5 — all four gates passing, 7 majors |
+| Rounds (revision scope) | r0 to r5 (r1 scene, r2 scene, r3 paragraph, r4 paragraph, r5 scene); r2, r3, r5 quarantined | r0 to r5 (r1 scene, r2 scene, r3–r5 paragraph); r1–r5 quarantined |
+| Blocking / major | r0 4 / 8 → r1 2 / 3 → r2 0 / 5 → r3 0 / 4 → r4 **0 / 5 (kept)** → r5 1 / 3 | r0 **0 / 7** → r1 4 / 7 → r2 1 / 5 → r3 **0 / 2** → r4 0 / 4 → r5 0 / 3 |
+| Why rounds were quarantined | r2: a new repetition major; r3 and r5: structure 87.5 → 77.5 and 85 → 75 under a paragraph patch that did not touch the opening or the cut | r1, r2: scene rewrites that entered the office twice and drifted into the third person (4 and 1 blocking); r3–r5: `targeted_worsened` alone — genre 90 → 85 against its gate of 72 |
+| The last blockers | r4 (kept): 상태창 lines without the world rule's 체력 line and a trait name off by one word; the rival's drug use (hidden until 화 24) in narration; an over-nested sentence; the hero calling 반말 a breach of rules that make everyone use 평어 | r3/r5: contract AC-1 (the status window and the regression "within the first three sentences") in all six scorecards and never targeted; the unawakened hero kicking a locked steel door open; a repeated catchphrase |
+| Reader-secret findings | r0: 3 blocking (continuity: the heroine's 원작 bad ending "15화 이전 공개 금지", her candy habit, the rival's drugs and fall) + 1 major (knowledge); r1 2 blocking; r2, r4 1 major | r0 1 major: the hero asks a stranger about her debt before any introduction |
+| `KO-DEVICE-01` | 0 in every round | 0 in every round |
+| Corpus copy check (14 syllables) | no `corpus_copy` finding on any of the six versions | no `corpus_copy` finding on any of the six versions |
+| Likeness (C8) | v1 70 (first-person bands 80); kept v5 80 (75); G8a 80 | v1 70 (first-person bands 55); v6 55 (50); G8r 85 |
+| Result | not accepted (`needs_attention`, APPROVAL_BLOCKED on v5: 0 blocking, 5 major) | not accepted (`needs_attention`) |
+| Calls / tokens / time | 83 (85 attempts, 2 failed) / 334,809 in, 35,390 out / 2,440 s | 79 (80 attempts, 1 failed) / 332,188 in, 36,282 out / 2,272 s |
+
+Credits for the pair: ws1 83.04 → 87.34 %, ws3 11.35 → 17.42 %, ws4 4.33 → 6.44 % (12.48 points); ws2 (98.57 % after G8)
+answers `rate-limited` with no reading, so its share is unknown (at most 1.43 points). Nothing else is recorded against
+the workspaces between the G8 reading and this run's first reading (13:53 UTC).
+
+Excerpts (the first three lines of each chapter, unedited pipeline output):
+
+> 웅성웅성. 시끌벅적.
+> 제1연무장을 가득 채운 백여 명의 신입생들이 뿜어내는 열기가 뜨거웠다.
+> 입학식 직후에 치러지는 마력 측정 평가.
+
+> 우드득.
+> 가슴뼈가 통째로 부서지는 감각.
+> 심장을 꿰뚫고 지나간 거대한 발톱의 서늘함이 생생했다. 핏물이 식도를 타고 역류하며 단말마의 비명조차 삼켜버렸다.
+
+**What changed against G8.** Both chapters open on a sound line, as the operator's do; no scene was left in the third
+person (G8-5), no device or 먼치킨 finding (G8-2, G8-4) and no pronoun major (G8-7). The regression chapter's first
+draft passed all four dimension gates with no blocking finding — the best r0 of any live run — and its r3 reached
+0 blocking and 2 majors; both were thrown away by the revision rules, not by the text.
+
+**Defects (each is fixed in this run; the ADR that fixes it is named when it lands).**
+
+- **G9-1 — two dates for one secret.** The canon-state lines every pack carries render a secret with the bible's one
+  reveal chapter ("15화 이전 공개 금지") while the reveal schedule (ADR-0088, ADR-0090) gives the first-person narrator's
+  remembered game knowledge to the reader from 화 1. The writer followed the schedule; the continuity checker read the
+  canon line and raised three blocking findings (G9a r0). G5-1 was the same split in the knowledge section.
+- **G9-2 — the heroine formula against the schedule.** The operator's introduction formula (`operator-voice-analysis.md`
+  §8: "the hero's game knowledge of her, often a doomed fate") reaches the planners and the plan critic without the
+  schedule; the critic sent the plan back to give the heroine's entrance "the fate or secret the hero knows", and the
+  writer told a habit only the heroine knows (화 8) and the rival's drugs (화 24). The bible compounds it: the hero
+  knows the drugs' consequence ("이 마약 부작용으로 … 타락") but is not a knower of the drugs.
+- **G9-3 — noise quarantines resolved rounds.** A judge's score moves in rubric steps of about 5 points (one sub-score);
+  the regression tolerance is 3. `targeted_worsened` quarantined G9r r3–r5 for genre 90 → 85 against a gate of 72 while
+  the round resolved its targets (7 majors → 2); the structure judge's rubric read 55, 75, 70, 55, 70, 50 over G9a's six
+  scorecards on mostly unchanged text, so paragraph patches that never touched the opening or the cut were quarantined
+  for structure (r3, r5).
+- **G9-4 — a spanless contract finding is never targeted.** G9r's AC-1 ("상태창 알림과 회귀 확신이 첫 3문장 안에") has
+  no quote, so the patch planner listed it as untargeted in every round; no round could ever approve the chapter.
+- **G9-5 — a quarantined round repeats itself.** After a quarantine the next round starts again from the same parent
+  with the same targets and the same rung: G9r r3, r4 and r5 are the same four paragraph patches to v1 (1,972–1,978
+  characters each), quarantined the same way.
+- **G9-6 — the unawakened body again.** The hero kicks a locked steel door open (G9r r0, r4, r5) although the plan
+  critic removed door-breaking from the plan and the writer's own narration says only a plywood door gives way.
+- **G9-7 — a scene rewrite is judged before it is checked.** G9r r1's scene rewrite entered the office twice and slipped
+  into the third person (`진우는`); four blocking findings came from a draft that a deterministic check could have
+  rejected before any judge call.
+- **G9-8 — stock figures and world vocabulary.** `서늘한 미소가 입가에 번졌다`, `정적이 내려앉았다` (one stock figure raised
+  by two judges as two majors); `오러` for a mage; a 상태창 without the world rule's lines and trait name.
+
+## 10. G10 — the `standard.v20` checkpoint on both projects (STEP 2/3; 15:09–15:37 UTC)
+
+Chapter 1 of two fresh projects on `standard@20` (ADR-0092: the schedule's dates in every canon line, `voice/operator@3`,
+score attribution, quoteless findings to a scene, no repeated round, checked rewrites), run in parallel from the live
+worktree at `75439a9`. Metrics from `quality:checkpoint`; exports in `ops/live-runs/g10-standard20/`. (A launcher bug
+first created three empty projects with no run — `G10 아카데미 standard20`, `G10 회귀 standard20`, `probe-shape-only`; the
+runs are `G10a …` and `G10r …`.)
+
+| | G10a (academy) | G10r (regression) |
+| --- | --- | --- |
+| ADR-0092 on live data | the writer's canon lines carry `독자는 이미 안다(서술해도 됨)` / `다른 인물에게 N화 이전 공개 금지`; no reader-secret finding in any round | the same; no reader-secret finding in any round |
+| Length (v1) | 5,319자 (+0.4 %), 4,175 without spaces | 4,528자 (−14.6 %), 3,567 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 40 % → 28.3 %, 40 % → 28.5 % | 2: 20 % → 7.7 %, 40 % → 27.8 % |
+| Quoted dialogue lines | 47 (8.8 per 1,000자) | 35 (7.7 per 1,000자) |
+| Quoted 속마음 lines | 12 | 5 |
+| Plan critic / repairs | one critic finding (a character knowing what he cannot); `PLAN-DLG-02`, `PLAN-DLG-03`; the plan re-asked once | one critic finding (state contradiction); the plan re-asked once |
+| First line | `“신입생들! 똑바로 서라!”` (a dialogue line) | `“크아아악!”` (a dialogue line) |
+| r0 gate | overall 80: prose 74.4 ✗, structure 85, genre 95, voice 81.7; knowledge ✗ | overall 85: prose 89.3, structure 80.5, genre 90, voice 87.5 — all four gates passing |
+| Rounds (scope) | r0, r1 (scene rewrite, quarantined: one new terminology major, `KO-DEVICE-01` 1) — then stopped | r0, r1 (scene rewrite, kept), r2 (dialogue patch, quarantined), r3 (scene rewrite, quarantined) — then stopped |
+| Blocking / major | r0 1 / 3 → r1 1 / 5 | r0 2 / 3 → r1 **1 / 2** → r2 0 / 3 → r3 1 / 7 |
+| Why the loop ended | `no_repeat`: after a quarantined rewrite the next round stopped instead of patching (G10-4) | `no_repeat`: both rungs tried once on the same parent, two rounds left (G10-4); r1 had cut the chapter to 3,966자 (−25 %) and passed (G10-2) |
+| The last blockers | a secret dated before its meeting — the TA "already lost to the hero" (knowledge, blocking); exposition; a TA who knows the hero's family on hearing his name | length −25 % (untargeted, G10-3); the hero blackmailing with a mana-stone ledger before the first gate (promise, blocking; continuity) |
+| Reader-secret findings | 0 in both rounds (G9a: 3 blocking + 1 major at r0) | 0 in every round |
+| `KO-DEVICE-01` | r0 0, r1 1 | 0 |
+| Corpus copy check (14 syllables) | no `corpus_copy` finding | no `corpus_copy` finding |
+| Likeness (C8) | v1 **85** (first-person bands 80); G9a 70 | v1 65 (first-person bands 65); G9r 70 |
+| Result | not accepted (`needs_attention`) | not accepted (`needs_attention`) |
+| Calls / tokens / time | 37 (37 attempts) / 181,957 in, 28,512 out / 1,434 s | 49 (49 attempts) / 199,787 in, 26,106 out / 1,640 s |
+
+Credits for the pair: ws1 87.34 → 89.67 %, ws3 17.42 → 21.70 %, ws4 6.44 → 8.00 % (8.17 points); ws2 still unreadable.
+
+Excerpts (the first three lines of each chapter, unedited):
+
+> “신입생들! 똑바로 서라!”
+> 쩌렁쩌렁한 목소리가 제3연무장의 낡은 대리석 바닥을 쾅쾅 울렸다.
+> 은빛이 도는 회색 머리. 먹잇감을 노리는 듯한 날카로운 삼백안.
+
+> “크아아악!”
+> 비명이 목구멍을 찢고 터져 나왔다.
+> 침대에서 용수철처럼 튕겨 오른 몸이 바닥으로 사정없이 처박혔다.
+
+**What changed against G9.** G9-1 and G9-2 are fixed on live data: no reader-secret finding in any round of either chapter
+(G9a had three blocking at r0). The academy draft came out on its length with the best likeness of any live draft (85).
+
+**Defects (fixed by ADR-0093, `standard@21`, except G10-5).**
+
+- **G10-1:** a secret describing the aftermath of a 화-1 meeting was known from before 화 1 (knowledge blocking at G10a r0).
+- **G10-2:** a scene rewrite cut the chapter by a quarter and passed its regression check (a length finding has no quote).
+- **G10-3:** the length finding was untargeted afterwards; no rung could lengthen the chapter.
+- **G10-4:** ADR-0092's `no_repeat` stopped both loops early — after one quarantined rewrite (G10a) and after one patch
+  and one rewrite (G10r); both quarantines were for a single new finding while G10r r2 had removed a blocking one.
+- **G10-5 (open):** a secret's owner outside the pack's registry appears in the canon lines as a raw id.
+
+## 11. G11 — the `standard.v21` checkpoint (15:52–16:28 UTC)
+
+Chapter 1 of two fresh projects on `standard@21` (ADR-0093: the untried rung before any stop, net improvement, the length
+band, meeting-dated secrets, `lang/ko@9`), run in parallel from the live worktree at `ee2d5eb`. Exports:
+`ops/live-runs/g11-standard21/`.
+
+**G11a (academy) failed at the arc plan** after 10 calls (608 s): the arc planner wrote `to_stance: "believes"` in three
+planned knowledge changes, a stance the arc-plan schema does not know; the contract's normalizer maps free stances, the
+arc plan had none, and a resume would replay the same recorded answer (G11-1, fixed by ADR-0094 in `standard@22`; the
+academy project is re-run on `standard@22` as G12a).
+
+| | G11r (regression) |
+| --- | --- |
+| Length (v1) | 5,878자 (+10.9 %), 4,618 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 20 % → 12.2 %, 40 % → 18.1 % |
+| Quoted dialogue / 속마음 lines | 52 (8.8 per 1,000자) / 12 |
+| Plan critic / repairs | one critic finding (structure target); `PLAN-DLG-03`; the plan re-asked once |
+| First line | `“2026년 7월 1일. D-10이군.”` (a dialogue line) |
+| r0 gate | overall 88: prose 85.6, structure 90, genre 100, voice 86.9 — all four gates passing |
+| Rounds (scope) | r0 to r5, every revision a scene-sized rewrite; r1–r5 quarantined |
+| Blocking / major | r0 **1 / 1** → r1 0 / 6 → r2 0 / 3 → r3 2 / 3 → r4 0 / 3 → r5 1 / 5 |
+| Why rounds were quarantined | each wrote new findings (a weapon that changes in one scene, a villain's suit colour, a voice card's catchphrase given to the hero); r2 also cut the chapter to 3,311자 and failed the new length protection; net improvement kept none (r2 and r4 weigh 3 against r0's 3) |
+| The r0 findings | a stranger knowing the hero's name before they meet (continuity, blocking); "dialogue share 13 %" (structure major) — inside the operator's first-person band (p10 12.6 %) |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | 0 / 0 / 0 in every round |
+| Likeness (C8) | v1 60 (first-person bands 55) |
+| Result | not accepted (`needs_attention` on v1) |
+| Calls / tokens / time | 71 (71 attempts) / 280,072 in, 37,349 out / 2,125 s |
+
+Credits from the G11 start to 16:29 UTC (G11a, G11r and the first 17 minutes of G12a): ws1 89.67 → 92.22 %, ws3 21.70 →
+27.09 %, ws4 8.00 → 9.41 % (9.35 points).
+
+Excerpt (the first three lines of G11r's chapter, unedited):
+
+> “2026년 7월 1일. D-10이군.”
+> 쩍 갈라진 스마트폰 액정 위로 선명한 날짜가 빛났다.
+> 목이 날아가는 감각이 아직 생생했다.
+
+**What changed against G10.** The loop used all five rounds (G10-4 fixed); the length protection quarantined a revision that
+cut the chapter by 38 % (G10-2 fixed); no reader-secret finding again.
+
+**Defects.** G11-1 (above; ADR-0094). G11-2: the judges' dialogue-amount majors inside the operator's own talk band
+(13 %, 14 % here; 19 % in G9a) send rounds to scene rewrites that write new defects. G11-3: a revision's weight counted
+new-kind findings on lines both versions share. Both fixed by ADR-0095 (`standard@23`).
+
+## 12. G12 and G13 — the academy project on `standard.v22`, the regression project on `standard.v23` (16:12–16:49 UTC)
+
+Chapter 1 of two fresh projects: G12a (academy, `phase-c-academy-intake.json`) on `standard@22` (ADR-0094: secret owners
+named in the canon lines, arc-plan stances normalized) from a second live worktree at `f395ea0`, so the G11r run was not
+disturbed; G13r (regression, `phase-a-v7-intake.json`) on `standard@23` (ADR-0095: the talk band cap, variance-free
+weights) from the live worktree at `35122fa`. Exports: `ops/live-runs/g12-standard22/`, `ops/live-runs/g13-standard23/`.
+
+**G13r (regression) failed at the arc plan** after 10 calls (592 s): the arc planner typed its tenth beat `cliffhanger`,
+a type the arc-plan schema does not know (`/beats/9/type`, `ARC_PLAN_INVALID`), and a resume would replay the recorded
+answer (G13-1, fixed by ADR-0096 in `standard@24`).
+
+| | G12a (academy) |
+| --- | --- |
+| Length (v1) | 5,761자 (+8.7 %), 4,527 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 50 % → 28.7 %, 30 % → 18.8 % |
+| Quoted dialogue / 속마음 lines | 42 (7.3 per 1,000자) / 8 |
+| Plan critic / repairs | two critic majors (the first beat opens on a place, not a voice; a scene with a partner and no dialogue beat); `PLAN-DLG-03`, `PLAN-DLG-02` (a talk ban removed); the plan re-asked once |
+| First line | `“하아암─.”` (a dialogue line) |
+| r0 gate | overall 66: prose 51.4, structure 80, genre 70, voice 84.1 |
+| Rounds (scope) | r0 to r5; r1 a scene rewrite, quarantined (a protected dimension regressed, new blocking findings); r2–r5 paragraph patches, all kept |
+| Blocking / major | r0 3 / 3 → r1 5 / 6 → r2 2 / 4 → r3 1 / 1 → r4 1 / 5 → r5 **0 / 4** |
+| Prose (rubric / lint composite) | 51.4 (56.3 / 44), 63.1 (62.5 / 64), 54.6 (56.3 / 52), 59.9 (62.5 / 56), 63.1 (62.5 / 64), 66.9 (68.8 / 64) |
+| 그/그녀 | 1.5–1.8 per 1,000자 in every round (the operator's first-person median is 1.51, the warn line 2.57); the per-hit marker was 11, 9, 11, 11, 9 and 9 of the round's 14, 9, 12, 11, 9 and 9 lint minors; the prose judge's translation-markers sub-score 1 or 2 in every round |
+| The r5 findings | a heroine's misunderstanding narrated before the scene that starts it (continuity); two word-choice errors (prose); one line mixing 반말 and 존댓말 toward one listener (voice) |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | 0 / 0 / 0 in every round |
+| Likeness (C8) | v1 70 (first-person bands 70); v6 65 |
+| Result | not accepted (`needs_attention` on v6: prose 66.9 / 78 and voice 72 / 76 failing, 4 majors) |
+| Calls / tokens / time | 80 (80 attempts) / 363,743 in, 39,851 out / 2,215 s |
+
+Credits from 16:29 UTC to 17:10 UTC (the rest of G12a and all of G13r): ws1 92.22 → 94.10 %, ws3 27.09 → 29.66 %, ws4
+9.41 → 10.54 % (5.58 points); ws2 still unreadable (`rate-limited`).
+
+Excerpt (the first three lines of G12a's last version, unedited):
+
+> 1만 시간을 갈아 넣은 만렙 캐릭터에 빙의했다.
+> “하아암─.”
+> 늘어지는 하품이 턱 끝에 매달렸다.
+
+**What changed against G11.** The academy project passed the arc plan (G11-1 fixed) and its loop kept four of five
+revisions: blocking findings fell from 3 to 0, the first academy run to end without one. The last version failed on two
+dimension gates and four majors.
+
+**Defects.** G12-1: the per-hit pronoun marker charged 4 lint points for every 그/그녀 in a chapter inside the operator's
+own pronoun band — every lint finding in r1, r4 and r5 — and the prose judge's digest listed those hits as 번역투; without
+them r5's composite is 100 and prose 81.3 (ADR-0096 measures the marker on the operator's 259 first-person chapters:
+median composite 52 with it, 80 without). G12-2: the heroine's misunderstanding narrated as already formed before the
+scene that forms it (an r5 major; the planned-state order inside one chapter, not fixed yet). G13-1 (above). G12-1 and
+G13-1 are fixed by ADR-0096 (`standard@24`).
+
+## 13. G14 — the `standard.v24` checkpoint, and the first chapter to pass its gates (17:18–18:56 UTC)
+
+Chapter 1 of two fresh projects on `standard@24` (ADR-0096: arc-plan beat types, the pronoun band lint), run in
+parallel from the live worktree at `96ad254`; both arc plans used schema types, so the beat normalizer was not exercised.
+After both loops ended one step short, each chapter was granted five more rounds with `novel:extend` (ADR-0098, from a
+second worktree at `aba1b7b`, because G15 was running in the first). Exports: `ops/live-runs/g14-standard24/`.
+
+| | G14a (academy) | G14r (regression) |
+| --- | --- | --- |
+| Length (v1) | 4,984자 (−6.0 %), 3,955 without spaces | 6,022자 (+13.6 %), 4,701 without spaces |
+| Scenes (planned talk → measured talk + 속마음) | 2: 40 % → 25.7 %, 20 % → 17.8 % | 2: 20 % → 3.3 %, 45 % → 33.3 % |
+| Quoted dialogue / 속마음 lines | 40 (8.0 per 1,000자) / 7 | 47 (7.8 per 1,000자) / 3 |
+| First line | `와아아아아-!` | `징, 지징.` |
+| r0 | overall 52: prose 18 (4.41 그/그녀 per 1,000자, above the fail line; composite 0), voice 56.3; 2 blocking, 11 majors, two of them in-world characters saying ‘엑스트라’ | overall 79: prose 72.6, voice 66.3; 0 blocking, 8 majors |
+| Rounds r1–r5 | r2 overall 85 with all four gates passing (prose 81.8; the chapter back inside the pronoun band, its 12 hits recorded as notes), 0 / 5; r3 and r4 quarantined; r5 overall 87, all gates passing, **1 / 1** | r1 quarantined; r2–r5 kept; r5 overall 88, all gates passing, **0 / 4** |
+| Why approval was blocked at r5 | a status-window penalty that fixes the stats at 5 where the bible caps them at 99 (continuity, blocking); one line of the heroine's in 해라체 (voice, major) | an unawakened body kicking a lock apart (G9-6 again), money the hero knows without a setup, killing intent that knocks men out in a system-hunter world, the hero's last line in 반말 |
+| Granted rounds (ADR-0098) | r6 85 (1 / 6) → r7 88 (1 / 3) → r8 87 (0 / 1) → **r9 89 (0 / 0)**: prose 90.9, structure 87.5, genre 75, voice 91.3 — gate outcome `approved` | r6 86 (0 / 2) → r7 86 (0 / 3) |
+| How it ended | the confirmation (the full re-evaluation that precedes approval, ADR-0086) lost four judges to the bridge's HTTP 502s at 18:54–18:56; the run is `failed` (retryable) with r9 approved by its scorecard and not yet accepted | the bridge returned HTTP 401 at the r8 evaluation; the run is `failed` (retryable) |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | r0 1 / 1 (the ‘엑스트라’ lines), then 0; 0; 0 | r3 1 blocking, otherwise 0; 0; 0 |
+| Likeness (C8) | v1 60 (first-person 55); v10 65 (60) | v1 80 (70); v8 75 (75) |
+| Calls / attempts / tokens / time | 120 / 166 (51 failed attempts) / 475,527 in, 43,867 out / 5,872 s | 101 / 109 (10 failed) / 387,794 in, 39,074 out / 4,589 s |
+
+Credits: ws1 94.10 % (17:10) → 97.81 % (17:59), then `rate-limited`; ws3 29.66 → 39.82 %; ws4 10.54 → 14.85 % (18:58), for
+G14 with its granted rounds, G15 and the retries. From 18:54 every bridge probe failed (`retryable_provider`), so no
+live call could run until the bridge recovered.
+
+Excerpt (the first three lines of G14a's v1, unedited):
+
+> 와아아아아-!
+> 고막을 찢을 듯한 환호성이 치고 들어왔다.
+> 제1연무장.
+
+**What changed against G12.** In-band pronouns no longer cost the prose composite. G14a's prose rose from 18 to 81.8 by
+r2 once the loop brought the rate back into the band, and it passed every later round. Both chapters ended their five
+rounds with all four dimension gates passing, and G14a's granted rounds reached 0 blocking and 0 majors.
+
+**Defects.** G14-1: a first draft far above the pronoun band spends rounds on pronouns (ADR-0097's redraft, in
+`standard@25`). G14-2: in-world characters saying the possessor's word ‘엑스트라’ (ADR-0097's device rules 3). G14-3: a
+chapter that passes every gate with one or two findings left has no way forward once its rounds are spent. A resume
+replays to the same `APPROVAL_BLOCKED`, and a chapter first approvable in the last round would have stopped with
+`REVISION_LIMIT` in the polish round (both fixed by ADR-0098). G15-1: G15a's requirement interpreter typed a
+requirement `relationship`, failing `novel:start` (ADR-0099, `standard@26`). G15b's cast step lost a call to a bridge 502
+and was resumed; G15r and G15b were paused at 18:35 to leave the degraded bridge to G14.
+
+### 13.1 After the bridge came back (19:25–19:43 UTC)
+
+- **G14a.** The resumed job replayed r0–r9 and repeated only the confirmation. The full re-reading of r9 came back at
+  overall 82, 0 blocking / 6 majors: the structure judge at 77.5 (below its gate) with a late hook, pacing, exposition
+  and a weak ending as majors, a continuity major for one line of the heroine's in 반말, and a genre major for the
+  system forcing a class change. Round 10, the last granted one, left overall 86, 0 blocking / 2 majors (a late hook;
+  bystander reaction cuts used four times), with prose 87.2, structure 85, genre 85 and voice 91.3 all passing. The run
+  ended `APPROVAL_BLOCKED` with the grant at the policy's cap (ten rounds in all).
+- **G14r.** r8 and r9 were quarantined (0 / 7 each); r10 kept at overall 86, 0 blocking / 3 majors, all four gates
+  passing; `APPROVAL_BLOCKED` at the cap.
+- **G14-4: one reading's severity decides acceptance.** The structure judge read r8 fresh and rated the late hook and the
+  summarizing last line minor (structure 87.5). The confirmation, one sentence later, rated both major, adding a pacing
+  and an exposition major (77.5). At r10 the hook was major again and the pacing and exposition minor. Fixed by
+  ADR-0100 (`standard@27`): a taste judge's reviewer-class major must be reproduced by a second reading to block.
+- Every finding left on either chapter is reviewer-class (ADR-0042): an editor may override it with a recorded reason,
+  or the chapter may be regenerated. Both are the operator's decisions, and neither was taken.
+
+## 14. G15–G17 — `standard.v25` to `standard.v28` under a failing bridge (18:00–21:20 UTC)
+
+Exports: `ops/live-runs/g16-standard27/`, `ops/live-runs/g17-standard28/`.
+
+- **G15 (`standard@25`).** G15a failed at its first call: the requirement interpreter typed a requirement
+  `relationship` (G15-1, ADR-0099). G15b, the academy relaunch, lost a cast call to a bridge 502 and was resumed. G15r and
+  G15b were paused at 18:35 to leave the degraded bridge to G14's granted rounds, and have not been resumed.
+- **G16a (academy, `standard@27`).** Its v1 (5,245자, −1.0 %; first line `“퇴교 명령을 집행한다.”`) never reached a
+  scorecard. The continuity checker's pack needed 35,114 tokens of critical context against the pinned budget of 34,000
+  (`PACK_FAILED`, G16-1, fixed for new projects by ADR-0101 in `standard@28`). A resume replays the same draft into the
+  same pack.
+- **G16r (regression, `standard@27`).** r0 overall 88, 0 blocking / 7 majors, with voice at 65 (below its gate of 76)
+  and the other three dimensions passing; r1 87 (0 / 5); r2 90 (2 / 3, voice 56.3); r3 and r4 quarantined. The bridge
+  failed the r5 evaluation (voice and continuity judges, six HTTP 502 attempts each). The run is `failed` (retryable).
+  Voice failed in every round: its findings are the hero's register toward strangers, the same class as G14r's last
+  major. `major_agreement` never applied, because blocking findings or checker majors were open in every round.
+- **G17a (academy, `standard@28`).** Planned (bible, arc plan, contract), then lost its scene plan to the bridge twice
+  (21:09, 21:15); the run is `failed` (retryable) before any draft.
+- **The bridge.** Probes failed from 18:54 to about 19:25 and again from 21:15 UTC. In between, long calls failed
+  often: G16r's 75 calls took 122 attempts, 50 of them failed. The bridge's per-workspace counters reset twice (the
+  readings at 20:24 and 21:20 start from 0 done), so credit deltas across those resets are not comparable.
+
+Calls / attempts / tokens / time: G16a 20 / 25 / 159,998 in, 35,540 out / 2,170 s; G16r 75 / 122 / 345,094 in, 43,622 out
+/ 4,634 s; G17a 17 / 33 / 70,242 in, 19,223 out / 2,483 s.
+
+**Defects.** G16-1 (above; ADR-0101). G16-2: the regression hero's register toward strangers fails the voice gate in
+every round (voice 56–69); open. The bridge outage is not a pipeline defect.
+
+## 15. G17a — the first accepted chapter (21:25–23:10 UTC)
+
+Chapter 1 of G17a (academy, `standard@28`) was drafted once the bridge recovered and run from the live worktree. The
+code moved forward as each downstream defect was fixed: `730d457` (the polish round), then `211ca59`, `e5dd44d`,
+`df43377` and `f7271d1`. Every resume replayed the recorded calls. From the approved v5 onward, the only new model call
+was the extractor's second repair. Export: `ops/live-runs/g17-standard28/`.
+
+| | G17a |
+| --- | --- |
+| Length (accepted v6) | 6,339자 (+19.6 % against the contract's 5,300), 5,033 without spaces; 252 paragraphs |
+| Rounds | r0 80 (3 / 2) → r1 85 (0 / 3) → r2 84 and r3 89 quarantined (protection failed; r3 also a new major) → r4 86, **0 / 0**, all four gates passing (prose 87.2, structure 85.5, genre 90, voice 95.7) |
+| Confirmation (ADR-0086) | the full re-reading of v5: overall 89, 0 / 0, approved |
+| Polish (ADR-0073) | v6 kept: lint findings 7 → 1; overall 89, 0 / 0, approved |
+| Extraction | three answers. The first failed the canon-delta schema on seven items. The first repair fixed five. The second fixed the other two and broke `hypothesis_results`, which was taken back from the first repair (ADR-0103) |
+| Canon commit | v3 (`chapter_acceptance`): 5 events, 2 facts, 1 relationship state, 1 promise opened, then the summary and dependency edges; accepted at 23:10:26 |
+| Reader-secret findings / `KO-DEVICE-01` / corpus copy | 0 / 0 / 0 |
+| Calls / attempts / tokens / time | 80 calls (99 attempts, 2 failed calls) / 341,138 in, 41,342 out / 2,961 s of model time; wall clock 20:35–23:10, including the bridge outage and the fixes |
+
+Excerpt (the first three lines of the accepted v6, unedited):
+
+> “다음 수험생, 번호표 771번! 시온! 단상으로 올라와라!”
+> 쩌렁쩌렁한 호통 소리가 귓바퀴를 세게 때렸다.
+> 나는 새끼손가락으로 귓구멍을 후비적거리며 느릿하게 눈을 떴다.
+
+**What it took.** Each defect below appeared only once the one before it was fixed. None of them was in the prose.
+
+- **G17-1.** The polish round found no target in a passing chapter and stopped with `INTERNAL` (ADR-0102).
+- **G17-2.** The extractor's answer failed the canon-delta schema. It is now repaired at most twice, with per-item
+  errors and rendered shapes (ADR-0102).
+- **G17-3.** The second repair broke a field that both earlier answers had right. Such a field is now taken back
+  (ADR-0103).
+- **G17-4.** The planner's window `1.0 → 1.1` against the extractor's paragraph-order ordinals turned a relationship
+  dated 1.2 into "the future" (ADR-0104).
+- **G17-5.** Two facts dated only by their items reached the insert without `valid_from` (ADR-0105).
+
+G17a was resumed with `--stop-after=5` at 23:12 (STEP 5).
+
+**G18r (regression, `standard@28`).** Planned from 22:30, from the second worktree. r0 77 (2 / 4) → r5 89 (0 / 1), with
+every round kept. At r5 all four taste gates passed (prose 90.9, structure 87.5, genre 85, voice 90.3), so G16-2 did not
+recur. One continuity-checker major remained: a line that contradicts the extortion it follows. At 23:12 the chapter
+was granted five rounds (ADR-0098) on `f7271d1`.
+
+Credits at 23:15: ws1 7.02 %, ws2 1.61 %, ws3 56.74 %, ws4 21.88 % (`rate-limited`), ws5 2.38 %, ws6 3.66 %
+(`rate-limited`). ws5 and ws6 are new in this period. Against the 22:20 reading, G17a's acceptance and G18r's planning
+and five rounds cost about 8 points across the six workspaces.

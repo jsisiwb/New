@@ -490,6 +490,18 @@ describe('the device rule as the operator writes it, and the protagonist type (A
     expect(compose('p-dr3', { deviceRules: 2 }).preferences?.story_device_rules).toBeUndefined();
   });
 
+  it('keeps the possessor’s meta words out of other characters’ lines under device rules 3 (G14-2)', () => {
+    const identity = compose('p-dr4', { deviceLexicon: true, deviceRules: 3 });
+    expect(identity.preferences?.story_device_rules).toBe(3);
+    for (const role of ['writer_full', 'judge_rubric_genre'] as const) {
+      const text = block(identity, role);
+      expect(text).toContain('게임 자체를 ‘원작’이라 부를 수는 있다');
+      expect(text).toContain('주인공의 서술과 속마음에만 쓰고 다른 인물의 대사에는 넣지 않는다');
+    }
+    const v2 = block(compose('p-dr5', { deviceLexicon: true, deviceRules: 2 }), 'writer_full');
+    expect(v2).not.toContain('다른 인물의 대사에는 넣지 않는다');
+  });
+
   it('tells writers, planners and the genre and structure judges that the 먼치킨 hero is the premise (G8-4)', () => {
     expect(protagonistTypeOf({ ...BASE, protagonist_type: '먼치킨' })).toBe('munchkin');
     expect(protagonistTypeOf({ ...BASE, protagonist_type: '평범한 대학생' })).toBeUndefined();

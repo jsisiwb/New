@@ -9,6 +9,10 @@ import { scoreTargets, type Scorecard } from './evaluation.js';
 
 const V14 = requirePolicy('policy/standard@14');
 const V15 = requirePolicy('policy/standard@15');
+const V19 = requirePolicy('policy/standard@19');
+const V20 = requirePolicy('policy/standard@20');
+const V21 = requirePolicy('policy/standard@21');
+const V23 = requirePolicy('policy/standard@23');
 
 interface IssueIn {
   id: string;
@@ -219,6 +223,271 @@ describe('patch regression under revision.convergence (ADR-0086)', () => {
     expect(patchRegression(V15, { ...base, texts: undefined, after: untouched }).passed).toBe(
       false,
     );
+  });
+});
+
+describe('score attribution (ADR-0092, G9-3)', () => {
+  it('keeps a round that resolved its targets while the targeted judge moved one rubric step (G9r r3)', () => {
+    const before = card({
+      prose: 89.3,
+      structure: 85,
+      genre: 90,
+      issues: [
+        {
+          id: '01920000-0000-7000-8000-000000000001',
+          dimension: 'genre',
+          kind: 'other',
+          span: { start: 7, end: 14 },
+        },
+        {
+          id: '01920000-0000-7000-8000-000000000002',
+          dimension: 'contract',
+          kind: 'missing_required_event',
+        },
+      ],
+    });
+    const after = card({
+      prose: 90.9,
+      structure: 87.5,
+      genre: 85,
+      issues: [
+        {
+          id: '01920000-0000-7000-8000-000000000003',
+          dimension: 'contract',
+          kind: 'missing_required_event',
+        },
+      ],
+    });
+    const input = {
+      before,
+      after,
+      dimension: 'genre' as const,
+      targetedIssueIds: [
+        '01920000-0000-7000-8000-000000000001',
+        '01920000-0000-7000-8000-000000000002',
+      ],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    expect(patchRegression(V19, input).failures).toEqual(['targeted_worsened']);
+    expect(patchRegression(V20, input).passed).toBe(true);
+  });
+
+  it('reads a fall to just below the gate with no finding introduced as judge variance (G9a r3)', () => {
+    const before = card({
+      prose: 71.7,
+      structure: 87.5,
+      issues: [
+        {
+          id: '01920000-0000-7000-8000-000000000004',
+          dimension: 'knowledge',
+          kind: 'knowledge_leak',
+          span: { start: 7, end: 14 },
+        },
+      ],
+    });
+    const quiet = (structure: number) =>
+      card({
+        prose: 78.6,
+        structure,
+        issues: [
+          // Line 3 is identical in both versions: the patch did not write it.
+          {
+            id: '01920000-0000-7000-8000-000000000005',
+            dimension: 'structure',
+            kind: 'late_hook',
+            span: { start: 18, end: 25 },
+          },
+        ],
+      });
+    const input = {
+      before,
+      dimension: 'knowledge' as const,
+      targetedIssueIds: ['01920000-0000-7000-8000-000000000004'],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    expect(patchRegression(V19, { ...input, after: quiet(77.5) }).failures).toContain(
+      'protected_dimension_regressed',
+    );
+    expect(patchRegression(V20, { ...input, after: quiet(77.5) }).regressions).toEqual([]);
+    // More than the tolerance below the gate is a regression whatever the attribution.
+    expect(patchRegression(V20, { ...input, after: quiet(70) }).failures).toContain(
+      'protected_dimension_regressed',
+    );
+  });
+
+  it('carries a finding the parent already had, even where the patch rewrote the passage it quotes', () => {
+    const before = card({
+      prose: 80,
+      structure: 87.5,
+      issues: [
+        {
+          id: '01920000-0000-7000-8000-000000000006',
+          dimension: 'structure',
+          kind: 'excessive_exposition',
+          span: { start: 18, end: 25 },
+        },
+        {
+          id: '01920000-0000-7000-8000-000000000004',
+          dimension: 'knowledge',
+          kind: 'knowledge_leak',
+          span: { start: 7, end: 14 },
+        },
+      ],
+    });
+    const after = card({
+      prose: 80,
+      structure: 77,
+      issues: [
+        {
+          id: '01920000-0000-7000-8000-000000000007',
+          dimension: 'structure',
+          kind: 'excessive_exposition',
+          span: { start: 8, end: 12 },
+        },
+      ],
+    });
+    const input = {
+      before,
+      after,
+      dimension: 'knowledge' as const,
+      targetedIssueIds: ['01920000-0000-7000-8000-000000000004'],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    expect(patchRegression(V19, input).passed).toBe(false);
+    const v20 = patchRegression(V20, input);
+    expect(v20.failures).toEqual([]);
+    // Without the texts nothing is attributed, so nothing is carried either.
+    expect(patchRegression(V20, { ...input, texts: undefined }).passed).toBe(false);
+  });
+});
+
+describe('net improvement and the length band (ADR-0093, G10-2, G10-4)', () => {
+  const U = (n: number) => `01930000-0000-7000-8000-${String(n).padStart(12, '0')}`;
+  it('keeps a revision that removed a blocking finding while it wrote one new major (G10r r2)', () => {
+    const before = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [
+        {
+          id: U(1),
+          dimension: 'promise',
+          kind: 'other',
+          severity: 'blocking',
+          span: { start: 7, end: 14 },
+        },
+        { id: U(2), dimension: 'continuity', kind: 'timeline_error', span: { start: 7, end: 14 } },
+      ],
+    });
+    const after = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [
+        { id: U(3), dimension: 'genre', kind: 'repetitive_arc', span: { start: 8, end: 12 } },
+        { id: U(4), dimension: 'continuity', kind: 'timeline_error', span: { start: 18, end: 25 } },
+      ],
+    });
+    const input = {
+      before,
+      after,
+      dimension: 'continuity' as const,
+      targetedIssueIds: [U(1), U(2)],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    expect(patchRegression(V20, input).failures).toContain('new_blocking_or_major_issue');
+    expect(patchRegression(V21, input).passed).toBe(true);
+    // Heavier after the patch: the new finding is not paid for, so it fails as before.
+    const worse = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [
+        {
+          id: U(5),
+          dimension: 'genre',
+          kind: 'repetitive_arc',
+          severity: 'blocking',
+          span: { start: 8, end: 12 },
+        },
+        { id: U(6), dimension: 'continuity', kind: 'timeline_error', span: { start: 18, end: 25 } },
+      ],
+    });
+    expect(patchRegression(V21, { ...input, after: worse }).passed).toBe(false);
+    // A new register-kind finding stays a hard failure (the ADR-0014 kind guard).
+    const register = card({
+      prose: 90.9,
+      structure: 82.5,
+      issues: [{ id: U(8), dimension: 'voice', kind: 'voice_drift', span: { start: 8, end: 12 } }],
+    });
+    expect(patchRegression(V21, { ...input, after: register }).passed).toBe(false);
+  });
+
+  it('leaves new-kind findings on shared text out of the weight under v23 (ADR-0095)', () => {
+    const before = card({
+      prose: 90,
+      structure: 85,
+      issues: [
+        {
+          id: U(9),
+          dimension: 'continuity',
+          kind: 'relationship_inconsistency',
+          severity: 'blocking',
+          span: { start: 7, end: 14 },
+        },
+      ],
+    });
+    // The patch fixed the blocking finding; the judges also raised two new kinds on the unchanged third line.
+    const after = card({
+      prose: 90,
+      structure: 85,
+      issues: [
+        { id: U(10), dimension: 'genre', kind: 'repetitive_arc', span: { start: 18, end: 25 } },
+        { id: U(11), dimension: 'prose', kind: 'other', span: { start: 18, end: 25 } },
+        {
+          id: U(12),
+          dimension: 'voice',
+          kind: 'character_inconsistency',
+          span: { start: 8, end: 12 },
+        },
+      ],
+    });
+    const input = {
+      before,
+      after,
+      dimension: 'continuity' as const,
+      targetedIssueIds: [U(9)],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    // v21 weighs all three (3 against 2) and fails the new kind; v23 weighs only the introduced one (1 against 2).
+    expect(patchRegression(V21, input).passed).toBe(false);
+    expect(patchRegression(V23, input).passed).toBe(true);
+  });
+
+  it('fails a revision that took the length out of its band, whatever else it fixed (G10r r1)', () => {
+    const before = card({
+      prose: 89.3,
+      structure: 80.5,
+      issues: [
+        {
+          id: U(7),
+          dimension: 'structure',
+          kind: 'excessive_exposition',
+          span: { start: 7, end: 14 },
+        },
+      ],
+    });
+    const shortened = card({ prose: 90.9, structure: 82.5 });
+    (shortened.sections as Record<string, unknown>).length = { score: 0, passed: false };
+    (before.sections as Record<string, unknown>).length = { score: 100, passed: true };
+    const input = {
+      before,
+      after: shortened,
+      dimension: 'structure' as const,
+      targetedIssueIds: [U(7)],
+      texts: { parent: PARENT, child: CHILD },
+    };
+    expect(patchRegression(V20, input).passed).toBe(true);
+    const v21 = patchRegression(V21, input);
+    expect(v21.passed).toBe(false);
+    expect(v21.protections.find((p) => p.protection === 'length')?.passed).toBe(false);
   });
 });
 

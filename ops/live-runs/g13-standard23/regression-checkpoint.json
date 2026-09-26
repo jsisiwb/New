@@ -1,0 +1,52 @@
+{
+  "project_id": "01a0d966-c196-7a27-807b-fff160884db9",
+  "title": "G13r 회귀 standard23",
+  "policy": "policy/standard@23",
+  "lineage": {
+    "genres": [
+      "genre/regression@4",
+      "genre/hunter-gate@2"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/regression@4",
+    "output_language": "lang/ko@9"
+  },
+  "run": {
+    "status": "failed",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "ARC_PLAN_INVALID",
+      "step": "arc_plan",
+      "message": "/beats/9/type: must be equal to one of the allowed values",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "regenerate"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "planned",
+  "accepted": false,
+  "scenes": [],
+  "plan_critic": null,
+  "plan_findings": null,
+  "rounds": [],
+  "likeness": [],
+  "totals": {
+    "calls": 10,
+    "attempts": 10,
+    "failed_attempts": 0,
+    "tokens": {
+      "input": 35017,
+      "output": 13966
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T16:29:49.755Z",
+    "last_call_at": "2026-09-25T16:39:42.173Z",
+    "seconds": 592
+  }
+}

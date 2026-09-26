@@ -127,6 +127,7 @@ import { ArtifactLlmOutputStore } from '@yeonjae/workflows';
 import { WorkflowError } from '@yeonjae/workflows';
 import { NOVEL_COMMANDS, NOVEL_USAGE, runNovelCommand } from './novel.js';
 import { CORPUS_COMMANDS, runCorpusCommand } from './corpus.js';
+import { CHECKPOINT_COMMANDS, runCheckpointCommand } from './checkpoint.js';
 
 /** Chapter-1 fixture paths and identity pins (mirrors packages/workflows/src/testkit.ts, the test-only harness). */
 const FIXTURE_ROOT = new URL('../../../', import.meta.url);
@@ -1268,6 +1269,8 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         if (NOVEL_COMMANDS.has(cmd ?? ''))
           return await runNovelCommand(pool, cmd ?? '', rest, USAGE);
         if (CORPUS_COMMANDS.has(cmd ?? '')) return await runCorpusCommand(pool, cmd ?? '', rest);
+        if (CHECKPOINT_COMMANDS.has(cmd ?? ''))
+          return await runCheckpointCommand(pool, cmd ?? '', rest);
         return { ok: false, output: USAGE };
     }
   } finally {
@@ -1676,6 +1679,7 @@ async function projectForJob(pool: Pool, jobId: string): Promise<string | undefi
 export const DB_COMMANDS = new Set([
   ...NOVEL_COMMANDS,
   ...CORPUS_COMMANDS,
+  ...CHECKPOINT_COMMANDS,
   'db:migrate',
   'project:create',
   'series:audit',
@@ -1858,6 +1862,10 @@ Database commands (DATABASE_URL required):
                                                story-time regressions, repeated openings (accepted canon only)
   quality:run-report <project> [--metrics-log=<file>] [--status-file=<file>] [--json]
   quality:fix-rates [--projects=<id,id>] [--json]   per finding kind, the share of targeted findings a revision round resolved (ADR-0087)
+  quality:checkpoint <project> [--chapter=N] [--out=<dir>] [--label=<name>] [--json]
+                                               a chapter run's live-checkpoint record (length, scenes and talk, rounds,
+                                               gates, reader-secret, device and copy findings, likeness, calls); --out
+                                               also writes its run report, findings and metrics JSON
   provider:check [--probe] [--json]            per-class capability matrix of the configured provider mode (ADR-0072)
                                                a run as persisted: per-chapter scorecards (gates, dimensions,
                                                lint by rule), plan checks, quarantined versions, model calls by

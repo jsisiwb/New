@@ -1,0 +1,102 @@
+=== scorecard r0 v1 overall={"score":85,"note_count":0,"major_count":3,"minor_count":12,"blocking_count":2}
+  section genre: score=90 passed=true issues=2
+  section prose: score=89.3 passed=true issues=5
+  section voice: score=87.5 passed=true issues=2
+  section length: score=100 passed=true issues=1
+  section promises: score=0 passed=false issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=80.5 passed=true issues=3
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=0 passed=true issues=2
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [blocking/open] continuity relationship_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 정사 기록에 따르면 강민준과 김상우는 아직 만난 적이 없어 서로의 이름이나 사정을 알지 못해야 하나, 원고에서는 김상우가 전화를 받자마자 '형님'이라 친근하게 부르고 강민준의 근황(알바 해고)까지 알고 있는 등 과거부터 아는 사이로 잘못 묘사되었습니다.
+      quote: 아, 예. 형님. 이 시간에 웬일이십니까?
+  [major/open] structure excessive_exposition (judge:structure_judge, confidence 0.9)
+      claim: 유물 페널티와 히든 피스 파훼법이 독백형 서술로 한 번에 장황하게 설명되어 몰입을 깬다.
+      quote: 이 세계의 룰은 잔혹하다. 유물 하나를 삼킬 때마다 최대 체력이 10%씩 영구적으로 날아가는 대가를 치러야 한다.
+  [major/open] structure weak_ending (judge:structure_judge, confidence 0.9)
+      claim: 판을 흔드는 새로운 변수나 위기 없이 주인공의 다짐과 외출로 마무리되어 절단 신공이 부족하다.
+      quote: “남은 시간, 240시간.”
+  [major/open] genre other (judge:genre_judge, confidence 1)
+      claim: 수첩 메모에 시스템 알림용 대괄호 기호 오용
+      quote: [북한산 잊힌 비석거리]
+  [blocking/open] promise canon_contradiction (judge:promise_checker, confidence 0.95)
+      claim: 현재 시점은 '첫 게이트가 열리기 10일 전(240시간 전)'임에도 불구하고, 주인공이 정보 브로커를 협박할 때 아직 세상에 존재할 수 없는 '마석'의 불법 유통 장부와 '부길드장'이라는 각성자 조직의 직책을 언급합니다. 브로커 김상우 역시 이를 자연스럽게 알아듣고 두려워하고 있어 게이트 발생 전이라는 시간적 배경 설정과 정면으로 충돌합니다.
+      quote: 진태성 부길드장의 치명적인 불법 마석 유통 장부 원본.
+=== scorecard r1 v2 overall={"score":87,"note_count":0,"major_count":2,"minor_count":10,"blocking_count":1}
+  section genre: score=95 passed=true issues=1
+  section prose: score=90.9 passed=true issues=5
+  section voice: score=83.4 passed=true issues=2
+  section length: score=0 passed=false issues=1
+  section promises: score=0 passed=false issues=1
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=82.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=100 passed=true issues=0
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] length length_out_of_range (lint, confidence 1)
+      claim: 분량 3966자, 목표 5300자 대비 -25%
+  [major/open] continuity timeline_error (judge:continuity_checker, confidence 0.99)
+      claim: 현재 시점은 첫 게이트가 열리기 정확히 10일 전입니다. 아직 게이트가 열리지 않아 '마석'이 존재할 수 없고 진태성 역시 미각성자인 상태이므로, 김상우가 미래에나 존재할 거대 길드의 '마석 유통 장부'를 이미 빼돌려 숨겨두었다며 협박하고 이에 경악하는 전개는 타임라인 모순입니다.
+      quote: 진태성 부길드장의 치명적인 불법 마석 유통 장부 원본.
+  [blocking/open] promise other (judge:promise_checker, confidence 0.99)
+      claim: 작중 시점은 명백히 '첫 게이트가 열리기 10일 전'인데, 아직 게이트 사태가 터지지도 않은 시점에 '이지스 길드'가 존재하고 김상우가 '불법 마석 유통 장부'를 훔쳐서 숨겨두었다는 것은 심각한 타임라인 설정 오류입니다. 게이트가 없으면 마석도 존재할 수 없으며, 미래의 일을 협박 소재로 썼다 하더라도 김상우가 현재 시점에서 이를 알아듣고 기겁하는 것은 앞뒤가 맞지 않습니다.
+      quote: 진태성 부길드장의 치명적인 불법 마석 유통 장부 원본.
+=== scorecard r2 v3 (quarantined) overall={"score":87,"note_count":0,"major_count":3,"minor_count":10,"blocking_count":0}
+  section genre: score=95 passed=true issues=1
+  section prose: score=90.9 passed=true issues=5
+  section voice: score=83.4 passed=true issues=2
+  section length: score=0 passed=false issues=1
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=0 passed=false issues=1
+  section structure: score=82.5 passed=true issues=2
+  section continuity: score=0 passed=false issues=1
+  section repetition: score=100 passed=true issues=0
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] length length_out_of_range (lint, confidence 1)
+      claim: 분량 3963자, 목표 5300자 대비 -25%
+  [major/open] continuity canon_contradiction (judge:continuity_checker, confidence 1)
+      claim: 정사 설정에 따르면 김상우가 숨겨둔 진태성의 약점은 '불법 마석 유통 장부' 원본입니다. 원고에서는 이를 '불법 사채 장부'로 잘못 서술했습니다. (불법 사채 관련은 다른 인물의 비밀로 설정되어 있습니다.)
+      quote: 진태성이 관리하는 치명적인 불법 사채 장부 원본.
+  [major/open] knowledge knowledge_ignorance (judge:knowledge_leak_checker, confidence 1)
+      claim: 설정상 김상우가 숨겨둔 것은 '불법 마석 유통 장부'이나, 강민준이 '불법 사채 장부'라고 잘못 지칭하고 있습니다. 인물이 자신이 정확히 알고 있는 사실을 무시하고 다르게 말하는 설정 오류입니다. [FACT · canon:01a0d923-f0d8-790c-8b5c-3baee1ed40f0@2]
+      quote: 진태성이 관리하는 치명적인 불법 사채 장부 원본.
+=== scorecard r3 v4 (quarantined) overall={"score":84,"note_count":0,"major_count":7,"minor_count":9,"blocking_count":1}
+  section genre: score=95 passed=true issues=1
+  section prose: score=78 passed=true issues=9
+  section voice: score=89.2 passed=true issues=3
+  section length: score=100 passed=true issues=0
+  section promises: score=100 passed=true issues=0
+  section knowledge: score=100 passed=true issues=0
+  section structure: score=90 passed=true issues=2
+  section continuity: score=0 passed=false issues=2
+  section repetition: score=100 passed=true issues=0
+  section output_language: score=100 passed=true issues=0
+  section contract_compliance: score=100 passed=true issues=0
+  [major/open] prose translation_like_english (lint:ko_style, confidence 1)
+      claim: 줄표가 1,000자당 0.99개 (기준 0.1). 줄표로 잇는 삽입구는 번역문 버릇이다. 문장을 나눈다.
+  [blocking/open] continuity relationship_inconsistency (judge:continuity_checker, confidence 1)
+      claim: 정사에 따르면 1화 시작 시점에 강민준과 김상우는 아직 만난 적이 없어 서로의 이름이나 사정을 알지 못해야 합니다. 그러나 원고에서는 김상우가 전화를 받자마자 '강민준 형님'이라며 이미 친분이 있는 것처럼 반응하는 모순이 발생했습니다.
+      quote: 아이고! 우리 강민준 형님! 웬일로 먼저 전화를 다 주셨대?
+  [major/open] continuity location_error (judge:continuity_checker, confidence 0.9)
+      claim: 자취방의 정사 설정에 따르면 방 벽면에 '지난 생의 기억을 토대로 10개의 S급 기연 위치와 흑막들의 이름이 빼곡하게 적힌 메모가 붙어 있다'고 명시되어 있으나, 원고에서는 메모 대신 수첩에 새로 내용을 적고 있습니다.
+      quote: 수첩의 빈 공간에 알아보기 힘든 글씨로 빠르게 휘갈겨 적기 시작했다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 1)
+      claim: 번역투 습관인 '~것이 느껴졌다'가 쓰였습니다. '멈칫했다' 등으로 직접 묘사하는 것이 자연스럽습니다.
+      quote: 김상우의 호흡이 미세하게 멈칫하는 것이 느껴졌다.
+  [major/open] prose translation_like_english (judge:prose_judge, confidence 0.9)
+      claim: 대사가 끊어지는 연출에 줄표(—)를 쓰는 것은 서양식 관용구입니다. 말줄임표나 다른 부호로 수정해야 합니다.
+      quote: 아, 진짜. 형님. 나중에 다시 통화—
+  [major/open] prose literary_drift (judge:prose_judge, confidence 0.95)
+      claim: 금지된 AI/순문학식 상투구('침묵이 내려앉았다'류)입니다. 시청각적 변화나 인물의 구체적 반응으로 대체해야 합니다.
+      quote: 방 안에는 다시 무거운 적막이 내려앉았다.
+  [major/open] voice character_inconsistency (judge:voice_judge, confidence 1)
+      claim: 주인공 강민준은 짧고 건조하게 말하며 설명하지 않는다는 설정인데, 상대의 상태와 직업을 굳이 길게 나열하여 읊는 작위적인 대사를 썼다.
+      quote: 내가 뒷골목 삼류 도박장에서 정보나 주워 먹고 사는 쥐새끼 비위나 맞춰줄 시간이 있을 것 같나.
+  [major/open] voice other (judge:voice_judge, confidence 1)
+      claim: 지침에서 명시적으로 금지한 AI 상투구(분위기가 얼어붙다, 적막이 내려앉다, 입꼬리가 비틀리다)를 상황 묘사에 그대로 사용했다.
+      quote: 주변 공기가 싸늘하게 얼어붙었다.

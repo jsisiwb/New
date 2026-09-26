@@ -1,0 +1,280 @@
+{
+  "project_id": "01a0d91c-1417-7b3a-8d51-14ddb04f34f6",
+  "title": "G10r 회귀 standard20",
+  "policy": "policy/standard@20",
+  "lineage": {
+    "genres": [
+      "genre/regression@4",
+      "genre/hunter-gate@2"
+    ],
+    "tradition": "tradition/kr-webnovel@3",
+    "primary_genre": "genre/regression@4",
+    "output_language": "lang/ko@8"
+  },
+  "run": {
+    "status": "needs_attention",
+    "target_chapters": 200,
+    "next_chapter": 1,
+    "stop_after_chapter": 1,
+    "last_error": {
+      "code": "APPROVAL_BLOCKED",
+      "step": "approve",
+      "message": "version 01a0d92f-4037-75e4-9b92-0fe9d3d5ea7f has 1 blocking and 2 major issues; dimensions: prose 90.9/78 ok, structure 82.5/78 ok, genre 95/72 ok, voice 83.4/76 ok",
+      "chapter_no": 1,
+      "recommended_actions": [
+        "regenerate",
+        "edit_manually",
+        "accept_with_override"
+      ]
+    }
+  },
+  "chapter": 1,
+  "chapter_status": "revising",
+  "accepted": false,
+  "target_characters": 5300,
+  "v1": {
+    "chars": 4528,
+    "chars_no_spaces": 3567,
+    "quoted_dialogue_lines": 35,
+    "quoted_inner_lines": 5,
+    "talk_share": 0.16,
+    "first_lines": [
+      "“크아아악!”",
+      "비명이 목구멍을 찢고 터져 나왔다.",
+      "침대에서 용수철처럼 튕겨 오른 몸이 바닥으로 사정없이 처박혔다."
+    ],
+    "deviation_pct": -14.6,
+    "dialogue_lines_per_1k": 7.7
+  },
+  "last_version": {
+    "version_no": 4,
+    "status": "quarantined",
+    "chars": 5057,
+    "chars_no_spaces": 4005,
+    "quoted_dialogue_lines": 61,
+    "quoted_inner_lines": 7,
+    "talk_share": 0.214,
+    "first_lines": [
+      "“크아아악!”",
+      "단말마의 비명이 좁은 방 안을 찢었다.",
+      "침대에서 용수철처럼 튕겨 오른 몸이 바닥으로 굴러떨어졌다."
+    ]
+  },
+  "scenes": [
+    {
+      "scene_no": 1,
+      "planned_share": 0.2,
+      "measured_share": 0.077,
+      "chars": 2667
+    },
+    {
+      "scene_no": 2,
+      "planned_share": 0.4,
+      "measured_share": 0.278,
+      "chars": 1861
+    }
+  ],
+  "plan_critic": [
+    {
+      "fix": "가죽 팔찌를 묶는 행동을 지우고, 동료들을 떠올리며 빈 손목을 꽉 쥐거나 맨주먹을 말아 쥐는 행동으로 수정합니다.",
+      "kind": "state_contradiction",
+      "claim": "가죽 팔찌는 지난 생에서 전사한 동료들의 유품으로 만든 물건인데, 육체만 10년 전 과거로 회귀한 현재 시점의 자취방 책상 위에 놓여 있는 것은 모순입니다.",
+      "target": "장면 2",
+      "severity": "major"
+    }
+  ],
+  "plan_findings": [
+    {
+      "rule": "PLAN-REPAIR",
+      "target": "장면 설계",
+      "message": "결함 1개로 장면 설계를 다시 받았다(1회차)",
+      "repaired": true,
+      "severity": "minor"
+    }
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "version_no": 1,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 85,
+      "dimensions": {
+        "prose": {
+          "score": 89.3,
+          "passed": true
+        },
+        "structure": {
+          "score": 80.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 90,
+          "passed": true
+        },
+        "voice": {
+          "score": 87.5,
+          "passed": true
+        }
+      },
+      "scopes": [],
+      "blocking": 2,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 1,
+      "version_no": 2,
+      "quarantined": false,
+      "gate": "rejected",
+      "overall": 87,
+      "dimensions": {
+        "prose": {
+          "score": 90.9,
+          "passed": true
+        },
+        "structure": {
+          "score": 82.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 95,
+          "passed": true
+        },
+        "voice": {
+          "score": 83.4,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 1,
+      "major": 2,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 2,
+      "version_no": 3,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 87,
+      "dimensions": {
+        "prose": {
+          "score": 90.9,
+          "passed": true
+        },
+        "structure": {
+          "score": 82.5,
+          "passed": true
+        },
+        "genre": {
+          "score": 95,
+          "passed": true
+        },
+        "voice": {
+          "score": 83.4,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "dialogue"
+      ],
+      "blocking": 0,
+      "major": 3,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    },
+    {
+      "round": 3,
+      "version_no": 4,
+      "quarantined": true,
+      "gate": "rejected",
+      "overall": 84,
+      "dimensions": {
+        "prose": {
+          "score": 78,
+          "passed": true
+        },
+        "structure": {
+          "score": 90,
+          "passed": true
+        },
+        "genre": {
+          "score": 95,
+          "passed": true
+        },
+        "voice": {
+          "score": 89.2,
+          "passed": true
+        }
+      },
+      "scopes": [
+        "scene"
+      ],
+      "blocking": 1,
+      "major": 7,
+      "reader_secret": {
+        "blocking": 0,
+        "major": 0
+      },
+      "ko_device": 0,
+      "corpus_copy": 0
+    }
+  ],
+  "likeness": [
+    {
+      "version_no": 1,
+      "status": "working",
+      "score": 65,
+      "first_person": 65
+    },
+    {
+      "version_no": 2,
+      "status": "working",
+      "score": 55,
+      "first_person": 55
+    },
+    {
+      "version_no": 3,
+      "status": "quarantined",
+      "score": 55,
+      "first_person": 55
+    },
+    {
+      "version_no": 4,
+      "status": "quarantined",
+      "score": 50,
+      "first_person": 45
+    }
+  ],
+  "totals": {
+    "calls": 49,
+    "attempts": 49,
+    "failed_attempts": 0,
+    "tokens": {
+      "input": 199787,
+      "output": 26106
+    },
+    "cost_cents": 0
+  },
+  "wall_clock": {
+    "started_at": "2026-09-25T15:08:16.010Z",
+    "last_call_at": "2026-09-25T15:35:35.587Z",
+    "seconds": 1640
+  }
+}

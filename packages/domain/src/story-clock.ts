@@ -30,6 +30,21 @@ export function compareNarrative(a: StoryClock, b: StoryClock): number {
   return Math.sign(narrativeOrd(a) - narrativeOrd(b));
 }
 
+/**
+ * ADR-0104 (G17-4): the latest `valid_from` a chapter's extraction may assert. In-chapter ordinals follow paragraph
+ * order, which a planner cannot know, so a window the contract plans inside its own chapter reaches at least the
+ * chapter's last paragraph. A window ending in another chapter is used as written.
+ */
+export function storyPresentEnd(
+  end: StoryClock,
+  chapterNo: number,
+  paragraphs: number,
+): StoryClock {
+  return end.chapter_no === chapterNo && end.ordinal < paragraphs
+    ? { ...end, ordinal: Math.min(paragraphs, ORDINAL_SPAN - 1) }
+    : end;
+}
+
 export type WorldComparison =
   | { comparable: true; sign: -1 | 0 | 1; days: number }
   | {
