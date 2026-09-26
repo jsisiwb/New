@@ -7,6 +7,7 @@ import {
   cutNote,
   ensureCutBeat,
   lineTargetNote,
+  soloLineTargetNote,
   renderPlanFeedback,
   sceneLineTargets,
   stripTalkBans,
@@ -135,5 +136,15 @@ describe('plan-level prevention (ADR-0086)', () => {
     expect(out.text).toBe(
       ['덜컹 덜컹.', '', '덜컹 덜컹.', '', '네놈이 정녕 미쳤구나!', '', '끝.'].join('\n'),
     );
+  });
+});
+
+describe('the solo scene note (ADR-0110, G7-4)', () => {
+  it('gives no quoted-line quota, only the 속마음 cap, in Korean', () => {
+    const note = soloLineTargetNote({ lines: 11, min: 5, monologueMax: 4 });
+    expect(note).toContain('말을 주고받을 상대가 없다');
+    expect(note).toContain('4줄까지');
+    expect(note).not.toMatch(/따옴표 대사 \d+줄/u);
+    expect(note).not.toMatch(/[A-Za-z]/u);
   });
 });

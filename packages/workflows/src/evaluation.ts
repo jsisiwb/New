@@ -49,6 +49,7 @@ import {
   CORE_EVALUATORS,
   EVALUATOR_DIMENSION,
   lintComposite,
+  dialogueChanged,
   planReevaluation,
   reanchorIssues,
   rubricScore,
@@ -699,6 +700,9 @@ export async function evaluateVersion(
         carry,
         smokeAfterPatches: ctx.policy.revision.smoke_after_patches,
         unanchored,
+        ...(carry && policyEval?.voice_on_dialogue === true
+          ? { dialogueChanged: dialogueChanged(carry.versionText, v.text) }
+          : {}),
         ...(carry && ctx.policy.revision.convergence?.rejudge_open_majors
           ? {
               openMajor: new Set(
@@ -1062,9 +1066,11 @@ export async function evaluateVersion(
       // ADR-0100: when a taste judge's reviewer-class majors are all that stands between the chapter and its gates,
       // each such judge reads the text once more; a major stands only when the second reading reproduces its kind as
       // major or blocking, and the two readings' rubric sub-scores are averaged.
+      // ADR-0106 (`checker_agreement`): the continuity and knowledge checkers' reviewer-class findings join them.
       if (policyEval?.major_agreement === true) {
         const reviewer = new Set<string>(ctx.policy.override_matrix.reviewer);
-        const implicated = agreementJudges(issues, results, reviewer);
+        const checkers = policyEval.checker_agreement === true ? AGREEMENT_CHECKERS : [];
+        const implicated = agreementJudges(issues, results, reviewer, checkers);
         if (implicated.length) {
           actSuffix = ':agree';
           const again = await runBounded(
@@ -1086,6 +1092,15 @@ export async function evaluateVersion(
             let reread = (second.output.issues ?? []).map((raw, i) =>
               toIssue(ctx, v.id, SOURCE[e], EVALUATOR_DIMENSION[e], raw, i, anchor),
             );
+            if (checkers.includes(e)) {
+              // A checker has no rubric to average; its findings are matched by kind or by span.
+              issues.splice(
+                0,
+                issues.length,
+                ...unconfirmCheckerFindings(issues, SOURCE[e], reread, reviewer, ko),
+              );
+              return;
+            }
             // The first reading's pronoun cap applies to the second reading too.
             if (policyEval.pronoun_band_cap === true && det.ko_style && pronounLine)
               reread = capPronounFindings(
@@ -1441,20 +1456,81 @@ export const TASTE_JUDGES: readonly EvaluatorName[] = [
  * and major in the next, on text that differed by one sentence. The judges that read again are the taste judges that
  * ran in this evaluation and raised a reviewer-class major — and only when every blocking or major finding of the
  * evaluation is such a major (a blocking finding, a checker's, a lint's or a carried one leaves nothing to agree on).
+ *
+ * ADR-0106 (G19-1): with `checkers`, a reviewer-class finding of one of those checkers, major or blocking, is eligible
+ * too, and the checker reads again with the judges. G17a chapter 2's continuity checker found nothing wrong with v5 and,
+ * 52 seconds later, a blocking finding in the same text.
  */
 export function agreementJudges(
   issues: readonly Issue[],
   fresh: ReadonlyMap<EvaluatorName, unknown>,
   reviewer: ReadonlySet<string>,
+  checkers: readonly EvaluatorName[] = [],
 ): EvaluatorName[] {
   const heavy = issues.filter((i) => i.severity === 'blocking' || i.severity === 'major');
   const implicated = new Set<EvaluatorName>();
   for (const i of heavy) {
-    const e = TASTE_JUDGES.find((j) => SOURCE[j] === i.source);
-    if (!e || !fresh.has(e) || i.severity !== 'major' || !reviewer.has(i.kind)) return [];
+    const taste = TASTE_JUDGES.find((j) => SOURCE[j] === i.source);
+    const e = taste ?? checkers.find((j) => SOURCE[j] === i.source);
+    if (!e || !fresh.has(e) || !reviewer.has(i.kind)) return [];
+    if (taste && i.severity !== 'major') return [];
+    if (!taste && i.override_class !== 'reviewer') return [];
     implicated.add(e);
   }
-  return TASTE_JUDGES.filter((e) => implicated.has(e));
+  return [...TASTE_JUDGES, ...checkers].filter((e) => implicated.has(e));
+}
+
+/** ADR-0106: the checkers whose reviewer-class findings a second reading must reproduce under `checker_agreement`. */
+export const AGREEMENT_CHECKERS: readonly EvaluatorName[] = [
+  'continuity_checker',
+  'knowledge_leak_checker',
+];
+
+function spansOverlap(a: Issue['chapter_span'], b: Issue['chapter_span']): boolean {
+  if (!a || !b) return false;
+  if (
+    typeof a.start === 'number' &&
+    typeof a.end === 'number' &&
+    typeof b.start === 'number' &&
+    typeof b.end === 'number' &&
+    a.start < b.end &&
+    b.start < a.end
+  )
+    return true;
+  const paragraphs = new Set(a.paragraph_ids ?? []);
+  return (b.paragraph_ids ?? []).some((p) => paragraphs.has(p));
+}
+
+/**
+ * ADR-0106: a checker's reviewer-class finding, major or blocking, stands when the second reading rates a finding of the
+ * same kind, or one whose span overlaps it, major or blocking; otherwise it is a low-confidence doubt and is recorded as
+ * minor with a note. Findings outside the reviewer class and other sources are untouched.
+ */
+export function unconfirmCheckerFindings(
+  issues: readonly Issue[],
+  source: string,
+  reread: readonly Issue[],
+  reviewer: ReadonlySet<string>,
+  ko: boolean,
+): Issue[] {
+  const heavy = reread.filter((r) => r.severity === 'major' || r.severity === 'blocking');
+  const note = ko
+    ? '(두 번째 판독에서 재현되지 않은 설정 의심) '
+    : '(a doubt the second reading did not reproduce) ';
+  return issues.map((i) =>
+    i.source === source &&
+    (i.severity === 'major' || i.severity === 'blocking') &&
+    reviewer.has(i.kind) &&
+    i.override_class === 'reviewer' &&
+    !heavy.some((r) => r.kind === i.kind || spansOverlap(i.chapter_span, r.chapter_span))
+      ? {
+          ...i,
+          severity: 'minor' as const,
+          override_class: 'advisory' as const,
+          claim: `${note}${i.claim}`,
+        }
+      : i,
+  );
 }
 
 /** The finding kinds a reading rated major or blocking. */

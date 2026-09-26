@@ -25,6 +25,7 @@ export * from './ladder.js';
 export * from './plan-prevention.js';
 export * from './relint.js';
 export * from './run-heartbeat.js';
+export * from './auto-resume.js';
 export * from './cast-batches.js';
 export * from './arc-summary.js';
 export * from './ops-tools.js';

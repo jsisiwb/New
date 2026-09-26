@@ -37,6 +37,8 @@ export interface Heartbeat extends RunProgress {
   readonly idle_seconds: number | undefined;
   readonly stuck_after_seconds: number;
   readonly stuck: boolean;
+  /** ADR-0109: an unattended runner waiting out a fault before it resumes the run itself. */
+  readonly waiting?: { readonly reason: string; readonly resume_at: string } | undefined;
   /** Why the run was failed as stuck, when it was. */
   readonly reason?: string | undefined;
 }

@@ -3,85 +3,161 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
-## Next session — handoff (2026-09-25, operator-voice run 2)
+## Next session — handoff (2026-09-26, operator-voice run 3)
 
-**Repository.** `sigma46web/New` (moved from `sigma44web/New`; the PR history did not move with it — the new
-repository has no pull requests before this run's), default branch `hoplite/ainos-1ac771f8`, which holds everything
-through ADR-0091 / `standard@19`. This run works on one branch, `hoplite/selinous-bfb6165a`; the draft roll-up PR from
-it into the default branch is what the operator merges (with "Create a merge commit"). Nothing in code, CI or links
-named the old owner; the only stale names were in this block, and the corpus repository keeps its own owner
-(`sigma43web/ko-corpus`).
+**Repository.** `sigma47web1/New` (moved from `sigma46web/New`; the PR history did not move), default branch
+`hoplite/ainos-1ac771f8` (everything through ADR-0105 / `standard@28`). Run 3 works on `hoplite/karystos-ec01d952`; the
+draft roll-up PR is **https://github.com/sigma47web1/New/pull/1**, merged by the operator with "Create a merge commit".
+No code, CI path or link names an old owner; the corpus repository keeps its own (`sigma43web/ko-corpus`).
 
-| Order | Step of the operator's plan | Status |
-| --- | --- | --- |
-| 1 | STEP 1 — `standard@19` checkpoint on both projects | done: the recorded G9 pair (ADR-0085 §2, `13-live-run-gemini.md` §9); defects G9-1 … G9-8 |
-| 2 | STEP 2 / STEP 3 — prevention gaps, converging revision | done in code through `standard@28` (ADR-0092 … ADR-0101, including `novel:extend`) and the acceptance path (ADR-0102 … ADR-0105); live G10–G18 recorded (§10–§15) |
-| 3 | STEP 4.1 — the corpus in the database | done: `corpus:verify` (3 books, 1,138 spine chapters, 656 Korean main-story chapters, all hashes equal), re-run 19:15 UTC |
-| 4 | STEP 4.4 — stock phrases refreshed | done: `lang/ko@9` in `standard@21` |
-| 5 | STEP 5 — chapters 2–5 | in progress: G17a chapter 1 **accepted** (23:10 UTC); G17a resumed with `--stop-after=5` at 23:12 |
-| 6–12 | the rest | not reached; see the reconciliation below |
+| Operator step | Status at the end of run 3 |
+| --- | --- |
+| 0 Setup | done: sandbox databases, `db:migrate` on the permanent database, bridge probe (R/P/M/C ok), credits, `corpus:verify --database` `complete: true` (08:46 UTC: 3 books, 1,138 spine chapters, 656 Korean main-story chapters) |
+| 1.1 G18r | done: its granted rounds ended on a new continuity slip each round; the slips were real, one checker reading was not (G19-1, G19-2, `13-live-run-gemini.md` §16) → ADR-0106 (`standard@29`); re-run on fresh projects (ADR-0108): G20r reached 0 / 0 and stopped on the voice gate (G16-2, §17) → ADR-0111 (`standard@31`) → G21r in flight |
+| 1.2 G14a / G14r | decided (ADR-0108): they, G17a's chapter 2, G18r and G19r stay as the record of their policies — no override, no regeneration |
+| 1.3 Defects | ADR-0103's deferred replay → ADR-0107; G7-4 → ADR-0110 (`standard@30`, solo scenes; 3인칭 cutaways deferred); G16-2 → ADR-0111 (`standard@31`; G21r's voice then passed its gate); new G20-1 (a scene at twice its length) → ADR-0112 (`standard@32`); new G22-1 (an approval on a carried voice score) → ADR-0113 (`standard@33`). Open: G21-1, G22-2, G19-3, G9-6 (recurred in G21r), G12-2, G9-8, G5-8 |
+| 2 Chapters 2–5 | not reached: no chapter 1 was accepted in run 3. G21r (`@31`) and G22a (`@32`) were approved at 0 / 0 with every gate passing (G21r once, G22a four times), and each confirmation raised new, reproduced majors (G22-2); both ended at the grant cap. G23r (`@33`) is in flight |
+| 3.1 Unattended runs | done: ADR-0109 (`novel:run --auto-resume=N`, `lease_lost`) |
+| 3.2 – 10 | not reached in run 3; run 2's reconciliation table below stays accurate except the rows these ADRs change (2.5 solo scenes, 6.5 checker agreement, STEP 12: README's policy table runs through `standard@32`) |
 
-### Final report of this run (2026-09-25, as of 23:20 UTC)
+**Accepted 화.** Academy: 1 (G17a chapter 1, run 2). Regression: 0. Run 3 accepted none; its chapter-1 results are in
+`13-live-run-gemini.md` §16–§18 (G20a, G20r, G21r, G22a: best versions 0 / 0 with every gate passing in G20r, G21r, G22a).
 
-**Accepted 화.** Academy: 1 (G17a chapter 1, `standard@28`, accepted at 23:10:26 UTC, canon commit v3). Regression: 0;
-G18r chapter 1 (`standard@28`) is on its granted rounds. Earlier closest results:
+**ADRs and policies of run 3.** ADR-0106 (`standard@29`, checker agreement), ADR-0107 (a rejected extraction is asked
+again on resume; no policy), ADR-0108 (the stuck chapters stay as the record), ADR-0109 (auto-resume, `lease_lost`; no
+policy), ADR-0110 (`standard@30`, solo scenes), ADR-0111 (`standard@31`, the register re-draft), ADR-0112
+(`standard@32`, the length re-draft), ADR-0113 (`standard@33`, the voice re-read on changed dialogue). New projects:
+`standard@33`.
 
-| Chapter 1 | Policy | Best version | Why it is not accepted |
-| --- | --- | --- | --- |
-| G14a (academy) | `standard@24` | r9: 0 blocking / 0 majors, overall 89, gate outcome `approved`; after the confirmation, r10: 0 / 2, overall 86, all four gates passing | the confirmation's fresh reading rated majors that r8's fresh reading had rated minor (G14-4); the grant cap was reached |
-| G14r (regression) | `standard@24` | r10: 0 / 3, overall 86, all four gates passing | three reviewer-class majors at the grant cap |
-| G16r (regression) | `standard@27` | r2: 2 / 3, overall 90; voice below its gate in every round | the bridge failed the r5 evaluation |
-| G18r (regression) | `standard@28` | r5: 0 / 1, overall 89, all four taste gates passing | one continuity-checker major; granted five rounds at 23:12 |
+**Before / after against `standard@28`.** `@28`: every regression chapter 1 (G18r, G19r) and G17a's chapter 2 ended at the
+grant cap after a confirmation contradicted the reading that approved. `@29`: G20r reached 0 blocking / 0 majors at r0
+and r3, the one-reading findings recorded as minor by the second reading; it stopped on the voice score (70.5 / 76), the
+cause `@31` addresses; G21r (`@31`) then passed the voice gate (87.8). G20a stopped on length (+40 %), the cause `@32`
+addresses; G22a (`@32`) stayed within length and reached approval four times. What still stops chapter 1 is G22-2: the
+confirmation's fresh full reading finds new, reproduced findings after every approval, and the reviser does not always
+fix them (G21-1).
 
-G14a's and G14r's remaining findings are all reviewer-class (ADR-0042). Overriding them, or regenerating the chapter,
-is the operator's decision; neither was taken.
+**Credits (bridge, % of each workspace's period).**
 
-**ADRs and policies of this run.** ADR-0092 … ADR-0105; `standard@20` … `standard@28` (new projects: `standard@28`).
-ADR-0102 … ADR-0105 have no policy version: each turns a stop that no project could get past on the way from an
-approved chapter to canon into the designed behaviour (the polish round's targets, the extractor's repair, fields a
-repair broke, the story-present bound, a fact's clock). The levers that moved the live numbers: the pronoun band lint
-(ADR-0096, G14a prose 18 → 81.8), granted rounds (ADR-0098, G14a 1 / 1 → 0 / 0), the schema-drift normalizers
-(ADR-0094, ADR-0096, ADR-0099), and the acceptance path (ADR-0102 … ADR-0105, G17a accepted).
+| UTC | ws1 | ws2 | ws3 | ws4 | ws5 | ws6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 09-25 23:15 (run 2's last) | 7.02 | 1.61 | 56.74 | 21.88 | 2.38 | 3.66 |
+| 08:12 (run 3 start) | 10.97 | 3.29 | 59.40 | 23.18 | 5.16 | 8.20 |
+| 08:47 | 13.58 | 4.22 | 61.03 | 23.65 | 6.44 | 9.79 |
+| 09:33 | 15.19 | 5.53 | 62.58 | 24.41 | 9.99 | 12.13 |
+| 10:28 | 18.56 | 6.52 | 65.16 | 25.36 | 15.62 | 16.45 |
 
-**Metrics.** G17a chapter 1: 80 calls (99 attempts), 341,138 input / 41,342 output tokens, 2,961 s of model time,
-r0 80 → r4 86 with 0 / 0, confirmation 89, polish kept (lint 7 → 1), 6,339자. Corpus copy findings 0, `KO-DEVICE-01` 0 and
-reader-secret findings 0 in every G17a round; earlier reader-secret findings only in G14a r0 and G14r r3.
+Run 3 to 10:28: 37.47 points for about 520 calls (≈ 0.072 per call, as in run 2).
 
-**Credits.** 17:10 → 18:58 UTC: at least 18.2 points for 256 calls (≈ 0.071 per call). The bridge's counters have
-reset since; ws5 and ws6 are new. Latest raw reading (23:15): ws1 7.02 %, ws2 1.61 %, ws3 56.74 %, ws4 21.88 %, ws5
-2.38 %, ws6 3.66 %. From 22:20 to 23:15, G17a's acceptance and G18r's planning and five rounds cost about 8 points.
+**200-화 projection.** At G17a's chapter-1 rate (80 calls, 341,138 input / 41,342 output tokens per accepted 화) and 0.073
+points per call: about 5.8 points per accepted 화, about 1,170 points for 200 화 (roughly 12 workspace periods), 68 M
+input and 8.3 M output tokens. Unaccepted attempts add to it: G20a and G20r cost 67 calls each without acceptance. The
+projection is a floor until `standard@32` accepts chapters 2–5.
 
-**200-화 projection.** At G17a's chapter-1 rate (80 calls, 341,138 input and 41,342 output tokens), 200 화 is
-about 16,000 calls, 68 M input and 8.3 M output tokens: about 1,140 bridge points at 0.071 per call, roughly
-11 workspace billing periods. `cost:project` projects 7,409 calls and 72.5 model-hours from G17a's plan and its
-chapters observed so far. That is a floor, because chapter 1 needed five rounds and later chapters are not yet
-measured.
+**Open defects.** G22-2 (new, reproduced majors at every confirmation after an approval — the next lever: read the
+confirmation's checkers and judges on the approved text before the round ends, or give the reviser the confirmation's
+findings with the approving reading's), G21-1 (a reproduced slip survives two patch rounds), G19-3 (a contract against
+its own reveal schedule), G9-6 (recurred in G21r v11), G12-2, G9-8, G5-8, the 3인칭 cutaway half of G7-4. **BLOCKED:** vector retrieval only
+(`EMBEDDING_PROVIDER_BASE_URL` / `EMBEDDING_PROVIDER_API_KEY` unset). The bridge failed no probe in run 3.
 
-**The corpus in the database.** `corpus:verify https://github.com/sigma43web/ko-corpus.git` at 19:15 UTC: 415 + 360 +
-363 = 1,138 of 1,138 chapters equal to the EPUBs (content SHA-256, 자 with and without spaces), `complete: true`.
-**Safe to delete the corpus repository: yes.**
+**Resume point.**
 
-**BLOCKED.** None at present. The Notion bridge failed every probe from 18:54 to about 19:25 UTC and from 21:15 to
-about 22:10 UTC. ws4 and ws6 were `rate-limited` at 23:15. Vector retrieval (7.4): `EMBEDDING_PROVIDER_BASE_URL` and
-`EMBEDDING_PROVIDER_API_KEY` are unset.
+1. Rebuild the sandbox as run 3 did: `pnpm install`, `pnpm build`, start Postgres 16, create `yeonjae_test` and
+   `yeonjae_test_b` (role `yeonjae`), `pip install jsonschema` for the validator, and a wrapper that points
+   `DATABASE_URL` at a sandbox database and unsets every provider variable before any test.
+2. `pnpm cli db:migrate` against the permanent database, then `novel:status` for **`G21r 회귀 standard31`** and
+   **`G22a 아카데미 standard32`** (both at the grant cap, the record of `@31` / `@32`) and **`G23r 회귀 standard33`**
+   (in flight from 10:23 UTC; titles are unique; ids from `SELECT id FROM projects WHERE title = …`). G23r's live
+   worktree was `/tmp/hoplite/live4` at `7719a2c`; rebuild it at the roll-up's head (later fixes are policy-gated, so the
+   pinned behaviour replays unchanged). Start the academy line on `@33` too (the academy intake, first concept). A run left `producing` by a
+   dead sandbox is taken back after its lease expires by `novel:run <id> --auto-resume=6`; a `failed` one gets
+   `novel:resume` first; a chapter that ends one step short gets `novel:extend`.
+3. Fix G22-2 / G21-1 first (they are what stops chapter 1 now), then chapters 1–5 on both lines, the blinded packet,
+   the unattended batch 6–15 and the 15-화 audit (STEP 3).
+4. G20a, G20r (`@29`), G21r (`@31`) and G22a (`@32`) rest at `needs_attention` as the record of their policies
+   (ADR-0108 applies); a project titled `probe` was created by a mistyped command and has no run.
 
-**Operator actions.** (1) Decide G14a and G14r (`standard@24`): override the reviewer-class majors with a recorded
-reason, or leave them; the acceptance path they would now take is the one G17a took. (2) Merge PR #1 with "Create a
-merge commit". (3) The corpus repository may be deleted.
+**Operator actions.** Merge PR #1 with "Create a merge commit". Nothing else is required.
 
-**Safety rules.** Tests run against local sandbox databases only (`yeonjae_test` / `yeonjae_test_b`, through a wrapper
-that sets `DATABASE_URL` to the sandbox and unsets every provider variable). Full suites run from a clean worktree,
-`/tmp/hoplite/testwt`, so that edits cannot race them. The inherited `DATABASE_URL` is the permanent database. Only live
-runs, corpus commands and reports use it, and only from the live worktrees: `/tmp/hoplite/live` (G17a, at `f7271d1`)
-and `/tmp/hoplite/live2` (G18r, at `f7271d1`). A live worktree is rebuilt (`pnpm build`) after every checkout, because
-packages resolve each other through `dist/`. A running project's worktree is never checked out to another commit.
-Never run the full `pnpm check` while a live run is in flight (G8 incident).
+**Safety rules.** Unchanged from run 2: tests only against the sandbox databases through the wrapper; only live runs,
+corpus commands and reports touch the permanent `DATABASE_URL`, from live worktrees; a live worktree is rebuilt after
+every checkout and never checked out while its project runs; no full `pnpm check` while a live run is in flight (run 3
+ran package suites and relied on CI for the full check).
 
-**Resume point.** `novel:status` for `G17a 아카데미 standard28` (STEP 5, chapters 2–5, from `/tmp/hoplite/live`) and
-`G18r 회귀 standard28` (granted rounds r6–r10, from `/tmp/hoplite/live2`). A failed run is resumed with `novel:resume`
-then `novel:run`. A chapter that ends one step short gets `novel:extend`. After chapter 5: refresh the blinded packet,
-then run the unattended batch 6–15 and the 15-화 audit. Open: G16-2 (not seen in G18r), G12-2, G9-6, G9-8, G7-4, G5-8. A
-rejected extraction still replays its recorded answers on resume (ADR-0103, deferred).
+## Run 3: G22-1, the voice re-read — `standard.v33` — 2026-09-26
+
+**Built (ADR-0113):** `evaluation.voice_on_dialogue` (`dialogueChanged`, `planReevaluation`): the voice judge re-runs after
+any patch that changed a quoted utterance. Traceability row `G22FIX-001`.
+
+**Measured:** G22a chapter 1 (`13-live-run-gemini.md` §18): v5 approved on a voice score carried from v3; the
+confirmation's two readings of v5 gave 71.7 against 76.
+
+**Tests:** `evaluation-plan.test.ts`, `policy.test.ts` (v33), `commands.test.ts`.
+
+## Run 3: G20-1, the length re-draft — `standard.v32` — 2026-09-26
+
+**Built (ADR-0112):** `drafting.length_redraft` (`lengthRedraftNote`, normalization `length_redraft`): a scene drafted
+over 1.5× its planned length is re-drafted once toward the target. Traceability row `G20FIX-001`.
+
+**Measured:** G20a chapter 1 (`13-live-run-gemini.md` §17): scene 2 at 5,421자 against 2,650, the chapter at +40 % in every
+round.
+
+**Tests:** `register-redraft.test.ts`, `novel-ko.integration.test.ts` (v31 keeps, v32 re-drafts), `policy.test.ts` (v32),
+`commands.test.ts`.
+
+## Run 3: G16-2, the register re-draft — `standard.v31` — 2026-09-26
+
+**Built (ADR-0111):** `drafting.register_redraft` (`registerMixAllowance`, `registerRedraftNote`, normalization
+`register_redraft`): a scene mixing 존대 and 반말 inside quotations beyond the operator's p90 (0.725 per 1,000자) is
+re-drafted once with the lines named. Traceability row `G16FIX-002`.
+
+**Measured:** the operator's band with the voice judge's own register check (656 chapters: median 0, p90 4 per chapter,
+p90 0.725 per 1,000자); G20r's chapter 1 at 6 (0.94 per 1,000자), voice 69–70.5 against its gate of 76 with 0 blocking /
+0 majors (`13-live-run-gemini.md` §17).
+
+**Tests:** `register-redraft.test.ts`, `novel-ko.integration.test.ts` (v30 keeps, v31 re-drafts), `policy.test.ts` (v31),
+`commands.test.ts`.
+
+## Run 3: G7-4, solo scenes — `standard.v30` — 2026-09-26
+
+**Built (ADR-0110):** `planning.dialogue_floor.solo_scenes` / `solo_max` (`isSoloScene`, `applyDialogueFloor`,
+`soloLineTargetNote`): a scene with no one beside its POV character is not raised to the dialogue floor and gets no
+quoted-line quota; the scenes with a partner carry the chapter's floor. README's policy table runs through
+`standard@30`. Traceability row `G7FIX-004`. 3인칭 cutaways remain open (ADR-0110, alternatives).
+
+**Tests:** `dialogue-floor.test.ts`, `plan-prevention.test.ts`, `policy.test.ts` (v30), `commands.test.ts`; the workflows
+package suite (54 files, 650 tests) against the sandbox.
+
+## Run 3: unattended runs part 2, `corpus:verify --database` — 2026-09-26
+
+**Built:** ADR-0109: `novel:run --auto-resume=N [--resume-base-sec] [--resume-max-sec]` (`autoResumeDecision`): a run
+failed on a curable fault resumes by itself after a doubling wait, the wait in the status file (`waiting`) and the
+reason in the `run.resumed` event; the runner's lost lease aborts in-flight calls as `lease_lost` (`cancelSignals`).
+`corpus:verify --database` (`storedChapterMismatches`): every stored chapter measured again from its own text (SHA-256,
+자 with and without spaces, paragraphs) and each book's main-story count checked, no source files needed.
+
+**Measured:** `corpus:verify --database` on the permanent database, 08:46 UTC: `complete: true` — 3 books, 1,138 spine
+chapters, 1,000 main-story chapters, 656 of them Korean (335 + 321; the third book is the translation), every stored
+measure reproduced. The fallback repository was not needed.
+
+**Tests:** `auto-resume.test.ts`, `novel.integration.test.ts` (lease_lost), `apps/cli/src/corpus-verify.test.ts`.
+
+## Run 3: checker agreement (`standard.v29`), rejected extractions, stuck chapters — 2026-09-26
+
+**Built:** ADR-0106 (`standard@29`): `evaluation.checker_agreement` (`AGREEMENT_CHECKERS`, `agreementJudges(…, checkers)`,
+`unconfirmCheckerFindings`): the continuity and knowledge checkers' reviewer-class findings join ADR-0100's second
+reading, and one the second reading does not reproduce (by kind or overlapping span) is a minor doubt. ADR-0107 (no
+policy version): a rejected extraction is recorded (`extraction_rejection`) and the next attempt's activity ids carry
+`:retry<k>`, so a resume asks the extractor again. ADR-0108: G14a, G14r, G18r and G19r stay as the record of their
+policies (no override, no regeneration). Traceability rows `G19FIX-001`, `N5-ACCEPT-002`.
+
+**Measured:** the resume point and G18r's and G19r's granted rounds (`13-live-run-gemini.md` §16): G19-1 (one checker
+reading, two answers on the same text), G19-2 (every confirmation contradicted the approving reading), G19-3 (G18r's
+contract against its own reveal schedule; open).
+
+**Tests:** `major-agreement.test.ts` (checkers), `novel-ko.integration.test.ts` (a one-off continuity major: stopped under
+v28, accepted under v29; a rejected extraction resumed to acceptance, failing without ADR-0107), `policy.test.ts` (v29),
+`commands.test.ts`.
 
 ## G17 fixes — the acceptance path — 2026-09-25
 

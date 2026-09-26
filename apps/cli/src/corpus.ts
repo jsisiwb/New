@@ -114,11 +114,19 @@ export function statsSource(layer = 'lang/ko@6'): KoStyleSource {
  * and compare it with the database copy — the book by its file's SHA-256, then every chapter by spine index (kind,
  * title, 자 with and without spaces, content SHA-256). `complete` is true only when every file's book and every
  * chapter match, so the source files can be retired once it holds.
+ *
+ * `corpus:verify --database [--json]` (run 3) needs no source files: every stored chapter is measured again from its own
+ * stored text, and each book's recorded main-story count is checked. The source repository is needed only when this
+ * reports a mismatch.
  */
 async function verifyCmd(pool: Pool, args: readonly string[]): Promise<Result> {
   const [target] = args;
+  if (target === '--database') return verifyDatabaseCmd(pool);
   if (!target || target.startsWith('--'))
-    return { ok: false, output: { error: 'USAGE', usage: 'corpus:verify <dir|git-url> [--json]' } };
+    return {
+      ok: false,
+      output: { error: 'USAGE', usage: 'corpus:verify <dir|git-url> | --database [--json]' },
+    };
   const { dir } = sourceDir(target);
   const files = readdirSync(dir)
     .filter((f) => f.toLowerCase().endsWith('.epub'))
@@ -197,6 +205,70 @@ async function verifyCmd(pool: Pool, args: readonly string[]): Promise<Result> {
   );
   const notInSource = others.rows.filter((b) => !seen.has(b.id)).map((b) => b.title);
   return { ok: true, output: { source: target, complete, books, database_only: notInSource } };
+}
+
+export interface StoredCorpusChapter {
+  readonly text: string;
+  readonly chars_with_spaces: number;
+  readonly chars_without_spaces: number;
+  readonly paragraph_count: number;
+  readonly content_sha256: string;
+}
+
+/** The stored measures of a chapter that its own stored text does not reproduce, measured as the importer measures. */
+export function storedChapterMismatches(c: StoredCorpusChapter): string[] {
+  const found: Record<keyof Omit<StoredCorpusChapter, 'text'>, string | number> = {
+    chars_with_spaces: c.text.replace(/\n/g, '').length,
+    chars_without_spaces: c.text.replace(/\s/g, '').length,
+    paragraph_count: c.text.split('\n').filter((l) => l.trim() !== '').length,
+    content_sha256: createHash('sha256').update(c.text).digest('hex'),
+  };
+  return (Object.keys(found) as (keyof typeof found)[]).filter((k) => found[k] !== c[k]);
+}
+
+async function verifyDatabaseCmd(pool: Pool): Promise<Result> {
+  const books = await pool.query<{
+    id: string;
+    title: string;
+    chapter_count: number;
+    voice_eligible: boolean;
+    is_translation: boolean;
+  }>(
+    'SELECT id, title, chapter_count, voice_eligible, is_translation FROM corpus.books ORDER BY imported_at',
+  );
+  let complete = books.rows.length > 0;
+  const out: Record<string, unknown>[] = [];
+  const totals = { books: books.rows.length, spine_chapters: 0, main_chapters: 0, korean_main: 0 };
+  for (const b of books.rows) {
+    const rows = await pool.query<StoredCorpusChapter & { spine_index: number; kind: string }>(
+      `SELECT spine_index, kind, text, chars_with_spaces, chars_without_spaces, paragraph_count, content_sha256
+         FROM corpus.chapters WHERE book_id = $1 ORDER BY spine_index`,
+      [b.id],
+    );
+    const mismatches = rows.rows
+      .map((r) => ({ spine_index: r.spine_index, fields: storedChapterMismatches(r) }))
+      .filter((m) => m.fields.length > 0);
+    const main = rows.rows.filter((r) => r.kind === 'chapter' || r.kind === 'prologue').length;
+    // The importer records the main-story count (prologue and chapters); spine indexes keep the EPUB's own gaps.
+    const ok = mismatches.length === 0 && main === b.chapter_count;
+    if (!ok) complete = false;
+    totals.spine_chapters += rows.rows.length;
+    totals.main_chapters += main;
+    if (b.voice_eligible && !b.is_translation) totals.korean_main += main;
+    out.push({
+      title: b.title,
+      chapters_database: rows.rows.length,
+      main_chapters: main,
+      main_chapters_recorded: b.chapter_count,
+      chars_with_spaces: rows.rows.reduce((n, r) => n + r.chars_with_spaces, 0),
+      voice_eligible: b.voice_eligible,
+      is_translation: b.is_translation,
+      mismatches: mismatches.slice(0, 20),
+      mismatch_count: mismatches.length,
+      matches: ok,
+    });
+  }
+  return { ok: true, output: { source: 'database', complete, totals, books: out } };
 }
 
 async function importCmd(pool: Pool, args: readonly string[]): Promise<Result> {

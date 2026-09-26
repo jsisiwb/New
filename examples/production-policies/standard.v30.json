@@ -1,0 +1,310 @@
+{
+  "id": "policy/standard",
+  "version": 30,
+  "quality_tier": "standard",
+  "name": "Standard tier production policy v30 (starting values; standard.v29 plus: a scene with no one beside its POV character is not raised to the dialogue floor, ADR-0110)",
+  "revision": {
+    "max_rounds": 5,
+    "max_patches_per_round": 6,
+    "max_scene_rewrites": 2,
+    "per_span_attempts": 2,
+    "smoke_after_patches": 3,
+    "regression_tolerance_points": 3,
+    "candidates_per_cluster": 2,
+    "on_regression": "discard_and_continue",
+    "rounds_by_language": {
+      "en": 1,
+      "ko": 5
+    },
+    "polish_pass": true,
+    "regression_baseline": "parent",
+    "convergence": {
+      "rejudge_open_majors": true,
+      "prefer_failing_dimension": true,
+      "span_attribution": true,
+      "threshold_protection": true,
+      "round_scope": "all_open",
+      "score_targets": true,
+      "confirm_full": true,
+      "score_attribution": true,
+      "length_protection": true,
+      "net_improvement": {
+        "blocking_weight": 2,
+        "major_weight": 1,
+        "exclude_variance": true
+      }
+    },
+    "multi_patch": {
+      "max_patches": 4,
+      "merge_gap_chars": 120
+    },
+    "ladder": {
+      "scene_rewrite_kinds": [
+        "weak_pacing",
+        "excessive_exposition",
+        "western_novel_drift"
+      ],
+      "spanless_to_scene": true,
+      "no_repeat": true,
+      "rewrite_checks": true,
+      "switch_rung": true,
+      "length_to_scene": true
+    }
+  },
+  "evaluation": {
+    "max_parallel_evaluators": 4,
+    "optional_evaluators": [
+      "promise_checker",
+      "repetition_judge"
+    ],
+    "score_model": "rubric_subscores",
+    "reevaluation": "targeted",
+    "lint_penalty_points": {
+      "minor": 4,
+      "major": 15,
+      "blocking": 40
+    },
+    "ledger_checks": true,
+    "pov_secrets_reader_visible": true,
+    "length_in_structure": true,
+    "pronoun_band_cap": true,
+    "judge_calibration": {
+      "max_gap_points": 30
+    },
+    "corpus_copy": {
+      "min_chars": 14
+    },
+    "talk_band_cap": true,
+    "pronoun_band_lint": true,
+    "major_agreement": true,
+    "checker_agreement": true
+  },
+  "planning": {
+    "plan_check": true,
+    "strip_provenance_tags": true,
+    "scene_plan_format": "labelled",
+    "design_batches": true,
+    "rhythm_directives": true,
+    "reveal_schedule": {
+      "hint_budget": 1,
+      "narrator_knowledge": true,
+      "narrator_current_knowledge": true,
+      "canon_lines": true
+    },
+    "plan_critic": {
+      "max_repairs": 1,
+      "contract": true
+    },
+    "cut_design": true,
+    "time_frames": true,
+    "register_time_frames": true,
+    "dialogue_floor": {
+      "chapter_min": 0.2,
+      "partner_required": true,
+      "scene_redraft_below": 0.12,
+      "scene_redraft_ratio": 0.6,
+      "partner_in_contract": true,
+      "strip_talk_bans": true,
+      "line_targets": {
+        "median_per_1k": 9.2,
+        "min_per_1k": 5.3,
+        "monologue_max_per_1k": 2.1,
+        "median_share": 0.234
+      },
+      "solo_scenes": true,
+      "solo_max": 0.05
+    },
+    "meeting_time_frames": true,
+    "normalize_arc_knowledge": true,
+    "normalize_arc_beats": true,
+    "normalize_spec_categories": true
+  },
+  "drafting": {
+    "paragraph_per_line": true,
+    "reader_secrets_in_plan": true,
+    "dedupe_repeated_lines": true,
+    "pov_redraft": true,
+    "pronoun_redraft": true
+  },
+  "identity": {
+    "language_layer": "lang/ko@9",
+    "genre_layers": [
+      "genre/regression@4"
+    ],
+    "voice_profile": "voice/operator@3",
+    "operator_exemplars": {
+      "tagger": "passages@1",
+      "functions": [
+        "hook",
+        "banter",
+        "status_window",
+        "cliffhanger"
+      ],
+      "per_function": 1
+    },
+    "device_lexicon": true,
+    "device_rules": 3,
+    "protagonist_type": true
+  },
+  "prompts": {
+    "max_version": "4.10.0"
+  },
+  "provider_retry": {
+    "max_attempts": 6,
+    "base_delay_ms": 30000,
+    "max_delay_ms": 240000,
+    "multiplier": 2,
+    "jitter": "full",
+    "retry_empty_reply": true,
+    "refusal": {
+      "max_retries": 2,
+      "detect_text": true
+    }
+  },
+  "candidates": {
+    "chapter_candidates": 1,
+    "concept_candidates": 2,
+    "arc_candidates": 2,
+    "early_stop_margin_points": 6,
+    "judge_families_differ_from_writer": true,
+    "tie_fallback_ladder_authorized": true,
+    "selection_schedule": "stable_slot_single_elimination"
+  },
+  "gates": {
+    "dimensions": {
+      "prose": {
+        "min_score": 78,
+        "judge_weight": 0.6
+      },
+      "structure": {
+        "min_score": 78,
+        "judge_weight": 0.5
+      },
+      "genre": {
+        "min_score": 72,
+        "judge_weight": 0.8
+      },
+      "voice": {
+        "min_score": 76,
+        "judge_weight": 0.7
+      }
+    },
+    "blocking_max": 0,
+    "major_max": 0,
+    "judge_confidence_caps": {
+      "minor_below": 0.5,
+      "note_below": 0.3
+    },
+    "drift_flag_scene_repair_ratio": 0.3,
+    "drift_flag_min_confidence": 0.7,
+    "chapter_regenerate_ratio": 0.4
+  },
+  "context": {
+    "previous_tail_words": 400,
+    "previous_tail_floor_words": 250,
+    "previous_tail_extend_to_scene_below_words": 600,
+    "active_constraints_cap_tokens": 1200,
+    "writer_input_budget_tokens": 36000,
+    "l1_summary_max_words": 120,
+    "input_budget_tokens": {
+      "pack.chapter_planner": 20000,
+      "pack.continuity_checker": 48000,
+      "pack.extractor": 44000
+    },
+    "story_memory": {
+      "arc_summaries": true,
+      "recent_chapters": 20,
+      "l2_max_chars": 500
+    },
+    "secret_names": true
+  },
+  "extraction": {
+    "passes": 2,
+    "single_source_min_confidence": 0.8,
+    "fuzzy_anchor_min_ratio": 0.98,
+    "major_unresolved_blocks_commit": true,
+    "adjudicate_conflicts": true
+  },
+  "output_language": {
+    "language": "en",
+    "min_english_confidence": 0.99,
+    "regenerate_once_then_reroute": true
+  },
+  "length": {
+    "warn_tolerance_ratio": 0.12,
+    "fail_tolerance_ratio": 0.2,
+    "scene_calibration": {
+      "request_ratio": 1.1,
+      "redistribute": true,
+      "min_ratio": 0.5,
+      "max_ratio": 1.3
+    }
+  },
+  "override_matrix": {
+    "never": [
+      "non_english_output",
+      "truncated_output",
+      "invalid_structured_output",
+      "format_drift",
+      "content_restriction",
+      "evidence_integrity",
+      "partial_commit",
+      "stale_canon",
+      "frame_error",
+      "knowledge_leak"
+    ],
+    "canon_workflow": [
+      "canon_contradiction",
+      "timeline_error",
+      "requirement_violation",
+      "forbidden_development"
+    ],
+    "reviewer": [
+      "register_error",
+      "address_term_error",
+      "voice_drift",
+      "western_novel_drift",
+      "serial_drift",
+      "literary_drift",
+      "translation_like_english",
+      "weak_ending",
+      "weak_pacing",
+      "late_hook",
+      "excessive_exposition",
+      "repeated_paragraph",
+      "repeated_scene",
+      "repetitive_arc",
+      "payoff_without_setup",
+      "promise_forgotten",
+      "length_out_of_range",
+      "numeric_inconsistency",
+      "unapproved_untranslated_term",
+      "terminology_violation",
+      "naming_registry_violation",
+      "relationship_inconsistency",
+      "character_inconsistency",
+      "injury_forgotten",
+      "inventory_impossible",
+      "resource_impossible",
+      "rank_incorrect",
+      "location_error",
+      "power_rule_violation",
+      "world_rule_violation",
+      "knowledge_ignorance",
+      "reader_knowledge_violation",
+      "missing_required_event",
+      "paragraph_length",
+      "repetitive_sentence_openings",
+      "dialogue_tag_overuse",
+      "english_grammar",
+      "spelling_locale_inconsistency",
+      "other"
+    ],
+    "project_escalations": []
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "standard.v13 plus ADR-0084. No gate threshold changes. Live G4 (standard.v13, docs/08-delivery/13-live-run-gemini.md §4) repeated a reader-secret leak (blocking) and 원작 vocabulary in a regression serial (genre major). Live G3b (docs/08-delivery/13-live-run-gemini.md §3): the structure judge's blocking survived every round because it was never re-run, and the chapter was planned with the hero alone at a tenth of the operator's talk share. A scene with a partner that comes back below 0.12 talk (the operator's first-person p10, the lint's warn line) is re-drafted once: in G4 the writer returned 7 % for scenes planned at 30-40 % with partners. The dialogue floor of 0.2 sits between the operator's first-person p10 (12.6 %) and median (23.2 %; 25 % in 화 1-25), docs/10-corpus/corpus-stats.md."
+  },
+  "content_hash": "sha256:51a598a5035fe6fa4cbb86f9462da132ee68253accf6dbef46e977f449a27046"
+}

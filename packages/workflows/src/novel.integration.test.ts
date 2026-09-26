@@ -383,5 +383,44 @@ run(
       expect(claimed?.project_id).toBe(otherId);
       expect(claimed?.runner_id).toBe('scoped-other');
     }, 120_000);
+
+    it('records a call aborted by the runner’s lost lease as lease_lost (ADR-0109)', async () => {
+      const { projectId: thirdId } = await createProject(pool, {
+        workspaceId,
+        title: 'Third Ledger',
+        operatingMode: 'autopilot',
+      });
+      const started = await startNovel(makeDeps({ projectId: thirdId }), {
+        projectId: thirdId,
+        intake: INTAKE,
+      });
+      await approveConcept(pool, { projectId: thirdId, conceptId: started.concepts[0]?.id ?? '' });
+      const planning = await getNovelRun(pool, thirdId);
+      if (!planning) throw new Error('run expected');
+      const lease = new AbortController();
+      setTimeout(() => {
+        lease.abort();
+      }, 200);
+      const held = makeDeps(
+        { projectId: thirdId },
+        new MockProvider((req) => script(req)).injectFault({
+          kind: 'block',
+          onCall: 1,
+          until: new Promise(() => undefined),
+        }),
+      );
+      const outcome = await advanceNovelRun(held, planning, {
+        isCancelled: async () => Promise.resolve(lease.signal.aborted),
+        leaseLost: () => lease.signal.aborted,
+        cancelSignals: [{ signal: lease.signal, reason: 'lease_lost' }],
+      });
+      expect(outcome).toMatchObject({ kind: 'stopped', reason: 'lease_lost' });
+      const calls = await pool.query<{ reason: string | null }>(
+        `SELECT cancellation->>'reason' AS reason FROM llm_calls
+          WHERE project_id = $1 AND cancellation IS NOT NULL`,
+        [thirdId],
+      );
+      expect(calls.rows.map((r) => r.reason)).toEqual(['lease_lost']);
+    }, 120_000);
   },
 );
