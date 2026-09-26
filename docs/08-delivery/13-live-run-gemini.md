@@ -836,3 +836,40 @@ fresh `standard@29` project.
 Credits at 08:12 UTC: ws1 10.97 %, ws2 3.29 %, ws3 59.40 %, ws4 23.18 %, ws5 5.16 %, ws6 8.20 % (none rate-limited).
 Against run 2's last reading (23:15 UTC) that is 16.87 points, spent by run 2 after its report (G17a chapter 2, G18r's
 granted rounds and G19r).
+
+## 17. G20a and G20r — chapter 1 on `standard@29` (08:47–09:30 UTC), and the next fixes
+
+Two fresh projects on `standard@29` (ADR-0106), from the same intakes as G17a (`ops/live-runs/phase-c-academy-intake.json`)
+and G18r / G19r (`ops/live-runs/phase-a-v7-intake.json`), the first concept approved, `--stop-after=5`, run in parallel
+from `/tmp/hoplite/live3` at `167b74d`.
+
+| | G20a (academy) | G20r (regression) |
+| --- | --- | --- |
+| r0 | v1 87 (1 / 4); 7,436자, +40.3 % | v1 87, **0 / 0** after the agreement readings (four one-reading findings recorded as minor); voice 69 against its gate of 76 |
+| Rounds | r1 quarantined, r2 89 (0 / 3), r3 quarantined (prose 23), r4 89 (0 / 3), r5 88 (0 / 4) | r1 and r2 quarantined, r3 87 (0 / 0, voice 70.5), r4 quarantined |
+| Stopped on | a length lint major (v6 7,437자, +40 %) with two continuity slips and one prose finding; the lint major kept ADR-0106 from applying | the voice gate alone (70.5 / 76), with every finding minor |
+| Length | v1 7,436 / 5,879자 (with / without spaces); v6 7,437 / 5,880 | v1 6,353 / 4,967; v4 (best) 6,353 |
+| Likeness (corpus:likeness, last version) | 60 | 45 (a quarantined version) |
+| Calls / tokens / time | 67 calls (67 attempts) / 305,843 in, 34,958 out / 2,021 s | 67 calls (67 attempts) / 302,863 in, 33,026 out / 1,933 s |
+
+**What `standard@29` changed.** In G20r the second readings did what ADR-0106 set out to do: the continuity checker's and
+the voice and genre judges' one-reading majors were re-read (`continuity:1:r2:agree`, `continuity:1:r3:agree`, …) and
+recorded as minor, and the chapter reached 0 / 0 in r0 and r3 — something no `standard@28` regression chapter did after
+its confirmation. What was left was measured, not read: the voice score.
+
+**Defects.**
+
+- **G20-1: a scene drafted at twice its length.** G20a's scene 2 came back at 5,421자 against 2,650 planned (scene 1 at
+  2,015). The chapter stayed at +40 % through five rounds; the scene rewrites the length rung sent were quarantined.
+  Fixed by ADR-0112 (`standard@32`): a scene over 1.5× its planned length is re-drafted once toward the target.
+- **G16-2 (open since G16r): the voice gate.** G20r's versions mixed 존대 and 반말 inside one quotation six times
+  (0.94 per 1,000자); the voice judge's register report caps `register_consistency` at 3 for such lines. The operator's
+  656 chapters, read with the same check: median 0 per chapter, p90 4, p90 0.725 per 1,000자. Fixed by ADR-0111
+  (`standard@31`): a scene above the operator's p90 is re-drafted once with those lines named.
+
+**Next projects.** G21r (regression, `standard@31`) from 09:24 and G22a (academy, `standard@32`) from 09:33 UTC, both
+`--stop-after=5 --auto-resume=6` (ADR-0109), from `/tmp/hoplite/live4` (`8104f82`) and `/tmp/hoplite/live3` (`c1beaf6`).
+
+Credits: 08:47 → 09:33 UTC, ws1 13.58 → 15.19 %, ws2 4.22 → 5.53 %, ws3 61.03 → 62.58 %, ws4 23.65 → 24.41 %, ws5 6.44 →
+9.99 %, ws6 9.79 → 12.13 % (11.12 points: both chapters, 134 calls, and the two new projects' planning). Run 3 so far:
+19.63 points since 08:12.
