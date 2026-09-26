@@ -43,6 +43,14 @@ export function sceneLineTargets(
   return { lines, min, monologueMax };
 }
 
+/**
+ * ADR-0110 (G7-4): the writer's Korean note for a scene with no one beside its POV character — no quoted-line quota
+ * to invent talk for, only the 속마음 cap.
+ */
+export function soloLineTargetNote(targets: SceneLineTargets): string {
+  return `\n\n대사 목표: 이 장면에는 시점 인물 곁에 말을 주고받을 상대가 없다. 대사를 지어내지 않고 행동과 서술로 진행한다. 따옴표 속마음(‘ ’)은 ${String(targets.monologueMax)}줄까지.`;
+}
+
 /** The writer's Korean note for a scene's talk targets. */
 export function lineTargetNote(
   targets: SceneLineTargets,

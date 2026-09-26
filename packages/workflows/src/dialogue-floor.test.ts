@@ -105,3 +105,45 @@ describe('scene talk redraft (ADR-0084, U6)', () => {
     expect(note).not.toMatch(/[A-Za-z]/);
   });
 });
+
+describe('solo scenes under the dialogue floor (ADR-0110, G7-4)', () => {
+  const floor = { chapter_min: 0.2, partner_required: true };
+  // G7r: the regression chapter's two solo scenes were raised to 20 % and 30 % talk and came back at 6.3 % and 4.2 %.
+  const planned = [scene(1, 2000, 0.3), scene(2, 3000, 0.25, [HERO, SISTER]), scene(3, 1000, 0.2)];
+
+  it('raises every scene to the floor without the flag, solo ones included', () => {
+    const { scenes } = applyDialogueFloor(
+      planned.map((s) => ({ ...s, dialogue_density_target: 0.1 })),
+      contract(true),
+      floor,
+    );
+    expect(scenes.map((s) => s.dialogue_density_target)).toEqual([0.2, 0.2, 0.2]);
+  });
+
+  it('keeps a solo scene at the solo band and lets the scenes with a partner carry the floor', () => {
+    const { scenes, findings } = applyDialogueFloor(planned, contract(true), {
+      ...floor,
+      solo_scenes: true,
+      solo_max: 0.05,
+    });
+    // Solo scenes: 0.05 each; the paired scene carries (0.2 × 6000 − 0.05 × 3000) / 3000 = 0.35.
+    expect(scenes.map((s) => s.dialogue_density_target)).toEqual([0.05, 0.35, 0.05]);
+    const weighted = scenes.reduce(
+      (n, s) => n + s.length_target.value * (s.dialogue_density_target ?? 0),
+      0,
+    );
+    expect(weighted / 6000).toBeCloseTo(0.2, 5);
+    expect(findings.map((f) => f.rule)).toEqual(['PLAN-DLG-01', 'PLAN-DLG-04']);
+  });
+
+  it('places a partner first when no scene has one, and treats that scene as paired', () => {
+    const { scenes, findings } = applyDialogueFloor(
+      [scene(1, 2000, 0.3), scene(2, 3000, 0.1)],
+      contract(true),
+      { ...floor, solo_scenes: true },
+    );
+    expect(scenes[1]?.participants).toEqual([HERO, SISTER]);
+    expect(scenes.map((s) => s.dialogue_density_target)).toEqual([0.05, 0.3]);
+    expect(findings[0]?.rule).toBe('PLAN-PARTNER-01');
+  });
+});

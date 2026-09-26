@@ -31,6 +31,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@28',
       'policy/standard@29',
       'policy/standard@3',
+      'policy/standard@30',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -39,6 +40,24 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v30 is standard.v29 with solo scenes under the dialogue floor (ADR-0110)', () => {
+    const v29 = requirePolicy('policy/standard@29', policies);
+    const v30 = requirePolicy('policy/standard@30', policies);
+    expect(v30.planning.dialogue_floor).toEqual({
+      ...v29.planning.dialogue_floor,
+      solo_scenes: true,
+      solo_max: 0.05,
+    });
+    const strip = (p: typeof v29) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v30)).toEqual(strip(v29));
+    const { dialogue_floor: _a, ...plan30 } = v30.planning;
+    const { dialogue_floor: _b, ...plan29 } = v29.planning;
+    expect(plan30).toEqual(plan29);
   });
 
   it('standard.v29 is standard.v28 with checker agreement (ADR-0106)', () => {

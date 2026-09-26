@@ -57,12 +57,13 @@ import {
   saveArtifact,
   type WorkflowContext,
 } from './runtime.js';
-import { applyDialogueFloor } from './dialogue-floor.js';
+import { applyDialogueFloor, isSoloScene } from './dialogue-floor.js';
 import {
   checkPlanConsistency,
   cutNote,
   ensureCutBeat,
   lineTargetNote,
+  soloLineTargetNote,
   renderPlanFeedback,
   renderScenesForCritic,
   sceneLineTargets,
@@ -593,6 +594,8 @@ export async function draftScenes(
     : undefined;
   // ADR-0086 (G5-2, G5-5): countable talk targets per scene and the cut as the last scene's end.
   const lineTargets = ctx.policy.planning?.dialogue_floor?.line_targets;
+  // ADR-0110 (G7-4): a scene with no one to talk to gets no quoted-line quota.
+  const soloScenes = ctx.policy.planning?.dialogue_floor?.solo_scenes === true;
   const chapterLines = lineTargets
     ? sceneLineTargets(
         {
@@ -605,13 +608,16 @@ export async function draftScenes(
   const planNotes = (planned: ScenePlan) => {
     let note = '';
     if (lineTargets)
-      note += lineTargetNote(
-        sceneLineTargets(planned, lineTargets),
-        planned.participants
-          .filter((p) => p !== planned.pov.character_id)
-          .map((p) => (nameOf ? nameOf(p) : p)),
-        chapterLines,
-      );
+      note +=
+        soloScenes && isSoloScene(planned)
+          ? soloLineTargetNote(sceneLineTargets(planned, lineTargets))
+          : lineTargetNote(
+              sceneLineTargets(planned, lineTargets),
+              planned.participants
+                .filter((p) => p !== planned.pov.character_id)
+                .map((p) => (nameOf ? nameOf(p) : p)),
+              chapterLines,
+            );
     if (ctx.policy.planning?.cut_design && planned.scene_no === input.scenes.length)
       note += cutNote(input.contract);
     return note;
@@ -1213,13 +1219,15 @@ export async function rewriteScene(
           : []),
       ].join('\n');
       const targetsNote = lineTargets
-        ? lineTargetNote(
-            sceneLineTargets(input.scene, lineTargets),
-            input.scene.participants
-              .filter((p) => p !== input.scene.pov.character_id)
-              .map((p) => (nameOf ? nameOf(p) : p)),
-            undefined,
-          )
+        ? ctx.policy.planning?.dialogue_floor?.solo_scenes === true && isSoloScene(input.scene)
+          ? soloLineTargetNote(sceneLineTargets(input.scene, lineTargets))
+          : lineTargetNote(
+              sceneLineTargets(input.scene, lineTargets),
+              input.scene.participants
+                .filter((p) => p !== input.scene.pov.character_id)
+                .map((p) => (nameOf ? nameOf(p) : p)),
+              undefined,
+            )
         : '';
       const cut =
         ctx.policy.planning?.cut_design && input.scene.scene_no === input.sceneTotal

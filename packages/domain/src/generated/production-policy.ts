@@ -342,6 +342,14 @@ export interface ProductionPolicy {
        */
       strip_talk_bans?: boolean;
       /**
+       * ADR-0110 (live defect G7-4): a scene with no one beside its POV character on stage is not raised to chapter_min; its dialogue target is the planner's, at most solo_max (속마음 only), and the writer gets no quoted-line quota for it. The scenes with a partner carry the floor: each is raised to chapter_min, then together until the chapter's length-weighted share reaches it (at most 0.6 each). A partner placed by partner_required is placed first. Absent or false: every scene is raised to chapter_min.
+       */
+      solo_scenes?: boolean;
+      /**
+       * ADR-0110: the largest dialogue target of a scene with no partner under solo_scenes (starting value 0.05: the operator's 속마음 cap of about 2 lines per 1,000자).
+       */
+      solo_max?: number;
+      /**
        * ADR-0086 (G5-2): the writer is given countable targets instead of a share: quoted dialogue lines per 1,000자 (median and minimum, the operator's p50 and p10) scaled by the scene's planned share against the operator's median share, and a ceiling of 속마음 lines per 1,000자 (the operator's p90).
        */
       line_targets?: {

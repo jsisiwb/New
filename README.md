@@ -57,6 +57,8 @@ version. For a new Korean project use the newest `standard`:
 | `standard@26` | story-spec requirement categories normalized | 0099 |
 | `standard@27` | a taste judge's reviewer-class major must be reproduced by a second reading to block | 0100 |
 | `standard@28` | larger continuity-checker and extractor pack budgets | 0101 |
+| `standard@29` | a continuity or knowledge checker's reviewer-class finding must be reproduced by a second reading to block (canon contradictions, timeline errors and leaks still block on one) | 0106 |
+| `standard@30` | a scene with no one beside its POV character is not raised to the dialogue floor; the scenes with a partner carry it | 0110 |
 
 **Watching a run.**
 

@@ -84,6 +84,16 @@ then `novel:run`. A chapter that ends one step short gets `novel:extend`. After 
 then run the unattended batch 6–15 and the 15-화 audit. Open: G16-2 (not seen in G18r), G12-2, G9-6, G9-8, G7-4, G5-8. A
 rejected extraction still replays its recorded answers on resume (ADR-0103, deferred).
 
+## Run 3: G7-4, solo scenes — `standard.v30` — 2026-09-26
+
+**Built (ADR-0110):** `planning.dialogue_floor.solo_scenes` / `solo_max` (`isSoloScene`, `applyDialogueFloor`,
+`soloLineTargetNote`): a scene with no one beside its POV character is not raised to the dialogue floor and gets no
+quoted-line quota; the scenes with a partner carry the chapter's floor. README's policy table runs through
+`standard@30`. Traceability row `G7FIX-004`. 3인칭 cutaways remain open (ADR-0110, alternatives).
+
+**Tests:** `dialogue-floor.test.ts`, `plan-prevention.test.ts`, `policy.test.ts` (v30), `commands.test.ts`; the workflows
+package suite (54 files, 650 tests) against the sandbox.
+
 ## Run 3: unattended runs part 2, `corpus:verify --database` — 2026-09-26
 
 **Built:** ADR-0109: `novel:run --auto-resume=N [--resume-base-sec] [--resume-max-sec]` (`autoResumeDecision`): a run

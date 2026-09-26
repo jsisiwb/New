@@ -116,6 +116,7 @@
 | [0107](0107-rejected-extraction-asks-again.md) | A resume after a rejected extraction asks the extractor again: each rejection is recorded and the next attempt's activity ids carry its number |
 | [0108](0108-stuck-chapters-stay-as-the-record.md) | G14a, G14r (`standard@24`), G17a chapter 2, G18r and G19r (`standard@28`) stay as the record of their policies at the grant cap: no override, no regeneration on the old pins; the lines continue on fresh `standard@29` projects |
 | [0109](0109-unattended-runs-auto-resume.md) | Unattended runs, part 2: `novel:run --auto-resume=N` resumes a run failed on a curable fault (bridge outage, rate limit, rejected extraction) after a doubling wait, with the reason in the event log and status file; a call aborted by a lost lease is recorded as `lease_lost` |
+| [0110](0110-solo-scenes-under-the-dialogue-floor.md) | `standard.v30`: a scene with no one beside its POV character is not raised to the dialogue floor (at most `solo_max`, no quoted-line quota); the scenes with a partner carry the chapter's floor |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
