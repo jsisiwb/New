@@ -5,11 +5,9 @@ Everything else in `docs/` describes design; only this file claims what exists a
 
 ## Next session — handoff (2026-09-26, operator-voice run 4)
 
-**Repository.** `sigma47web3/New` (moved from `sigma47web1/New`; the PR history did not move), default branch
-`hoplite/ainos-1ac771f8` (everything through ADR-0113 / `standard@33`). Run 4 works on `hoplite/halikarnassos-6b469915`;
-the draft roll-up PR is **https://github.com/sigma47web3/New/pull/1**. GitHub Actions is not enabled on this repository (no
-workflow is registered and no run exists), so CI did not run; the CI steps were run locally from clean worktrees instead
-(below).
+**Repository.** `sigma1web1/New` (moved from `sigma47web3/New`; the PR history did not move), default branch
+`hoplite/ainos-1ac771f8` (everything through ADR-0116 / `standard@35`). Run 5 works on `hoplite/leontinoi-8c14d9b2`;
+the draft roll-up PR is opened on `sigma1web1/New`. GitHub Actions is enabled on this repository.
 
 **STEP 1 diagnosis (ADR-0114, `13-live-run-gemini.md` §19).**
 1. A chapter's acceptance was decided by one reading at a time — the last — and each full reading samples different
@@ -75,7 +73,7 @@ STEP 4.
 4. If G24r and G24a accept chapters 1–5: STEP 3's packet (`ops/live-runs/run4/`), then STEP 4 (6–15 unattended, the 15-화
    audit). If they stall: `quality:findings` first, then G19-3's plan validation or the STEP 1.2 variance measurement.
 
-**Operator actions.** Enable GitHub Actions on `sigma47web3/New` (Settings → Actions) so the roll-up PR gets CI. Read
+**Operator actions.** GitHub Actions is enabled on `sigma1web1/New`. Read
 `ops/live-runs/run4/` (STEP 1's per-finding tables). Merge PR #1 with “Create a merge commit”.
 
 **Safety rules.** Unchanged: tests only against the sandbox databases through the wrapper; only live runs, corpus commands
