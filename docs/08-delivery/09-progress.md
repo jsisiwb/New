@@ -15,24 +15,27 @@ No code, CI path or link names an old owner; the corpus repository keeps its own
 | 0 Setup | done: sandbox databases, `db:migrate` on the permanent database, bridge probe (R/P/M/C ok), credits, `corpus:verify --database` `complete: true` (08:46 UTC: 3 books, 1,138 spine chapters, 656 Korean main-story chapters) |
 | 1.1 G18r | done: its granted rounds ended on a new continuity slip each round; the slips were real, one checker reading was not (G19-1, G19-2, `13-live-run-gemini.md` §16) → ADR-0106 (`standard@29`); re-run on fresh projects (ADR-0108): G20r reached 0 / 0 and stopped on the voice gate (G16-2, §17) → ADR-0111 (`standard@31`) → G21r in flight |
 | 1.2 G14a / G14r | decided (ADR-0108): they, G17a's chapter 2, G18r and G19r stay as the record of their policies — no override, no regeneration |
-| 1.3 Defects | ADR-0103's deferred replay → ADR-0107; G7-4 → ADR-0110 (`standard@30`, solo scenes; 3인칭 cutaways deferred); G16-2 → ADR-0111 (`standard@31`); new G20-1 (a scene at twice its length) → ADR-0112 (`standard@32`). Open: G12-2, G9-6, G9-8, G5-8, G19-3 (a contract against its own reveal schedule) |
-| 2 Chapters 2–5 | in flight: G21r (regression, `standard@31`) and G22a (academy, `standard@32`), both chapters 1–5 (`--stop-after=5`); no chapter accepted in run 3 at the time of this block |
+| 1.3 Defects | ADR-0103's deferred replay → ADR-0107; G7-4 → ADR-0110 (`standard@30`, solo scenes; 3인칭 cutaways deferred); G16-2 → ADR-0111 (`standard@31`; G21r's voice then passed its gate); new G20-1 (a scene at twice its length) → ADR-0112 (`standard@32`); new G22-1 (an approval on a carried voice score) → ADR-0113 (`standard@33`). Open: G21-1, G22-2, G19-3, G9-6 (recurred in G21r), G12-2, G9-8, G5-8 |
+| 2 Chapters 2–5 | not reached: no chapter 1 was accepted in run 3. G21r (`@31`) and G22a (`@32`) were approved at 0 / 0 with every gate passing (G21r once, G22a four times), and each confirmation raised new, reproduced majors (G22-2); both ended at the grant cap. G23r (`@33`) is in flight |
 | 3.1 Unattended runs | done: ADR-0109 (`novel:run --auto-resume=N`, `lease_lost`) |
 | 3.2 – 10 | not reached in run 3; run 2's reconciliation table below stays accurate except the rows these ADRs change (2.5 solo scenes, 6.5 checker agreement, STEP 12: README's policy table runs through `standard@32`) |
 
-**Accepted 화.** Academy: 1 (G17a chapter 1, run 2). Regression: 0. Run 3 accepted none by the time of this block; its
-chapter-1 results are in `13-live-run-gemini.md` §16–§17.
+**Accepted 화.** Academy: 1 (G17a chapter 1, run 2). Regression: 0. Run 3 accepted none; its chapter-1 results are in
+`13-live-run-gemini.md` §16–§18 (G20a, G20r, G21r, G22a: best versions 0 / 0 with every gate passing in G20r, G21r, G22a).
 
 **ADRs and policies of run 3.** ADR-0106 (`standard@29`, checker agreement), ADR-0107 (a rejected extraction is asked
 again on resume; no policy), ADR-0108 (the stuck chapters stay as the record), ADR-0109 (auto-resume, `lease_lost`; no
 policy), ADR-0110 (`standard@30`, solo scenes), ADR-0111 (`standard@31`, the register re-draft), ADR-0112
-(`standard@32`, the length re-draft). New projects: `standard@32`.
+(`standard@32`, the length re-draft), ADR-0113 (`standard@33`, the voice re-read on changed dialogue). New projects:
+`standard@33`.
 
 **Before / after against `standard@28`.** `@28`: every regression chapter 1 (G18r, G19r) and G17a's chapter 2 ended at the
 grant cap after a confirmation contradicted the reading that approved. `@29`: G20r reached 0 blocking / 0 majors at r0
 and r3, the one-reading findings recorded as minor by the second reading; it stopped on the voice score (70.5 / 76), the
-cause `@31` addresses. G20a stopped on length (+40 %), the cause `@32` addresses. `@31` / `@32` have no finished chapter
-yet.
+cause `@31` addresses; G21r (`@31`) then passed the voice gate (87.8). G20a stopped on length (+40 %), the cause `@32`
+addresses; G22a (`@32`) stayed within length and reached approval four times. What still stops chapter 1 is G22-2: the
+confirmation's fresh full reading finds new, reproduced findings after every approval, and the reviser does not always
+fix them (G21-1).
 
 **Credits (bridge, % of each workspace's period).**
 
@@ -42,16 +45,19 @@ yet.
 | 08:12 (run 3 start) | 10.97 | 3.29 | 59.40 | 23.18 | 5.16 | 8.20 |
 | 08:47 | 13.58 | 4.22 | 61.03 | 23.65 | 6.44 | 9.79 |
 | 09:33 | 15.19 | 5.53 | 62.58 | 24.41 | 9.99 | 12.13 |
+| 10:28 | 18.56 | 6.52 | 65.16 | 25.36 | 15.62 | 16.45 |
 
-Run 3 to 09:33: 19.63 points for about 270 calls (≈ 0.073 per call, as in run 2).
+Run 3 to 10:28: 37.47 points for about 520 calls (≈ 0.072 per call, as in run 2).
 
 **200-화 projection.** At G17a's chapter-1 rate (80 calls, 341,138 input / 41,342 output tokens per accepted 화) and 0.073
 points per call: about 5.8 points per accepted 화, about 1,170 points for 200 화 (roughly 12 workspace periods), 68 M
 input and 8.3 M output tokens. Unaccepted attempts add to it: G20a and G20r cost 67 calls each without acceptance. The
 projection is a floor until `standard@32` accepts chapters 2–5.
 
-**Open defects.** G19-3 (a contract that contradicts its own reveal schedule; plan level, blocks through canon-workflow
-findings), G12-2, G9-6, G9-8, G5-8, the 3인칭 cutaway half of G7-4. **BLOCKED:** vector retrieval only
+**Open defects.** G22-2 (new, reproduced majors at every confirmation after an approval — the next lever: read the
+confirmation's checkers and judges on the approved text before the round ends, or give the reviser the confirmation's
+findings with the approving reading's), G21-1 (a reproduced slip survives two patch rounds), G19-3 (a contract against
+its own reveal schedule), G9-6 (recurred in G21r v11), G12-2, G9-8, G5-8, the 3인칭 cutaway half of G7-4. **BLOCKED:** vector retrieval only
 (`EMBEDDING_PROVIDER_BASE_URL` / `EMBEDDING_PROVIDER_API_KEY` unset). The bridge failed no probe in run 3.
 
 **Resume point.**
@@ -60,14 +66,16 @@ findings), G12-2, G9-6, G9-8, G5-8, the 3인칭 cutaway half of G7-4. **BLOCKED:
    `yeonjae_test_b` (role `yeonjae`), `pip install jsonschema` for the validator, and a wrapper that points
    `DATABASE_URL` at a sandbox database and unsets every provider variable before any test.
 2. `pnpm cli db:migrate` against the permanent database, then `novel:status` for **`G21r 회귀 standard31`** and
-   **`G22a 아카데미 standard32`** (titles are unique; ids from `SELECT id FROM projects WHERE title = …`). Their live
-   worktrees were `/tmp/hoplite/live4` (`8104f82`) and `/tmp/hoplite/live3` (`c1beaf6`); rebuild each at the roll-up's
-   head (the fixes after them are policy-gated, so the pinned behaviour replays unchanged). A run left `producing` by a
+   **`G22a 아카데미 standard32`** (both at the grant cap, the record of `@31` / `@32`) and **`G23r 회귀 standard33`**
+   (in flight from 10:23 UTC; titles are unique; ids from `SELECT id FROM projects WHERE title = …`). G23r's live
+   worktree was `/tmp/hoplite/live4` at `7719a2c`; rebuild it at the roll-up's head (later fixes are policy-gated, so the
+   pinned behaviour replays unchanged). Start the academy line on `@33` too (the academy intake, first concept). A run left `producing` by a
    dead sandbox is taken back after its lease expires by `novel:run <id> --auto-resume=6`; a `failed` one gets
    `novel:resume` first; a chapter that ends one step short gets `novel:extend`.
-3. Continue chapters 2–5 on both, then the blinded packet, the unattended batch 6–15 and the 15-화 audit (STEP 3).
-4. G20a, G20r (`standard@29`) rest at `needs_attention` as the record of `@29` (ADR-0108 applies); a project titled
-   `probe` was created by a mistyped command and has no run.
+3. Fix G22-2 / G21-1 first (they are what stops chapter 1 now), then chapters 1–5 on both lines, the blinded packet,
+   the unattended batch 6–15 and the 15-화 audit (STEP 3).
+4. G20a, G20r (`@29`), G21r (`@31`) and G22a (`@32`) rest at `needs_attention` as the record of their policies
+   (ADR-0108 applies); a project titled `probe` was created by a mistyped command and has no run.
 
 **Operator actions.** Merge PR #1 with "Create a merge commit". Nothing else is required.
 

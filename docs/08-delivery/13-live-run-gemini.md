@@ -890,3 +890,24 @@ G21r's remaining voice findings (all minor after the second readings) are card d
 **G22-1: an approval on a carried voice score.** G22a's v4 and v5 carried v3's voice reading because the r3 and r4
 patches aimed at structure; the confirmation's two readings of v5 averaged 71.7. Fixed by ADR-0113 (`standard@33`): the
 voice judge re-reads after any patch that changed dialogue.
+
+**The granted rounds (09:57–10:27 UTC).**
+
+- **G21r** (115 calls, 465,905 in / 43,791 out, 2,767 s in all): voice passed from r6 (76.9) and v8 was **approved** at 0 / 0
+  with every gate passing (voice 87.8). The confirmation found a real slip that the reproducing reading kept — the
+  hero's 7 million won goes into his coat pocket and comes out of a plastic bag — and a genre major; the reviser left the
+  slip in v9 and v10, while its rewrites changed the contracted closing status window (a contract failure) and, in v11,
+  had the unawakened hero kick a steel door off its hinges (G9-6 again). Stopped at the cap (1 / 1).
+- **G22a** (129 calls, 503,601 in / 46,240 out, 3,478 s in all): approved four times in all (v3, v5, v7, and v10 at overall
+  91, voice 95.7); every confirmation raised new majors. Stopped at the cap on one reproduced continuity
+  `power_rule_violation` (0 / 1).
+
+**Defects.** G21-1: a reproduced slip survives two patch rounds (the reviser rewrites elsewhere and breaks the contract's
+closing line instead). G22-2: an approval is followed by new, reproduced majors at the confirmation in every project —
+the confirmation reads the whole chapter fresh, the round's targeted readings do not. Both open.
+
+G21r and G22a stay as the record of `standard@31` and `standard@32` at the grant cap (ADR-0108). **G23r** (regression,
+`standard@33`) was started at 10:23 UTC from `/tmp/hoplite/live4` at `7719a2c` (`--stop-after=5 --auto-resume=6`).
+
+Credits 09:33 → 10:28 UTC: ws1 15.19 → 18.56 %, ws2 5.53 → 6.52 %, ws3 62.58 → 65.16 %, ws4 24.41 → 25.36 %, ws5 9.99 →
+15.62 %, ws6 12.13 → 16.45 % (17.84 points). Run 3 in all: 37.47 points since 08:12.
