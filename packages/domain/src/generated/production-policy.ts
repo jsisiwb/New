@@ -201,6 +201,10 @@ export interface ProductionPolicy {
      */
     major_agreement?: boolean;
     /**
+     * ADR-0106 (live defects G19-1, G19-2): with major_agreement, the continuity and knowledge checkers' reviewer-class findings (major or blocking) join the second reading. When every blocking or major finding of an evaluation is either such a checker finding or a taste judge's reviewer-class major, each implicated checker reads the text once more too; a checker finding stands only when the second reading rates a finding of the same kind, or one whose span overlaps it, major or blocking — else it is a low-confidence doubt (docs/05-generation/02-evaluation-and-revision-pipeline.md §3) and is recorded as minor with a note. Findings outside the reviewer class (canon_contradiction, timeline_error, knowledge_leak, …), lint findings and carried findings leave the evaluation as it is. Absent or false: one checker reading decides.
+     */
+    checker_agreement?: boolean;
+    /**
      * ADR-0081 (same-model judging): a judge's rubric score for a gated dimension may not exceed the dimension's deterministic composite by more than max_gap_points; above that it is capped there (never raised) and the cap is recorded on the scorecard section. Absent: rubric scores are used as the judge gave them.
      */
     judge_calibration?: {

@@ -3181,3 +3181,239 @@ run(
     }, 300_000);
   },
 );
+
+for (const [label, policyVersion, agrees] of [
+  ['standard.v28', 'policy/standard@28', false],
+  ['standard.v29', 'policy/standard@29', true],
+] as const)
+  run(
+    `Korean novel run under ${label}: a continuity major that a second reading does not reproduce (ADR-0106)`,
+    () => {
+      let pool: Pool;
+      let workspaceId: string;
+      let projectId: string;
+      const seen: ProviderRequest[] = [];
+      // G17a chapter 2: the continuity checker found nothing in v5, then a blocking finding in the same text 52 s later.
+      // Here every first reading of the checker raises one major and every second reading (`:agree`) raises none.
+      const doubt = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'continuity_checker') return out;
+        if (req.trace.activityId.endsWith(':agree')) return out;
+        return {
+          json: {
+            issues: [
+              {
+                kind: 'inventory_impossible',
+                quote: '원고에 없는 인용',
+                canon_ref: 'p1',
+                severity: 'major',
+                confidence: 0.9,
+                claim: '앞 문단에서 내려놓은 가방을 다음 문단에서 다시 멘다.',
+              },
+            ],
+          },
+        };
+      };
+      // The writer line and paragraphing of the polish run, so the chapter passes its lint the same way.
+      const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+      const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+        const text = (out.json as { text?: string }).text ?? '';
+        return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+      };
+      const provider = new MockProvider((req) => {
+        seen.push(req);
+        return doubt(req, withMarker(req, batchedScript(req, script(req))));
+      });
+      const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+      beforeAll(async () => {
+        pool = await freshDatabase();
+        workspaceId = await createWorkspace(pool, `novel-ko-${label}-agreement`);
+        ({ projectId } = await createProject(pool, {
+          workspaceId,
+          title: '재의 장부',
+          operatingMode: 'autopilot',
+          policyVersion,
+        }));
+      }, 120_000);
+
+      afterAll(async () => {
+        await pool.end();
+      });
+
+      const makeDeps = () => ({
+        pool,
+        gateway: new Gateway({
+          providers: new Map([['mock', provider]]),
+          routing,
+          budget: new MemoryBudget(10_000_000),
+          audit: new PgAuditStore(
+            pool,
+            { workspaceId, projectId },
+            new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+          ),
+        }),
+      });
+
+      it(
+        agrees
+          ? 'reads the text again, records the doubt as minor and accepts chapter 1'
+          : 'lets one reading decide and stops chapter 1 for attention',
+        async () => {
+          const started = await startNovel(makeDeps(), { projectId, intake });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: `ko-${label}-agreement-runner`,
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            const r = await getNovelRun(pool, projectId);
+            if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+          }
+          const after = await getNovelRun(pool, projectId);
+          const rereads = seen.filter(
+            (r) => r.trace?.role === 'continuity_checker' && r.trace.activityId.endsWith(':agree'),
+          );
+          const chapter = await pool.query<{ status: string }>(
+            'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+            [projectId],
+          );
+          if (!agrees) {
+            expect(after?.status).toBe('needs_attention');
+            expect((after?.last_error as { code?: string } | null)?.code).toBe('APPROVAL_BLOCKED');
+            expect(rereads).toEqual([]);
+            expect(chapter.rows[0]?.status).not.toBe('accepted');
+            return;
+          }
+          expect(after?.last_error ?? null).toBeNull();
+          expect(rereads.length).toBeGreaterThan(0);
+          const cards = await pool.query<{
+            payload: { issues: { kind: string; severity: string; claim: string }[] };
+          }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scorecard'",
+            [projectId],
+          );
+          const doubts = cards.rows
+            .flatMap((r) => r.payload.issues)
+            .filter((i) => i.kind === 'inventory_impossible');
+          expect(doubts.length).toBeGreaterThan(0);
+          for (const d of doubts) {
+            expect(d.severity).toBe('minor');
+            expect(d.claim).toMatch(/^\(두 번째 판독에서 재현되지 않은 설정 의심\) /u);
+          }
+          expect(chapter.rows[0]?.status).toBe('accepted');
+        },
+        300_000,
+      );
+    },
+  );
+
+run(
+  'Korean novel run under standard.v28: a resume after a rejected extraction asks the extractor again (ADR-0107)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // ADR-0103's deferred case: every answer of the first extraction (and both repairs) is off the schema in a way no
+    // restore can fix, so the extraction is rejected; the extractor answers validly only when asked again.
+    const rejectedFirst = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'canon_extractor' || !out || !('json' in out)) return out;
+      if (req.trace.activityId.includes(':retry')) return out;
+      return { json: { ...(out.json as object), items: [{ type: 'event', payload: {} }] } };
+    };
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return rejectedFirst(req, withMarker(req, batchedScript(req, script(req))));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v28-extract-retry');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@28',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('fails on the rejection, then asks again on resume and accepts chapter 1', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v28-extract-retry-runner',
+        leaseSeconds: 30,
+      });
+      const drive = async () => {
+        while (await runner.tick()) {
+          const r = await getNovelRun(pool, projectId);
+          if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+        }
+      };
+      await drive();
+      const failed = await getNovelRun(pool, projectId);
+      expect(failed?.status).toBe('failed');
+      expect((failed?.last_error as { code?: string } | null)?.code).toBe('EXTRACTION_REJECTED');
+      const firstAsks = seen.filter((r) => r.trace?.role === 'canon_extractor').length;
+      expect(firstAsks).toBe(3);
+
+      await resumeNovelRun(pool, { projectId });
+      await drive();
+      expect((await getNovelRun(pool, projectId))?.last_error ?? null).toBeNull();
+      const retries = seen.filter(
+        (r) => r.trace?.role === 'canon_extractor' && r.trace.activityId.includes(':retry1'),
+      );
+      expect(retries.length).toBe(1);
+      const rejections = await pool.query<{ key: string }>(
+        "SELECT key FROM workflow_artifacts WHERE project_id = $1 AND kind = 'extraction_rejection'",
+        [projectId],
+      );
+      expect(rejections.rows).toHaveLength(1);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);

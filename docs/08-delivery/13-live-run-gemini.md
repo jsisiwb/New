@@ -780,3 +780,59 @@ was granted five rounds (ADR-0098) on `f7271d1`.
 Credits at 23:15: ws1 7.02 %, ws2 1.61 %, ws3 56.74 %, ws4 21.88 % (`rate-limited`), ws5 2.38 %, ws6 3.66 %
 (`rate-limited`). ws5 and ws6 are new in this period. Against the 22:20 reading, G17a's acceptance and G18r's planning
 and five rounds cost about 8 points across the six workspaces.
+
+## 16. Run 3 — the resume point and the continuity checker's second opinion (2026-09-26, from 08:10 UTC)
+
+Run 3 started on `547741f` (the default branch after run 2's merge). The permanent database was reachable and
+migrated, and the bridge probe passed on all four classes. `novel:status` found more than run 2's handoff recorded,
+because run 2 kept going after its last report:
+
+| Project | Policy | State at 08:12 UTC |
+| --- | --- | --- |
+| G17a (academy) | `standard@28` | chapter 1 accepted (canon v3); chapter 2 `APPROVAL_BLOCKED` after its five rounds: v6 at 0 blocking / 1 major, a structure `excessive_exposition` that the agreement reading (ADR-0100) reproduced; all four gates passing (prose 87.7, structure 81.3, genre 80, voice 100) |
+| G18r (regression) | `standard@28` | chapter 1 `APPROVAL_BLOCKED` with its grant used up (5 of 5): v9 was approved at 0 / 0, its confirmation found 2 majors, and v10 and v11 each ended on a new continuity finding (v11: 1 blocking) |
+| G19r (regression) | `standard@28` | created by run 2 at 23:29 UTC and not in its handoff: chapter 1 `APPROVAL_BLOCKED` after five rounds, v6 at 0 / 2 (a continuity `inventory_impossible`, a prose `other`), all four gates passing |
+
+G17a's chapter 2 and G19r's chapter 1 were granted five rounds each (ADR-0098) at 08:20 UTC.
+
+**G18r, rounds r6–r10.** r5 v6 89 (0 / 1) → v7 91 (1 / 1) → v8 91 (0 / 2) → v9 91 **0 / 0, approved** → the confirmation of
+v9: 92 (0 / 2) → v10 92 (0 / 1) → v11 92 (1 / 0). 109 calls in all (109 attempts), 431,531 input / 40,257 output tokens,
+3,270 s (22:30–23:25 UTC). Every version from v7 on passed all four taste gates. The findings that stopped each version,
+read against its text:
+
+| Version | Finding | Reading |
+| --- | --- | --- |
+| v7 | continuity `timeline_error` (blocking): the landlord says “아침부터” on a call made before 23:10 | right: a time word the rewrite introduced |
+| v7 | knowledge `reader_knowledge_violation` (major): the hero sees through the broker's lowball, a secret scheduled for 화 6 | right, and planned: the contract's MH-2 has the hero face down the lowball in 화 1 (G19-3) |
+| v8 | continuity `numeric_inconsistency` (major): a threat to take less money from the deposit he is owed | right |
+| v8 | knowledge `knowledge_ignorance` (major): “생애 첫 시스템 상태창” for a regressor | right |
+| v9 (confirmation) | continuity `canon_contradiction` (major): the bible's “knows and lets it pass” against the extortion | right, and planned (G19-3) |
+| v10 | continuity `inventory_impossible` (major): the phone pushed across the counter rings in his pocket | right, a slip; major by the severity policy (§3 lists inventory mismatches) |
+| v11 | continuity `world_rule_violation` (blocking): the broker “has a rare skill” ten days before the system | right in wording (the same chapter says the skill has not awakened); blocking is above the policy's severity for a world rule |
+
+So the checker was right about the slips. What failed is the loop around it:
+
+- **G19-1: one reading does not establish a finding.** G17a chapter 2's v5 was read by the continuity checker after round
+  4 (23:40:47 UTC) with nothing above minor, and was approved. The confirmation read the same text 52 seconds later and
+  the checker raised a blocking `character_inconsistency`. G18r's v9: nothing in r8's reading, a major in the
+  confirmation's.
+- **G19-2: every confirmation contradicted the reading that approved.** G17a chapter 2 (v5: 0 / 0, then 1 blocking and 5
+  majors from four evaluators), G18r (v9: 0 / 0, then 2 majors). Every later round rewrote text for the new findings, and
+  every rewrite was read once more by a checker whose next reading found another slip.
+- **G19-3: a plan that contradicts its own schedule.** G18r's contract (MH-2) has the hero subdue the broker who lowballs
+  him in 화 1, while the bible schedules “the hero already sees through him” for 화 6 and records that he lets it pass. The
+  knowledge and continuity checkers raised it in v1, v4, v7 and v9; no revision can fix a contract.
+
+**Fixed in code.** G19-1 and G19-2 by ADR-0106 (`standard@29`): the continuity and knowledge checkers' reviewer-class
+findings join ADR-0100's second reading, and a finding the second reading does not reproduce is a minor doubt. Canon
+contradictions, timeline errors and leaks still block on one reading, so G19-3 still stops a chapter. ADR-0107 closes
+ADR-0103's deferred item: a resume after a rejected extraction asks the extractor again.
+
+**G19r's granted rounds (08:20–08:29 UTC)** ended the same way: v7 and v8 quarantined, v9 at 2 blocking, v10 at 1 blocking /
+1 major (all continuity `inventory_impossible`), v11 quarantined; 38 calls. **G18r and G19r stay as the record of
+`standard@28` at the grant cap, as G14a and G14r do for `standard@24`** (ADR-0108). The regression line continues on a
+fresh `standard@29` project.
+
+Credits at 08:12 UTC: ws1 10.97 %, ws2 3.29 %, ws3 59.40 %, ws4 23.18 %, ws5 5.16 %, ws6 8.20 % (none rate-limited).
+Against run 2's last reading (23:15 UTC) that is 16.87 points, spent by run 2 after its report (G17a chapter 2, G18r's
+granted rounds and G19r).

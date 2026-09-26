@@ -84,6 +84,23 @@ then `novel:run`. A chapter that ends one step short gets `novel:extend`. After 
 then run the unattended batch 6–15 and the 15-화 audit. Open: G16-2 (not seen in G18r), G12-2, G9-6, G9-8, G7-4, G5-8. A
 rejected extraction still replays its recorded answers on resume (ADR-0103, deferred).
 
+## Run 3: checker agreement (`standard.v29`), rejected extractions, stuck chapters — 2026-09-26
+
+**Built:** ADR-0106 (`standard@29`): `evaluation.checker_agreement` (`AGREEMENT_CHECKERS`, `agreementJudges(…, checkers)`,
+`unconfirmCheckerFindings`): the continuity and knowledge checkers' reviewer-class findings join ADR-0100's second
+reading, and one the second reading does not reproduce (by kind or overlapping span) is a minor doubt. ADR-0107 (no
+policy version): a rejected extraction is recorded (`extraction_rejection`) and the next attempt's activity ids carry
+`:retry<k>`, so a resume asks the extractor again. ADR-0108: G14a, G14r, G18r and G19r stay as the record of their
+policies (no override, no regeneration). Traceability rows `G19FIX-001`, `N5-ACCEPT-002`.
+
+**Measured:** the resume point and G18r's and G19r's granted rounds (`13-live-run-gemini.md` §16): G19-1 (one checker
+reading, two answers on the same text), G19-2 (every confirmation contradicted the approving reading), G19-3 (G18r's
+contract against its own reveal schedule; open).
+
+**Tests:** `major-agreement.test.ts` (checkers), `novel-ko.integration.test.ts` (a one-off continuity major: stopped under
+v28, accepted under v29; a rejected extraction resumed to acceptance, failing without ADR-0107), `policy.test.ts` (v29),
+`commands.test.ts`.
+
 ## G17 fixes — the acceptance path — 2026-09-25
 
 **Built (ADR-0102 … ADR-0105, no policy version):**

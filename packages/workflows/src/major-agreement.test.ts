@@ -4,9 +4,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  AGREEMENT_CHECKERS,
   agreementJudges,
   averageReadings,
   reproducedKinds,
+  unconfirmCheckerFindings,
   unconfirmMajors,
   type Issue,
 } from './evaluation.js';
@@ -80,5 +82,100 @@ describe('merging two readings (ADR-0100)', () => {
       dimension_scores: { hook_timing: 3, ending_pull: 3 },
       issues: [],
     });
+  });
+});
+
+describe('checkers read again under checker_agreement (ADR-0106)', () => {
+  const kinds = new Set([
+    ...reviewer,
+    'inventory_impossible',
+    'world_rule_violation',
+    'numeric_inconsistency',
+    'other',
+  ]);
+  const checker = (over: Partial<Issue>): Issue =>
+    issue({
+      id: 'c',
+      source: 'judge:continuity_checker',
+      dimension: 'continuity',
+      kind: 'inventory_impossible',
+      claim: '주머니에 넣은 적 없는 핸드폰이 주머니에서 울린다.',
+      chapter_span: { start: 100, end: 130, paragraph_ids: ['p12'] },
+      ...over,
+    });
+  const both = new Map([
+    ['structure_judge', {}],
+    ['continuity_checker', {}],
+  ]) as ReadonlyMap<never, unknown>;
+
+  it('names a fresh checker whose reviewer-class majors and blockings are all that blocks, with the judges', () => {
+    const blocking = checker({ id: 'b', kind: 'world_rule_violation', severity: 'blocking' });
+    expect(
+      agreementJudges([issue({}), checker({}), blocking], both, kinds, AGREEMENT_CHECKERS),
+    ).toEqual(['structure_judge', 'continuity_checker']);
+    // Without the policy's checkers the ADR-0100 rule stands: a checker's finding leaves nothing to agree on.
+    expect(agreementJudges([issue({}), checker({})], both, kinds)).toEqual([]);
+  });
+
+  it('names none for a canon-workflow kind, an escalated kind, a checker that did not run or a lint', () => {
+    const cases: Partial<Issue>[] = [
+      { kind: 'canon_contradiction', override_class: 'canon_workflow' },
+      { override_class: 'canon_workflow' },
+      { source: 'judge:contract_checker' },
+      { source: 'lint:ko_style' },
+    ];
+    for (const c of cases)
+      expect(
+        agreementJudges([checker({}), checker({ id: 'x', ...c })], both, kinds, AGREEMENT_CHECKERS),
+      ).toEqual([]);
+    const onlyJudge = new Map([['structure_judge', {}]]) as ReadonlyMap<never, unknown>;
+    expect(agreementJudges([checker({})], onlyJudge, kinds, AGREEMENT_CHECKERS)).toEqual([]);
+  });
+
+  it('keeps a finding reproduced by kind or by an overlapping span and records the rest as minor doubts', () => {
+    const phone = checker({});
+    const skill = checker({
+      id: 's',
+      kind: 'world_rule_violation',
+      severity: 'blocking',
+      chapter_span: { start: 400, end: 440, paragraph_ids: ['p40'] },
+    });
+    const clock = checker({
+      id: 't',
+      kind: 'numeric_inconsistency',
+      chapter_span: { start: 800, end: 820, paragraph_ids: ['p70'] },
+    });
+    const reread = [
+      checker({
+        id: 'r1',
+        kind: 'other',
+        chapter_span: { start: 410, end: 430, paragraph_ids: ['p40'] },
+      }),
+      checker({ id: 'r2', kind: 'numeric_inconsistency', severity: 'minor' }),
+    ];
+    const out = unconfirmCheckerFindings(
+      [phone, skill, clock],
+      'judge:continuity_checker',
+      reread,
+      kinds,
+      true,
+    );
+    expect(out.map((i) => i.severity)).toEqual(['minor', 'blocking', 'minor']);
+    expect(out[0]?.override_class).toBe('advisory');
+    expect(out[0]?.claim).toMatch(/^\(두 번째 판독에서 재현되지 않은 설정 의심\) /u);
+    // A reading of the same kind anywhere reproduces it.
+    const again = unconfirmCheckerFindings(
+      [phone],
+      'judge:continuity_checker',
+      [checker({ id: 'r3', chapter_span: { start: 900, end: 910 } })],
+      kinds,
+      true,
+    );
+    expect(again[0]?.severity).toBe('major');
+    // Another source's findings are untouched.
+    const judge = issue({});
+    expect(unconfirmCheckerFindings([judge], 'judge:continuity_checker', [], kinds, true)).toEqual([
+      judge,
+    ]);
   });
 });
