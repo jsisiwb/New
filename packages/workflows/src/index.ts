@@ -20,6 +20,7 @@ export * from './series-audit.js';
 export * from './run-report.js';
 export * from './blind-packet.js';
 export * from './fix-rates.js';
+export * from './finding-trace.js';
 export * from './reveal-schedule.js';
 export * from './ladder.js';
 export * from './plan-prevention.js';
