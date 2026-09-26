@@ -1,6 +1,6 @@
 /** ADR-0111 (G16-2): a scene that mixes 존대 and 반말 inside quotations beyond the operator's p90 is re-drafted once. */
 import { describe, expect, it } from 'vitest';
-import { registerMixAllowance, registerRedraftNote } from './drafting.js';
+import { lengthRedraftNote, registerMixAllowance, registerRedraftNote } from './drafting.js';
 
 describe('register re-draft (ADR-0111)', () => {
   it('allows the operator p90 per 1,000자 for the scene’s length, at least one', () => {
@@ -20,5 +20,15 @@ describe('register re-draft (ADR-0111)', () => {
       Array.from({ length: 12 }, (_, i) => ({ quote: `“${String(i)}번이에요. 가.”` })),
     );
     expect(many.split('\n').filter((l) => l.startsWith('- '))).toHaveLength(8);
+  });
+});
+
+describe('length re-draft note (ADR-0112)', () => {
+  it('names the measured and target lengths, in Korean only', () => {
+    const note = lengthRedraftNote(5421, 2650, true);
+    expect(note).toContain('5421자');
+    expect(note).toContain('2650자');
+    expect(note).toContain('2배');
+    expect(note).not.toMatch(/[A-Za-z]/u);
   });
 });

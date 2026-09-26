@@ -817,6 +817,35 @@ export async function draftScenes(
             }
           }
         }
+        // ADR-0112 (G20-1): a scene drafted far over its planned length is re-drafted once toward the plan's target;
+        // the re-draft is kept only when it lands closer to it.
+        const lengthRedraft = ctx.policy.drafting?.length_redraft;
+        if (lengthRedraft && typeof prose === 'string') {
+          const target = planned.length_target.value;
+          const countOf = (t: string) =>
+            targetCount(measure(toNfcText(t)), planned.length_target.unit);
+          const measured = countOf(prose);
+          if (target > 0 && measured > target * lengthRedraft.over_ratio) {
+            const retry = await writeScene(
+              {
+                ...variables,
+                scene_plan: variables.scene_plan + lengthRedraftNote(measured, target, ko),
+              },
+              `scene_draft:${ch}:${scene.scene_no}:length`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting?.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (
+              typeof again === 'string' &&
+              Math.abs(countOf(again) - target) < Math.abs(measured - target)
+            ) {
+              prose = again;
+              call = retry;
+              recordNormalization('length_redraft');
+            }
+          }
+        }
         const draft =
           typeof prose === 'string'
             ? validateSceneDraft(
@@ -1165,6 +1194,14 @@ export function talkRedraftNote(measured: number, target: number, ko: boolean): 
 }
 
 /** ADR-0097 (G14-1): the pronoun redraft instruction, with the measure that triggered it. */
+/** ADR-0112 (G20-1): the writer's note for a scene drafted far over its planned length. */
+export function lengthRedraftNote(measured: number, target: number, ko: boolean): string {
+  const times = Math.round((measured / target) * 10) / 10;
+  return ko
+    ? `\n\n분량 다시 쓰기: 앞선 원고는 ${String(measured)}자로 이 장면의 목표 ${String(target)}자의 ${String(times)}배였다. 장면 설계의 비트를 빠짐없이 목표 분량 안에서 보여 준다. 같은 대화나 같은 장면을 되풀이하지 않고 비트마다 한 번씩만 지나가며, 장면의 사건과 결말은 그대로 둔다.`
+    : `\n\nLength re-draft: the previous draft ran ${String(measured)} against this scene's target of ${String(target)} (${String(times)}×). Cover every planned beat within the target, once each, without replaying an exchange; keep the scene's events and ending.`;
+}
+
 /** ADR-0111: mixed utterances a scene may keep — the operator's p90 per 1,000자 for its length, at least one. */
 export function registerMixAllowance(text: string, per1kMax: number): number {
   const chars = Array.from(text.replace(/\n/gu, '')).length;

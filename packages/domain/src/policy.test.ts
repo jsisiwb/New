@@ -33,6 +33,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@3',
       'policy/standard@30',
       'policy/standard@31',
+      'policy/standard@32',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -41,6 +42,17 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v32 is standard.v31 with the length re-draft (ADR-0112)', () => {
+    const v31 = requirePolicy('policy/standard@31', policies);
+    const v32 = requirePolicy('policy/standard@32', policies);
+    expect(v32.drafting).toEqual({ ...v31.drafting, length_redraft: { over_ratio: 1.5 } });
+    const strip = (p: typeof v31) => {
+      const { version: _v, name: _n, content_hash: _h, drafting: _d, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v32)).toEqual(strip(v31));
   });
 
   it('standard.v31 is standard.v30 with the register re-draft (ADR-0111)', () => {

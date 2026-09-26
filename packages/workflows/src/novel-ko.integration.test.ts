@@ -3522,3 +3522,102 @@ for (const [label, policyVersion, redrafts] of [
       );
     },
   );
+
+for (const [label, policyVersion, redrafts] of [
+  ['standard.v31', 'policy/standard@31', false],
+  ['standard.v32', 'policy/standard@32', true],
+] as const)
+  run(`Korean novel run under ${label}: a scene drafted far over its target (ADR-0112)`, () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G20a: scene 2 came back at 2.05× its planned length. Here every first draft is padded to three times its length.
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const writer = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      const lines = [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n');
+      if (req.trace.activityId.endsWith(':length')) return { text: lines };
+      const pad: string[] = [];
+      for (let i = 0; lines.length + pad.join('\n\n').length < lines.length * 3; i++)
+        pad.push(`채움 문장 ${String(i)}번이다.`);
+      return { text: [lines, ...pad].join('\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return writer(req, batchedScript(req, script(req)));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, `novel-ko-${label}-length`);
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion,
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it(
+      redrafts
+        ? 're-drafts each overlong scene once toward its target'
+        : 'keeps the overlong scenes',
+      async () => {
+        const started = await startNovel(makeDeps(), { projectId, intake });
+        await approveConcept(pool, {
+          projectId,
+          conceptId: started.concepts[0]?.id ?? '',
+          autoContinue: true,
+          stopAfterChapter: 1,
+        });
+        const runner = new NovelRunner({
+          pool,
+          makeDeps,
+          runnerId: `ko-${label}-length-runner`,
+          leaseSeconds: 30,
+        });
+        while (await runner.tick()) {
+          const r = await getNovelRun(pool, projectId);
+          if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+        }
+        const rewrites = seen.filter(
+          (r) => r.trace?.role === 'scene_writer' && r.trace.activityId.endsWith(':length'),
+        );
+        const drafts = await pool.query<{ payload: { text: string } }>(
+          "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scene_draft'",
+          [projectId],
+        );
+        expect(drafts.rows.length).toBeGreaterThan(0);
+        if (!redrafts) {
+          expect(rewrites).toEqual([]);
+          expect(drafts.rows.every((r) => r.payload.text.includes('채움 문장'))).toBe(true);
+          return;
+        }
+        expect(rewrites).toHaveLength(drafts.rows.length);
+        expect(rewrites[0]?.user).toContain('분량 다시 쓰기');
+        expect(drafts.rows.some((r) => r.payload.text.includes('채움 문장'))).toBe(false);
+      },
+      300_000,
+    );
+  });

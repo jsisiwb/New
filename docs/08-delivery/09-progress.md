@@ -84,6 +84,17 @@ then `novel:run`. A chapter that ends one step short gets `novel:extend`. After 
 then run the unattended batch 6–15 and the 15-화 audit. Open: G16-2 (not seen in G18r), G12-2, G9-6, G9-8, G7-4, G5-8. A
 rejected extraction still replays its recorded answers on resume (ADR-0103, deferred).
 
+## Run 3: G20-1, the length re-draft — `standard.v32` — 2026-09-26
+
+**Built (ADR-0112):** `drafting.length_redraft` (`lengthRedraftNote`, normalization `length_redraft`): a scene drafted
+over 1.5× its planned length is re-drafted once toward the target. Traceability row `G20FIX-001`.
+
+**Measured:** G20a chapter 1 (`13-live-run-gemini.md` §17): scene 2 at 5,421자 against 2,650, the chapter at +40 % in every
+round.
+
+**Tests:** `register-redraft.test.ts`, `novel-ko.integration.test.ts` (v31 keeps, v32 re-drafts), `policy.test.ts` (v32),
+`commands.test.ts`.
+
 ## Run 3: G16-2, the register re-draft — `standard.v31` — 2026-09-26
 
 **Built (ADR-0111):** `drafting.register_redraft` (`registerMixAllowance`, `registerRedraftNote`, normalization

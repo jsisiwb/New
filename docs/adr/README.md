@@ -118,6 +118,7 @@
 | [0109](0109-unattended-runs-auto-resume.md) | Unattended runs, part 2: `novel:run --auto-resume=N` resumes a run failed on a curable fault (bridge outage, rate limit, rejected extraction) after a doubling wait, with the reason in the event log and status file; a call aborted by a lost lease is recorded as `lease_lost` |
 | [0110](0110-solo-scenes-under-the-dialogue-floor.md) | `standard.v30`: a scene with no one beside its POV character is not raised to the dialogue floor (at most `solo_max`, no quoted-line quota); the scenes with a partner carry the chapter's floor |
 | [0111](0111-register-redraft.md) | `standard.v31`: a Korean scene with more utterances mixing 존대 and 반말 inside one quotation than the operator's p90 (0.725 per 1,000자) allows is re-drafted once with those utterances named |
+| [0112](0112-length-redraft.md) | `standard.v32`: a scene drafted over 1.5× its planned length is re-drafted once toward the target and kept only if closer |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

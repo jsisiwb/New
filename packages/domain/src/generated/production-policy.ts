@@ -228,6 +228,15 @@ export interface ProductionPolicy {
      */
     pronoun_redraft?: boolean;
     /**
+     * ADR-0112 (live defect G20-1): a scene draft longer than over_ratio × its planned length target (the stored plan's target, not the calibrated request) is re-drafted once with the measured and target lengths and the rule to cover every beat once within the target; the re-draft is kept only when it lands closer to the target. Absent: no length re-draft.
+     */
+    length_redraft?: {
+      /**
+       * Starting value 1.5 (G20a chapter 1: scene 2 drafted at 2.05× its target, the chapter at +40 %).
+       */
+      over_ratio: number;
+    };
+    /**
      * ADR-0111 (live defect G16-2): a Korean scene draft with more quoted utterances that mix 존대 (합쇼체/해요체) and 반말 inside one quotation (the voice judge's deterministic register report) than max(1, floor(per_1k_max × its 자 / 1,000)) is re-drafted once with those utterances named and the one-level-per-addressee rule; the re-draft is kept only when it mixes fewer. Absent: no register re-draft.
      */
     register_redraft?: {
