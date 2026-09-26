@@ -84,6 +84,20 @@ corpus commands and reports touch the permanent `DATABASE_URL`, from live worktr
 every checkout and never checked out while its project runs; no full `pnpm check` while a live run is in flight (run 3
 ran package suites and relied on CI for the full check).
 
+## Run 4: STEP 0 — setup; the live steps BLOCKED — 2026-09-26
+
+**Done:** a fresh sandbox at the default branch's head (`71a4f80`, the merge of run 3's roll-up; ADR-0113 and
+`standard@33` present): `pnpm install`, `pnpm build`, PostgreSQL 16 with `yeonjae_test` and `yeonjae_test_b` (role
+`yeonjae`), `jsonschema` for the validator (`RESULT: ALL OK`), and a wrapper that unsets every provider variable and points
+`DATABASE_URL` at a sandbox database before any test. The repository moved again, to `sigma47web3/New`; it had no CI run
+and no pull request, so the roll-up PR's first run is the merged head's first CI run.
+
+**BLOCKED:** none of `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `YEONJAE_PROVIDER_MODE`, `YEONJAE_NOTION_URL`,
+`YEONJAE_NOTION_TOKEN`, `YEONJAE_NOTION_TIMEOUT_MS`, `YEONJAE_NOTION_MODEL` or `YEONJAE_MODEL_NOTION` is present in this
+sandbox (presence-only checks; no `.env`, nothing in the process environment). So `db:migrate` and
+`corpus:verify --database` on the permanent database, the bridge probe, the ws1–ws6 readings and G23r's resume (STEP
+0.2–0.3) did not run, and G23r's state is unknown. Reported to the platform; retried during the run.
+
 ## Run 3: G22-1, the voice re-read — `standard.v33` — 2026-09-26
 
 **Built (ADR-0113):** `evaluation.voice_on_dialogue` (`dialogueChanged`, `planReevaluation`): the voice judge re-runs after
