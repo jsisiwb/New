@@ -3618,6 +3618,131 @@ for (const [label, policyVersion, agrees] of [
     },
   );
 
+for (const [label, policyVersion, agrees] of [
+  ['standard.v34', 'policy/standard@34', false],
+  ['standard.v35', 'policy/standard@35', true],
+] as const)
+  run(
+    `Korean novel run under ${label}: the reviser's patches leave a real slip in place (ADR-0116)`,
+    () => {
+      let pool: Pool;
+      let workspaceId: string;
+      let projectId: string;
+      const seen: ProviderRequest[] = [];
+      // G21-1: rounds kept because other findings improved while one real slip survived. Every reading flags the sentence
+      // planted in scene 1 (the reviser's patch prefixes a word and keeps it), the third and eleventh other paragraphs
+      // while untouched, and the third once patched exactly once (a slip the first patch brings): 3, 2, then 1 majors.
+      const slip = '그는 손을 번쩍 들어';
+      const doubt = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'continuity_checker') return out;
+        const finding = (quote: string) => ({
+          kind: 'inventory_impossible',
+          quote,
+          severity: 'major',
+          confidence: 0.9,
+          claim: '앞에서 내려놓은 물건이 다른 곳에서 다시 나온다.',
+        });
+        const head = (l: string) => Array.from(l).slice(0, 12).join('');
+        const others = [...req.user.matchAll(/\[p\d+\] ([^\n]{12,})/gu)]
+          .map((m) => m[1] ?? '')
+          .filter((l) => !l.includes(slip));
+        const issues = req.user.includes(slip) ? [finding(slip)] : [];
+        for (const l of [others[2], others[10]])
+          if (l && !l.startsWith('문득 ')) issues.push(finding(head(l)));
+        const third = others[2];
+        if (third?.startsWith('문득 ') && !third.startsWith('문득 문득 '))
+          issues.push(finding(head(third)));
+        return { json: { issues } };
+      };
+      // The writer line and paragraphing of the polish run, so the chapter passes its lint the same way.
+      const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+      const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+        const text = (out.json as { text?: string }).text ?? '';
+        const first = /^scene_draft:\d+:1(:|$)/u.test(req.trace.activityId);
+        return {
+          text: [...(first ? [marker] : []), text]
+            .join('\n\n')
+            .replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n'),
+        };
+      };
+      const provider = new MockProvider((req) => {
+        seen.push(req);
+        return doubt(req, withMarker(req, batchedScript(req, script(req))));
+      });
+      const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+      beforeAll(async () => {
+        pool = await freshDatabase();
+        workspaceId = await createWorkspace(pool, `novel-ko-${label}-escalation`);
+        ({ projectId } = await createProject(pool, {
+          workspaceId,
+          title: '재의 장부',
+          operatingMode: 'autopilot',
+          policyVersion,
+        }));
+      }, 120_000);
+
+      afterAll(async () => {
+        await pool.end();
+      });
+
+      const makeDeps = () => ({
+        pool,
+        gateway: new Gateway({
+          providers: new Map([['mock', provider]]),
+          routing,
+          budget: new MemoryBudget(10_000_000),
+          audit: new PgAuditStore(
+            pool,
+            { workspaceId, projectId },
+            new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+          ),
+        }),
+      });
+
+      it(
+        agrees
+          ? 'tells the reviser in round 2 that the slip survived its patch'
+          : 'patches the surviving slip again without saying it survived',
+        async () => {
+          const started = await startNovel(makeDeps(), { projectId, intake });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: `ko-${label}-escalation-runner`,
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            const r = await getNovelRun(pool, projectId);
+            if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+          }
+          // r1 fixed the two other findings and was kept with the slip still in place.
+          const kept = await pool.query<{ n: number }>(
+            "SELECT count(*)::int AS n FROM quarantine_versions WHERE project_id = $1 AND rejection_reason = 'patch_regressed:r1'",
+            [projectId],
+          );
+          expect(kept.rows[0]?.n).toBe(0);
+          const secondRound = seen.filter(
+            (r) => r.trace?.role === 'targeted_reviser' && /:r2(:|$)/u.test(r.trace.activityId),
+          );
+          expect(secondRound.length).toBeGreaterThan(0);
+          const told = secondRound.some((r) =>
+            r.user.includes('지난 수정 뒤에도 이 결함이 그대로 남았다'),
+          );
+          expect(told).toBe(agrees);
+        },
+        300_000,
+      );
+    },
+  );
+
 run(
   'Korean novel run under standard.v28: a resume after a rejected extraction asks the extractor again (ADR-0107)',
   () => {

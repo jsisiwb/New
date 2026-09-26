@@ -63,6 +63,7 @@ version. For a new Korean project use the newest `standard`:
 | `standard@32` | a scene drafted over 1.5× its planned length is re-drafted once toward the target | 0112 |
 | `standard@33` | the voice judge re-reads after any patch that changed dialogue (no carried voice score) | 0113 |
 | `standard@34` | every evaluator reads three times and a reviewer-class finding stands on two; a new finding on text that passed unchanged waits for the one final full reading | 0115 |
+| `standard@35` | a finding still open after two kept patch rounds has its scene drafted again, and the reviser is told when a finding survived its patch | 0116 |
 
 **Watching a run.**
 

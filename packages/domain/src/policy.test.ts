@@ -36,6 +36,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@32',
       'policy/standard@33',
       'policy/standard@34',
+      'policy/standard@35',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -44,6 +45,18 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v35 is standard.v34 with the escalation of a surviving finding (ADR-0116)', () => {
+    const v34 = requirePolicy('policy/standard@34', policies);
+    const v35 = requirePolicy('policy/standard@35', policies);
+    expect(v35.revision.ladder).toEqual({ ...v34.revision.ladder, escalate_after_patches: 2 });
+    const strip = (p: typeof v34) => {
+      const { version: _v, name: _n, content_hash: _h, revision, ...rest } = p;
+      const { ladder: _l, ...rev } = revision;
+      return { ...rest, rev };
+    };
+    expect(strip(v35)).toEqual(strip(v34));
   });
 
   it('standard.v34 is standard.v33 with consensus readings and the finding ledger (ADR-0115)', () => {

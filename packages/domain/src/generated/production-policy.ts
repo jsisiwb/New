@@ -57,6 +57,10 @@ export interface ProductionPolicy {
        */
       switch_rung?: boolean;
       /**
+       * ADR-0116 (live defect G21-1): a blocking or major finding that is still open after a kept patch round that targeted it has survived that round (a finding is its evaluator and the text of the paragraphs it quotes, or its kind when it quotes nothing). The next round tells the reviser so — change the quoted sentence itself, and both places of a contradiction — and a finding that survived this many kept patch rounds is answered by drafting the scene holding it again while max_scene_rewrites allows. A quarantined patch is never repeated (no_repeat, switch_rung). Absent: kept rounds that leave a finding in place repeat the patch rung. Starting value 2.
+       */
+      escalate_after_patches?: number;
+      /**
        * ADR-0093 (live defect G10-3): an open length finding (the chapter outside its length band) is answered by rewriting the scene furthest from its planned length, told its target in 자, while max_scene_rewrites allows. Absent or false: the finding stays untargeted while quoted findings exist.
        */
       length_to_scene?: boolean;

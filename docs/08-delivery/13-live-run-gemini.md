@@ -937,3 +937,8 @@ unchanged is held for the one final full reading, an open finding on unchanged t
 once. The simulated runs of `novel-ko.integration.test.ts` reproduce both G22-2 patterns: under `standard@33` each stops
 at `APPROVAL_BLOCKED` with every gate passing (one after six reproduced majors on five different paragraphs), under
 `standard@34` each is accepted. The live A/B on the same seeds is **BLOCKED**.
+
+**What `standard@35` changes (ADR-0116, G21-1).** A finding still open after a kept patch round that targeted it is named
+to the next reviser as a survivor (change the quoted sentence itself, and both places of a contradiction), and after two
+kept surviving rounds its scene is drafted again. In the simulated run the survivor note reaches round 2 under
+`standard@35` and not under `standard@34`. The live A/B is **BLOCKED**.

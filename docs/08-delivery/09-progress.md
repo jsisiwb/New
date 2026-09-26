@@ -98,6 +98,16 @@ sandbox (presence-only checks; no `.env`, nothing in the process environment). S
 `corpus:verify --database` on the permanent database, the bridge probe, the ws1–ws6 readings and G23r's resume (STEP
 0.2–0.3) did not run, and G23r's state is unknown. Reported to the platform; retried during the run.
 
+## Run 4: G21-1, a surviving finding escalates — `standard.v35` — 2026-09-26
+
+**Built (ADR-0116):** `revision.ladder.escalate_after_patches` (`escalation.ts`: `findingKey`, `updateSurvival`,
+`stuckTargets`, `withSurvivalNotes`): a finding still open after a kept patch round that targeted it is named to the next
+reviser as a survivor, and after two kept surviving rounds its scene is drafted again. Traceability row `G21FIX-001`.
+
+**Measured:** nothing live (BLOCKED). Simulated: the survivor note reaches round 2 under `standard@35`, not `@34`.
+
+**Tests:** `escalation.test.ts`, `novel-ko.integration.test.ts` (two runs), `policy.test.ts` (v35), `commands.test.ts`.
+
 ## Run 4: G22-2, consensus readings and the finding ledger — `standard.v34` — 2026-09-26
 
 **Built (ADR-0114, ADR-0115):** ADR-0114 records the diagnosis from run 3's record (the live measurement is BLOCKED).
