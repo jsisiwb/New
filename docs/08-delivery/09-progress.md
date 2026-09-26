@@ -5,12 +5,13 @@ Everything else in `docs/` describes design; only this file claims what exists a
 
 ## Next session — handoff (2026-09-25, operator-voice run 2)
 
-**Repository.** `sigma46web/New` (moved from `sigma44web/New`; the PR history did not move with it — the new
-repository has no pull requests before this run's), default branch `hoplite/ainos-1ac771f8`, which holds everything
-through ADR-0091 / `standard@19`. This run works on one branch, `hoplite/selinous-bfb6165a`; the draft roll-up PR from
-it into the default branch is what the operator merges (with "Create a merge commit"). Nothing in code, CI or links
-named the old owner; the only stale names were in this block, and the corpus repository keeps its own owner
-(`sigma43web/ko-corpus`).
+**Run 3 (2026-09-26) is in progress** on branch `hoplite/karystos-ec01d952`; this block is rewritten at its end.
+
+**Repository.** `sigma47web1/New` (moved from `sigma46web/New`, which had moved from `sigma44web/New`; the PR history did
+not move with it — the new repository has no pull requests before run 3's), default branch `hoplite/ainos-1ac771f8`,
+which holds everything through ADR-0105 / `standard@28` (run 2's roll-up PR #1 in `sigma46web/New`, merged with a merge
+commit). Nothing in code, CI or links names an old owner; the only stale names were in this block, and the corpus
+repository keeps its own owner (`sigma43web/ko-corpus`).
 
 | Order | Step of the operator's plan | Status |
 | --- | --- | --- |
