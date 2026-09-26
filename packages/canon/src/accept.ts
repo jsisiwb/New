@@ -96,15 +96,28 @@ export async function acceptChapter(pool: Pool, input: AcceptChapterInput): Prom
  * ADR-0105 (G17-5): an asserted fact without its own `valid_from` is valid from its item's `story_clock`, as a closed fact
  * is closed at its item's clock (`factProposal`). A stored fact requires the clock and the proposal does not, so G17a's
  * two facts reached the insert without one.
+ *
+ * In addition, normalize `op: 'create'` to `'assert'` for non-entity types (events, relationship states, facts, knowledge states, proposition truths)
+ * where the extractor used `create` instead of `assert`.
  */
 export function withFactClocks(delta: unknown): unknown {
   const items = (delta as { items?: unknown } | null)?.items;
   if (!Array.isArray(items)) return delta;
   const out = items.map((raw: unknown): unknown => {
-    const item = raw as { type?: unknown; op?: unknown; story_clock?: unknown; payload?: unknown };
+    let item = raw as { type?: unknown; op?: unknown; story_clock?: unknown; payload?: unknown };
+    if (
+      item.op === 'create' &&
+      ['event', 'fact', 'knowledge_state', 'relationship_state', 'proposition_truth'].includes(
+        String(item.type),
+      )
+    ) {
+      item = { ...item, op: 'assert' };
+    }
     const payload = item.payload as Record<string, unknown> | undefined;
-    if (item.type !== 'fact' || (item.op !== 'assert' && item.op !== 'supersede')) return raw;
-    if (!payload || payload.valid_from !== undefined || item.story_clock === undefined) return raw;
+    if (item.type !== 'fact' || (item.op !== 'assert' && item.op !== 'supersede'))
+      return item !== raw ? item : raw;
+    if (!payload || payload.valid_from !== undefined || item.story_clock === undefined)
+      return item !== raw ? item : raw;
     return { ...item, payload: { ...payload, valid_from: item.story_clock } };
   });
   return out.some((x, i) => x !== items[i]) ? { ...(delta as object), items: out } : delta;
