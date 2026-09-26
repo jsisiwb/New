@@ -117,6 +117,7 @@
 | [0108](0108-stuck-chapters-stay-as-the-record.md) | G14a, G14r (`standard@24`), G17a chapter 2, G18r and G19r (`standard@28`) stay as the record of their policies at the grant cap: no override, no regeneration on the old pins; the lines continue on fresh `standard@29` projects |
 | [0109](0109-unattended-runs-auto-resume.md) | Unattended runs, part 2: `novel:run --auto-resume=N` resumes a run failed on a curable fault (bridge outage, rate limit, rejected extraction) after a doubling wait, with the reason in the event log and status file; a call aborted by a lost lease is recorded as `lease_lost` |
 | [0110](0110-solo-scenes-under-the-dialogue-floor.md) | `standard.v30`: a scene with no one beside its POV character is not raised to the dialogue floor (at most `solo_max`, no quoted-line quota); the scenes with a partner carry the chapter's floor |
+| [0111](0111-register-redraft.md) | `standard.v31`: a Korean scene with more utterances mixing 존대 and 반말 inside one quotation than the operator's p90 (0.725 per 1,000자) allows is re-drafted once with those utterances named |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

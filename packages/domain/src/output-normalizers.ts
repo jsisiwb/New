@@ -49,6 +49,8 @@ export const OUTPUT_NORMALIZERS = [
   'pov_redraft',
   // ADR-0097: a Korean scene at or above the pronoun warn line, re-drafted once.
   'pronoun_redraft',
+  // ADR-0111: a Korean scene mixing 존대 and 반말 inside quotations beyond the operator's p90, re-drafted once.
+  'register_redraft',
   // ADR-0102: an extractor answer that failed the canon-delta schema, repaired once.
   'extraction_repair',
   // ADR-0103: a top-level field an extractor repair broke, taken back from the answer it repaired.

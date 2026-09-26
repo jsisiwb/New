@@ -59,6 +59,7 @@ version. For a new Korean project use the newest `standard`:
 | `standard@28` | larger continuity-checker and extractor pack budgets | 0101 |
 | `standard@29` | a continuity or knowledge checker's reviewer-class finding must be reproduced by a second reading to block (canon contradictions, timeline errors and leaks still block on one) | 0106 |
 | `standard@30` | a scene with no one beside its POV character is not raised to the dialogue floor; the scenes with a partner carry it | 0110 |
+| `standard@31` | a scene that mixes 존대 and 반말 inside quotations beyond the operator's p90 is re-drafted once with those lines named | 0111 |
 
 **Watching a run.**
 

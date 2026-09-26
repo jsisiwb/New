@@ -84,6 +84,19 @@ then `novel:run`. A chapter that ends one step short gets `novel:extend`. After 
 then run the unattended batch 6–15 and the 15-화 audit. Open: G16-2 (not seen in G18r), G12-2, G9-6, G9-8, G7-4, G5-8. A
 rejected extraction still replays its recorded answers on resume (ADR-0103, deferred).
 
+## Run 3: G16-2, the register re-draft — `standard.v31` — 2026-09-26
+
+**Built (ADR-0111):** `drafting.register_redraft` (`registerMixAllowance`, `registerRedraftNote`, normalization
+`register_redraft`): a scene mixing 존대 and 반말 inside quotations beyond the operator's p90 (0.725 per 1,000자) is
+re-drafted once with the lines named. Traceability row `G16FIX-002`.
+
+**Measured:** the operator's band with the voice judge's own register check (656 chapters: median 0, p90 4 per chapter,
+p90 0.725 per 1,000자); G20r's chapter 1 at 6 (0.94 per 1,000자), voice 69–70.5 against its gate of 76 with 0 blocking /
+0 majors (`13-live-run-gemini.md` §17).
+
+**Tests:** `register-redraft.test.ts`, `novel-ko.integration.test.ts` (v30 keeps, v31 re-drafts), `policy.test.ts` (v31),
+`commands.test.ts`.
+
 ## Run 3: G7-4, solo scenes — `standard.v30` — 2026-09-26
 
 **Built (ADR-0110):** `planning.dialogue_floor.solo_scenes` / `solo_max` (`isSoloScene`, `applyDialogueFloor`,

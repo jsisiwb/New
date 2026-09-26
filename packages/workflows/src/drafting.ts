@@ -25,6 +25,7 @@ import {
   validatorFor,
 } from '@yeonjae/domain';
 import {
+  checkDialogueRegister,
   codePointLength,
   lintKoreanWebnovel,
   measure,
@@ -795,6 +796,27 @@ export async function draftScenes(
             }
           }
         }
+        // ADR-0111 (G16-2): a scene with more utterances that mix 존대 and 반말 than the operator's p90 allows for its
+        // length is re-drafted once with those utterances named; the re-draft is kept only when it mixes fewer.
+        const registerRedraft = ctx.policy.drafting?.register_redraft;
+        if (registerRedraft && ko && typeof prose === 'string') {
+          const mixedOf = (t: string) => checkDialogueRegister(toNfcText(t)).mixed;
+          const mixed = mixedOf(prose);
+          if (mixed.length > registerMixAllowance(prose, registerRedraft.per_1k_max)) {
+            const retry = await writeScene(
+              { ...variables, scene_plan: variables.scene_plan + registerRedraftNote(mixed) },
+              `scene_draft:${ch}:${scene.scene_no}:register`,
+            );
+            let again = retry.output;
+            if (typeof again === 'string' && ctx.policy.drafting?.paragraph_per_line)
+              again = paragraphPerLine(again);
+            if (typeof again === 'string' && mixedOf(again).length < mixed.length) {
+              prose = again;
+              call = retry;
+              recordNormalization('register_redraft');
+            }
+          }
+        }
         const draft =
           typeof prose === 'string'
             ? validateSceneDraft(
@@ -1143,6 +1165,23 @@ export function talkRedraftNote(measured: number, target: number, ko: boolean): 
 }
 
 /** ADR-0097 (G14-1): the pronoun redraft instruction, with the measure that triggered it. */
+/** ADR-0111: mixed utterances a scene may keep — the operator's p90 per 1,000자 for its length, at least one. */
+export function registerMixAllowance(text: string, per1kMax: number): number {
+  const chars = Array.from(text.replace(/\n/gu, '')).length;
+  return Math.max(1, Math.floor((per1kMax * chars) / 1000));
+}
+
+/** ADR-0111 (G16-2): the writer's Korean note naming the utterances that mix 존대 and 반말. */
+export function registerRedraftNote(mixed: readonly { readonly quote: string }[]): string {
+  return [
+    '',
+    '',
+    '말높이 다시 쓰기: 앞선 원고에서 아래 발화들은 한 따옴표 안에서 존댓말과 반말이 섞였다.',
+    ...mixed.slice(0, 8).map((m) => `- ${m.quote}`),
+    '인물마다 인물 설계의 말투를 상대별 말높이로 지키고, 같은 장면에서 같은 상대에게는 한 말높이로만 말한다. 말높이를 바꾸려면 계기(도발, 신분 확인, 관계 변화)를 지면에 먼저 보이고 그 뒤로는 바뀐 말높이를 유지한다. 한 발화 안에서는 존댓말과 반말을 오가지 않는다. 장면의 사건과 비트, 분량은 그대로 둔다.',
+  ].join('\n');
+}
+
 export function pronounRedraftNote(ratePer1k: number, warn: number): string {
   return `\n\n대명사 다시 쓰기: 직전 초고는 ‘그/그녀’가 1,000자에 ${String(ratePer1k)}번이었다(운영자 원고의 경고선 ${String(warn)}). 서술의 ‘그는·그녀는·그녀의’를 인물의 이름이나 호칭으로 바꾸거나 주어를 생략한다. 사건·비트·대사는 그대로 둔다.`;
 }

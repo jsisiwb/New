@@ -3417,3 +3417,108 @@ run(
     }, 300_000);
   },
 );
+
+for (const [label, policyVersion, redrafts] of [
+  ['standard.v30', 'policy/standard@30', false],
+  ['standard.v31', 'policy/standard@31', true],
+] as const)
+  run(
+    `Korean novel run under ${label}: a scene that mixes 존대 and 반말 inside quotations (ADR-0111)`,
+    () => {
+      let pool: Pool;
+      let workspaceId: string;
+      let projectId: string;
+      const seen: ProviderRequest[] = [];
+      // G20r: the pawnshop owner's lines switched between 해요체 and 반말 inside one quotation six times.
+      const mixed = [
+        '“그건 제 사정이에요. 당장 나가.”',
+        '“백만 원이요. 낼 돈은 있고?”',
+        '“기다려요. 금방 끝나.”',
+      ];
+      const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+      const writer = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+        const text = (out.json as { text?: string }).text ?? '';
+        const lines = [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n');
+        if (req.trace.activityId.endsWith(':register')) return { text: lines };
+        return { text: [lines, ...mixed].join('\n\n') };
+      };
+      const provider = new MockProvider((req) => {
+        seen.push(req);
+        return writer(req, batchedScript(req, script(req)));
+      });
+      const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+      beforeAll(async () => {
+        pool = await freshDatabase();
+        workspaceId = await createWorkspace(pool, `novel-ko-${label}-register`);
+        ({ projectId } = await createProject(pool, {
+          workspaceId,
+          title: '재의 장부',
+          operatingMode: 'autopilot',
+          policyVersion,
+        }));
+      }, 120_000);
+
+      afterAll(async () => {
+        await pool.end();
+      });
+
+      const makeDeps = () => ({
+        pool,
+        gateway: new Gateway({
+          providers: new Map([['mock', provider]]),
+          routing,
+          budget: new MemoryBudget(10_000_000),
+          audit: new PgAuditStore(
+            pool,
+            { workspaceId, projectId },
+            new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+          ),
+        }),
+      });
+
+      it(
+        redrafts
+          ? 're-drafts each mixing scene once with the utterances named and keeps the re-draft'
+          : 'keeps the mixing scenes as drafted',
+        async () => {
+          const started = await startNovel(makeDeps(), { projectId, intake });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: `ko-${label}-register-runner`,
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            const r = await getNovelRun(pool, projectId);
+            if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+          }
+          const rewrites = seen.filter(
+            (r) => r.trace?.role === 'scene_writer' && r.trace.activityId.endsWith(':register'),
+          );
+          const drafts = await pool.query<{ payload: { text: string } }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'scene_draft'",
+            [projectId],
+          );
+          expect(drafts.rows.length).toBeGreaterThan(0);
+          if (!redrafts) {
+            expect(rewrites).toEqual([]);
+            expect(drafts.rows.every((r) => r.payload.text.includes(mixed[0] ?? ''))).toBe(true);
+            return;
+          }
+          expect(rewrites).toHaveLength(drafts.rows.length);
+          expect(rewrites[0]?.user).toContain('말높이 다시 쓰기');
+          expect(rewrites[0]?.user).toContain(mixed[1]);
+          expect(drafts.rows.some((r) => r.payload.text.includes(mixed[0] ?? ''))).toBe(false);
+        },
+        300_000,
+      );
+    },
+  );

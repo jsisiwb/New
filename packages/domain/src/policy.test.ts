@@ -32,6 +32,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@29',
       'policy/standard@3',
       'policy/standard@30',
+      'policy/standard@31',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -40,6 +41,17 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v31 is standard.v30 with the register re-draft (ADR-0111)', () => {
+    const v30 = requirePolicy('policy/standard@30', policies);
+    const v31 = requirePolicy('policy/standard@31', policies);
+    expect(v31.drafting).toEqual({ ...v30.drafting, register_redraft: { per_1k_max: 0.725 } });
+    const strip = (p: typeof v30) => {
+      const { version: _v, name: _n, content_hash: _h, drafting: _d, ...rest } = p;
+      return rest;
+    };
+    expect(strip(v31)).toEqual(strip(v30));
   });
 
   it('standard.v30 is standard.v29 with solo scenes under the dialogue floor (ADR-0110)', () => {

@@ -228,6 +228,15 @@ export interface ProductionPolicy {
      */
     pronoun_redraft?: boolean;
     /**
+     * ADR-0111 (live defect G16-2): a Korean scene draft with more quoted utterances that mix 존대 (합쇼체/해요체) and 반말 inside one quotation (the voice judge's deterministic register report) than max(1, floor(per_1k_max × its 자 / 1,000)) is re-drafted once with those utterances named and the one-level-per-addressee rule; the re-draft is kept only when it mixes fewer. Absent: no register re-draft.
+     */
+    register_redraft?: {
+      /**
+       * Starting value 0.725: the operator's p90 of mixed utterances per 1,000자 over the 656 Korean main-story chapters (run 3).
+       */
+      per_1k_max: number;
+    };
+    /**
      * ADR-0088 (live defect G6-3): an assembled chapter's line that repeats the line right before it word for word, and is at least ten characters with a space in it, is dropped (a generation glitch; short sound lines such as '덜컹 덜컹.' may repeat on purpose), counted as repeated_line.
      */
     dedupe_repeated_lines?: boolean;
