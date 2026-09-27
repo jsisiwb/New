@@ -575,10 +575,11 @@ export async function resumeNovelRun(
     // observe a resumed run with a stale paused job between these two writes.
     await client.query(
       `UPDATE jobs SET control = 'run', control_requested_at = NULL, control_requested_by = NULL,
-              status = CASE WHEN status IN ('paused', 'paused_budget') THEN 'queued' ELSE status END,
+              status = CASE WHEN status IN ('paused', 'paused_budget', 'cancelling') THEN 'queued' ELSE status END,
               paused_at = NULL, updated_at = now()
          WHERE project_id = $1 AND kind IN ('chapter_production', 'story_plan')
-           AND status IN ('paused', 'paused_budget', 'queued', 'running')`,
+           AND (status IN ('paused', 'paused_budget', 'queued', 'running')
+                OR (status = 'cancelling' AND control = 'pause'))`,
       [input.projectId],
     );
     const r = await transitionNovelRun(client, {

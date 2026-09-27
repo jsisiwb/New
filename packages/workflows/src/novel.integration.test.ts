@@ -10,6 +10,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   claimNovelRun,
+  checkpointControl,
   createProject,
   createWorkspace,
   getNovelRun,
@@ -191,8 +192,34 @@ run('novel run: intake → suggestions → approval → bible → chapters (simu
     const paused = await getNovelRun(pool, projectId);
     expect(paused?.status).toBe('paused');
     expect(paused?.next_chapter).toBe(2);
+    // An interrupted provider call can leave pause intent in the transient cancelling state.
+    const interrupted = await pool.query<{ id: string; control: string }>(
+      `INSERT INTO jobs (workspace_id, project_id, kind, status, control, production_policy_version)
+       SELECT $1, $2, 'chapter_production', 'cancelling', intent, production_policy_version
+       FROM projects CROSS JOIN unnest(ARRAY['pause', 'cancel']) AS intent WHERE projects.id = $2
+       RETURNING id, control`,
+      [workspaceId, projectId],
+    );
     const resumed = await resumeNovelRun(pool, { projectId, autoContinue: true });
     expect(resumed.status).toBe('producing');
+    for (const row of interrupted.rows) {
+      const state = await pool.query<{ status: string; control: string }>(
+        'SELECT status, control FROM jobs WHERE id = $1',
+        [row.id],
+      );
+      expect(state.rows[0]).toEqual(
+        row.control === 'pause'
+          ? { status: 'queued', control: 'run' }
+          : { status: 'cancelling', control: 'cancel' },
+      );
+      if (row.control === 'pause')
+        await expect(
+          checkpointControl(pool, { jobId: row.id, step: 'revise' }),
+        ).resolves.toBeUndefined();
+    }
+    await pool.query('DELETE FROM jobs WHERE id = ANY($1::uuid[])', [
+      interrupted.rows.map((r) => r.id),
+    ]);
     expect(await runner.tick()).toBe(true);
     const after = await getNovelRun(pool, projectId);
     expect(after?.status).toBe('completed');

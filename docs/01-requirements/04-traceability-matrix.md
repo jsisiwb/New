@@ -159,3 +159,5 @@ ADR-0130 extends accepted-history context to the contract critic under the arriv
 | Lint-backed score repair | ADR-0141 | `scoreTargets`, existing revision clustering | Convergence and revision clustering tests |
 
 | Structural rewrite planning priority | ADR-0142 | `sceneRewriteBoundaryContext`, `rewriteScene` | Drafting helpers and Korean rewrite integration |
+
+| Interrupted pause recovery | ADR-0143 | `resumeNovelRun` | Novel lifecycle integration and workflow control chaos tests |
