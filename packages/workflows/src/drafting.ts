@@ -313,7 +313,7 @@ export async function planScenes(
           })
         : undefined;
       const critic = ctx.policy.planning?.plan_critic;
-      const craft = await chapterCraftContext(ctx, ch);
+      const craft = await chapterCraftContext(ctx, ch, input.bible);
       const planVars =
         schedule || critic
           ? {

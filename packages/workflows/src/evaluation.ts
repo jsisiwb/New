@@ -859,7 +859,7 @@ export async function evaluateVersion(
                   ? `문단 ${paragraphs.length}개; 잘림 검사 ${det.truncation.passed ? '통과' : '실패'}.${det.ko_style ? ` 대사 비중 ${String(Math.round(det.ko_style.metrics.dialogue_ratio * 100))}%, 긴 서술 문단 ${String(Math.round(det.ko_style.metrics.long_paragraph_ratio * 100))}%, 최장 문단 ${String(det.ko_style.metrics.max_paragraph_chars)}자.${det.ko_style.findings.some((f) => f.rule_id === 'KO-END-01') ? ' 마지막 문단이 요약·관조형으로 판정됨(KO-END-01).' : ''}` : ''}`
                   : `paragraphs ${paragraphs.length}; truncation check ${det.truncation.passed ? 'passed' : 'FAILED'}.`,
                 contract_shape: ko
-                  ? `도입 ${input.contract.opening.type}; 절단 ${input.contract.hook.type}; 로컬 보상 ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; 장면 ${input.contract.scene_count}개.`
+                  ? `도입 ${input.contract.opening.type}; 절단 ${input.contract.hook.type}; 로컬 보상 ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; 장면 ${input.contract.scene_count}개.${ctx.policy.planning?.serial_architecture?.arrival_contract ? `\n구체적인 도입: ${input.contract.opening.description}\n구체적인 절단: ${input.contract.hook.description}\n보상 내용: ${input.contract.local_satisfaction.map((s) => s.description).join('; ')}\n필수 사건과 독자 경험:\n${input.contract.must_happen.map((m) => `[${m.id}] ${m.description}`).join('\n')}` : ''}`
                   : `opening ${input.contract.opening.type}; hook ${input.contract.hook.type}; local satisfaction ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; scenes ${input.contract.scene_count}.`,
               },
               block: compileFor(ctx, 'judge_rubric_structure'),

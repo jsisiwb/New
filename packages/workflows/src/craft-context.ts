@@ -1,3 +1,4 @@
+import { renderOpeningChapter } from './serial-architecture.js';
 /** Policy-pinned craft context. Snapshots are planning references, never realized canon. */
 import { type Generated } from '@yeonjae/domain';
 import { existingArtifact, saveArtifact, loadArtifact, type WorkflowContext } from './runtime.js';
@@ -53,13 +54,21 @@ export async function conceptCraftContext(
 export async function chapterCraftContext(
   ctx: WorkflowContext,
   chapterNo: number,
+  bible?: StoryBible,
 ): Promise<string | undefined> {
   if (!craftEnabled(ctx)) return undefined;
   const policy = ctx.policy.planning;
-  if (!policy?.opening && !policy?.distinct_stories && !policy?.device_ledger) return undefined;
+  if (
+    !policy?.opening &&
+    !policy?.distinct_stories &&
+    !policy?.device_ledger &&
+    !policy?.serial_architecture
+  )
+    return undefined;
   // One snapshot feeds the contract, scenes and every critic/retry even if another project advances.
   return snapshot(ctx, `chapter:${chapterNo}`, async () => {
     const notes: (string | undefined)[] = [
+      policy.serial_architecture ? renderOpeningChapter(bible?.serial_plan, chapterNo) : undefined,
       policy.opening ? openingDesign(chapterNo, policy.opening.chapters) : undefined,
     ];
     if (chapterNo === 1 && policy.distinct_stories) {
@@ -108,7 +117,12 @@ export function sceneCraftContext(
 ): string | undefined {
   if (!craftEnabled(ctx)) return undefined;
   const policy = ctx.policy;
-  if (!policy.planning?.opening && !policy.planning?.voice_cards && !policy.drafting?.setting_notes)
+  if (
+    !policy.planning?.opening &&
+    !policy.planning?.serial_architecture &&
+    !policy.planning?.voice_cards &&
+    !policy.drafting?.setting_notes
+  )
     return undefined;
   const entity = (id: string) =>
     bible?.entities.find((e) => e.id === id || ctx.bindings[e.id] === id);
@@ -116,6 +130,9 @@ export function sceneCraftContext(
   const place = entity(scene.location_id);
   const notes = [
     '[PLANNED — 창작 지침; 정사·현재 상태·공개 일정이 우선. 카드 속 비밀이나 미래 상태를 지면에 드러내지 않는다.]',
+    policy.planning?.serial_architecture
+      ? renderOpeningChapter(bible?.serial_plan, chapterNo)
+      : undefined,
     policy.planning?.opening
       ? openingDesign(chapterNo, policy.planning.opening.chapters)
       : undefined,

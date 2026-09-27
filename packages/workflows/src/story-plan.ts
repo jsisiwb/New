@@ -1,3 +1,4 @@
+import { validateSerialCoverage, renderEpisode, type SerialPlan } from './serial-architecture.js';
 import { conceptCraftContext, craftEnabled } from './craft-context.js';
 import { arcOpeningBrief, renderOtherStories } from './reader-craft.js';
 /**
@@ -1203,6 +1204,12 @@ export async function buildFullBible(
             concept: conceptText,
             bible_summary: renderBibleSummary(draftBible, lang),
             target_chapters: String(intake.target_chapters),
+            opening_chapters: String(
+              Math.min(
+                intake.target_chapters,
+                ctx.policy.planning?.serial_architecture?.opening_chapters ?? 10,
+              ),
+            ),
           },
           block,
         },
@@ -1310,6 +1317,9 @@ export async function buildFullBible(
           }))
           .filter((r) => r.statement.length > 0),
         seasons,
+        ...(craftEnabled(ctx) && ctx.policy.planning?.serial_architecture
+          ? { serial_plan: raw.serial_plan }
+          : {}),
         foreshadowing_register: promises.map((p) => p.id),
       } as SeriesBlueprint;
       const v = validatorFor<SeriesBlueprint>('series-blueprint.schema.json')(candidate);
@@ -1318,6 +1328,12 @@ export async function buildFullBible(
           'ARC_PLAN_INVALID',
           `series blueprint does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
           { step: 'blueprint', recommendedActions: ['regenerate'] },
+        );
+      if (craftEnabled(ctx) && ctx.policy.planning?.serial_architecture)
+        validateSerialCoverage(
+          v.value,
+          intake.target_chapters,
+          ctx.policy.planning.serial_architecture.opening_chapters,
         );
       const ref = await saveArtifact(ctx, {
         step: 'blueprint',
@@ -1330,7 +1346,13 @@ export async function buildFullBible(
     },
   );
 
-  const bible: StoryBible = { ...draftBible, promises: blueprintStep.promises };
+  const bible: StoryBible = {
+    ...draftBible,
+    promises: blueprintStep.promises,
+    ...(blueprintStep.blueprint.serial_plan
+      ? { serial_plan: blueprintStep.blueprint.serial_plan }
+      : {}),
+  };
   const bibleRef = await runStep(ctx, 'bible_assembly', async () => {
     const ref = await saveArtifact(ctx, {
       step: 'bible_assembly',
@@ -1374,6 +1396,7 @@ export interface ArcSchedule {
     ordinal: number;
     /** 1-based position of this arc inside its season. */
     arcInSeason: number;
+    episode?: SerialPlan['episodes'][number];
   }[];
 }
 
@@ -1387,6 +1410,26 @@ const SPLIT_SEASONS_LONGER_THAN = 15;
 
 /** Which arc a chapter belongs to, from the blueprint's season windows. */
 export function scheduleFromBlueprint(projectId: string, blueprint: SeriesBlueprint): ArcSchedule {
+  if (blueprint.serial_plan) {
+    const counts = new Map<number, number>();
+    return {
+      arcs: blueprint.serial_plan.episodes.map((episode) => {
+        const ordinal = episode.season_ordinal;
+        const arcInSeason = (counts.get(ordinal) ?? 0) + 1;
+        counts.set(ordinal, arcInSeason);
+        const season = blueprint.seasons.find((s) => s.ordinal === ordinal);
+        return {
+          id: planIds.arc(projectId, ordinal, arcInSeason),
+          seasonId: season?.id ?? planIds.season(projectId, ordinal),
+          from: episode.chapter_range.from,
+          to: episode.chapter_range.to,
+          ordinal,
+          arcInSeason,
+          episode,
+        };
+      }),
+    };
+  }
   const arcs = blueprint.seasons.flatMap((s) => {
     const seasonId = s.id ?? planIds.season(projectId, s.ordinal);
     const { from, to } = s.chapter_range_est;
@@ -1491,9 +1534,12 @@ export async function planArcFromBlueprint(
             : season
               ? `Season ${season.ordinal} "${season.title}" (id ${input.arc.seasonId}), chapters ${season.chapter_range_est.from}–${season.chapter_range_est.to}: ${season.objective}${season.thesis ? ` Thesis: ${season.thesis}` : ''}`
               : `Season ${input.arc.ordinal} (id ${input.arc.seasonId})`,
-          arc_brief: ko
-            ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.${craftEnabled(ctx) && ctx.policy.planning?.opening && input.arc.from === 1 ? arcOpeningBrief(ctx.policy.planning.opening.chapters) : ''}`
-            : `Arc ${input.arc.arcInSeason} of season ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
+          arc_brief:
+            input.arc.episode && input.blueprint.serial_plan && ko
+              ? `${renderEpisode(input.blueprint.serial_plan, input.arc.episode)}\n아크 id: ${input.arc.id}. 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 등록부 id만 쓴다.${input.previousArcExit ? ` 이전 아크의 실제 끝: ${input.previousArcExit}` : ''}${input.arc.from === 1 && ctx.policy.planning?.opening ? arcOpeningBrief(ctx.policy.planning.opening.chapters) : ''}`
+              : ko
+                ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.${craftEnabled(ctx) && ctx.policy.planning?.opening && input.arc.from === 1 ? arcOpeningBrief(ctx.policy.planning.opening.chapters) : ''}`
+                : `Arc ${input.arc.arcInSeason} of season ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
           canon_state: renderArcPlanningDigest(input.bible, lang, {
             from: input.arc.from,
             to: input.arc.to,

@@ -135,3 +135,7 @@ READER-CRAFT-002: New projects may explicitly pin the tradition layer and revise
 | Reader craft: concept angles | ADR-0125 | `planning.concept_angles`, `conceptAngleSeed`, 4.14.0 prompts | `story-plan.test.ts`, `policy.test.ts`, `novel-ko.integration.test.ts` |
 
 | Reader craft: contextual introductions and rhythm | ADR-0126 | `voice/operator@5`, `scene_writer@4.15.0`, `standard@42` | `voice.test.ts`, `registry.test.ts`, `novel-ko.integration.test.ts` |
+
+| Serial architecture: arrival, authored episodes, opening continuity | ADR-0127 | `serial-architecture.ts`, `story-plan.ts`, `craft-context.ts`, `standard@43` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |
+
+| Arrival requirement enforcement | ADR-0128 | `arrival-contract.ts`, `planning.ts`, `standard@44` | `arrival-contract.test.ts`, `novel-ko.integration.test.ts` |

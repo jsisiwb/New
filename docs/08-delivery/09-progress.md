@@ -3,6 +3,20 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Causal serial architecture follow-up (2026-09-27)
+
+The operator confirmed that the previous draft was readable but still skipped the protagonist understanding transmigration, asked how prior chapters reach the writer, and requested a 200-chapter bible with five to ten chapters for testing (ADR-0127).
+
+**Implementation.** New projects pin `standard@44`; the tested v43 remains immutable. Its Korean blueprint requires an arrival brief, authored episode windows covering the complete requested series within their seasons, and chapter-specific opening briefs through the configured horizon. The assembled bible retains those plans. Arc scheduling uses their boundaries and each episode's own exit instead of asking every ten-chapter window to reach the season exit. Chapter/scene planners, critics, writers and rewrites receive the relevant opening brief; later briefs stay out of earlier writer calls. Eight immutable prompt versions support the change. Earlier policies and blueprints retain their scheduling behavior.
+
+**Verification.** A stable affected-package suite on the serial-architecture implementation passed 1,423 tests across 112 files, including a 120-chapter continuity replay and all 48 Korean pipeline cases then present. TypeScript and 147 focused prompt/schema/architecture checks passed. The final test-style cleanup and standalone architecture gate passed 18 checks. Planning validation passed. CodeRabbit review is disabled by the task runtime.
+
+**Live iteration.** The isolated v43 project (`01a0e215-7583-703f-a3e4-2ac7a29210f1`) generated a full 200-chapter bible with 14 authored episodes and ten opening briefs, but its first chapter still jumped from awakening to a power display. It was paused before prose and rejected for this test. Its Outputs are retained under `serial-pacing/rejected-policy43`.
+
+**Arrival enforcement (ADR-0128).** Version 44 adds three deterministic chapter-one hard requirements and binds them into required events before every contract critique/repair. Korean possession/regression/reincarnation projects default to arrival orientation; an explicit established opening opts out. The structure judge now reads concrete opening, reward, ending and required-event descriptions, extending its old type-label-only contract view. The active-constraint input budget accommodates these requirements; quality gates are unchanged. After this amendment, 205 focused tests and the v44 two-chapter integration passed; a fresh affected-workflow/API/CLI run passed 148 tests across seven files. Final TypeScript, changed-file ESLint/formatting, generated types/policy hashes and planning validation passed. One initial integration assertion exposed the structure judge's missing event content and passed after that boundary was fixed.
+
+**Live test in progress.** A fresh v44 project (`01a0e226-304e-7c74-bc7e-80329bd9d59e`) uses the same 200-chapter academy premise with the operator's explicit arrival preference and first-chapter mandatory scene recorded in the intake. Concept generation is running. The intended batch is five accepted chapters with normal gates. No live improvement is claimed yet. The earlier policy40 draft did have a full generated bible and 200-chapter blueprint; missing orientation was not caused by writing without a bible.
+
 ## Reader-craft core revision (2026-09-27)
 
 The operator requested slower, legible openings, lived settings, varied humor and Korean sentence rhythm, emotionally grounded action, distinct protagonist voices, and fewer repeated story templates (ADR-0120–0126).

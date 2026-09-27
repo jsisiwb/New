@@ -1,3 +1,4 @@
+import { serialPlanFixture } from './serial-architecture.testkit.js';
 /**
  * The Korean-manuscript product loop end to end with the simulated model (ADR-0054/0055): a Korean intake
  * composes the Korean identity layers, the requirement interpreter returns Korean requirements with no
@@ -4280,7 +4281,7 @@ run(
   },
 );
 
-run.each([38, 39, 40, 41, 42])(
+run.each([38, 39, 40, 41, 42, 43, 44])(
   'Korean novel under standard.v%i: craft reaches every generation stage',
   (version) => {
     let pool: Pool;
@@ -4315,6 +4316,8 @@ run.each([38, 39, 40, 41, 42])(
           place.detail = '문턱에 닳은 홈';
         }
       }
+      if (version >= 43 && req.trace?.role === 'story_architect')
+        value.serial_plan = serialPlanFixture();
       if (req.trace?.role === 'chapter_planner') {
         value.devices = {
           comedy: 'character',
@@ -4382,7 +4385,10 @@ run.each([38, 39, 40, 41, 42])(
     });
 
     it('freezes scoped references and carries opening, voice, setting and device context to live call boundaries', async () => {
-      const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+      const started = await startNovel(makeDeps(), {
+        projectId,
+        intake: version === 44 ? { ...INTAKE, opening_mode: 'arrival' } : INTAKE,
+      });
       const concepts = seen.filter((r) => r.trace?.role === 'concept_generator');
       expect(concepts).toHaveLength(2);
       if (version >= 40) {
@@ -4423,9 +4429,46 @@ run.each([38, 39, 40, 41, 42])(
       expect(userText('scene_writer')).toContain(pressure);
       expect(userText('scene_writer')).toContain(sound);
       expect(userText('voice_judge')).toContain(pressure);
-      if (version === 42) {
+      if (version >= 42) {
         expect(userText('plan_critic')).toContain('호감과 접근의 방향은 인물별 동기');
         expect(userText('plan_critic')).not.toContain('주인공은 쫓지 않는다');
+      }
+      if (version >= 43) {
+        for (const role of [
+          'arc_planner',
+          'chapter_planner',
+          'scene_planner',
+          'plan_critic',
+          'scene_writer',
+        ])
+          expect(userText(role), role).toContain('현실인지 확인하는 행동과 증거');
+        const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+        expect(writers.some((r) => r.user.includes('독자발견1'))).toBe(true);
+        expect(writers.some((r) => r.user.includes('독자발견2'))).toBe(true);
+        expect(
+          writers.every((r) => !(r.user.includes('독자발견1') && r.user.includes('독자발견2'))),
+        ).toBe(true);
+      }
+      if (version === 44) {
+        expect(userText('concept_generator')).toContain('확인 행동');
+        for (const role of ['chapter_planner', 'plan_critic', 'scene_writer', 'structure_judge'])
+          expect(userText(role), role).toContain('첫 실질적 선택');
+        const contracts = await pool.query<{
+          payload: { chapter_number: number; must_happen: { id: string }[] };
+        }>(
+          "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='chapter_contract' ORDER BY created_at",
+          [projectId],
+        );
+        expect(
+          contracts.rows
+            .find((r) => r.payload.chapter_number === 1)
+            ?.payload.must_happen.filter((m) => m.id.startsWith('arrival-')),
+        ).toHaveLength(3);
+        expect(
+          contracts.rows
+            .find((r) => r.payload.chapter_number === 2)
+            ?.payload.must_happen.some((m) => m.id.startsWith('arrival-')),
+        ).toBe(false);
       }
       expect(userText('chapter_planner')).toContain('1화: 웃음 성격에서 나오는 웃음');
       const chapters = await pool.query<{ status: string }>(

@@ -301,6 +301,7 @@
       ],
       "default": "standard"
     },
+    "opening_mode": { "type": "string", "enum": ["arrival", "established"], "description": "Arrival: chapter one experiences the change and establishes the protagonist’s situation before routine action. Established: deliberately begin after adaptation. Under a policy with arrival_contract, Korean possession/regression/reincarnation defaults to arrival." },
     "pov": {
       "type": "string",
       "enum": ["first", "third_limited", "third_omniscient"],

@@ -140,3 +140,7 @@ matrix in the same change.
 | [0125](0125-character-led-concept-angles.md) | Character-led concept angles |
 
 | [0126](0126-contextual-voice-rhythm-and-introductions.md) | Contextual voice rhythm and character introductions |
+
+| [0127](0127-causal-serial-architecture.md) | Causal serial architecture and arrival orientation |
+
+| [0128](0128-enforced-arrival-contract.md) | Enforced arrival requirements |

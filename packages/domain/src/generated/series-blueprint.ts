@@ -11,6 +11,7 @@ export interface SeriesBlueprint {
   project_id: string;
   version: number;
   pinned?: VersionRef;
+  serial_plan?: SerialPlan;
   story_promise: string;
   reader_fantasy: string;
   main_conflict: string;
@@ -151,6 +152,81 @@ export interface VersionRef {
 }
 /**
  * This interface was referenced by `SeriesBlueprint`'s JSON-Schema
+ * via the `definition` "serialPlan".
+ */
+export interface SerialPlan {
+  arrival: {
+    original_identity: string;
+    last_memory: string;
+    first_mismatch: string;
+    initial_explanation: string;
+    reality_test: string;
+    emotional_cost: string;
+    first_choice: string;
+  };
+  /**
+   * @minItems 1
+   */
+  episodes: [
+    {
+      season_ordinal: number;
+      chapter_range: ChapterWindow;
+      title: string;
+      entry_state: string;
+      objective: string;
+      complication: string;
+      payoff: string;
+      exit_state: string;
+      next_pressure: string;
+    },
+    ...{
+      season_ordinal: number;
+      chapter_range: ChapterWindow;
+      title: string;
+      entry_state: string;
+      objective: string;
+      complication: string;
+      payoff: string;
+      exit_state: string;
+      next_pressure: string;
+    }[],
+  ];
+  /**
+   * @minItems 1
+   */
+  opening_chapters: [
+    {
+      chapter: number;
+      entry_state: string;
+      central_situation: string;
+      reader_discovery: string;
+      choice: string;
+      local_payoff: string;
+      exit_state: string;
+      next_hook: string;
+    },
+    ...{
+      chapter: number;
+      entry_state: string;
+      central_situation: string;
+      reader_discovery: string;
+      choice: string;
+      local_payoff: string;
+      exit_state: string;
+      next_hook: string;
+    }[],
+  ];
+}
+/**
+ * This interface was referenced by `SeriesBlueprint`'s JSON-Schema
+ * via the `definition` "chapterWindow".
+ */
+export interface ChapterWindow {
+  from: number;
+  to: number;
+}
+/**
+ * This interface was referenced by `SeriesBlueprint`'s JSON-Schema
  * via the `definition` "characterArc".
  */
 export interface CharacterArc {
@@ -174,12 +250,4 @@ export interface Milestone {
   description: string;
   window: ChapterWindow;
   status?: 'planned' | 'realized' | 'unrealized';
-}
-/**
- * This interface was referenced by `SeriesBlueprint`'s JSON-Schema
- * via the `definition` "chapterWindow".
- */
-export interface ChapterWindow {
-  from: number;
-  to: number;
 }

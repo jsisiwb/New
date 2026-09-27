@@ -1,3 +1,4 @@
+import { withArrivalRequirements, bindArrivalRequirements } from './arrival-contract.js';
 import { chapterCraftContext } from './craft-context.js';
 /**
  * Planning steps of the vertical slice: intake validation → `requirement_interpreter` → versioned Story Spec
@@ -58,6 +59,7 @@ export type ChapterContract = Generated.ChapterContractSchema.ChapterContract;
 /** The Story Bible as the slice needs it: registry entities, propositions, promises, seed facts/relations. */
 export interface StoryBible {
   readonly version: number;
+  readonly serial_plan?: Generated.SeriesBlueprintSchema.SeriesBlueprint['serial_plan'];
   readonly design?:
     | {
         readonly characters: Readonly<Record<string, unknown>>;
@@ -261,7 +263,12 @@ export async function interpretRequirements(
     const candidate: StorySpec = {
       project_id: ctx.projectId,
       version: specVersion,
-      items,
+      items: withArrivalRequirements(
+        items,
+        intake,
+        ctx.identity.outputLanguage.language === 'ko' &&
+          ctx.policy.planning?.serial_architecture?.arrival_contract === true,
+      ),
       ...(Array.isArray(raw.conflicts)
         ? { conflicts: raw.conflicts as NonNullable<StorySpec['conflicts']> }
         : {}),
@@ -593,7 +600,7 @@ export async function generateContract(
     async () => {
       const project = await getProject(ctx.pool, ctx.projectId);
       const block = compilePlannerBlock(ctx);
-      const craft = await chapterCraftContext(ctx, input.chapterNo);
+      const craft = await chapterCraftContext(ctx, input.chapterNo, input.bible);
       const lang = langOf(ctx);
       const acsHard = compileActiveConstraintSet(
         input.spec,
@@ -695,7 +702,12 @@ export async function generateContract(
           },
         );
         const envelope = (content: Partial<ChapterContract>): ChapterContract => ({
-          ...(content as ChapterContract),
+          ...(bindArrivalRequirements(
+            content,
+            input.spec.items,
+            input.chapterNo,
+            ctx.policy.planning?.serial_architecture?.arrival_contract === true,
+          ) as ChapterContract),
           // The prompt tells the model the workflow fills the version; a fresh contract is version 1.
           version: typeof content.version === 'number' ? content.version : 1,
           id: input.contractId,

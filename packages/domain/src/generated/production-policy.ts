@@ -368,6 +368,10 @@ export interface ProductionPolicy {
      * ADR-0099 (live defect G15-1): a story spec's requirement categories are read as the schema knows them — an exact category stays, an interpreter's word (relationship, setting, theme) becomes its nearest category, anything else becomes other, the schema's catch-all — instead of failing the spec (SPEC_INVALID at novel:start, which a retry replays from the recorded answer). The requirement's text, kind and scope are untouched. Absent or false: the spec is validated as written.
      */
     normalize_spec_categories?: boolean;
+    serial_architecture?: {
+      opening_chapters: number;
+      arrival_contract?: boolean;
+    };
     /**
      * ADR-0120 (operator reading, run 6): chapters 1..chapters are the opening. Their planners, scene planners, writers and plan critics read a code-rendered opening design (where the hero is, who he is, what he wants and what is at stake, one core world rule, one major event per chapter, the world explained briefly in the hero's voice), the first scene's role asks for that orientation instead of a hook within three sentences, and the brief of the series' first arc keeps its core events out of the opening. Absent: the opening follows the fast-start rules of every chapter.
      */

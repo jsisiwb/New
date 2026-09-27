@@ -1,0 +1,37 @@
+{
+  "family": "plan_critic",
+  "version": "4.16.0",
+  "role": "plan_critic",
+  "purpose": "Reader craft: plan_critic (ADR-0120 through ADR-0123).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plans",
+    "reveal_schedule",
+    "canon_state",
+    "structure_targets",
+    "craft_context"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 3000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.16.0 — causal arrival and authored serial architecture (ADR-0127).",
+  "regression_cases": [
+    "plan_critic.fixture.smoke",
+    "plan_critic.reader-craft"
+  ],
+  "content_hash": "sha256:c2f5d705faf5b31e4832932003a18e9cf64a61406aedc431c852622504967229"
+}

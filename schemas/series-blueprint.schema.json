@@ -10,6 +10,7 @@
     "project_id": { "$ref": "common.schema.json#/$defs/uuid" },
     "version": { "type": "integer", "minimum": 1 },
     "pinned": { "$ref": "common.schema.json#/$defs/versionRef" },
+    "serial_plan": { "$ref": "#/$defs/serialPlan" },
     "story_promise": { "type": "string" },
     "reader_fantasy": { "type": "string" },
     "main_conflict": { "type": "string" },
@@ -118,6 +119,189 @@
     }
   },
   "$defs": {
+    "serialPlan": {
+      "type": "object",
+      "required": [
+        "arrival",
+        "episodes",
+        "opening_chapters"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "arrival": {
+          "type": "object",
+          "required": [
+            "original_identity",
+            "last_memory",
+            "first_mismatch",
+            "initial_explanation",
+            "reality_test",
+            "emotional_cost",
+            "first_choice"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "original_identity": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "last_memory": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "first_mismatch": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "initial_explanation": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "reality_test": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "emotional_cost": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "first_choice": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        },
+        "episodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "season_ordinal",
+              "chapter_range",
+              "title",
+              "entry_state",
+              "objective",
+              "complication",
+              "payoff",
+              "exit_state",
+              "next_pressure"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "season_ordinal": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "chapter_range": {
+                "$ref": "#/$defs/chapterWindow"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "entry_state": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "objective": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "complication": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "payoff": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "exit_state": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "next_pressure": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        "opening_chapters": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "chapter",
+              "entry_state",
+              "central_situation",
+              "reader_discovery",
+              "choice",
+              "local_payoff",
+              "exit_state",
+              "next_hook"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "chapter": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "entry_state": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "central_situation": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "reader_discovery": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "choice": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "local_payoff": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "exit_state": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "next_hook": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          }
+        }
+      }
+    },
     "characterArc": {
       "type": "object",
       "required": ["entity_id", "start_state", "end_state", "turning_points"],

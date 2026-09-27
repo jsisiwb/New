@@ -446,7 +446,7 @@ run('API: authentication, tenancy and contract (Checkpoint 7)', () => {
       'SELECT production_policy_version FROM projects WHERE id = $1',
       [first.json<{ projectId: string }>().projectId],
     );
-    expect(created.rows[0]?.production_policy_version).toBe('policy/standard@42');
+    expect(created.rows[0]?.production_policy_version).toBe('policy/standard@44');
     // The SAME project, not a second one.
     expect(second.json<{ projectId: string }>().projectId).toBe(
       first.json<{ projectId: string }>().projectId,
