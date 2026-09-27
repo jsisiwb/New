@@ -92,3 +92,45 @@ export function renderEpisode(plan: SerialPlan, episode: SerialPlan['episodes'][
       .map((c) => renderOpeningChapter(plan, c.chapter)),
   ].join('\n');
 }
+
+export interface ArchitectureFinding {
+  readonly severity: 'blocking' | 'major' | 'minor';
+  readonly target: string;
+  readonly claim: string;
+  readonly fix: string;
+}
+
+/** Missing or malformed findings must never look like a clean review. */
+export function parseArchitectureReview(output: unknown): ArchitectureFinding[] {
+  const fail = (): never => {
+    throw new WorkflowError(
+      'ARC_PLAN_INVALID',
+      'Serial architecture critic returned invalid findings.',
+      {
+        step: 'blueprint',
+        recommendedActions: ['regenerate'],
+      },
+    );
+  };
+  if (
+    !output ||
+    typeof output !== 'object' ||
+    !('issues' in output) ||
+    !Array.isArray(output.issues)
+  )
+    return fail();
+  return output.issues.map((item: unknown) => {
+    if (!item || typeof item !== 'object') return fail();
+    const row = item as Record<string, unknown>;
+    if (row.severity !== 'blocking' && row.severity !== 'major' && row.severity !== 'minor')
+      return fail();
+    for (const key of ['target', 'claim', 'fix'])
+      if (typeof row[key] !== 'string' || !row[key].trim()) return fail();
+    return {
+      severity: row.severity,
+      target: row.target as string,
+      claim: row.claim as string,
+      fix: row.fix as string,
+    };
+  });
+}

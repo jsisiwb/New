@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { requirePolicy, validatorFor, type Generated } from '@yeonjae/domain';
 import {
   validateSerialCoverage,
+  parseArchitectureReview,
   renderOpeningChapter,
   renderEpisode,
 } from './serial-architecture.js';
@@ -159,5 +160,28 @@ describe('causal serial architecture', () => {
     const b = blueprint();
     required(b.serial_plan).arrival.reality_test = '   ';
     expect(validatorFor('series-blueprint.schema.json')(b).ok).toBe(false);
+  });
+});
+
+describe('architecture review output', () => {
+  it.each([
+    null,
+    {},
+    { issues: null },
+    { issues: [null] },
+    { issues: [{ severity: 'note', target: 'x', claim: 'x', fix: 'x' }] },
+    { issues: [{ severity: 'major', target: ' ', claim: 'x', fix: 'x' }] },
+  ])('rejects malformed reviews instead of treating them as clean', (output) => {
+    expect(() => parseArchitectureReview(output)).toThrow('invalid findings');
+  });
+  it('retains actionable serious findings and minor notes', () => {
+    const issues = ['blocking', 'major', 'minor'].map((severity) => ({
+      severity,
+      target: '2화',
+      claim: '앞 회차 결과와 충돌한다',
+      fix: '앞 화 결과에서 잇는다',
+    }));
+    expect(parseArchitectureReview({ issues })).toEqual(issues);
+    expect(parseArchitectureReview({ issues: [] })).toEqual([]);
   });
 });

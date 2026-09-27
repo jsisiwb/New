@@ -55,6 +55,7 @@ describe('cli commands', () => {
       'policy/standard@42',
       'policy/standard@43',
       'policy/standard@44',
+      'policy/standard@45',
       'policy/standard@5',
       'policy/standard@6',
       'policy/standard@7',
@@ -99,7 +100,7 @@ describe('cli commands', () => {
     // schema-generated v4.3.0 output shapes (ADR-0057), six v4.4.0 evaluator versions (ADR-0060) and the
     // v4.5.0 arc summarizer (ADR-0076), and five v4.6.0 same-model judging / Gemini writer versions
     // (ADR-0081).
-    expect((p.output as { versions: unknown[] }).versions).toHaveLength(364);
+    expect((p.output as { versions: unknown[] }).versions).toHaveLength(366);
   });
 
   it('compiles the Active Constraint Set for a chapter and fails on overflow', () => {

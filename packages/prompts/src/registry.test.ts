@@ -34,14 +34,16 @@ const REQUIRED_FAMILIES = [
   'arc_summarizer',
   // ADR-0086
   'plan_critic',
+  'serial_architecture_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 364;
+const TOTAL_PROMPT_VERSIONS = 366;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
   'repetition_judge',
   'arc_summarizer',
   'plan_critic',
+  'serial_architecture_critic',
 ]);
 /** The active default set (latest `active` version of every family). */
 const ACTIVE_VERSION = '4.0.0';

@@ -47,6 +47,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@42',
       'policy/standard@43',
       'policy/standard@44',
+      'policy/standard@45',
       'policy/standard@5',
       'policy/standard@6',
       'policy/standard@7',

@@ -371,6 +371,10 @@ export interface ProductionPolicy {
     serial_architecture?: {
       opening_chapters: number;
       arrival_contract?: boolean;
+      /**
+       * ADR-0131: presence enables serial architecture critique before bible assembly; unresolved serious findings stop planning.
+       */
+      max_repairs?: number;
     };
     /**
      * ADR-0120 (operator reading, run 6): chapters 1..chapters are the opening. Their planners, scene planners, writers and plan critics read a code-rendered opening design (where the hero is, who he is, what he wants and what is at stake, one core world rule, one major event per chapter, the world explained briefly in the hero's voice), the first scene's role asks for that orientation instead of a hook within three sentences, and the brief of the series' first arc keeps its core events out of the opening. Absent: the opening follows the fast-start rules of every chapter.

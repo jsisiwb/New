@@ -1938,7 +1938,7 @@ Database commands (DATABASE_URL required):
   db:migrate                                   apply forward-only migrations
   project:create <title> [--workspace=<id>] [--policy=<ref>]
                                                create a project (+ main timeline) in a workspace (new one unless given);
-                                               defaults to policy/standard@39; --policy pins another shipped policy
+                                               defaults to ${DEFAULT_NEW_PROJECT_POLICY}; --policy pins another shipped policy
   series:audit <project> [--absent-after=<n>]  whole-serial audit: overdue promises, absent characters,
                                                story-time regressions, repeated openings (accepted canon only)
   quality:run-report <project> [--metrics-log=<file>] [--status-file=<file>] [--json]

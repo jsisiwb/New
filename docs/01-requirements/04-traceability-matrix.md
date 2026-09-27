@@ -143,3 +143,5 @@ READER-CRAFT-002: New projects may explicitly pin the tradition layer and revise
 Contract recritique also follows ADR-0129: invalid attempts consume only their own repair budget and their validation failures reach the next attempt. `novel-ko.integration.test.ts` covers recovery and exhaustion without selecting an invalid contract.
 
 ADR-0130 extends accepted-history context to the contract critic under the arrival-contract policy. The two-chapter v44 integration compares the critic input against the accepted L1 summary and ending hook; earlier policy cases verify the boundary.
+
+| Serial architecture coherence gate | ADR-0131 | `serial_architecture.max_repairs`, `serial_architecture_critic@4.18.0`, `story-plan.ts`, `standard@45` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |

@@ -1,0 +1,32 @@
+{
+  "family": "serial_architecture_critic",
+  "version": "4.18.0",
+  "role": "plan_critic",
+  "purpose": "Review causal episode and chapter alignment before bible assembly (ADR-0131).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "story_spec",
+    "blueprint"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 5000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.18.0 — serial architecture coherence review (ADR-0131).",
+  "regression_cases": [
+    "serial_architecture_critic.alignment"
+  ],
+  "content_hash": "sha256:51470e58508678bb3b46014480f4e9c81d65cfa56ca070002ca478387b08e640"
+}

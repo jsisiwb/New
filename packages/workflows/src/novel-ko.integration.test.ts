@@ -4324,7 +4324,7 @@ run(
   },
 );
 
-run.each([38, 39, 40, 41, 42, 43, 44])(
+run.each([38, 39, 40, 41, 42, 43, 44, 45])(
   'Korean novel under standard.v%i: craft reaches every generation stage',
   (version) => {
     let pool: Pool;
@@ -4334,8 +4334,33 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
     const voice = '남이 놓고 간 빈 그릇부터 세는 사람';
     const pressure = '몰리면 농담을 멈추고 부탁한다';
     const sound = '옆방에서 주판알을 튕기는 소리';
+    let architectureReviews = 0;
+    let architectureMode: 'repair' | 'exhausted' | 'malformed' = 'repair';
     const provider = new MockProvider((req) => {
       seen.push(req);
+      if (
+        version === 45 &&
+        req.trace?.role === 'plan_critic' &&
+        req.trace.activityId.startsWith('blueprint:')
+      ) {
+        architectureReviews++;
+        if (architectureMode === 'malformed') return { json: { unexpected: [] } };
+        return {
+          json: {
+            issues:
+              architectureMode === 'exhausted' || architectureReviews === 1
+                ? [
+                    {
+                      severity: 'major',
+                      target: 'opening_chapters[1]',
+                      claim: 'COHERENCE_CLASH',
+                      fix: 'Keep the later episode payoff in its own episode.',
+                    },
+                  ]
+                : [],
+          },
+        };
+      }
       const out = batchedScript(req, script(req));
       if (!out || !('json' in out)) return out;
       const value = structuredClone(out.json) as Record<string, unknown>;
@@ -4359,7 +4384,7 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
           place.detail = '문턱에 닳은 홈';
         }
       }
-      if (version === 44 && req.trace?.activityId === 'extract:1') {
+      if (version >= 44 && req.trace?.activityId === 'extract:1') {
         const items = value.items as {
           payload: { participants: { entity_id: string }[] };
           story_clock: unknown;
@@ -4381,8 +4406,12 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
             },
           ];
       }
-      if (version >= 43 && req.trace?.role === 'story_architect')
-        value.serial_plan = serialPlanFixture();
+      if (version >= 43 && req.trace?.role === 'story_architect') {
+        const serial = serialPlanFixture();
+        if (version === 45 && req.trace.activityId.includes(':repair:'))
+          serial.opening_chapters[0].local_payoff = 'REPAIRED_EPISODE_ALIGNMENT';
+        value.serial_plan = serial;
+      }
       if (req.trace?.role === 'chapter_planner') {
         value.devices = {
           comedy: 'character',
@@ -4452,7 +4481,7 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
     it('freezes scoped references and carries opening, voice, setting and device context to live call boundaries', async () => {
       const started = await startNovel(makeDeps(), {
         projectId,
-        intake: version === 44 ? { ...INTAKE, opening_mode: 'arrival' } : INTAKE,
+        intake: version >= 44 ? { ...INTAKE, opening_mode: 'arrival' } : INTAKE,
       });
       const concepts = seen.filter((r) => r.trace?.role === 'concept_generator');
       expect(concepts).toHaveLength(2);
@@ -4483,6 +4512,24 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
         /* bounded by stopAfterChapter */
       }
       expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+      if (version === 45) {
+        const architects = seen.filter((r) => r.trace?.role === 'story_architect');
+        expect(architects).toHaveLength(2);
+        expect(architects[1]?.user).toContain('COHERENCE_CLASH');
+        expect(architects[1]?.user).toContain('독자발견1');
+        expect(architectureReviews).toBe(2);
+        const reviews = await pool.query<{ payload: { findings: unknown[] } }>(
+          "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review' ORDER BY created_at",
+          [projectId],
+        );
+        expect(reviews.rows.map((r) => r.payload.findings.length)).toEqual([1, 0]);
+        const blueprints = await pool.query<{ payload: unknown }>(
+          "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='series_blueprint'",
+          [projectId],
+        );
+        expect(blueprints.rows).toHaveLength(1);
+        expect(JSON.stringify(blueprints.rows[0]?.payload)).toContain('REPAIRED_EPISODE_ALIGNMENT');
+      } else expect(architectureReviews).toBe(0);
       const userText = (role: string) =>
         seen
           .filter((r) => r.trace?.role === role)
@@ -4516,7 +4563,7 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
         ).toBe(true);
       }
       if (version < 44) expect(userText('plan_critic')).not.toContain('[확정된 직전 회차');
-      if (version === 44) {
+      if (version >= 44) {
         const previous = await pool.query<{ text: string; ending_hook: string | null }>(
           "SELECT s.text,s.ending_hook FROM summaries s JOIN chapters c ON c.accepted_version_id=s.manuscript_version_id WHERE c.project_id=$1 AND c.number=1 AND s.tier='L1'",
           [projectId],
@@ -4590,5 +4637,53 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
       ]);
       expect(await chapterCraftContext(probeContext, 1)).toBe(opening);
     }, 300_000);
+    if (version === 45)
+      it.each(['exhausted', 'malformed'] as const)(
+        'stops before bible assembly and prose on %s architecture review',
+        async (mode) => {
+          ({ projectId } = await createProject(pool, {
+            workspaceId,
+            title: 'Coherence rejection',
+            operatingMode: 'autopilot',
+            policyVersion: 'policy/standard@45',
+          }));
+          seen.length = 0;
+          architectureReviews = 0;
+          architectureMode = mode;
+          const started = await startNovel(makeDeps(), {
+            projectId,
+            intake: { ...INTAKE, opening_mode: 'arrival' },
+          });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: 'coherence-rejection',
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            /* ends at the failed planning step */
+          }
+          expect((await getNovelRun(pool, projectId))?.last_error).toMatchObject({
+            code: 'ARC_PLAN_INVALID',
+          });
+          expect(architectureReviews).toBe(mode === 'exhausted' ? 3 : 1);
+          expect(seen.filter((r) => r.trace?.role === 'story_architect')).toHaveLength(
+            mode === 'exhausted' ? 3 : 1,
+          );
+          expect(seen.some((r) => r.trace?.role === 'scene_writer')).toBe(false);
+          const bibles = await pool.query(
+            "SELECT id FROM workflow_artifacts WHERE project_id=$1 AND kind IN ('full_bible','series_blueprint')",
+            [projectId],
+          );
+          expect(bibles.rows).toHaveLength(0);
+        },
+        300_000,
+      );
   },
 );

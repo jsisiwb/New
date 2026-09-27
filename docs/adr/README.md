@@ -148,3 +148,5 @@ matrix in the same change.
 | [0129](0129-invalid-contract-repair-budget.md) | Use the remaining contract repair budget |
 
 | [0130](0130-contract-critic-accepted-continuity.md) | Accepted continuity for the contract critic |
+
+| [0131](0131-serial-architecture-coherence-review.md) | Review serial architecture before bible assembly |
