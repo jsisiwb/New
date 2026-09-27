@@ -36,7 +36,7 @@ const REQUIRED_FAMILIES = [
   'plan_critic',
   'serial_architecture_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 366;
+const TOTAL_PROMPT_VERSIONS = 367;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
@@ -351,6 +351,17 @@ describe('prompt registry (ADR-0016)', () => {
         example(reg.get(`${fam}@4.1.0`).user_template),
       );
     }
+  });
+
+  it('standard46 ceiling changes only the structure judge and preserves prior pins', () => {
+    const old = reg.activeSet('4.18.0').mapping;
+    const current = reg.activeSet('4.19.0').mapping;
+    expect(Object.keys(current).filter((f) => current[f] !== old[f])).toEqual(['structure_judge']);
+    expect(old.structure_judge).toBe('structure_judge@4.16.0');
+    expect(current.structure_judge).toBe('structure_judge@4.19.0');
+    expect(reg.get('structure_judge@4.19.0').input_variables).toEqual(
+      reg.get('structure_judge@4.16.0').input_variables,
+    );
   });
 
   it('builds a pinned prompt set from the active versions at the legacy ceiling', () => {

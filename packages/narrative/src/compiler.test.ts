@@ -45,6 +45,7 @@ describe('profile store and composition', () => {
       'tradition/kr-webnovel@2',
       'tradition/kr-webnovel@3',
       'tradition/kr-webnovel@4',
+      'tradition/kr-webnovel@5',
     ]);
     expect(identity.outputLanguage.language).toBe('en');
     expect(identity.genres.map((g) => g.genre_id)).toEqual(['hunter-gate', 'regression']);

@@ -13,7 +13,7 @@ export type QualityTier = 'economy' | 'standard' | 'premium';
 export type PolicyRef = `policy/${QualityTier}@${number}`;
 
 /** Entry-point default for newly created projects; persisted project pins remain authoritative. */
-export const DEFAULT_NEW_PROJECT_POLICY: PolicyRef = 'policy/standard@45';
+export const DEFAULT_NEW_PROJECT_POLICY: PolicyRef = 'policy/standard@46';
 
 function policiesDir(): string {
   const here = dirname(fileURLToPath(import.meta.url));

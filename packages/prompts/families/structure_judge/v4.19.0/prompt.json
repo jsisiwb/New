@@ -1,0 +1,34 @@
+{
+  "family": "structure_judge",
+  "version": "4.19.0",
+  "role": "structure_judge",
+  "purpose": "Causal Korean serial opening assessment (ADR-0136).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_structure",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "structure_lint_report",
+    "contract_shape"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.19.0 — remove contradictory speed and exposition-count rules (ADR-0136).",
+  "regression_cases": [
+    "structure_judge.fixture.smoke",
+    "structure_judge.reader-craft"
+  ],
+  "content_hash": "sha256:9b1371b22d708c18663e6c32ab97d343f837177cb109e09f92eca75f1ced0eaa"
+}

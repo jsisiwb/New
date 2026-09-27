@@ -158,3 +158,5 @@ matrix in the same change.
 | [0134](0134-bible-context-for-architecture-review.md) | Give architecture review its bible design context |
 
 | [0135](0135-preserve-planning-repair-candidates.md) | Preserve candidates across chapter and scene repairs |
+
+| [0136](0136-causal-opening-rubric.md) | Grade causal openings without speed contradictions |
