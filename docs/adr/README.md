@@ -160,3 +160,5 @@ matrix in the same change.
 | [0135](0135-preserve-planning-repair-candidates.md) | Preserve candidates across chapter and scene repairs |
 
 | [0136](0136-causal-opening-rubric.md) | Grade causal openings without speed contradictions |
+
+| [0137](0137-relationship-extraction-preflight.md) | Repair overlapping relationship extraction and cached retries |

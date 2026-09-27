@@ -147,3 +147,5 @@ ADR-0130 extends accepted-history context to the contract critic under the arriv
 | Serial architecture coherence gate | ADR-0131, ADR-0132, ADR-0133, ADR-0134, ADR-0135 | `serial_architecture.max_repairs`, `serial_architecture_critic@4.18.0`, `story-plan.ts`, `standard@45` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |
 
 | Causal opening assessment | ADR-0136 | `structure_judge@4.19.0`, `tradition/kr-webnovel@5`, `standard@46` | Prompt registry, narrative compiler, policy and CLI default tests |
+
+| Relationship extraction preflight and recovery | ADR-0137 | `relationship-preflight.ts`, `acceptance.ts` | `relationship-preflight.test.ts`, `chapter-production.integration.test.ts` |

@@ -27,9 +27,11 @@ import {
   recordNormalization,
   storyPresentEnd,
   validatorFor,
+  type ValidationResult,
 } from '@yeonjae/domain';
 import { checkOutputLanguage, segmentParagraphs, toNfcText } from '@yeonjae/prose';
 import { anchorEvidence } from './anchoring.js';
+import { relationshipOverlapErrors, type RelationshipInterval } from './relationship-preflight.js';
 import {
   erroredFields,
   extractionItemErrors,
@@ -138,7 +140,54 @@ export async function extractCanon(
     secretDates?: Parameters<typeof checkpointPack>[1]['secretDates'];
   },
 ): Promise<ExtractionResult> {
-  return runStep(
+  // Rejection changes both the checkpoint and provider activity identity. A previously completed but
+  // invalid extraction must never trap resume in the old acceptance failure (ADR-0137).
+  const rejections = await ctx.pool.query<{
+    payload: { errors?: string[]; candidate?: CanonDelta };
+  }>(
+    `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND step = 'extract'
+      AND kind = 'extraction_rejection' AND payload->>'manuscript_version_id' = $2
+      ORDER BY created_at`,
+    [ctx.projectId, input.versionId],
+  );
+  const retry = rejections.rows.length;
+  const suffix = retry > 0 ? `${input.versionId}:retry${String(retry)}` : input.versionId;
+  const latestRejection = rejections.rows.at(-1)?.payload;
+  const relationships = async () =>
+    (
+      await ctx.pool.query<RelationshipInterval>(
+        `SELECT id, timeline_id, from_entity_id, to_entity_id, type, axes, power_dynamic, register, note, valid_from, valid_to
+       FROM relationship_states WHERE project_id = $1 AND retracted_at_version IS NULL`,
+        [ctx.projectId],
+      )
+    ).rows;
+  const mainTimelineId = (await timelinesOf(ctx.pool, ctx.projectId)).find(
+    (t) => t.kind === 'main',
+  )?.id;
+  if (!mainTimelineId)
+    throw new WorkflowError('INTERNAL', 'main timeline missing', { step: 'extract' });
+  const reject = async (delta: CanonDelta, errors: readonly string[]) => {
+    await saveArtifact(ctx, {
+      step: 'extract',
+      kind: 'extraction_rejection',
+      key: `${input.versionId}:${String(retry)}`,
+      payload: {
+        manuscript_version_id: input.versionId,
+        attempt: retry,
+        errors: errors.slice(0, 40),
+        candidate: delta,
+      },
+    });
+    throw new WorkflowError(
+      'EXTRACTION_REJECTED',
+      `extractor output does not validate: ${errors.join('; ')}`,
+      {
+        step: 'extract',
+        recommendedActions: ['retry_step'],
+      },
+    );
+  };
+  const result = await runStep(
     ctx,
     'extract',
     async () => {
@@ -176,7 +225,14 @@ export async function extractCanon(
           )
         ).rows.map((r) => r.id),
       );
-      const validateDelta = validatorFor<CanonDelta>('canon-delta.schema.json');
+      const validateSchema = validatorFor<CanonDelta>('canon-delta.schema.json');
+      const intervals = await relationships();
+      const validateDelta = (delta: unknown): ValidationResult<CanonDelta> => {
+        const shape = validateSchema(delta);
+        if (!shape.ok) return shape;
+        const errors = relationshipOverlapErrors(shape.value, intervals, mainTimelineId);
+        return errors.length ? { ok: false, errors } : shape;
+      };
       const extractOnce = async (activityId: string, note: string) => {
         const call = await modelCall<Partial<CanonDelta>>(ctx, {
           step: 'extract',
@@ -237,17 +293,11 @@ export async function extractCanon(
         }
         return { rawItems, envelope, v: validateDelta(envelope) };
       };
-      // ADR-0107: every rejection of this version's extraction is recorded, and the next attempt's activity ids carry
-      // its number, so a resume asks the extractor again instead of replaying the answers that were rejected.
-      const rejected = await ctx.pool.query<{ n: string }>(
-        `SELECT count(*)::text AS n FROM workflow_artifacts
-          WHERE project_id = $1 AND step = 'extract' AND kind = 'extraction_rejection'
-            AND payload->>'manuscript_version_id' = $2`,
-        [ctx.projectId, version.id],
-      );
-      const retry = Number(rejected.rows[0]?.n ?? '0');
       const base = `extract:${input.contract.chapter_number}${retry > 0 ? `:retry${String(retry)}` : ''}`;
-      let attempt = await extractOnce(base, '');
+      const rejectionNote = latestRejection?.errors?.length
+        ? `\n\n${ko ? '이전 추출 거절 — 원고 근거로 고치고 정사 이력을 지운다거나 그대로 재제출하지 않는다:' : 'Previous extraction rejected; repair against manuscript evidence without erasing history or repeating the rejected proposal:'}\n${JSON.stringify(latestRejection)}`
+        : '';
+      let attempt = await extractOnce(base, rejectionNote);
       // ADR-0102 (G17-2): at most two repairs, as the gateway bounds its own — each with the answer's top-level errors,
       // each item's own errors and the schema's shapes for the types it used; a repaired answer is anchored,
       // envelope-checked and validated exactly like the first.
@@ -263,11 +313,20 @@ export async function extractCanon(
         attempt = await extractOnce(
           `${base}:repair${repair === 1 ? '' : String(repair)}`,
           extractionRepairNote(
-            [...new Set(topLevel), ...extractionItemErrors(attempt.rawItems)],
+            [
+              ...new Set(topLevel),
+              ...extractionItemErrors(attempt.rawItems),
+              ...errors
+                .filter((e) => e.keyword === 'relationship_overlap')
+                .map((e) => `${e.path} ${e.message}`),
+            ],
             types,
             ko,
             [...erroredFields(errors)],
-          ),
+          ) +
+            (errors.some((e) => e.keyword === 'relationship_overlap')
+              ? `\n${ko ? '거절된 후보(확정 정사가 아님):' : 'Rejected proposal (not accepted canon):'}\n${JSON.stringify(attempt.envelope)}`
+              : ''),
         );
         // ADR-0103 (G17-3): a field that validated in the answer being repaired is taken back from it when the repaired
         // answer breaks it; a resume replays the recorded answers, so without this the chapter could never be accepted.
@@ -290,27 +349,15 @@ export async function extractCanon(
         if (attempt.v.ok) recordNormalization('extraction_repair');
       }
       const v = attempt.v;
-      if (!v.ok) {
-        await saveArtifact(ctx, {
-          step: 'extract',
-          kind: 'extraction_rejection',
-          key: `${version.id}:${String(retry)}`,
-          payload: {
-            manuscript_version_id: version.id,
-            attempt: retry,
-            errors: v.errors.slice(0, 40).map((e) => `${e.path} ${e.message}`),
-          },
-        });
-        throw new WorkflowError(
-          'EXTRACTION_REJECTED',
-          `extractor output does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
-          { step: 'extract', recommendedActions: ['regenerate'] },
+      if (!v.ok)
+        return reject(
+          attempt.envelope,
+          v.errors.map((e) => `${e.path} ${e.message}`),
         );
-      }
       const ref = await saveArtifact(ctx, {
         step: 'extract',
         kind: 'canon_delta',
-        key: version.id,
+        key: suffix,
         schema: 'canon-delta.schema.json',
         payload: v.value,
       });
@@ -321,8 +368,32 @@ export async function extractCanon(
         hypotheses: (v.value.hypothesis_results ?? []).length,
       };
     },
-    input.versionId,
+    suffix,
   );
+  // A pre-fix completed checkpoint may contain a shape-valid overlap. Reject it read-only and let
+  // resume use the fresh identity above. Already accepted manuscripts must never be re-extracted.
+  const version = await getManuscriptVersion(ctx.pool, input.versionId);
+  if (version?.status !== 'accepted') {
+    const project = await getProject(ctx.pool, ctx.projectId);
+    if (project.canon_version !== result.delta.base_canon_version)
+      throw new WorkflowError('CANON_STALE', 'canon changed since extraction', {
+        step: 'extract',
+        recommendedActions: ['review_conflicts'],
+      });
+    const errors = relationshipOverlapErrors(result.delta, await relationships(), mainTimelineId);
+    if (errors.length)
+      return runStep(
+        ctx,
+        'extract',
+        () =>
+          reject(
+            result.delta,
+            errors.map((e) => `${e.path} ${e.message}`),
+          ),
+        `${suffix}:overlap_rejection`,
+      );
+  }
+  return result;
 }
 
 export interface AcceptanceResult {

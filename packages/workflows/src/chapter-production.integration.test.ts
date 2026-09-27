@@ -28,6 +28,7 @@ import {
   type ChapterProductionResult,
 } from './chapter-production.js';
 import { WorkflowError } from './errors.js';
+import { type CanonDelta } from './acceptance.js';
 import { createHarness, EXPECTED, IDS, type Harness } from './testkit.js';
 
 const run = databaseUrl() ? describe : describe.skip;
@@ -678,6 +679,71 @@ run('chapter production — failure paths (each on a fresh project)', () => {
     expect(report.rows[0]?.payload.passed).toBe(false);
     expect(report.rows[0]?.payload.targeted).toMatchObject({ resolved: false, worsened: false });
   });
+
+  for (const cached of [false, true]) {
+    it(`repairs ${cached ? 'cached' : 'fresh'} relationship overlap without retracting history`, async () => {
+      const deps = () => ({ pool, gateway: h.gateway(), bindings: h.bindings });
+      const asAssertions = (d: CanonDelta): CanonDelta => ({
+        ...d,
+        items: d.items.map((i) => {
+          if (i.type !== 'relationship_state' || i.op !== 'supersede') return i;
+          const { supersedes_ref: _ref, ...rest } = i;
+          return { ...rest, op: 'assert' };
+        }),
+      });
+      if (cached) {
+        await expectWorkflowError(
+          produceChapter(deps(), h.input(1, { failAfterStep: 'extract' })),
+          'INTERNAL',
+        );
+        const step = (
+          await pool.query<{ id: string; result: { delta: CanonDelta } }>(
+            `SELECT s.id, s.result FROM job_steps s JOIN jobs j ON j.id=s.job_id
+           WHERE j.project_id=$1 AND s.step='extract' AND s.status='completed'`,
+            [h.projectId],
+          )
+        ).rows[0];
+        if (!step) throw new Error('missing extraction checkpoint');
+        // Simulate a completed pre-fix checkpoint; no canon rows are changed by this setup.
+        await pool.query('UPDATE job_steps SET result=$2::jsonb WHERE id=$1', [
+          step.id,
+          JSON.stringify({ ...step.result, delta: asAssertions(step.result.delta) }),
+        ]);
+        const before = h.provider.served.length;
+        await expectWorkflowError(produceChapter(deps(), h.input(1)), 'EXTRACTION_REJECTED');
+        expect(h.provider.served).toHaveLength(before);
+        expect((await getProject(pool, h.projectId)).canon_version).toBe(2);
+        h.provider.alias('activity:extract:1:retry1', 'activity:extract:1');
+      } else {
+        const original = h.provider.remove('activity:extract:1');
+        if (!original) throw new Error('missing extraction recording');
+        h.provider.restore('activity:extract:1:repair', original);
+        h.provider.restore('activity:extract:1', {
+          ...original,
+          json: asAssertions(original.json as CanonDelta),
+        });
+      }
+      const accepted = await produceChapter(deps(), h.input(1));
+      expect(accepted.status).toBe('completed');
+      expect(accepted.accepted?.canon_version).toBe(3);
+      const history = await pool.query<{
+        retracted_at_version: number | null;
+        valid_to: unknown;
+        superseded_by_id: string | null;
+      }>(
+        'SELECT retracted_at_version, valid_to, superseded_by_id FROM relationship_states WHERE project_id=$1 AND asserted_at_version<3',
+        [h.projectId],
+      );
+      expect(history.rows.length).toBeGreaterThan(0);
+      expect(history.rows.every((r) => r.retracted_at_version === null)).toBe(true);
+      expect(history.rows.some((r) => r.valid_to && r.superseded_by_id)).toBe(true);
+      const commits = await listCommits(pool, h.projectId);
+      expect(commits.filter((c) => c.source === 'chapter_acceptance')).toHaveLength(1);
+      const asks = h.provider.served.length;
+      await produceChapter(deps(), h.input(1));
+      expect(h.provider.served).toHaveLength(asks);
+    }, 120_000);
+  }
 
   it('T7 extraction rejects a working manuscript at every layer', async () => {
     const r = await produceChapter(
