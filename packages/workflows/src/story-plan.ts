@@ -1346,19 +1346,41 @@ export async function buildFullBible(
             : {}),
           foreshadowing_register: promises.map((p) => p.id),
         } as SeriesBlueprint;
-        const v = validatorFor<SeriesBlueprint>('series-blueprint.schema.json')(candidate);
-        if (!v.ok)
-          throw new WorkflowError(
-            'ARC_PLAN_INVALID',
-            `series blueprint does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
-            { step: 'blueprint', recommendedActions: ['regenerate'] },
-          );
-        if (craftEnabled(ctx) && ctx.policy.planning?.serial_architecture)
-          validateSerialCoverage(
-            v.value,
-            intake.target_chapters,
-            ctx.policy.planning.serial_architecture.opening_chapters,
-          );
+        let blueprint: SeriesBlueprint;
+        try {
+          const v = validatorFor<SeriesBlueprint>('series-blueprint.schema.json')(candidate);
+          if (!v.ok)
+            throw new WorkflowError(
+              'ARC_PLAN_INVALID',
+              `series blueprint does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+              { step: 'blueprint', recommendedActions: ['regenerate'] },
+            );
+          if (craftEnabled(ctx) && ctx.policy.planning?.serial_architecture)
+            validateSerialCoverage(
+              v.value,
+              intake.target_chapters,
+              ctx.policy.planning.serial_architecture.opening_chapters,
+            );
+          blueprint = v.value;
+        } catch (error) {
+          if (
+            maxRepairs === undefined ||
+            !(error instanceof WorkflowError) ||
+            error.code !== 'ARC_PLAN_INVALID'
+          )
+            throw error;
+          const findings = architectureValidationFindings(error.detail);
+          await saveArtifact(ctx, {
+            step: 'blueprint',
+            kind: 'serial_architecture_validation',
+            key: `${activityId}:review:${attempt}`,
+            payload: { attempt, findings },
+          });
+          if (attempt >= maxRepairs) throw error;
+          previousBlueprint = JSON.stringify(raw);
+          planFeedback = JSON.stringify(findings);
+          continue;
+        }
         if (maxRepairs !== undefined) {
           const review = await modelCall(ctx, {
             step: 'blueprint',
@@ -1366,7 +1388,7 @@ export async function buildFullBible(
             activityId: `${activityId}:review:${attempt}`,
             variables: {
               story_spec: specText,
-              blueprint: JSON.stringify({ ...v.value, promises }),
+              blueprint: JSON.stringify({ ...blueprint, promises }),
             },
           });
           const findings = parseArchitectureReview(review.output);
@@ -1374,7 +1396,7 @@ export async function buildFullBible(
             step: 'blueprint',
             kind: 'serial_architecture_review',
             key: `${activityId}:review:${attempt}`,
-            payload: { attempt, blueprint: v.value, findings },
+            payload: { attempt, blueprint, findings },
           });
           const serious = findings.filter((f) => f.severity !== 'minor');
           if (serious.length > 0) {
@@ -1398,9 +1420,9 @@ export async function buildFullBible(
           kind: 'series_blueprint',
           key: `v${spec.version}`,
           schema: 'series-blueprint.schema.json',
-          payload: v.value,
+          payload: blueprint,
         });
-        return { blueprint: v.value, promises, artifactId: ref.artifact_id };
+        return { blueprint, promises, artifactId: ref.artifact_id };
       }
     },
   );
@@ -2208,6 +2230,19 @@ async function runDesignStep<T>(
   });
 }
 
+function architectureValidationFindings(
+  message: string,
+): ReturnType<typeof parseArchitectureReview> {
+  return [
+    {
+      severity: 'blocking',
+      target: 'serial_plan',
+      claim: message,
+      fix: 'Return the complete corrected blueprint. Match episode ranges to their seasons and preserve the requested coverage and already-correct story decisions.',
+    },
+  ];
+}
+
 /** Resume the latest rejected design, including reviews written before generation-specific keys. */
 async function loadRejectedArchitecture(
   ctx: WorkflowContext,
@@ -2228,10 +2263,28 @@ async function loadRejectedArchitecture(
   if (generation === 1)
     keys.push(...Array.from({ length: maxRepairs + 1 }, (_, i) => `v${specVersion}:attempt${i}`));
   const reviews = await ctx.pool.query<{ payload: { attempt: number; findings: unknown } }>(
-    `SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review' AND key=ANY($2::text[]) ORDER BY created_at DESC LIMIT 1`,
+    `SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind IN ('serial_architecture_review','serial_architecture_validation') AND key=ANY($2::text[]) ORDER BY created_at DESC LIMIT 1`,
     [ctx.projectId, keys],
   );
-  const review = reviews.rows[0]?.payload;
+  let review = reviews.rows[0]?.payload;
+  if (!review) {
+    // Older validation failures stopped before review artifacts were written.
+    const rejected = await existingArtifact(ctx, {
+      step: 'blueprint',
+      kind: 'planning_rejection',
+      key: previous,
+    });
+    const message =
+      rejected?.payload && typeof rejected.payload === 'object'
+        ? (rejected.payload as { message?: unknown }).message
+        : undefined;
+    if (
+      typeof message === 'string' &&
+      (message.startsWith('Serial architecture:') ||
+        message.startsWith('series blueprint does not validate:'))
+    )
+      review = { attempt: 0, findings: architectureValidationFindings(message) };
+  }
   if (!review) return undefined;
   const candidateActivity =
     review.attempt === 0 ? previous : `${previous}:repair:${review.attempt}`;

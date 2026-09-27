@@ -4337,6 +4337,8 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
     const sound = '옆방에서 주판알을 튕기는 소리';
     let architectureReviews = 0;
     let architectureMode: 'repair' | 'exhausted' | 'malformed' = 'repair';
+    let validationMode: 'none' | 'schema' | 'coverage' | 'exhausted' = 'none';
+    let architectureCalls = 0;
     const provider = new MockProvider((req) => {
       seen.push(req);
       if (
@@ -4411,6 +4413,15 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
         const serial = serialPlanFixture();
         if (version === 45 && req.trace.activityId.includes(':repair:'))
           serial.opening_chapters[0].local_payoff = 'REPAIRED_EPISODE_ALIGNMENT';
+        architectureCalls++;
+        if (
+          validationMode !== 'none' &&
+          (architectureCalls === 1 || validationMode === 'exhausted')
+        ) {
+          if (validationMode === 'schema') serial.opening_chapters[0].chapter = 0;
+          else serial.episodes[0].season_ordinal = 99;
+          serial.episodes[0].title = 'INVALID_SCHEDULE_CANDIDATE';
+        }
         value.serial_plan = serial;
       }
       if (req.trace?.role === 'chapter_planner') {
@@ -4638,6 +4649,86 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
       ]);
       expect(await chapterCraftContext(probeContext, 1)).toBe(opening);
     }, 300_000);
+    if (version === 45)
+      it.each(['schema', 'coverage', 'exhausted'] as const)(
+        'repairs %s serial validation failures without reviewing or assembling invalid candidates',
+        async (mode) => {
+          ({ projectId } = await createProject(pool, {
+            workspaceId,
+            title: 'Validation repair',
+            operatingMode: 'autopilot',
+            policyVersion: 'policy/standard@45',
+          }));
+          seen.length = 0;
+          architectureCalls = 0;
+          architectureReviews = 1;
+          architectureMode = 'repair';
+          validationMode = mode;
+          const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: 'validation-repair',
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            /* stop at the normal chapter boundary or validation failure */
+          }
+          const invalid = await pool.query<{ payload: { findings: { claim: string }[] } }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_validation' ORDER BY created_at",
+            [projectId],
+          );
+          expect(invalid.rows).toHaveLength(mode === 'exhausted' ? 3 : 1);
+          const message = invalid.rows[0]?.payload.findings[0]?.claim ?? '';
+          expect(message).toContain(
+            mode === 'schema'
+              ? 'series blueprint does not validate:'
+              : 'crosses or references an unknown season',
+          );
+          const repair = seen.filter((r) => r.trace?.role === 'story_architect')[1];
+          expect(repair?.user).toContain(message);
+          expect(repair?.user).toContain('INVALID_SCHEDULE_CANDIDATE');
+          if (mode === 'exhausted') {
+            expect((await getNovelRun(pool, projectId))?.last_error).toMatchObject({
+              code: 'ARC_PLAN_INVALID',
+            });
+            expect(architectureReviews).toBe(1);
+            expect(architectureCalls).toBe(3);
+            expect(seen.some((r) => r.trace?.role === 'scene_writer')).toBe(false);
+            const bible = await pool.query(
+              "SELECT id FROM workflow_artifacts WHERE project_id=$1 AND kind='full_bible'",
+              [projectId],
+            );
+            expect(bible.rows).toHaveLength(0);
+            validationMode = 'none';
+            seen.length = 0;
+            await resumeNovelRun(pool, { projectId });
+            while (await runner.tick()) {
+              /* recover the last invalid schedule with its validation feedback */
+            }
+            const resumed = seen.find((r) => r.trace?.role === 'story_architect');
+            expect(resumed?.user).toContain(message);
+            expect(resumed?.user).toContain('INVALID_SCHEDULE_CANDIDATE');
+          } else {
+            expect(architectureCalls).toBe(2);
+            expect(architectureReviews).toBe(2);
+          }
+          validationMode = 'none';
+          expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+          const chapters = await pool.query(
+            "SELECT id FROM chapters WHERE project_id=$1 AND status='accepted'",
+            [projectId],
+          );
+          expect(chapters.rows).toHaveLength(1);
+        },
+        300_000,
+      );
     if (version === 45)
       it.each(['exhausted', 'legacy', 'malformed'] as const)(
         'stops before bible assembly and prose on %s architecture review',
