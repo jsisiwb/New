@@ -3,6 +3,18 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Completed five-chapter test and current state (2026-09-27)
+
+The requested test now contains a reviewed bible covering chapters 1–200 through 17 authored episodes, individual opening briefs for chapters 1–10, and five sequential accepted chapters. Project `01a0e2a9-ed30-7279-8163-975ab9c1091c` stopped before chapter6 after persisting chapter5's summary. Accepted manuscript versions are 4,5,5,7,9 respectively. The earlier policy40 chapter also had a bible; its poor arrival orientation was a planning/execution problem.
+
+Current new-project default is `standard@48`. The live sample remained pinned to `standard@45`; later rubric, structural-repetition routing and causal-rhythm policy settings therefore are not demonstrated by this sample. Runtime repair fixes loaded at milestones are recorded in the Outputs manifest. The checked rewrite redesign guidance passed integration tests but had no later live scene-rewrite call in this sample. The interrupted-pause fix passed lifecycle tests; the live run recovered through a second ordinary resume before that fix was loaded.
+
+**Final verification:** all five exported manuscript hashes match accepted database versions, and the combined reading file matches those exports exactly. The exported blueprint is the reviewed candidate, covers chapters1–200 exactly, and retains ten opening briefs. Every successful writer context for chapters2–5 contains the immediate predecessor's exact accepted tail, factual summary and ending hook, with matching version/text hashes. All five L1 summaries/hooks are persisted, and the completed episode summary's hash matches. Earlier unchanged authored-content checks are reused. Chapter2 and chapter4 extraction-recovery audits verified one acceptance commit each and preservation of the original acquaintance relationship.
+
+**Engineering checks:** targeted regression and integration checks for each implementation milestone, TypeScript, changed-file lint/formatting and planning/schema validation passed; details and corrected initial failures are recorded below. The latest fixes satisfied35 score/repair cases,10 checked/legacy rewrite cases and15 lifecycle/control cases. These are scoped suites, not a fresh full-repository run. CodeRabbit was disabled by the task runtime throughout; no review findings count is claimed.
+
+**Editorial assessment:** all five accepted chapters were read in full or through the complete first draft plus every accepted revision diff. Arrival is more legible and settings have more physical constraints, but equipment-driven reactions, the cold protagonist, immediate admiration and familiar antagonists remain repetitive. Some point-of-view, continuity and spacing errors survive. Passing gates does not establish hit-serial quality. The Outputs contain the bible, story plan, chapters1–5, continuity/recovery evidence, provenance and a candid reading assessment under `serial-pacing/authored-v45`; `serial-pacing/reader-guide.md` answers the bible and memory questions. Earlier milestone statuses below are historical.
+
 ## Causal serial architecture follow-up (2026-09-27)
 
 The operator confirmed that the previous draft was readable but still skipped the protagonist understanding transmigration, asked how prior chapters reach the writer, and requested a 200-chapter bible with five to ten chapters for testing (ADR-0127).
