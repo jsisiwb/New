@@ -1422,13 +1422,27 @@ export async function planArcFromBlueprint(
         key: input.arc.id,
       });
       if (stored) return { arcPlan: stored.payload as ArcPlan, artifactId: stored.artifact_id };
+      // ADR-0119 (G25-1): a rejected arc plan is recorded, and the next attempt asks again under a new key, as a
+      // design step does (`runDesignStep`); without it a resume replays the rejected answer forever.
+      const baseActivityId = `arc_plan:${input.arc.id}`;
+      let activityId = baseActivityId;
+      for (
+        let generation = 1;
+        await existingArtifact(ctx, {
+          step: 'arc_plan',
+          kind: 'planning_rejection',
+          key: activityId,
+        });
+        generation++
+      )
+        activityId = `${baseActivityId}:regeneration:${String(generation)}`;
       const block = compileFor(ctx, 'planner_compact');
       const lang = langOf(ctx);
       const ko = lang === 'ko';
       const call = await modelCall<Partial<ArcPlan>>(ctx, {
         step: 'arc_plan',
         family: 'arc_planner',
-        activityId: `arc_plan:${input.arc.id}`,
+        activityId,
         variables: {
           blueprint: renderBlueprint(input.blueprint, lang),
           season: ko
@@ -1515,12 +1529,19 @@ export async function planArcFromBlueprint(
         status: 'validated',
       };
       const v = validatorFor<ArcPlan>('arc-plan.schema.json')(candidate);
-      if (!v.ok)
-        throw new WorkflowError(
-          'ARC_PLAN_INVALID',
-          v.errors.map((e) => `${e.path}: ${e.message}`).join('; '),
-          { step: 'arc_plan', recommendedActions: ['regenerate'] },
-        );
+      if (!v.ok) {
+        const message = v.errors.map((e) => `${e.path}: ${e.message}`).join('; ');
+        await saveArtifact(ctx, {
+          step: 'arc_plan',
+          kind: 'planning_rejection',
+          key: activityId,
+          payload: { code: 'ARC_PLAN_INVALID', message },
+        });
+        throw new WorkflowError('ARC_PLAN_INVALID', message, {
+          step: 'arc_plan',
+          recommendedActions: ['regenerate', 'retry_step'],
+        });
+      }
       const ref = await saveArtifact(ctx, {
         step: 'arc_plan',
         kind: 'arc_plan',

@@ -88,6 +88,7 @@ import {
   buildRunReport,
   fixRates,
   findingTrace,
+  measureStoredTriples,
   measureVersionVariance,
   callRows,
   inspectPack,
@@ -130,6 +131,7 @@ import { ArtifactLlmOutputStore } from '@yeonjae/workflows';
 import { WorkflowError } from '@yeonjae/workflows';
 import { NOVEL_COMMANDS, NOVEL_USAGE, runNovelCommand } from './novel.js';
 import { CORPUS_COMMANDS, runCorpusCommand } from './corpus.js';
+import { PACKET_COMMANDS, runPacketCommand } from './packet.js';
 import { CHECKPOINT_COMMANDS, runCheckpointCommand } from './checkpoint.js';
 
 /** Chapter-1 fixture paths and identity pins (mirrors packages/workflows/src/testkit.ts, the test-only harness). */
@@ -439,6 +441,34 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         });
         return { ok: true, output: { workspace_id: ws, ...p } };
       }
+      case 'project:archive': {
+        // Run 6, STEP 7.5: an archived project keeps every row; only its status and a settings note change.
+        const [projectId, ...flags] = rest;
+        if (!projectId) return { ok: false, output: USAGE };
+        const reason =
+          flags.find((f) => f.startsWith('--reason='))?.slice('--reason='.length) ?? '';
+        const active = await pool.query<{ status: string }>(
+          "SELECT status FROM novel_runs WHERE project_id = $1 AND status IN ('suggesting', 'planning', 'producing')",
+          [projectId],
+        );
+        if (active.rows.length)
+          return {
+            ok: false,
+            output: {
+              error: 'PROJECT_ACTIVE',
+              detail: `its run is ${active.rows[0]?.status ?? ''}`,
+            },
+          };
+        const updated = await pool.query<{ id: string; status: string }>(
+          `UPDATE projects SET status = 'archived',
+                  settings = settings || jsonb_build_object('archived', jsonb_build_object('at', now(), 'reason', $2::text)),
+                  updated_at = now()
+            WHERE id = $1 RETURNING id, status`,
+          [projectId, reason],
+        );
+        if (!updated.rows[0]) return { ok: false, output: { error: 'PROJECT_NOT_FOUND' } };
+        return { ok: true, output: updated.rows[0] };
+      }
       case 'series:audit': {
         // ADR-0061: deterministic whole-serial audit (overdue promises, absent characters, story-time
         // regressions, repeated openings). Reads accepted canon only and blocks nothing.
@@ -496,14 +526,25 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         return { ok: true, output: flags.includes('--json') ? rows : renderFindingTrace(rows) };
       }
       case 'quality:readings': {
-        // Run 5 STEP 1.2: reading variance across evaluator readings on frozen manuscript versions.
-        const defaultTargets = [
-          '01a0dd28-a8ce-70d3-9321-49c2dee70837',
-          '01a0dd36-4a3a-7165-b5a9-87a7e53395a6',
-          '01a0dd58-3bc9-7d5b-a7a9-b9a2f3bd7fc9',
-        ];
-        const targets = rest.filter((a) => !a.startsWith('--'));
-        const versionIds = targets.length > 0 ? targets : defaultTargets;
+        // Reading variance over the scorecards stored for each version (ADR-0118: no synthesized readings).
+        const versionIds = rest.filter((a) => !a.startsWith('--'));
+        if (versionIds.length === 0) return { ok: false, output: USAGE };
+        // Run 6, STEP 1.2: `--triples` reads the ids as projects and measures the consensus readings they stored.
+        if (rest.includes('--triples')) {
+          const gatePolicy = loadPolicies().get(
+            (rest.find((a) => a.startsWith('--policy='))?.slice('--policy='.length) ??
+              'policy/standard@37') as PolicyRef,
+          );
+          const gateOf = (d: 'prose' | 'structure' | 'genre' | 'voice') =>
+            gatePolicy?.gates.dimensions[d]?.min_score;
+          const triples = await measureStoredTriples(pool, versionIds, {
+            prose: gateOf('prose'),
+            structure: gateOf('structure'),
+            genre: gateOf('genre'),
+            voice: gateOf('voice'),
+          });
+          return { ok: true, output: rest.includes('--json') ? triples.rows : triples.markdown };
+        }
         const report = await measureVersionVariance(pool, versionIds);
         return { ok: true, output: rest.includes('--json') ? report.rows : report.markdown };
       }
@@ -1297,6 +1338,7 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         if (NOVEL_COMMANDS.has(cmd ?? ''))
           return await runNovelCommand(pool, cmd ?? '', rest, USAGE);
         if (CORPUS_COMMANDS.has(cmd ?? '')) return await runCorpusCommand(pool, cmd ?? '', rest);
+        if (PACKET_COMMANDS.has(cmd ?? '')) return await runPacketCommand(pool, cmd ?? '', rest);
         if (CHECKPOINT_COMMANDS.has(cmd ?? ''))
           return await runCheckpointCommand(pool, cmd ?? '', rest);
         return { ok: false, output: USAGE };
@@ -1707,6 +1749,7 @@ async function projectForJob(pool: Pool, jobId: string): Promise<string | undefi
 export const DB_COMMANDS = new Set([
   ...NOVEL_COMMANDS,
   ...CORPUS_COMMANDS,
+  ...PACKET_COMMANDS,
   ...CHECKPOINT_COMMANDS,
   'db:migrate',
   'project:create',
@@ -1715,6 +1758,7 @@ export const DB_COMMANDS = new Set([
   'quality:fix-rates',
   'quality:findings',
   'quality:readings',
+  'project:archive',
   'quality:lint-ko',
   'pack:inspect',
   'story:state',

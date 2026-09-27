@@ -42,9 +42,10 @@ export function autoResumeDecision(
   const code = typeof err.code === 'string' ? err.code : 'UNKNOWN';
   const actions = Array.isArray(err.recommended_actions) ? err.recommended_actions : [];
   const message = typeof err.message === 'string' ? err.message : '';
+  // ADR-0119: a rejected arc plan whose rejection was recorded (`retry_step`) is asked again on resume.
   const curable =
     code === 'EXTRACTION_REJECTED' ||
-    ((code === 'MODEL_CALL_FAILED' || code === 'CONCURRENT_CALL') &&
+    ((code === 'MODEL_CALL_FAILED' || code === 'CONCURRENT_CALL' || code === 'ARC_PLAN_INVALID') &&
       actions.includes('retry_step'));
   if (!curable) return none(`${code} is left to the operator`);
   if (resumed >= opts.maxResumes)

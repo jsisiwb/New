@@ -470,15 +470,17 @@ export async function planScenes(
             cutDesign: ctx.policy.planning?.cut_design,
             partnerRequired: floor?.partner_in_contract,
           });
-          criticIssues = await runPlanCritic(ctx, {
-            chapterNo: ch,
-            contract,
-            scenes,
-            pack: input.pack,
-            nameOf,
-            scheduleText,
-            activitySuffix: `:repair${String(attempt)}`,
-          });
+          // ADR-0117 decision 3, gated by ADR-0118: a repaired plan is critiqued again.
+          if (critic.recritique)
+            criticIssues = await runPlanCritic(ctx, {
+              chapterNo: ch,
+              contract,
+              scenes,
+              pack: input.pack,
+              nameOf,
+              scheduleText,
+              activitySuffix: `:repair${String(attempt)}`,
+            });
           planFindings.push({
             rule: 'PLAN-REPAIR',
             severity: 'minor',
@@ -490,9 +492,11 @@ export async function planScenes(
             ...again
               .filter((f) => f.severity !== 'minor' && !f.repaired)
               .map((f) => ({ target: f.target, message: f.message })),
-            ...criticIssues
-              .filter((i) => i.severity !== 'minor' && !i.target.includes('계약'))
-              .map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+            ...(critic.recritique
+              ? criticIssues
+                  .filter((i) => i.severity !== 'minor' && !i.target.includes('계약'))
+                  .map((i) => ({ target: i.target, message: i.claim, fix: i.fix }))
+              : []),
           ];
           recordNormalization('plan_repair');
         }
@@ -516,7 +520,7 @@ export async function planScenes(
   );
 }
 
-/** ADR-0086 (U8), ADR-0117: the pre-flight plan critic over the contract and scene plans; malformed items are dropped. */
+/** ADR-0086 (U8): the pre-flight plan critic over the contract and scene plans; malformed items are dropped. */
 async function runPlanCritic(
   ctx: WorkflowContext,
   input: {

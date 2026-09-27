@@ -660,6 +660,7 @@
     "narrative_identity_version_id": {
       "$ref": "common.schema.json#/$defs/uuid"
     },
+    "devices": {"type": "object", "description": "ADR-0123 (operator reading, run 6): the chapter's comedy device (read by the device ledger of later chapters, so consecutive chapters vary the kind of laugh) and its small risk: the most expected beat for this chapter and the less expected choice made instead. Absent in contracts planned before standard.v38.", "required": ["comedy", "small_risk"], "additionalProperties": false, "properties": {"comedy": {"type": "string", "enum": ["misunderstanding", "slapstick", "dramatic_irony", "character", "meta", "wordplay", "banter", "none"]}, "small_risk": {"type": "object", "required": ["expected", "chosen"], "additionalProperties": false, "properties": {"expected": {"type": "string", "minLength": 1}, "chosen": {"type": "string", "minLength": 1}}}}},
     "tone_notes": {
       "type": "array",
       "items": {

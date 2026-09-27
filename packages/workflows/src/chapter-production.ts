@@ -104,7 +104,7 @@ import {
 import { patchRegression, regressionArtifact, regressionReportId } from './comparison.js';
 import { stuckTargets, updateSurvival, withSurvivalNotes } from './escalation.js';
 import { readerSecrets } from './evaluator-inputs.js';
-import { pickRevisionDimension, reviseVersionMulti } from './revision.js';
+import { pickRevisionDimension, placeablePatchRound, reviseVersionMulti } from './revision.js';
 import {
   arcForChapter,
   planArcFromBlueprint,
@@ -657,7 +657,7 @@ export async function produceChapter(
       const scoreOnly = convergence?.score_targets
         ? scoreTargets(evaluation.scorecard, current.text)
         : [];
-      const dimension =
+      let dimension =
         pickRevisionDimension(
           targets,
           convergence?.prefer_failing_dimension
@@ -773,6 +773,27 @@ export async function produceChapter(
           stopped = 'repeat_after_quarantine';
           break;
         }
+      }
+      // ADR-0118 (G24-1): under anchor_spanless a patch round targets only findings it can place in the text,
+      // never the chapter's length; a round with nothing to place would only resend the same text, so it ends.
+      const multiPatch = ctx.policy.revision.multi_patch;
+      if (!rewriteAt && multiPatch?.anchor_spanless) {
+        const placed = placeablePatchRound({
+          targets,
+          scoreOnly,
+          failing: convergence?.prefer_failing_dimension
+            ? failingDimensions(evaluation.scorecard)
+            : undefined,
+          allOpen,
+          text: current.text,
+          gap: multiPatch.merge_gap_chars,
+        });
+        if (!placed) {
+          stopped = 'no_placeable_target';
+          break;
+        }
+        dimension = placed.dimension;
+        targetedIssueIds.splice(0, targetedIssueIds.length, ...placed.targets.map((i) => i.id));
       }
       round++;
       // ADR-0116: a target that survived a patch round tells the reviser to change the quoted sentence itself.

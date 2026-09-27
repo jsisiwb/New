@@ -46,6 +46,15 @@ describe('auto-resume (ADR-0109)', () => {
     ).toBe(true);
   });
 
+  it('asks a recorded arc-plan rejection again (ADR-0119)', () => {
+    const rejected = failed({
+      code: 'ARC_PLAN_INVALID',
+      message: '/story_time_window/start/ordinal: must be >= 0',
+      recommended_actions: ['regenerate', 'retry_step'],
+    });
+    expect(autoResumeDecision(rejected, 0, opts)).toMatchObject({ resume: true, delayMs: 60_000 });
+  });
+
   it('leaves budget stops, cancellations, plan and pack faults and every run at rest to the operator', () => {
     const left = [
       failed({ code: 'MODEL_CALL_FAILED', recommended_actions: ['raise_budget'] }),

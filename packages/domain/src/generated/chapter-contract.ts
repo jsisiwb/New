@@ -276,6 +276,24 @@ export interface ChapterContract {
    * UUIDv7
    */
   narrative_identity_version_id: string;
+  /**
+   * ADR-0123 (operator reading, run 6): the chapter's comedy device (read by the device ledger of later chapters, so consecutive chapters vary the kind of laugh) and its small risk: the most expected beat for this chapter and the less expected choice made instead. Absent in contracts planned before standard.v38.
+   */
+  devices?: {
+    comedy:
+      | 'misunderstanding'
+      | 'slapstick'
+      | 'dramatic_irony'
+      | 'character'
+      | 'meta'
+      | 'wordplay'
+      | 'banter'
+      | 'none';
+    small_risk: {
+      expected: string;
+      chosen: string;
+    };
+  };
   tone_notes?: string[];
   continuity_risks: {
     description: string;

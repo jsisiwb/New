@@ -437,7 +437,9 @@ describe('prompt registry (ADR-0016)', () => {
     const changed = Object.keys(v411).filter((f) => v411[f] !== v410[f]);
     expect(changed).toEqual(['plan_critic']);
     const critic = reg.get('plan_critic@4.11.0').system_template;
-    expect(critic).toContain('주인공이 ‘회귀 전 기억’이나 ‘원작 지식’으로 판단하고 움직이는 비트만 예외');
+    expect(critic).toContain(
+      '주인공이 ‘회귀 전 기억’이나 ‘원작 지식’으로 판단하고 움직이는 비트만 예외',
+    );
     // 4.11.0 sorts after 4.10.0 numerically, and without a ceiling it is the newest active set.
     expect(reg.activeSet().mapping).toEqual(v411);
   });

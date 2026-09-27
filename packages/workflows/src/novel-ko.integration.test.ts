@@ -4049,3 +4049,233 @@ for (const [label, policyVersion, redrafts] of [
       300_000,
     );
   });
+
+for (const [label, policyVersion, knobs] of [
+  ['standard.v36', 'policy/standard@36', false],
+  ['standard.v37', 'policy/standard@37', true],
+] as const)
+  run(
+    `Korean novel run under ${label}: run 5's code-level changes follow the policy knobs (ADR-0118)`,
+    () => {
+      let pool: Pool;
+      let workspaceId: string;
+      let projectId: string;
+      const seen: ProviderRequest[] = [];
+      // The critic finds one serious defect in chapter 1's contract and one in its first scene plan, and nothing in
+      // any re-plan; the first extraction writes its event with op create (the live answer shape 839b3f8 fixed).
+      const critic = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'plan_critic') return out;
+        const id = req.trace.activityId;
+        const finding = (target: string) => ({
+          kind: 'reveal_unsafe',
+          severity: 'major',
+          target,
+          claim: 'ㄱ',
+          fix: 'ㄴ',
+        });
+        if (id === 'plan_critic:1:contract') return { json: { issues: [finding('계약')] } };
+        if (id === 'plan_critic:1') return { json: { issues: [finding('장면 1')] } };
+        return { json: { issues: [] } };
+      };
+      const createOp = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'canon_extractor' || req.trace.activityId !== 'extract:1')
+          return out;
+        if (!out || !('json' in out)) return out;
+        const answer = out.json as { items: { op?: string }[] };
+        return { json: { ...answer, items: answer.items.map((i) => ({ ...i, op: 'create' })) } };
+      };
+      const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+      const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+        if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+        const text = (out.json as { text?: string }).text ?? '';
+        return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+      };
+      const provider = new MockProvider((req) => {
+        seen.push(req);
+        return createOp(req, critic(req, withMarker(req, batchedScript(req, script(req)))));
+      });
+      const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+      beforeAll(async () => {
+        pool = await freshDatabase();
+        workspaceId = await createWorkspace(pool, `novel-ko-${label}-run5-audit`);
+        ({ projectId } = await createProject(pool, {
+          workspaceId,
+          title: '재의 장부',
+          operatingMode: 'autopilot',
+          policyVersion,
+        }));
+      }, 120_000);
+
+      afterAll(async () => {
+        await pool.end();
+      });
+
+      const makeDeps = () => ({
+        pool,
+        gateway: new Gateway({
+          providers: new Map([['mock', provider]]),
+          routing,
+          budget: new MemoryBudget(10_000_000),
+          audit: new PgAuditStore(
+            pool,
+            { workspaceId, projectId },
+            new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+          ),
+        }),
+      });
+
+      it(
+        knobs
+          ? 'critiques every re-plan again'
+          : 'makes exactly the pre-run-5 planning calls: one uncritiqued re-plan each',
+        async () => {
+          const started = await startNovel(makeDeps(), { projectId, intake });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: `ko-${label}-run5-audit-runner`,
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            const r = await getNovelRun(pool, projectId);
+            if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+          }
+          const ids = seen.map((r) => r.trace?.activityId ?? '');
+          const critics = ids.filter((id) => id.startsWith('plan_critic:1'));
+          // The contract: one critique, one re-plan (`:critic`); under the knob the re-plan is critiqued (`:repair1`).
+          expect(ids).toContain('chapter_contract:1:critic');
+          expect(critics.includes('plan_critic:1:contract:repair1')).toBe(knobs);
+          // The scene plan: one critique, one repair; under the knob the repaired plan is critiqued too.
+          expect(ids).toContain('scene_plan:1:repair1');
+          expect(critics.includes('plan_critic:1:repair1')).toBe(knobs);
+          expect(
+            critics.filter(
+              (id) => id !== 'plan_critic:1:contract:repair1' && id !== 'plan_critic:1:repair1',
+            ),
+          ).toEqual(['plan_critic:1:contract', 'plan_critic:1']);
+          // The create op is read as assert at acceptance under every pin (ADR-0102 class): no repair, no rejection.
+          expect(ids.filter((id) => id.startsWith('extract:'))).toEqual(['extract:1']);
+          const chapter = await pool.query<{ status: string }>(
+            'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+            [projectId],
+          );
+          expect(chapter.rows[0]?.status).toBe('accepted');
+        },
+        300_000,
+      );
+    },
+  );
+
+run(
+  'Korean novel run under standard.v37: a rejected arc plan is asked again on resume (ADR-0119)',
+  () => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    // G25-1: the first arc plan starts its story time window at ordinal -1; the schema's minimum is 0.
+    const negativeWindow = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'arc_planner' || req.trace.activityId.includes(':regeneration'))
+        return out;
+      if (!out || !('json' in out)) return out;
+      return {
+        json: {
+          ...(out.json as object),
+          story_time_window: {
+            start: { chapter_no: 1, ordinal: -1, precision: 'exact' },
+            end: { chapter_no: 2, ordinal: 1, precision: 'exact' },
+          },
+        },
+      };
+    };
+    const marker = '그는 손을 번쩍 들어 당장이라도 내 멱살을 잡을 듯 씩씩거렸다.';
+    const withMarker = (req: ProviderRequest, out: ReturnType<typeof script>) => {
+      if (req.trace?.role !== 'scene_writer' || !out || !('json' in out)) return out;
+      const text = (out.json as { text?: string }).text ?? '';
+      return { text: [marker, text].join('\n\n').replace(/([.!?])[ \t]+(?=\S)/g, '$1\n\n') };
+    };
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      return negativeWindow(req, withMarker(req, batchedScript(req, script(req))));
+    });
+    const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
+
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'novel-ko-v37-arc-retry');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: 'policy/standard@37',
+      }));
+    }, 120_000);
+
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('fails on the rejected arc plan, then asks the planner again on resume and accepts chapter 1', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake });
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 1,
+      });
+      const runner = new NovelRunner({
+        pool,
+        makeDeps,
+        runnerId: 'ko-v37-arc-retry-runner',
+        leaseSeconds: 30,
+      });
+      const drive = async () => {
+        while (await runner.tick()) {
+          const r = await getNovelRun(pool, projectId);
+          if (r?.status === 'needs_attention' || r?.status === 'failed') break;
+        }
+      };
+      await drive();
+      const failed = await getNovelRun(pool, projectId);
+      expect(failed?.status).toBe('failed');
+      const error = failed?.last_error as { code?: string; recommended_actions?: string[] } | null;
+      expect(error?.code).toBe('ARC_PLAN_INVALID');
+      expect(error?.recommended_actions).toContain('retry_step');
+
+      await resumeNovelRun(pool, { projectId });
+      await drive();
+      expect((await getNovelRun(pool, projectId))?.last_error ?? null).toBeNull();
+      const planners = seen
+        .filter((r) => r.trace?.role === 'arc_planner')
+        .map((r) => r.trace?.activityId ?? '');
+      expect(planners).toHaveLength(2);
+      expect(planners[1]).toBe(`${planners[0] ?? ''}:regeneration:1`);
+      const chapter = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 AND number = 1',
+        [projectId],
+      );
+      expect(chapter.rows[0]?.status).toBe('accepted');
+    }, 300_000);
+  },
+);

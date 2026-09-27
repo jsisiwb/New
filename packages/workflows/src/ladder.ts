@@ -64,7 +64,9 @@ export function claimSpan(claim: string, text: string): { start: number; end: nu
   if (OPENING.test(claim)) {
     const pStart = paragraphs[0];
     if (!pStart) return undefined;
-    const endIdx = /첫\s*(?:[33]|세)\s*(?:문장|문단|줄)/u.test(claim) ? Math.min(2, paragraphs.length - 1) : 0;
+    const endIdx = /첫\s*(?:[33]|세)\s*(?:문장|문단|줄)/u.test(claim)
+      ? Math.min(2, paragraphs.length - 1)
+      : 0;
     const pEnd = paragraphs[endIdx] ?? pStart;
     return { start: pStart.start, end: pEnd.end };
   }

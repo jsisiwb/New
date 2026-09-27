@@ -38,6 +38,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@34',
       'policy/standard@35',
       'policy/standard@36',
+      'policy/standard@37',
       'policy/standard@4',
       'policy/standard@5',
       'policy/standard@6',
@@ -46,6 +47,29 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v37 is standard.v36 with the two knobs that carry ADR-0117 (ADR-0118)', () => {
+    const v36 = requirePolicy('policy/standard@36', policies);
+    const v37 = requirePolicy('policy/standard@37', policies);
+    expect(v37.planning?.plan_critic).toEqual({ ...v36.planning?.plan_critic, recritique: true });
+    expect(v37.revision.multi_patch).toEqual({
+      ...v36.revision.multi_patch,
+      anchor_spanless: true,
+    });
+    const strip = (p: typeof v36) => {
+      const { version: _v, name: _n, content_hash: _h, planning, revision, ...rest } = p;
+      const { plan_critic: _pc, ...pl } = planning ?? {};
+      const { multi_patch: _mp, ...rev } = revision;
+      return { ...rest, pl, rev };
+    };
+    expect(strip(v37)).toEqual(strip(v36));
+    // No earlier pin carries either knob, so every earlier policy runs the code paths it ran before run 5.
+    for (const p of policies.values()) {
+      if (p.id === 'policy/standard' && p.version >= 37) continue;
+      expect(p.planning?.plan_critic?.recritique).toBeUndefined();
+      expect(p.revision.multi_patch?.anchor_spanless).toBeUndefined();
+    }
   });
 
   it('standard.v36 is standard.v35 with bounded plan critic loop and prompt ceiling 4.11.0 (ADR-0117)', () => {

@@ -989,6 +989,11 @@ Conclusions: (1) single-reading noise is 5–20% of all findings, (2) K=3 (2-of-
 of findings and reliably filters isolated spurious ones, (3) consensus medians damp score swings of 8–15
 points down to 2–3 points.
 
+**Withdrawn (run 6, ADR-0118).** The rows above are not five readings. The tool read the scorecards stored for each version
+and, when there were fewer than five, padded them to five by dropping every fifth finding of a stored one in rotation; the
+noise shares measure that padding. Conclusion (3) was fixed text in the tool's report, not a computation. The stored
+spreads are real but come from the few scorecards each version has. The live measurement is §20.2.
+
 ### 19.3 What `standard@34` and `standard@35` change
 
 `standard@34` (ADR-0115): every evaluator reads three times and a reviewer-class finding stands on two; hard kinds keep
@@ -1027,3 +1032,103 @@ PLAN-REVEAL-01 reads knowledge changes only, never `must_happen`. The smallest f
 the exemption to prior-life and source-work layers and treats a beat that shows a later-dated secret, or contradicts what
 the bible records the character doing, as major; and a bounded re-plan → re-critique loop (up to `max_repairs`) that keeps
 the contract with the fewest serious findings.
+
+## 20. Run 6 — the run-5 audit and chapters 1–5 on `standard@37` (2026-09-26, from 19:51 UTC)
+
+### 20.1 STEP 0 — the environment and what run 5 left
+
+- The operator variables were present (presence checks only); `EMBEDDING_PROVIDER_*` were not (vector retrieval stays
+  BLOCKED). `db:migrate` applied nothing; `corpus:verify --database` returned `complete: true` (3 books, 1,138 spine
+  chapters, 1,000 main, 656 Korean main).
+- The bridge probe at 20:01 UTC failed on every class (R `retryable_throttled`, P/M/C `retryable_provider`) and
+  `bridge:credits` flagged all six workspaces `rate-limited`: ws1 32.63 %, ws2 12.22 %, ws3 74.43 %, ws4 28.94 %,
+  ws5 45.93 % (6 h window at 101.75), ws6 35.14 %.
+- Run 5's sandbox was still driving G23r (`producing`, chapter 4 revising, runner `cli:3918750`, lease renewed at
+  20:02:55 UTC). G24a had failed at 19:59:20 UTC on chapter 3's evaluation with the bridge's HTTP 401 (chapters 1–2
+  accepted). G24r stopped at 19:41:39 UTC with `APPROVAL_BLOCKED` on chapter 1 (0 blocking, 1 major; prose 80.2,
+  structure 82.5, genre 90, voice 78.2, all over their gates) after the run-5 extension.
+- The audit of run 5's code is ADR-0118: its code-level changes ran for every policy, one of them broke an earlier pin's
+  test, the variance figures of §19.2 measured padding, and the merged head failed CI.
+
+
+### 20.2 STEP 1.2 — reading variance, from the readings that were stored
+
+`quality:readings <project>… --triples --policy=policy/standard@35` (21:20 UTC): every evaluation under a consensus policy
+stores three independent readings of one unchanged text per evaluator (`…`, `…:c2`, `…:c3`, ADR-0115). These are the
+complete triples of G24a and G24r (`standard@35`) and the first of G25a / G25r (`standard@37`). Nothing is sampled or
+padded. The gate column compares each reading's rubric score, `(mean − 1) × 25`, with the dimension's gate. The gated
+score also carries the deterministic composite, so this column is an upper bound on how often a single reading could
+flip the gate.
+
+| Evaluator | Triples | Findings per reading | Distinct findings | Seen in one reading of three | Heavy in one reading only | Heavy in two or more | Judge-score spread (median / max) | Largest rubric spread | Rubric on both sides of the gate / median below it |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| continuity | 27 | 1.9 | 111 | 84 (75.7 %) | 56 | 26 | — / — | — | — |
+| contract_check | 24 | 1.9 | 128 | 118 (92.2 %) | 74 | 8 | — / — | — | — |
+| genre_judge | 25 | 2.5 | 162 | 140 (86.4 %) | 40 | 9 | 10 / 20 | reader_fantasy 2, taboo_restraint 2, device_correctness 2, vocabulary_register 2 | 10 / 3 |
+| knowledge_leak | 22 | 0.3 | 15 | 13 (86.7 %) | 8 | 2 | — / — | — | — |
+| promise_check | 12 | 0.4 | 9 | 6 (66.7 %) | 2 | 1 | — / — | — | — |
+| prose_judge | 25 | 4.6 | 240 | 167 (69.6 %) | 24 | 18 | 6 / 13 | readability 1, idiomatic_korean 1, register_fidelity 2, translation_markers 2 | 14 / 8 |
+| repetition_judge | 26 | 2.1 | 107 | 68 (63.6 %) | 30 | 11 | — / — | — | — |
+| structure_judge | 23 | 2.2 | 110 | 80 (72.7 %) | 20 | 9 | 7 / 27 | ending_pull 2, hook_timing 3, local_payoff 1, exposition_control 3, dialogue_forwardness 2 | 12 / 10 |
+| voice_judge | 27 | 2.6 | 170 | 138 (81.2 %) | 37 | 13 | 10 / 20 | verbal_habits 2, distinguishability 1, register_consistency 2, register_naturalness 1 | 13 / 17 |
+
+**What it shows.**
+- One reading is a weak witness. For every evaluator, most distinct findings appear in only one of three readings: 64 %
+  for the repetition judge up to 92 % for the contract checker (structure 73 %).
+- The 2-of-3 quorum does real work. It drops 20 structure majors that a single reading raised and keeps 9. For the
+  continuity checker it drops 56 and keeps 26; for the contract checker 74 and 8.
+- Scores are noisy too. Structure-judge scores of one text spread by a median of 7 points and up to 27, with `hook_timing`
+  and `exposition_control` up to 3 rubric points apart. In 12 of 23 structure triples one reading's rubric sits on each
+  side of the gate.
+
+**Does structure noise block acceptances?** Measurably, no. Across the 78 scorecards G23r, G24a and G24r stored:
+
+| | Scorecards |
+| --- | --- |
+| Structure below its gate | 5 |
+| Structure the only dimension below its gate | 4 |
+| Voice / prose / genre below their gates | 7 / 6 / 2 |
+| An open blocking or major finding | 56 |
+
+The medians and the composite keep gate failures rare; what stops chapters is findings. **No policy change** for the
+structure judge (rule 7). The finding-level noise is what the consensus protocol already filters. The findings that do
+stand are the defects STEP 1.3 works on.
+
+### 20.3 STEP 1.3 — what the baselines stopped on
+
+The last scorecard of each baseline chapter at rest, open blocking and major findings only:
+
+| Chapter | Finding | Defect |
+| --- | --- | --- |
+| G24r 1 (`standard@35`) | major, length: 7,024자 against 5,300 (+33 %) | G24-2 (below) |
+| G23r 4 (`standard@33`) | blocking, continuity: the hero "must still take the first 기연", which chapter 2's accepted canon already gave him (a real slip) | canon read, working as designed |
+| G23r 4 | major ×2, prose `literary_drift`: stock personifications (a door that "screams", muscles that "scream") | G9-8 |
+| G23r 4 | major, repetition: p4's aura-recoil passage written again at p192–194 | — |
+
+- **G24-2 — the chapter grows past its band in revision.** G24r's chapter 1 left drafting inside its band and ended at
+  +33 %. Its patches were kept because each resolved its targets, and each added text. Under `standard@35`, a length
+  finding reaches the `length_to_scene` rung only while `max_scene_rewrites` (2, starting value, `standard.v35`) allows. After that, the pre-run-5 patch
+  path sends the whole chapter as one patch. Under `standard@37` that round ends the loop instead (ADR-0118). Neither
+  shortens the chapter. **Best next design:** a patch round on a chapter over its band gives the reviser the span's
+  length budget minus its share of the excess, and a kept patch may not lengthen an over-band chapter.
+- **G9-8** stays open: the stock figures the prose judge names are the ones `corpus:stock-phrases` measures (STEP 4.5).
+
+### 20.4 Accepted chapters in run 6
+
+| | G24a chapter 3 (`standard@35`, sha256:296d5cff…) |
+| --- | --- |
+| Accepted | 21:51 UTC. The chapter started in run 5 (19:44 UTC); run 6 resumed it at 20:41 from the audited worktree. |
+| Length | 5,550자, 4,339 without spaces |
+| Rounds | 4, within the policy cap (no grant). The corpus copy check stopped r0's v1 (a 14-자 overlap with the operator's own 163화), fixed in the next round. |
+| Sub-scores and gates | prose 90.9 / 78, structure 95.0 / 78, genre 80.0 / 72, voice 91.3 / 76 (all passing); overall 93; 0 blocking / 0 major / 36 minor |
+| corpus:likeness | 55 (first-person bands 60) |
+| Lint | TRN-KO-14 ×3 (note), drafts-trembled-faintly ×1 (minor) |
+| Calls / tokens / model time | 154 calls / 608,303 in, 44,454 out / 4,285 s (the chapter's calls in both runs, by activity id) |
+| Credits | not separable (the chapter spans runs 5 and 6); at this run's measured 0.09 points per recorded call, about 14 points |
+| Findings | `ops/live-runs/run6/findings/G24a-ch03.md` (45 blocking or major findings raised across its readings; none open at acceptance) |
+
+Excerpt (the first three lines of the accepted text, unedited):
+
+> 묵직한 돈주머니를 한 손으로 가볍게 위아래로 툭툭 던졌다.
+> 짤랑. 짤랑.
+> 금화가 부딪치는 맑은 쇳소리가 복도에 울렸다. 내 시선은 베르너의 당황한 얼굴을 똑바로 향하고 있었다.

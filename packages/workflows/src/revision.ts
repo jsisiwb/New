@@ -142,6 +142,38 @@ export interface RevisionResult {
   readonly issueIds: readonly string[];
 }
 
+/** A chapter-length finding (ADR-0118): no span of the text can carry it. */
+export function isLengthIssue(i: Pick<Issue, 'kind' | 'dimension'>): boolean {
+  return i.kind === 'length_out_of_range' || i.dimension === 'length';
+}
+
+/**
+ * ADR-0118 (G24-1): the patch round `revision.multi_patch.anchor_spanless` allows — the dimension and targets among the
+ * findings a patch can place in the text (never the chapter's length), or undefined when none can be placed.
+ */
+export function placeablePatchRound(input: {
+  readonly targets: readonly Issue[];
+  readonly scoreOnly: readonly Issue[];
+  readonly failing: ReadonlySet<Issue['dimension']> | undefined;
+  readonly allOpen: boolean;
+  readonly text: string;
+  readonly gap: number;
+}): { dimension: Issue['dimension']; targets: Issue[] } | undefined {
+  const placeable = input.targets.filter((i) => !isLengthIssue(i));
+  const dimension =
+    pickRevisionDimension(placeable, input.failing) ?? input.scoreOnly[0]?.dimension;
+  if (!dimension) return undefined;
+  const targets = input.allOpen ? placeable : placeable.filter((i) => i.dimension === dimension);
+  const nfc = toNfcText(input.text).text;
+  const placed = clusterIssueSpans(
+    [...targets, ...input.scoreOnly],
+    codePointLength(nfc),
+    input.gap,
+    nfc,
+  );
+  return placed.length > 0 ? { dimension, targets } : undefined;
+}
+
 /**
  * Choose the dimension to target: the one with the most blocking/major issues that carry a span. With
  * `failing` (ADR-0084, V2) only dimensions whose gate failed compete when any of them has such issues: a
@@ -151,9 +183,7 @@ export function pickRevisionDimension(
   issues: readonly Issue[],
   failing?: ReadonlySet<Issue['dimension']>,
 ): Issue['dimension'] | undefined {
-  const open = issues.filter(
-    (i) => (i.severity === 'blocking' || i.severity === 'major') && i.dimension !== 'length',
-  );
+  const open = issues.filter((i) => i.severity === 'blocking' || i.severity === 'major');
   const pool =
     failing && open.some((i) => failing.has(i.dimension))
       ? open.filter((i) => failing.has(i.dimension))
@@ -480,10 +510,11 @@ export async function reviseVersionMulti(
     ctx,
     'revise',
     async () => {
+      // ADR-0118: under anchor_spanless a chapter-length finding is never a patch target.
+      const anchor = cfg.anchor_spanless === true;
       const targeted = input.issues.filter(
         (i) =>
-          i.kind !== 'length_out_of_range' &&
-          i.dimension !== 'length' &&
+          (!anchor || !isLengthIssue(i)) &&
           (input.extraTargetIds?.has(i.id) === true ||
             ((input.allDimensions === true || i.dimension === input.dimension) &&
               (i.severity === 'blocking' || i.severity === 'major'))),
@@ -497,10 +528,12 @@ export async function reviseVersionMulti(
       const nfc = toNfcText(input.version.text);
       const total = codePointLength(nfc.text);
       const limit = Math.min(cfg.max_patches, ctx.policy.revision.max_patches_per_round);
-      const clusters = clusterIssueSpans(targeted, total, cfg.merge_gap_chars, nfc.text).slice(
-        0,
-        limit,
-      );
+      const clusters = clusterIssueSpans(
+        targeted,
+        total,
+        cfg.merge_gap_chars,
+        anchor ? nfc.text : undefined,
+      ).slice(0, limit);
       const language: 'en' | 'ko' = ctx.identity.outputLanguage.language ?? 'en';
       await bind(ctx, {
         [`patch.${input.chapterNo}.r${input.round}`]: patchId(ctx, input.version.id, input.round),

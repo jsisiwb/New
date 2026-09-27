@@ -140,6 +140,10 @@ export interface ProductionPolicy {
     multi_patch?: {
       max_patches: number;
       merge_gap_chars: number;
+      /**
+       * ADR-0118 (live defect G24-1, ADR-0117 decision 4): a targeted finding without a code-point span is placed by its own paragraph_ids or by the paragraph its claim names (p1~p3, the opening, the ending) and joins the clusters like any spanned finding; a chapter-length finding is never a patch target (the length_to_scene rung owns it); a patch round that has no placeable target does not run (the round ends the loop, or goes to the scene rung when one is left). Absent or false: spanless findings join no cluster, and when no targeted finding has a span the whole text is one cluster.
+       */
+      anchor_spanless?: boolean;
     };
   };
   /**
@@ -255,6 +259,10 @@ export interface ProductionPolicy {
      */
     pronoun_redraft?: boolean;
     /**
+     * ADR-0122 (operator reading, run 6): each scene's writer notes carry its location's lived-space card (the world builder's senses, the people usually there and one lived detail), to be woven into action and speech. Absent: the writer reads the location's name and description only.
+     */
+    setting_notes?: boolean;
+    /**
      * ADR-0112 (live defect G20-1): a scene draft longer than over_ratio × its planned length target (the stored plan's target, not the calibrated request) is re-drafted once with the measured and target lengths and the rule to cover every beat once within the target; the re-draft is kept only when it lands closer to the target. Absent: no length re-draft.
      */
     length_redraft?: {
@@ -335,6 +343,10 @@ export interface ProductionPolicy {
        * ADR-0088 (live defect G6-2): the contract is critiqued on its own before any scene is planned, and sent back to the chapter planner once when the critic finds a blocking or major defect (a hook built on a fact the reader may not learn yet, knowledge the hero cannot have).
        */
       contract?: boolean;
+      /**
+       * ADR-0118 (live defect G19-3, ADR-0117 decisions 2 and 3): every re-plan the critic asked for is critiqued again. The contract is re-planned and re-critiqued up to max_repairs times and the candidate with the fewest serious findings is kept; a repaired scene plan is re-critiqued and its serious findings join the deterministic ones for the next repair. Absent or false: the contract gets one re-plan that is not critiqued again, and a repaired scene plan is checked deterministically only.
+       */
+      recritique?: boolean;
     };
     /**
      * ADR-0089 (live defect G7-3): a cast register whose since_chapter is N ≥ 1 (the 화 in which the relationship begins — a first meeting, becoming a disciple or a subordinate) is planned, not seeded as canon: the voice judge's 호칭 matrix leaves it out before 화 N and marks it as beginning in 화 N, and canon records the relationship from the accepted text. Absent or false: every register is canon from before 화 1, so a checker demands the settled register (사부님, 형님) from the first line of the chapter in which the relationship forms.
@@ -356,6 +368,28 @@ export interface ProductionPolicy {
      * ADR-0099 (live defect G15-1): a story spec's requirement categories are read as the schema knows them — an exact category stays, an interpreter's word (relationship, setting, theme) becomes its nearest category, anything else becomes other, the schema's catch-all — instead of failing the spec (SPEC_INVALID at novel:start, which a retry replays from the recorded answer). The requirement's text, kind and scope are untouched. Absent or false: the spec is validated as written.
      */
     normalize_spec_categories?: boolean;
+    /**
+     * ADR-0120 (operator reading, run 6): chapters 1..chapters are the opening. Their planners, scene planners, writers and plan critics read a code-rendered opening design (where the hero is, who he is, what he wants and what is at stake, one core world rule, one major event per chapter, the world explained briefly in the hero's voice), the first scene's role asks for that orientation instead of a hook within three sentences, and the brief of the series' first arc keeps its core events out of the opening. Absent: the opening follows the fast-start rules of every chapter.
+     */
+    opening?: {
+      chapters: number;
+    };
+    /**
+     * ADR-0121 (operator reading, run 6): the concept generator reads the approved concepts of up to max_others other projects in the same workspace, and chapter 1's planner and critic read their accepted chapter-1 skeletons, as templates not to reuse; both lists are stored as artifacts at first use so a replay reads the same list. Absent: a concept is generated from its own spec and angle seed only.
+     */
+    distinct_stories?: {
+      max_others: number;
+    };
+    /**
+     * ADR-0121 (operator reading, run 6): the scene writer reads the POV character's inner-voice card (the character designer's inner_voice: archetype, temperament, humour, emotional anchor, habits, what the character never says, how the monologue changes under pressure), and the voice judge's cards carry it as a 속목소리 line. Absent: the writer reads no card and the judge's cards carry speech notes only.
+     */
+    voice_cards?: boolean;
+    /**
+     * ADR-0123 (operator reading, run 6): the chapter planner reads the comedy kind, hook type and opening type of up to window accepted chapters before this one, with the rule not to repeat them; the plan critic reads the same ledger. Absent: consecutive chapters are planned without it.
+     */
+    device_ledger?: {
+      window: number;
+    };
     /**
      * ADR-0086 (U5, live defect G5-5): the final scene ends on the contract's hook — its last beat is the cut and the writer is told to stop there with no line after it; a draft whose last paragraph reads as a summary or reflection is re-drafted from its last scene once (kept when the ending lint passes).
      */

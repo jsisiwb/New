@@ -30,14 +30,14 @@ export interface IssueCluster<T extends SpanIssue> {
   readonly issues: readonly T[];
 }
 
-export function resolveIssueSpan<T extends SpanIssue>(
-  issue: T,
+export function resolveIssueSpan(
+  issue: SpanIssue,
   total: number,
   text?: string,
 ): { start: number; end: number } | undefined {
   if (
     issue.chapter_span?.start !== undefined &&
-    issue.chapter_span?.end !== undefined &&
+    issue.chapter_span.end !== undefined &&
     issue.chapter_span.start < issue.chapter_span.end &&
     issue.chapter_span.start >= 0 &&
     issue.chapter_span.end <= total

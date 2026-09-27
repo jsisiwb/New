@@ -123,6 +123,9 @@
 | [0114](0114-why-acceptance-does-not-converge.md) | Why chapter acceptance does not converge: the acceptance decision is taken by the last single reading, while each reading samples a different set of findings on the same text (diagnosis from run 3's record; the live measurement pending) |
 | [0115](0115-consensus-readings-and-the-finding-ledger.md) | `standard.v34`: every evaluator reads three times and a reviewer-class finding stands on two; a new finding on unchanged text is held for the one final full reading, and an open finding on unchanged text stays open |
 | [0116](0116-escalate-a-surviving-finding.md) | `standard.v35`: a finding still open after a kept patch round that targeted it is named as a survivor to the reviser, and after two such rounds its scene is drafted again |
+| [0117](0117-plan-critic-bounded-loop.md) | `standard.v36`: `plan_critic@4.11.0` narrows the `reveal_unsafe` exemption to prior-life and source-work knowledge; the contract re-plan loop, scene re-critique and spanless anchoring it describes are carried by `standard.v37` (ADR-0118) |
+| [0118](0118-run-5-audit-knobs.md) | Run-5 audit: ADR-0117's code-level changes ran for every policy; they are gated behind `planning.plan_critic.recritique` and `revision.multi_patch.anchor_spanless` (`standard.v37`), the acceptance-time `create`→`assert` read stays for every pin (ADR-0102 class), and the committed copy of the Notion bridge is removed |
+| [0119](0119-rejected-arc-plan-asks-again.md) | A rejected arc plan is recorded and asked again on the next attempt (`arc_plan:<arc>:regeneration:<n>`), and auto-resume tries it; no policy version (G25-1) |
 
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.

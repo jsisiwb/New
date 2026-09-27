@@ -353,6 +353,8 @@ export function renderContractKo(c: ChapterContract, nameOf: NameOf): string {
     )}%.`,
   );
   if (c.tone_notes?.length) lines.push(`톤: ${c.tone_notes.join('; ')}`);
+  // ADR-0123: only contracts planned under standard.v38 carry devices.
+  if (c.devices) lines.push(`이번 화의 작은 모험: 뻔한 길(${c.devices.small_risk.expected}) 대신 ${c.devices.small_risk.chosen}`);
   if (c.continuity_risks.length) {
     lines.push('연속성 위험:');
     for (const r of c.continuity_risks)

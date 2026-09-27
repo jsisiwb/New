@@ -17,5 +17,8 @@ commits = [
 ]
 paths = [
   '''pnpm-lock\.yaml''',
+  # A blind packet's answer key is base64 of item labels and its manifest holds SHA-256 digests (`key_sha256` reads as
+  # an API key); reviewed: no secret in either.
+  '''ops/live-runs/[^/]+/blind/(answer-key\.b64\.txt|manifest\.json)''',
   '''packages/domain/src/generated/.*''',
 ]

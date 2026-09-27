@@ -498,6 +498,8 @@ export function normalizeContractOutput(raw: unknown, input: ContractNormalizeIn
     tone_notes: arr(r.tone_notes)
       .map(str)
       .filter((x): x is string => !!x),
+    // ADR-0123: kept only when whole; prompts before 4.12.0 never ask for it.
+    ...(contractDevices(r.devices) ? { devices: contractDevices(r.devices) } : {}),
     continuity_risks: risks,
     continuity_anchors: arr(r.continuity_anchors)
       .filter(isRec)
@@ -624,4 +626,26 @@ export function normalizeScenePlans(raw: unknown, input: ScenePlanNormalizeInput
       },
     };
   });
+}
+
+const COMEDY = [
+  'misunderstanding',
+  'slapstick',
+  'dramatic_irony',
+  'character',
+  'meta',
+  'wordplay',
+  'banter',
+  'none',
+] as const;
+
+/** ADR-0123: a contract's devices when the answer carries a known comedy kind and both halves of the small risk. */
+export function contractDevices(raw: unknown):
+  | { comedy: (typeof COMEDY)[number]; small_risk: { expected: string; chosen: string } }
+  | undefined {
+  if (!isRec(raw) || !isRec(raw.small_risk)) return undefined;
+  const comedy = COMEDY.find((c) => c === raw.comedy);
+  const expected = str(raw.small_risk.expected);
+  const chosen = str(raw.small_risk.chosen);
+  return comedy && expected && chosen ? { comedy, small_risk: { expected, chosen } } : undefined;
 }

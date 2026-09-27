@@ -29,7 +29,6 @@ import {
   renderPlanFeedback,
   structureTargets,
   type PlanFinding,
-  type PlanCriticIssue,
 } from './plan-prevention.js';
 import {
   hiddenFromReader,
@@ -767,15 +766,11 @@ export async function generateContract(
           repaired,
         });
       }
-      // ADR-0088 (live defect G6-2), ADR-0117: the contract itself is critiqued before any scene is planned — a hook built on
+      // ADR-0088 (live defect G6-2): the contract itself is critiqued before any scene is planned — a hook built on
       // a fact the reader may not learn yet, or on knowledge the hero cannot have, is a contract defect that no
-      // scene plan can repair. A bounded loop up to criticPolicy.max_repairs keeps the candidate with the fewest serious findings.
+      // scene plan can repair.
       if (issues.length === 0 && ctx.policy.planning?.plan_critic?.contract) {
-        const maxRepairs = ctx.policy.planning.plan_critic.max_repairs ?? 1;
-        let bestCandidate = candidate;
-        let fewestSerious = Number.POSITIVE_INFINITY;
-        let allSeriousFindings: PlanCriticIssue[] = [];
-
+        const criticPolicy = ctx.policy.planning.plan_critic;
         const runCritic = async (cand: ChapterContract, suffix: string) => {
           const critic = await modelCall<{ issues?: unknown }>(ctx, {
             step: 'chapter_contract',
@@ -801,50 +796,68 @@ export async function generateContract(
               }),
             },
           });
-          return parsePlanCriticIssues(critic.output.issues).filter(
-            (i) => i.severity !== 'minor',
-          );
+          return parsePlanCriticIssues(critic.output.issues).filter((i) => i.severity !== 'minor');
         };
-
-        let serious = await runCritic(candidate, '');
-        fewestSerious = serious.length;
-        bestCandidate = candidate;
-        allSeriousFindings = serious;
-
-        for (let attempt = 1; attempt <= maxRepairs && serious.length > 0; attempt++) {
-          const suffix = attempt === 1 ? ':critic' : `:critic:repair${String(attempt)}`;
+        const partnerKept = (cand: ChapterContract) =>
+          !ctx.policy.planning?.dialogue_floor?.partner_in_contract || contractHasPartner(cand);
+        const serious = await runCritic(candidate, '');
+        if (criticPolicy.recritique) {
+          // ADR-0117 decision 2, gated by ADR-0118: re-plan → re-critique up to max_repairs times, keeping the
+          // candidate with the fewest serious findings.
+          let best = { candidate, serious };
+          let open = serious;
+          for (let attempt = 1; attempt <= criticPolicy.max_repairs && open.length > 0; attempt++) {
+            const retry = await planOnce(
+              renderPlanFeedback(
+                open.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+              ),
+              attempt === 1 ? ':critic' : `:critic:repair${String(attempt)}`,
+            );
+            if (retry.issues.length > 0 || !partnerKept(retry.candidate)) break;
+            recordNormalization('contract_repair');
+            open = await runCritic(retry.candidate, `:repair${String(attempt)}`);
+            if (open.length < best.serious.length)
+              best = { candidate: retry.candidate, serious: open };
+          }
+          candidate = best.candidate;
+          for (const i of best.serious)
+            planFindings.push({
+              rule: 'PLAN-CRITIC-CONTRACT',
+              severity: i.severity,
+              target: i.target,
+              message: `${i.kind}: ${i.claim}`,
+              repaired: false,
+            });
+          if (best.serious.length === 0 && serious.length > 0)
+            for (const i of serious)
+              planFindings.push({
+                rule: 'PLAN-CRITIC-CONTRACT',
+                severity: i.severity,
+                target: i.target,
+                message: `${i.kind}: ${i.claim}`,
+                repaired: true,
+              });
+        } else if (serious.length > 0) {
           const retry = await planOnce(
             renderPlanFeedback(
               serious.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
             ),
-            suffix,
+            ':critic',
           );
-          const partnerKept =
-            !ctx.policy.planning?.dialogue_floor?.partner_in_contract ||
-            contractHasPartner(retry.candidate);
-          if (retry.issues.length === 0 && partnerKept) {
+          const repaired = retry.issues.length === 0 && partnerKept(retry.candidate);
+          if (repaired) {
+            ({ candidate, issues } = retry);
             recordNormalization('contract_repair');
-            const again = await runCritic(retry.candidate, `:repair${String(attempt)}`);
-            if (again.length < fewestSerious) {
-              fewestSerious = again.length;
-              bestCandidate = retry.candidate;
-              allSeriousFindings = again;
-            }
-            candidate = retry.candidate;
-            serious = again;
-          } else {
-            break;
           }
+          for (const i of serious)
+            planFindings.push({
+              rule: 'PLAN-CRITIC-CONTRACT',
+              severity: i.severity,
+              target: i.target,
+              message: `${i.kind}: ${i.claim}`,
+              repaired,
+            });
         }
-        candidate = bestCandidate;
-        for (const i of allSeriousFindings)
-          planFindings.push({
-            rule: 'PLAN-CRITIC-CONTRACT',
-            severity: i.severity,
-            target: i.target,
-            message: `${i.kind}: ${i.claim}`,
-            repaired: fewestSerious === 0,
-          });
       }
       if (issues.length > 0)
         throw new WorkflowError('CONTRACT_INVALID', issues.join('; '), {

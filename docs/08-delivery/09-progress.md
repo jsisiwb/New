@@ -3,81 +3,169 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
-## Next session — handoff (2026-09-26, operator-voice run 4)
+## Next session — handoff (2026-09-26 21:55 UTC, operator-voice run 6)
 
-**Repository.** `sigma1web1/New` (moved from `sigma47web3/New`; the PR history did not move), default branch
-`hoplite/ainos-1ac771f8` (everything through ADR-0116 / `standard@35`). Run 5 works on `hoplite/leontinoi-8c14d9b2`;
-the draft roll-up PR is opened on `sigma1web1/New`. GitHub Actions is enabled on this repository.
+**Repository.** `hundas4/New` (moved from `sigma1web1/New`; the PR history did not move). Default branch
+`hoplite/ainos-1ac771f8` = run 5's merge (ADR-0117 / `standard@36`). Run 6 branch `hoplite/lampsakos-c4f50759`, draft
+roll-up PR **https://github.com/hundas4/New/pull/1**. GitHub Actions is enabled on `hundas4/New`. The full `ci` job was
+green on `444b22e` and `43b673b` (push runs). The pull-request gitleaks run flagged the blind manifest's SHA-256 digests,
+reviewed and allowlisted in `e18f22d`. The last pushes' checks are on the PR.
 
-**STEP 1 diagnosis (ADR-0114, `13-live-run-gemini.md` §19).**
-1. A chapter's acceptance was decided by one reading at a time — the last — and each full reading samples different
-   findings on the same text: 105 of 198 findings of the six stored runs, and 18 of 22 confirmation findings, were raised on
-   paragraphs the same evaluator had read and passed unchanged.
-2. About half of those confirmation findings are real slips (canon, card, register, numeric, world rule), half taste.
-3. G21-1 was a two-place contradiction patched one place at a time (the contradiction moved to the next sentence), not a
-   wrong span, a rejection or a missing attempt.
+**Step status.**
 
-**Acceptance protocol adopted.** `standard@34` (ADR-0115): three readings per evaluator, a reviewer-class finding stands on
-two, hard kinds (canon contradiction, timeline, leak) on one, gated scores are medians; the finding ledger holds a new
-finding on text that passed unchanged for the one final full reading, keeps an open finding on unchanged text open, and
-runs the confirmation once. `standard@35` (ADR-0116): a finding still open after a kept patch round is named to the reviser
-(change the quoted sentence and both places of a contradiction); after two kept surviving rounds its scene is drafted again.
-New projects: **`standard@35`**. Gates, the round cap and the corpus copy check are unchanged.
+| Step | Status | Evidence |
+| --- | --- | --- |
+| 0.1 setup, CI | done | sandbox rebuilt; merged head's CI was red (prettier, eslint, 3 tests, validator), fixed; GitHub CI green |
+| 0.2 run-5 audit | done | ADR-0118, `standard@37` (below) |
+| 0.3 this block | done | owner names checked: code, CI and links name no old owner (`sigma43web/ko-corpus` is the corpus repository) |
+| 0.4 migrate, corpus, bridge | done | nothing to migrate; `corpus:verify --database` complete; probe failed 20:01 (throttled), ok 20:39 |
+| 0.5 baselines | done | G24a resumed (accepted 3); G23r 4 and G24r 1 rest `APPROVAL_BLOCKED`, grant budgets spent (ADR-0098): records of their policies |
+| 0.6 exit-condition projects | done | G25r / G25a on `standard@37` (not `@36`: ADR-0118 decision 8) |
+| 0.7 roll-up PR | done | PR #1, body current |
+| 1.1 chapters 1–5 | partly | G24a 3 accepted (`@35`); G25r 1, G25a 1 in revision at 21:54 UTC; no `@37` acceptance yet |
+| 1.2 structure-judge noise | done | measured on the stored consensus readings; noise real, not blocking acceptances; no policy change (`13-live-run-gemini.md` §20.2) |
+| 1.3 defects | partly | G25-1 fixed (ADR-0119); G24-2 found, design recorded; G9-6, G12-2, G9-8, G5-8, the 3인칭 cutaway half of G7-4 open (§20.3) |
+| 1.4 stalls | not needed yet | — |
+| 2 reading packet | done | `ops/live-runs/run6/` (7 accepted chapters, 2 near misses, blind packet, README); refresh when G25 chapters accept |
+| 3–6, 7.1–7.4, 8–10 | not started | — |
+| 7.5 probe project | done | `project:archive`; "probe" archived 21:19 UTC |
 
-**Accepted 화.** Regression: **G23r chapter 1** (`standard@33`, the first regression chapter accepted; 5,509자 / 4,291 without
-spaces; approved at r5 of 5 with 3 quarantined versions; overall 87, prose 87.2 / structure 86.3 / genre 87.5 / voice 82.5,
-0 / 0 / 15; likeness 85; lint TRN-KO-14×2 notes, KO-TALK-SHARE-1P×1 minor; 92 calls, 399,617 in / 41,079 out tokens, 2,902 s
-of model time; `13-live-run-gemini.md` §19). Academy: 1 (G17a chapter 1, run 2). `standard@35`: none yet — G24r and G24a
-were started at 13:00 UTC and were still planning at 13:07.
+**Accepted 화** (metrics rows in `ops/live-runs/run6/index.md` and `13-live-run-gemini.md` §19.4 / §20.4):
 
-**Acceptance rate and rounds to accept.** Before (`standard@33`, chapter 1 of G23r): 1 of 1 chapter-1 attempts accepted, at
-the cap (5 rounds; the run was resumed once after run 3's sandbox died). Runs 2–3 on `@28`–`@32`: 1 of 8 chapter attempts
-accepted. After (`@35`): not measured yet (G24r, G24a in flight). Simulated: both G22-2 patterns stop at `APPROVAL_BLOCKED`
-under `@33` and are accepted under `@34`.
+| Project | Policy | Chapter: rounds, length (자 / without spaces), overall |
+| --- | --- | --- |
+| G17a 아카데미 standard28 | `@28` | 1: 5, 6,339 / 5,033, 89 |
+| G23r 회귀 standard33 | `@33` | 1: 5, 5,509 / 4,291, 87 · 2: 11 (5-round grant), 4,575 / 3,590, 84 · 3: 7 (grant), 5,635 / 4,484, 90 |
+| G24a 아카데미 standard35 | `@35` | 1: 8 (grant), 5,974 / 4,681, 87 · 2: 3, 6,118 / 4,794, 94 · **3: 4, 5,550 / 4,339, 93 (run 6)** |
 
-**ADRs and policies of run 4.** ADR-0114 (the diagnosis; no policy), ADR-0115 (`standard@34`), ADR-0116 (`standard@35`).
-Tools: `quality:findings` (STEP 1.1's per-finding trace).
+**Acceptance rate and rounds to accept** (chapters attempted to rest; "within cap" = the policy's own five rounds):
+- `@33`: 3 of 4 accepted (1 within the cap, at 5 rounds; 2 after grants, at 11 and 7).
+- `@35`: 3 of 4 (G24a 2 and 3 within the cap, at 3 and 4 rounds; G24a 1 after a grant, at 8; G24r 1 blocked).
+- `@36`: no project was ever created.
+- `@37` (final): 0 of 0 at rest; 2 chapters in revision.
 
-**Credits (bridge, % of each workspace's period).**
+**Run-5 audit (ADR-0118).** ADR-0117's contract re-critique, scene-plan re-critique and spanless patch anchoring ran for
+every policy. They are behind `planning.plan_critic.recritique` and `revision.multi_patch.anchor_spanless` (only
+`standard@37`). `pickRevisionDimension` is restored for every pin (run 5's version bypassed `length_to_scene`). The
+acceptance-time `create`→`assert` read stays (ADR-0102 class). The committed copy of the bridge server is removed (the
+running bridge and the gateway client untouched). `quality:readings` had padded stored scorecards to five by
+sub-sampling: run 5's variance figures are withdrawn. Old pins replay byte-identically: `run5-audit.test.ts` (legacy
+clustering on 2,000 sets), `novel-ko.integration.test.ts` (`@36` makes exactly the pre-run-5 calls; ADR-0106's `@28` run
+passes again), `policy.test.ts`.
 
-| UTC | ws1 | ws2 | ws3 | ws4 | ws5 | ws6 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 10:28 (run 3's last) | 18.56 | 6.52 | 65.16 | 25.36 | 15.62 | 16.45 |
-| 12:58 (run 4 start of live work) | 20.07 | 7.13 | 66.78 | 25.99 | 16.32 | 17.89 |
-| 13:07 | 20.69 | 7.50 | 67.53 | 26.15 | 16.56 | 18.51 |
+**ADRs and policies of run 6.** ADR-0118 (`standard@37`), ADR-0119 (no policy). Tools: `quality:readings --triples`,
+`packet:reading`, `project:archive`.
 
-10:28 → 12:58: 6.51 points (G23r after run 3's report). Run 4 to 13:07: 2.76 points (the probe, G23r's acceptance and
-chapter-2 planning, G24r / G24a planning).
+**Credits** (bridge, % of each workspace's period): 20:02 UTC ws1 32.63 · ws2 12.22 · ws3 74.43 · ws4 28.94 · ws5 45.93 ·
+ws6 35.14; 21:54 ws1 38.12 · ws2 14.75 · ws3 76.68 · ws4 30.26 · ws5 50.35 · ws6 41.23. Used: 22.1 points for 299
+recorded calls (0.074 per call). This includes run 5's sandbox driving G23r until 20:37. The per-minute log is in the
+sandbox only (`/tmp/run6/credits.jsonl`).
 
-**200-화 projection.** Unchanged in method: at G23r's chapter-1 rate (92 calls, about 400 k input / 41 k output tokens) and
-0.072 points per call, about 6.6 points per accepted 화 under `@33`, about 1,320 points for 200 화. `@34`/`@35` read every
-evaluation three times: expect roughly twice the calls per 화 until the live rate replaces this estimate.
+**200-화 projection** (`@35`, measured): chapters accepted within the cap took 120 and 154 calls. At 0.074 points per
+call that is about 10 points per 화, **about 2,000 points for 200 화**. Counting the granted first chapter (229 calls) it is
+about 2,500. `@37` has no accepted chapter yet to measure.
 
-**Open defects.** G19-3 (the plan critic's own rule exempts “the hero acting on” a later-dated secret, and contract-stage
-findings get one un-re-critiqued re-plan; the design is in `13-live-run-gemini.md` §19.5: a new plan-critic version and
-a bounded re-plan → re-critique loop), G9-6 (recurred in G21r v11), G12-2, G9-8, G5-8, the 3인칭 cutaway half of G7-4. G21-1 and
-G22-2 are addressed by `@35` / `@34` pending live evidence. **BLOCKED:** vector retrieval (`EMBEDDING_PROVIDER_*` unset).
-**Not done:** STEP 3's packet, STEP 4.
+**Open defects.**
+- G24-2: a chapter grows past its band in revision; the design is in §20.3.
+- G9-8: stock figures, which STEP 4.5's stock-phrase refresh measures.
+- G9-6, G12-2, G5-8, and the 3인칭 cutaway half of G7-4.
+- G19-3 and G21-1 / G22-2: fixed in code, awaiting live evidence under `@37`.
+
+**BLOCKED:** vector retrieval (`EMBEDDING_PROVIDER_*` unset).
 
 **Resume point.**
+1. Rebuild the sandbox as in run 6 (the variables first, presence only). Then `pnpm cli db:migrate`.
+2. Check `novel:status` on the three live projects:
+   - **G25r 회귀 standard37** and **G25a 아카데미 standard37**: chapter 1 in revision at 21:54 UTC, stop after 5.
+   - **G24a 아카데미 standard35**: chapter 4 producing.
 
-1. Sandbox as in run 3: `pnpm install`, `pnpm build`, PostgreSQL 16 with `yeonjae_test` / `yeonjae_test_b`, `jsonschema`,
-   the wrapper that unsets every provider variable for tests. Check the operator variables first (presence only).
-2. `pnpm cli db:migrate`, then `novel:status` for **`G23r 회귀 standard33`** (chapter 2 in flight, `@33` baseline, stop after 5),
-   **`G24r 회귀 standard35`** and **`G24a 아카데미 standard35`** (the exit-condition projects, stop after 5; ids from
-   `SELECT id FROM projects WHERE title = …`). They ran from `/tmp/hoplite/live5` at `66fbccc` with
-   `novel:run <id> --auto-resume=6`; a run left `producing` by a dead sandbox is taken back by the same command after its
-   lease expires; a `failed` one gets `novel:resume` first; a chapter one step short gets `novel:extend`.
-3. For each accepted chapter record the metrics row (`13-live-run-gemini.md` §19.4 format); run `quality:findings` on G24r / G24a after each chapter.
-4. If G24r and G24a accept chapters 1–5: STEP 3's packet (`ops/live-runs/run4/`), then STEP 4 (6–15 unattended, the 15-화
-   audit). If they stall: `quality:findings` first, then G19-3's plan validation or the STEP 1.2 variance measurement.
+   Ids come from `SELECT id FROM projects WHERE title = …`. They ran with `novel:run <id> --auto-resume=6`: G24a and G25a
+   from a worktree at `bc38e34`, G25r at `444b22e` (ADR-0119).
+3. Rebuild a live worktree at the roll-up head (or at the default branch after the merge). A run left `producing` is taken
+   back by the same command once its lease expires; a `failed` one gets `novel:resume` first.
+4. After each chapter: `quality:findings <id> --chapter=N`, the metrics row (`13-live-run-gemini.md` §20.4), and
+   `packet:reading` into `ops/live-runs/run6/`.
+5. Then STEP 3 (6–15 unattended), and G24-2 as `standard@38` on fresh G26r / G26a if G25 stalls on length.
+6. G23r and G24r stay at rest (no grant left).
 
-**Operator actions.** GitHub Actions is enabled on `sigma1web1/New`. Read
-`ops/live-runs/run4/` (STEP 1's per-finding tables). Merge PR #1 with “Create a merge commit”.
+**Operator actions.**
+1. **Read `ops/live-runs/run6/README.md`**: the blind packet first, then `corpus:reveal --dir=ops/live-runs/run6/blind`,
+   then the index.
+2. The repository is public, and the blind packet holds six complete corpus chapters. Remove `ops/live-runs/run6/blind/`
+   before merging if they should not be public.
+3. Merge PR #1 with "Create a merge commit".
+4. The committed copy of the Notion bridge server was removed from `tools/`. Keep your bridge source where it runs.
 
 **Safety rules.** Unchanged: tests only against the sandbox databases through the wrapper; only live runs, corpus commands
 and reports touch the permanent `DATABASE_URL`, from live worktrees; a live worktree is rebuilt after every checkout and
 never checked out while its project runs; no full `pnpm check` while a live run is in flight.
+
+## Run 6: G25-1, a rejected arc plan asks again — 2026-09-26
+
+**Built (ADR-0119, no policy version):** the arc plan's rejection is recorded (`planning_rejection`) and the next attempt
+asks again as `arc_plan:<arc>:regeneration:<n>`; the error carries `retry_step`, so auto-resume tries it. Traceability row
+`G25FIX-001`.
+
+**Measured:** G25r's first arc plan (`standard@37`) started its time window at ordinal −1 (`ARC_PLAN_INVALID`, 20:54 UTC).
+Live after the change: the runner auto-resumed it (`ARC_PLAN_INVALID: resume 1 of 6`, 21:08 UTC) and asked again; that call
+then met the bridge's HTTP 502.
+
+**Tests:** `novel-ko.integration.test.ts` (a `standard@37` run fails on the rejected plan, asks again on resume, accepts
+chapter 1), `auto-resume.test.ts`.
+
+## Run 6: STEP 1.2 and 1.3 — reading variance from stored readings, what the baselines stopped on — 2026-09-26
+
+**Built:** `quality:readings <project>… --triples [--policy=]` (`measureStoredTriples`, `tripleVariance`, `gateSides`):
+the three readings each consensus evaluation stored, per evaluator, with no sampling or padding.
+
+**Measured** (`13-live-run-gemini.md` §20.2–§20.3): in G24a / G24r / G25 triples, 64–92 % of distinct findings appear in
+one reading of three (structure 73 %). The quorum drops 20 structure majors and keeps 9. Structure scores of one text
+spread by a median of 7 and up to 27 points. But across 78 stored scorecards, structure alone failed its gate in 4, and
+56 had an open blocking or major finding. So structure noise does not block acceptances: **no policy change**. The
+baselines stopped on a real canon slip and stock personifications (G23r 4, G9-8) and on length growth in revision
+(G24r 1, new defect G24-2, design recorded).
+
+**Tests:** `readings-variance.test.ts`.
+
+## Run 6: STEP 2 — the operator reading packet — 2026-09-26
+
+**Built:** `packet:reading --out= --projects= [--near=<version>=<reason>]…` (`apps/cli/src/packet.ts`): every accepted
+chapter with its metrics row (length with and without spaces, rounds and grants, sub-scores against gates, likeness,
+lint, calls / tokens / model time by activity id, policy hash), plus labelled near misses.
+
+**Produced:** `ops/live-runs/run6/`, containing:
+- six accepted chapters (G17a 1, G23r 1–3, G24a 1–2);
+- G22a v10 and G21r v8, each with what stopped it;
+- a blinded 12-item packet (six pipeline, six operator chapters matched by position and POV), with its answer key in a
+  separate file;
+- a README with the reading order.
+
+G25r / G25a had no accepted chapter yet.
+
+**Tests:** `packet.test.ts`.
+
+## Run 6: STEP 7.5 — the stray probe project archived — 2026-09-26
+
+**Built:** `project:archive <id> [--reason=]` (status `archived` and a settings note; every row kept; refused while its
+run is active). **Done:** "probe" (run 3's empty project: no chapters, no calls, no run) archived at 21:19 UTC.
+**Tests:** `project-archive.integration.test.ts`.
+
+## Run 6: STEP 0 — setup and the run-5 audit — 2026-09-26
+
+**Done:** operator variables present (presence checks; `EMBEDDING_PROVIDER_*` absent, vectors stay BLOCKED); `pnpm
+install`, `pnpm build`, PostgreSQL 16 (`yeonjae_test`, `yeonjae_test_b`, pgvector), `jsonschema`, the provider-free
+wrapper. `db:migrate` applied nothing; `corpus:verify --database` `complete: true` (3 books, 1,138 chapters, 656 Korean).
+Bridge probe failed at 20:01 UTC (every workspace rate-limited) and passed at 20:39 (R/P/M/C ok). Credits at 20:02:
+ws1 32.63, ws2 12.22, ws3 74.43, ws4 28.94, ws5 45.93, ws6 35.14.
+
+**Built (ADR-0118, `standard.v37`):** the knobs `planning.plan_critic.recritique` and
+`revision.multi_patch.anchor_spanless` (`placeablePatchRound`, `isLengthIssue`); the pre-run-5 code paths for every pin
+without them; `quality:readings` without synthesized readings; the bridge copy removed; the merged head's CI failures
+fixed. Traceability rows `G19FIX-002`, `G24FIX-001`.
+
+**Tests:** `run5-audit.test.ts` (the pre-run-5 clustering on 2,000 random sets; placeable patch rounds; the acceptance-time
+read changes only refused deltas), `novel-ko.integration.test.ts` (`@36` makes exactly the pre-run-5 planning calls, `@37`
+the re-critiques; ADR-0106's `@28` run passes again), `policy.test.ts` (v37), `commands.test.ts`.
 
 ## Run 5: STEP 1.2 — reading variance, `quality:readings` — 2026-09-26
 
