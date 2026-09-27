@@ -466,7 +466,15 @@ export async function planScenes(
             .map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
         ];
         for (let attempt = 1; attempt <= critic.max_repairs && serious.length > 0; attempt++) {
-          const retry = await planOnce(renderPlanFeedback(serious), `:repair${String(attempt)}`);
+          const previousPlan =
+            ctx.identity.outputLanguage.language === 'ko' &&
+            ctx.policy.planning?.serial_architecture?.max_repairs !== undefined
+              ? scenes
+              : undefined;
+          const retry = await planOnce(
+            renderPlanFeedback(serious, previousPlan),
+            `:repair${String(attempt)}`,
+          );
           if (retry.issues.length > 0) break;
           repaired = repairDeterministic(retry.scenes);
           scenes = repaired.scenes;

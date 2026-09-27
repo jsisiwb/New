@@ -198,9 +198,14 @@ export function cutNote(contract: Pick<ChapterContract, 'hook'>): string {
 /** Plan findings rendered for a planner's `plan_feedback`. */
 export function renderPlanFeedback(
   findings: readonly { target: string; message: string; fix?: string }[],
+  previousPlan?: unknown,
 ): string {
-  if (findings.length === 0) return '(없음)';
-  return findings.map((f) => `- ${f.target}: ${f.message}${f.fix ? ` → ${f.fix}` : ''}`).join('\n');
+  const feedback =
+    findings.length === 0
+      ? '(없음)'
+      : findings.map((f) => `- ${f.target}: ${f.message}${f.fix ? ` → ${f.fix}` : ''}`).join('\n');
+  if (previousPlan === undefined) return feedback;
+  return `${feedback}\n\n[PLANNED — 수정할 최신 유효 설계; 이미 일어난 정사가 아니다]\n${JSON.stringify(previousPlan)}\n위 설계에서 지적된 부분을 고치고 이미 맞는 인과와 이전 수정은 보존한다. 확정 정사와 필수 요구사항이 우선이다. 전체 수정 설계를 반환한다.`;
 }
 
 /** A scene plan rendered for the plan critic: one block per scene, beats in order, names resolved. */

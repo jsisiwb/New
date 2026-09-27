@@ -632,6 +632,8 @@ export async function generateContract(
         (input.bible?.entities ?? []).map((e) => [e.id, e.display_name]),
       );
       const planFindings: PlanFinding[] = [];
+      const preserveRepairPlan =
+        lang === 'ko' && ctx.policy.planning?.serial_architecture?.max_repairs !== undefined;
       const planOnce = async (feedback: string | undefined, suffix: string) => {
         const call = await modelCall<ChapterContract>(ctx, {
           step: 'chapter_contract',
@@ -767,7 +769,10 @@ export async function generateContract(
           message: '주인공과 말을 주고받을 인물이 지면에 없다',
           fix: '이번 화의 사건에 자연스럽게 있을 등록 인물 한 명 이상을 participants에 on_page true로 넣고, 그 인물과 말이 오가는 사건을 설계한다',
         };
-        const retry = await planOnce(renderPlanFeedback([finding]), ':repair');
+        const retry = await planOnce(
+          renderPlanFeedback([finding], preserveRepairPlan ? candidate : undefined),
+          ':repair',
+        );
         const repaired = retry.issues.length === 0 && contractHasPartner(retry.candidate);
         if (repaired) {
           ({ candidate, issues } = retry);
@@ -829,14 +834,18 @@ export async function generateContract(
           // ADR-0117 decision 2, gated by ADR-0118: re-plan → re-critique up to max_repairs times, keeping the
           // candidate with the fewest serious findings.
           let best = { candidate, serious };
+          let current = candidate;
           let open = serious;
           let repairErrors: string[] = [];
           for (let attempt = 1; attempt <= criticPolicy.max_repairs && open.length > 0; attempt++) {
             const retry = await planOnce(
-              renderPlanFeedback([
-                ...open.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
-                ...repairErrors.map((message) => ({ target: 'contract', message, fix: message })),
-              ]),
+              renderPlanFeedback(
+                [
+                  ...open.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+                  ...repairErrors.map((message) => ({ target: 'contract', message, fix: message })),
+                ],
+                preserveRepairPlan ? current : undefined,
+              ),
               attempt === 1 ? ':critic' : `:critic:repair${String(attempt)}`,
             );
             repairErrors = [...retry.issues];
@@ -849,8 +858,14 @@ export async function generateContract(
             // An invalid repair uses one attempt, not the entire remaining policy budget (ADR-0129).
             if (repairErrors.length > 0) continue;
             recordNormalization('contract_repair');
+            current = retry.candidate;
             open = await runCritic(retry.candidate, `:repair${String(attempt)}`);
-            if (open.length < best.serious.length)
+            const tiedWithoutMoreBlockers =
+              preserveRepairPlan &&
+              open.length === best.serious.length &&
+              open.filter((i) => i.severity === 'blocking').length <=
+                best.serious.filter((i) => i.severity === 'blocking').length;
+            if (open.length < best.serious.length || tiedWithoutMoreBlockers)
               best = { candidate: retry.candidate, serious: open };
           }
           candidate = best.candidate;

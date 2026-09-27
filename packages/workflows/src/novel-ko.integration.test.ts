@@ -4339,6 +4339,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
     let architectureMode: 'repair' | 'exhausted' | 'malformed' = 'repair';
     let validationMode: 'none' | 'schema' | 'coverage' | 'placeholder' | 'exhausted' = 'none';
     let architectureCalls = 0;
+    let repairContextMode: 'none' | 'tie' | 'invalid' | 'worse' = 'none';
     const provider = new MockProvider((req) => {
       seen.push(req);
       if (
@@ -4364,9 +4365,60 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
           },
         };
       }
+      if (
+        repairContextMode !== 'none' &&
+        req.trace?.role === 'plan_critic' &&
+        req.trace.activityId.startsWith('plan_critic:')
+      ) {
+        const contract = req.trace.activityId.includes(':contract');
+        return {
+          json: {
+            issues:
+              contract || !req.trace.activityId.endsWith(':repair2')
+                ? [
+                    {
+                      severity:
+                        contract &&
+                        repairContextMode === 'worse' &&
+                        req.trace.activityId.endsWith(':repair2')
+                          ? 'blocking'
+                          : 'major',
+                      target: contract ? '계약' : '장면 1',
+                      kind: 'structure_off',
+                      claim: `REPAIR_CONTEXT_FINDING_${req.trace.activityId}`,
+                      fix: 'Preserve the last valid repair while addressing this finding.',
+                    },
+                  ]
+                : [],
+          },
+        };
+      }
       const out = batchedScript(req, script(req));
       if (!out || !('json' in out)) return out;
       const value = structuredClone(out.json) as Record<string, unknown>;
+      if (
+        repairContextMode !== 'none' &&
+        req.trace?.role === 'chapter_planner' &&
+        req.trace.activityId.includes(':critic')
+      ) {
+        const second = req.trace.activityId.endsWith(':repair2');
+        value.purpose = second ? 'LATEST_VALID_CONTRACT_REPAIR' : 'FIRST_CONTRACT_REPAIR';
+        if (!second && repairContextMode === 'invalid') {
+          value.purpose = 'INVALID_CONTRACT_REPAIR';
+          value.participants = (value.participants as unknown[]).slice(0, 1);
+        }
+      }
+      if (
+        repairContextMode !== 'none' &&
+        req.trace?.role === 'scene_planner' &&
+        req.trace.activityId.includes(':repair')
+      ) {
+        const scene = (value.scenes as { objective: string }[])[0];
+        if (scene)
+          scene.objective = req.trace.activityId.endsWith(':repair2')
+            ? 'LATEST_SCENE_REPAIR'
+            : 'FIRST_SCENE_REPAIR';
+      }
       if (req.trace?.role === 'character_designer') {
         for (const c of (value.characters ?? []) as Record<string, unknown>[]) {
           c.inner_voice = {
@@ -4660,6 +4712,71 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
       ]);
       expect(await chapterCraftContext(probeContext, 1)).toBe(opening);
     }, 300_000);
+    if (version === 45)
+      it.each(['tie', 'invalid', 'worse'] as const)(
+        'carries valid repair candidates across chapter and scene calls (%s)',
+        async (mode) => {
+          ({ projectId } = await createProject(pool, {
+            workspaceId,
+            title: 'Repair continuity',
+            operatingMode: 'autopilot',
+            policyVersion: 'policy/standard@45',
+          }));
+          seen.length = 0;
+          architectureMode = 'repair';
+          architectureReviews = 1;
+          validationMode = 'none';
+          repairContextMode = mode;
+          const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: 'repair-context',
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            /* regular acceptance checks remain active */
+          }
+          expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+          const contractRepair = seen.find(
+            (r) => r.trace?.activityId === 'chapter_contract:1:critic:repair2',
+          );
+          expect(contractRepair?.user).toContain('[PLANNED — 수정할 최신 유효 설계');
+          if (mode !== 'invalid') expect(contractRepair?.user).toContain('FIRST_CONTRACT_REPAIR');
+          else {
+            expect(contractRepair?.user).not.toContain('INVALID_CONTRACT_REPAIR');
+            expect(contractRepair?.user).toContain('필수 대화 상대를 삭제했다');
+          }
+          const sceneRepair = seen.find((r) => r.trace?.activityId === 'scene_plan:1:repair2');
+          expect(sceneRepair?.user).toContain('FIRST_SCENE_REPAIR');
+          const contracts = await pool.query<{ payload: { purpose: string } }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='chapter_contract'",
+            [projectId],
+          );
+          expect(contracts.rows[0]?.payload.purpose).toBe(
+            mode === 'worse' ? 'FIRST_CONTRACT_REPAIR' : 'LATEST_VALID_CONTRACT_REPAIR',
+          );
+          const findings = await pool.query<{
+            payload: { findings: { rule: string; repaired: boolean }[] };
+          }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='plan_findings' AND payload->>'stage'='contract'",
+            [projectId],
+          );
+          expect(
+            findings.rows
+              .flatMap((r) => r.payload.findings)
+              .some((f) => f.rule === 'PLAN-CRITIC-CONTRACT' && !f.repaired),
+          ).toBe(true);
+          repairContextMode = 'none';
+        },
+        300_000,
+      );
     if (version === 45)
       it.each(['schema', 'coverage', 'placeholder', 'exhausted'] as const)(
         'repairs %s serial validation failures without reviewing or assembling invalid candidates',

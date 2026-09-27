@@ -156,3 +156,5 @@ matrix in the same change.
 | [0133](0133-authored-serial-content.md) | Reject placeholder serial architecture deterministically |
 
 | [0134](0134-bible-context-for-architecture-review.md) | Give architecture review its bible design context |
+
+| [0135](0135-preserve-planning-repair-candidates.md) | Preserve candidates across chapter and scene repairs |

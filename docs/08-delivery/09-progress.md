@@ -38,6 +38,9 @@ The operator confirmed that the previous draft was readable but still skipped th
 **Bible-review context (ADR-0134).** Live chapter-one criticism found that the world placed the protagonist's weapon in his starting warehouse while the blueprint sent him elsewhere for it. The architecture reviewer lacked the bible design available to the architect. It now receives the same rendered design, registry and propositions alongside the blueprint and promises. Current chapter planning is repairing the conflict through its normal critic path; the active live runner still uses40c8a893 and does not validate this later review-input amendment. Focused boundary/static checks are pending.
 
 
+**Repair candidate continuity (ADR-0135).** The live chapter and scene repair calls had only criticism, so they reconstructed plans and lost earlier corrections. Korean architecture-review policies now supply the latest valid candidate as PLANNED repair context. Invalid repairs never become the baseline. Contract ties prefer the latest valid reviewed candidate only without increasing blocking findings; unresolved issues remain recorded. The new tie/invalid/worsened-blocker cases passed3 tests, the compatibility/helper suite passed11, and the preceding v43–45 focused run passed12 (two repair cases were subsequently rerun with the blocker safeguard). TypeScript and changed-file lint/formatting passed. Required planning validation is pending. The live runner is set to stop after chapter1 so chapters2–5 can load this fix; the overall sample target remains five. Chapter1 draft1 has a clearer sensory/hypothesis/recognition opening but remains unaccepted and has visible emotional/rhythm concerns.
+
+
 ## Reader-craft core revision (2026-09-27)
 
 The operator requested slower, legible openings, lived settings, varied humor and Korean sentence rhythm, emotionally grounded action, distinct protagonist voices, and fewer repeated story templates (ADR-0120–0126).
