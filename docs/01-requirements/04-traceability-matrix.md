@@ -139,3 +139,5 @@ READER-CRAFT-002: New projects may explicitly pin the tradition layer and revise
 | Serial architecture: arrival, authored episodes, opening continuity | ADR-0127 | `serial-architecture.ts`, `story-plan.ts`, `craft-context.ts`, `standard@43` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |
 
 | Arrival requirement enforcement | ADR-0128 | `arrival-contract.ts`, `planning.ts`, `standard@44` | `arrival-contract.test.ts`, `novel-ko.integration.test.ts` |
+
+Contract recritique also follows ADR-0129: invalid attempts consume only their own repair budget and their validation failures reach the next attempt. `novel-ko.integration.test.ts` covers recovery and exhaustion without selecting an invalid contract.

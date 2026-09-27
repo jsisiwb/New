@@ -4051,9 +4051,11 @@ for (const [label, policyVersion, redrafts] of [
     );
   });
 
-for (const [label, policyVersion, knobs] of [
-  ['standard.v36', 'policy/standard@36', false],
-  ['standard.v37', 'policy/standard@37', true],
+for (const [label, policyVersion, knobs, invalidRepair] of [
+  ['standard.v36', 'policy/standard@36', false, 'none'],
+  ['standard.v37', 'policy/standard@37', true, 'none'],
+  ['standard.v37 invalid-first', 'policy/standard@37', true, 'first'],
+  ['standard.v37 invalid-all', 'policy/standard@37', true, 'all'],
 ] as const)
   run(
     `Korean novel run under ${label}: run 5's code-level changes follow the policy knobs (ADR-0118)`,
@@ -4093,7 +4095,28 @@ for (const [label, policyVersion, knobs] of [
       };
       const provider = new MockProvider((req) => {
         seen.push(req);
-        return createOp(req, critic(req, withMarker(req, batchedScript(req, script(req)))));
+        const out = createOp(req, critic(req, withMarker(req, batchedScript(req, script(req)))));
+        const id = req.trace?.activityId ?? '';
+        if (
+          invalidRepair !== 'none' &&
+          (id === 'chapter_contract:1:critic' ||
+            (invalidRepair === 'all' && id === 'chapter_contract:1:critic:repair2')) &&
+          out &&
+          'json' in out
+        ) {
+          const contract = out.json as {
+            participants: { role_in_chapter: string }[];
+          };
+          return {
+            json: {
+              ...contract,
+              participants: contract.participants.filter(
+                (p) => p.role_in_chapter === 'protagonist',
+              ),
+            },
+          };
+        }
+        return out;
       });
       const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
 
@@ -4152,13 +4175,33 @@ for (const [label, policyVersion, knobs] of [
           const critics = ids.filter((id) => id.startsWith('plan_critic:1'));
           // The contract: one critique, one re-plan (`:critic`); under the knob the re-plan is critiqued (`:repair1`).
           expect(ids).toContain('chapter_contract:1:critic');
-          expect(critics.includes('plan_critic:1:contract:repair1')).toBe(knobs);
+          expect(critics.includes('plan_critic:1:contract:repair1')).toBe(
+            knobs && invalidRepair === 'none',
+          );
+          if (invalidRepair !== 'none') {
+            expect(ids).toContain('chapter_contract:1:critic:repair2');
+            expect(critics.includes('plan_critic:1:contract:repair2')).toBe(
+              invalidRepair === 'first',
+            );
+            const repair = seen.find(
+              (r) => r.trace?.activityId === 'chapter_contract:1:critic:repair2',
+            );
+            expect(repair?.user).toContain('필수 대화 상대를 삭제했다');
+            const stored = await pool.query<{ payload: { participants: { on_page: boolean }[] } }>(
+              "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='chapter_contract'",
+              [projectId],
+            );
+            expect(
+              stored.rows[0]?.payload.participants.filter((p) => p.on_page).length,
+            ).toBeGreaterThan(1);
+          }
           // The scene plan: one critique, one repair; under the knob the repaired plan is critiqued too.
           expect(ids).toContain('scene_plan:1:repair1');
           expect(critics.includes('plan_critic:1:repair1')).toBe(knobs);
           expect(
             critics.filter(
-              (id) => id !== 'plan_critic:1:contract:repair1' && id !== 'plan_critic:1:repair1',
+              (id) =>
+                !id.startsWith('plan_critic:1:contract:repair') && id !== 'plan_critic:1:repair1',
             ),
           ).toEqual(['plan_critic:1:contract', 'plan_critic:1']);
           // The create op is read as assert at acceptance under every pin (ADR-0102 class): no repair, no rejection.

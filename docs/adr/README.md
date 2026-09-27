@@ -144,3 +144,5 @@ matrix in the same change.
 | [0127](0127-causal-serial-architecture.md) | Causal serial architecture and arrival orientation |
 
 | [0128](0128-enforced-arrival-contract.md) | Enforced arrival requirements |
+
+| [0129](0129-invalid-contract-repair-budget.md) | Use the remaining contract repair budget |

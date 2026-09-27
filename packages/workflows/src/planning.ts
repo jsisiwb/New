@@ -822,14 +822,24 @@ export async function generateContract(
           // candidate with the fewest serious findings.
           let best = { candidate, serious };
           let open = serious;
+          let repairErrors: string[] = [];
           for (let attempt = 1; attempt <= criticPolicy.max_repairs && open.length > 0; attempt++) {
             const retry = await planOnce(
-              renderPlanFeedback(
-                open.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
-              ),
+              renderPlanFeedback([
+                ...open.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+                ...repairErrors.map((message) => ({ target: 'contract', message, fix: message })),
+              ]),
               attempt === 1 ? ':critic' : `:critic:repair${String(attempt)}`,
             );
-            if (retry.issues.length > 0 || !partnerKept(retry.candidate)) break;
+            repairErrors = [...retry.issues];
+            if (!partnerKept(retry.candidate))
+              repairErrors.push(
+                lang === 'ko'
+                  ? '필수 대화 상대를 삭제했다. 계약에 등록된 대화 상대를 지면에 등장하는 참여자로 유지한다.'
+                  : 'The required conversation partner was removed. Keep a registered conversation partner as an on-page participant.',
+              );
+            // An invalid repair uses one attempt, not the entire remaining policy budget (ADR-0129).
+            if (repairErrors.length > 0) continue;
             recordNormalization('contract_repair');
             open = await runCritic(retry.candidate, `:repair${String(attempt)}`);
             if (open.length < best.serious.length)
