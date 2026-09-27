@@ -49,6 +49,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@44',
       'policy/standard@45',
       'policy/standard@46',
+      'policy/standard@47',
       'policy/standard@5',
       'policy/standard@6',
       'policy/standard@7',
@@ -56,6 +57,22 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v47 routes structural repetition to rewrites without changing budgets or gates', () => {
+    const old = requirePolicy('policy/standard@46', policies);
+    const current = requirePolicy('policy/standard@47', policies);
+    expect(current.revision.ladder?.scene_rewrite_kinds).toEqual([
+      ...(old.revision.ladder?.scene_rewrite_kinds ?? []),
+      'repeated_scene',
+      'repetitive_arc',
+    ]);
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, ...rest } = structuredClone(p);
+      if (rest.revision.ladder) rest.revision.ladder.scene_rewrite_kinds = [];
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
   });
 
   it('standard.v46 changes rubric pins while preserving operational limits and gates', () => {

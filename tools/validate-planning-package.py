@@ -130,6 +130,7 @@ EXAMPLES = [
     ("examples/production-policies/standard.v37.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v45.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v46.json", "production-policy.schema.json"),
+    ("examples/production-policies/standard.v47.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v44.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v43.json", "production-policy.schema.json"),
     ("examples/production-policies/standard.v42.json", "production-policy.schema.json"),

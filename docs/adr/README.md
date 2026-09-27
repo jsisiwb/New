@@ -162,3 +162,5 @@ matrix in the same change.
 | [0136](0136-causal-opening-rubric.md) | Grade causal openings without speed contradictions |
 
 | [0137](0137-relationship-extraction-preflight.md) | Repair overlapping relationship extraction and cached retries |
+
+| [0138](0138-structural-repetition-repair.md) | Route structural repetition to scene rewriting |

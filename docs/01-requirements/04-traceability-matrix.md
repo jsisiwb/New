@@ -149,3 +149,5 @@ ADR-0130 extends accepted-history context to the contract critic under the arriv
 | Causal opening assessment | ADR-0136 | `structure_judge@4.19.0`, `tradition/kr-webnovel@5`, `standard@46` | Prompt registry, narrative compiler, policy and CLI default tests |
 
 | Relationship extraction preflight and recovery | ADR-0137 | `relationship-preflight.ts`, `acceptance.ts` | `relationship-preflight.test.ts`, `chapter-production.integration.test.ts` |
+
+| Structural repetition repair | ADR-0138 | `standard@47`, existing chapter revision ladder | Policy/default tests and Korean scene-rewrite integration |
