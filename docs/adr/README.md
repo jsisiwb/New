@@ -152,3 +152,5 @@ matrix in the same change.
 | [0131](0131-serial-architecture-coherence-review.md) | Review serial architecture before bible assembly |
 
 | [0132](0132-bounded-serial-validation-repair.md) | Repair invalid serial schedules within the architecture budget |
+
+| [0133](0133-authored-serial-content.md) | Reject placeholder serial architecture deterministically |

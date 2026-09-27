@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { requirePolicy, validatorFor, type Generated } from '@yeonjae/domain';
 import {
   validateSerialCoverage,
+  validateSerialContent,
   parseArchitectureReview,
   renderOpeningChapter,
   renderEpisode,
@@ -183,5 +184,49 @@ describe('architecture review output', () => {
     }));
     expect(parseArchitectureReview({ issues })).toEqual(issues);
     expect(parseArchitectureReview({ issues: [] })).toEqual([]);
+  });
+});
+
+describe('authored serial content', () => {
+  it.each(['Standard processing applied.', ' TBD ', '추후 작성', 'to be written'])(
+    'rejects placeholder %s in an otherwise valid schedule',
+    (placeholder) => {
+      const plan = blueprint();
+      required(plan.serial_plan).arrival.first_mismatch = placeholder;
+      expect(() => {
+        validateSerialContent(plan);
+      }).toThrow('arrival.first_mismatch contains placeholder');
+    },
+  );
+  it('rejects normalized repeated filler within an episode or chapter', () => {
+    for (const group of ['episode', 'chapter'] as const) {
+      const plan = blueprint();
+      const serial = required(plan.serial_plan);
+      if (group === 'episode') {
+        const episode = required(serial.episodes[0]);
+        episode.entry_state = 'Administratively completed.';
+        episode.objective = ' administratively   completed ';
+        episode.payoff = 'ADMINISTRATIVELY COMPLETED';
+      } else {
+        const chapter = required(serial.opening_chapters[0]);
+        chapter.entry_state = '처리 완료';
+        chapter.choice = '처리  완료.';
+        chapter.local_payoff = '처리 완료';
+      }
+      expect(() => {
+        validateSerialContent(plan);
+      }).toThrow('repeats the same text');
+    }
+  });
+  it('allows a previous exit to become the next entry and authored English content', () => {
+    const plan = blueprint();
+    const serial = required(plan.serial_plan);
+    serial.arrival.first_choice = 'Ask the clerk which room belongs to me.';
+    required(serial.opening_chapters[1]).entry_state = required(
+      serial.opening_chapters[0],
+    ).exit_state;
+    expect(() => {
+      validateSerialContent(plan);
+    }).not.toThrow();
   });
 });

@@ -144,4 +144,4 @@ Contract recritique also follows ADR-0129: invalid attempts consume only their o
 
 ADR-0130 extends accepted-history context to the contract critic under the arrival-contract policy. The two-chapter v44 integration compares the critic input against the accepted L1 summary and ending hook; earlier policy cases verify the boundary.
 
-| Serial architecture coherence gate | ADR-0131, ADR-0132 | `serial_architecture.max_repairs`, `serial_architecture_critic@4.18.0`, `story-plan.ts`, `standard@45` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |
+| Serial architecture coherence gate | ADR-0131, ADR-0132, ADR-0133 | `serial_architecture.max_repairs`, `serial_architecture_critic@4.18.0`, `story-plan.ts`, `standard@45` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |

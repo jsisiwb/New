@@ -4337,7 +4337,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
     const sound = '옆방에서 주판알을 튕기는 소리';
     let architectureReviews = 0;
     let architectureMode: 'repair' | 'exhausted' | 'malformed' = 'repair';
-    let validationMode: 'none' | 'schema' | 'coverage' | 'exhausted' = 'none';
+    let validationMode: 'none' | 'schema' | 'coverage' | 'placeholder' | 'exhausted' = 'none';
     let architectureCalls = 0;
     const provider = new MockProvider((req) => {
       seen.push(req);
@@ -4419,6 +4419,8 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
           (architectureCalls === 1 || validationMode === 'exhausted')
         ) {
           if (validationMode === 'schema') serial.opening_chapters[0].chapter = 0;
+          else if (validationMode === 'placeholder')
+            serial.arrival.first_choice = 'Standard processing applied.';
           else serial.episodes[0].season_ordinal = 99;
           serial.episodes[0].title = 'INVALID_SCHEDULE_CANDIDATE';
         }
@@ -4650,7 +4652,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
       expect(await chapterCraftContext(probeContext, 1)).toBe(opening);
     }, 300_000);
     if (version === 45)
-      it.each(['schema', 'coverage', 'exhausted'] as const)(
+      it.each(['schema', 'coverage', 'placeholder', 'exhausted'] as const)(
         'repairs %s serial validation failures without reviewing or assembling invalid candidates',
         async (mode) => {
           ({ projectId } = await createProject(pool, {
@@ -4689,7 +4691,9 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
           expect(message).toContain(
             mode === 'schema'
               ? 'series blueprint does not validate:'
-              : 'crosses or references an unknown season',
+              : mode === 'placeholder'
+                ? 'contains placeholder text'
+                : 'crosses or references an unknown season',
           );
           const repair = seen.filter((r) => r.trace?.role === 'story_architect')[1];
           expect(repair?.user).toContain(message);

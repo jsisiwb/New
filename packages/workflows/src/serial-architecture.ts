@@ -38,6 +38,53 @@ export function validateSerialCoverage(
     fail(`opening_chapters must cover chapters 1 through ${count} exactly once in order.`);
 }
 
+/** Shape-valid filler is not an authored arrival, episode or chapter plan. */
+export function validateSerialContent(blueprint: Blueprint): void {
+  const plan = blueprint.serial_plan;
+  if (!plan) return; // Coverage validation reports the missing plan.
+  const groups: [string, Record<string, unknown>][] = [
+    ['arrival', plan.arrival],
+    ...plan.episodes.map((episode, i): [string, Record<string, unknown>] => [
+      `episodes[${i}]`,
+      episode,
+    ]),
+    ...plan.opening_chapters.map((chapter, i): [string, Record<string, unknown>] => [
+      `opening_chapters[${i}]`,
+      chapter,
+    ]),
+  ];
+  for (const [path, group] of groups) {
+    const occurrences = new Map<string, string[]>();
+    for (const [field, value] of Object.entries(group)) {
+      if (typeof value !== 'string') continue;
+      const normalized = value
+        .normalize('NFC')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/gu, ' ')
+        .replace(/[.!。]+$/u, '');
+      if (
+        /^(?:standard processing applied|tbd|todo|to be (?:determined|written|added)|placeholder|same as above|추후 (?:작성|추가|결정)|미작성|작성 예정)$/u.test(
+          normalized,
+        )
+      )
+        throw new WorkflowError(
+          'ARC_PLAN_INVALID',
+          `Serial architecture: ${path}.${field} contains placeholder text instead of authored story content.`,
+          { step: 'blueprint', recommendedActions: ['regenerate'] },
+        );
+      const fields = [...(occurrences.get(normalized) ?? []), field];
+      occurrences.set(normalized, fields);
+      if (fields.length >= 3)
+        throw new WorkflowError(
+          'ARC_PLAN_INVALID',
+          `Serial architecture: ${path} repeats the same text across distinct narrative fields (${fields.join(', ')}). Author their different causal roles.`,
+          { step: 'blueprint', recommendedActions: ['regenerate'] },
+        );
+    }
+  }
+}
+
 export function renderArrival(plan: SerialPlan): string {
   const a = plan.arrival;
   return [

@@ -1,5 +1,6 @@
 import {
   validateSerialCoverage,
+  validateSerialContent,
   renderEpisode,
   parseArchitectureReview,
   type SerialPlan,
@@ -1361,6 +1362,7 @@ export async function buildFullBible(
               intake.target_chapters,
               ctx.policy.planning.serial_architecture.opening_chapters,
             );
+          if (maxRepairs !== undefined) validateSerialContent(v.value);
           blueprint = v.value;
         } catch (error) {
           if (
@@ -2238,7 +2240,7 @@ function architectureValidationFindings(
       severity: 'blocking',
       target: 'serial_plan',
       claim: message,
-      fix: 'Return the complete corrected blueprint. Match episode ranges to their seasons and preserve the requested coverage and already-correct story decisions.',
+      fix: 'Return the complete blueprint with the reported validation error corrected. Supply authored story content, align episode ranges with seasons, and preserve requested coverage and already-correct story decisions.',
     },
   ];
 }
