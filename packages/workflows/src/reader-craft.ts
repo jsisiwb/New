@@ -6,7 +6,7 @@
 
 /** ADR-0120: what chapters 1–3 must let the reader know, and how fast they may move. */
 export function openingDesign(chapterNo: number, chapters: number): string | undefined {
-  if (chapterNo > chapters) return undefined;
+  if (chapterNo < 1 || chapterNo > chapters) return undefined;
   const common = [
     '- 큰 사건은 이 화에 하나만 둔다. 사건을 줄줄이 몰아넣지 않고, 한 상황과 그 결과까지 다룬다.',
     '- 세계와 설정은 설명 덩어리로 쏟지 않는다. 주인공의 목소리로, 지금 벌어지는 일과 그 이유를 붙여 짧게 풀어준다.',
@@ -21,18 +21,10 @@ export function openingDesign(chapterNo: number, chapters: number): string | und
       '- 화가 끝날 때 독자는 이 이야기가 앞으로 무엇을 다룰지(전제, 주인공의 목표, 세계의 핵심 규칙) 안다. 절단은 그 전제 위에서 건다.',
       ...common,
     ].join('\n');
-  if (chapterNo === 2)
-    return [
-      '[도입부 설계 — 2화]',
-      '- 주인공이 새 처지(새 몸·새 세계·새 신분·새 상황)에 발을 딛는 화다. 공간을 감각으로 익히고, 주변 인물 한둘과 관계를 트고, 세계의 규칙 하나를 몸으로 겪는다.',
-      '- 1화의 전제를 다시 설명하지 않는다. 그 전제가 이 세계의 하루에서 어떻게 작동하는지 보여준다.',
-      '- 주인공의 첫 목표가 구체적으로 정해진다.',
-      ...common,
-    ].join('\n');
   return [
     `[도입부 설계 — ${String(chapterNo)}화]`,
-    `- ${String(chapters)}화까지가 도입부다. 주인공의 목표와 첫 갈등이 분명해지고, 첫 보상(사이다)이 터질 자리가 만들어진다.`,
-    '- 새 장소나 새 인물은 하나씩, 감각과 관계로 넓힌다.',
+    '- 앞 회차에서 이미 이해시킨 처지와 규칙은 다시 설명하지 않는다. 아직 필요한 방향 감각과 관계를 이번 선택의 결과 안에서 넓힌다.',
+    '- 새 몸·새 세계·시험·각성을 회차 순서대로 강요하지 않는다. 작품의 전제와 직전 절단을 이어가며 첫 목표와 보상의 무게를 키운다.',
     ...common,
   ].join('\n');
 }
@@ -47,8 +39,9 @@ export function openingSceneRole(sceneNo: number, total: number): string | undef
 }
 
 /** ADR-0120: appended to the brief of the arc that opens the series. */
-export const ARC_OPENING_BRIEF =
-  ' 1~3화는 도입부다: 독자가 주인공의 처지와 이 세계를 익히는 화들이다. 도입부의 한 화에는 큰 비트를 하나만 두고, 아크의 핵심 사건을 도입부에서 소진하지 않는다.';
+export function arcOpeningBrief(chapters: number): string {
+  return ` ${chapters}화까지는 독자가 처지와 세계를 익히는 도입부다. 한 화의 중심 상황과 선택에 집중하고, 이해하기 전에 아크의 핵심 사건을 소진하지 않는다. 화별 사건 순서를 고정하지 않는다.`;
+}
 
 const COMEDY_KO: Readonly<Record<string, string>> = {
   misunderstanding: '착각',
@@ -107,7 +100,7 @@ export function renderDeviceLedger(
       (c) =>
         `- ${String(c.chapter_number)}화: 웃음 ${label(COMEDY_KO, c.devices?.comedy)}, 절단 ${label(ENDING_KO, c.hook.type)}, 도입 ${label(OPENING_KO, c.opening.type)}`,
     ),
-    '이번 화의 웃음은 위 화들과 다른 결로 고른다. 절단과 도입도 바로 앞 화와 같은 유형을 되풀이하지 않는다.',
+    '같은 착각→경악→인정의 순서를 관성으로 쌓지 않는다. 반복 개그라면 달라진 관계·결과를 보여준다. 몸개그·성격·아이러니·티키타카 또는 웃음 없는 장면도 가능하다. 도입·절단의 유형이 같다는 이유만으로 고치지 않고 실제 작동 방식과 정서의 반복을 본다.',
   ].join('\n');
 }
 
@@ -136,7 +129,7 @@ export function renderOtherStories(stories: readonly OtherStory[]): string | und
   if (stories.length === 0) return undefined;
   const lines = stories.map((s) => {
     const c = s.concept;
-    const diff = Array.isArray(c.differentiators) ? c.differentiators[0] : undefined;
+    const diff: unknown = Array.isArray(c.differentiators) ? c.differentiators[0] : undefined;
     const parts = [
       `로그라인: ${clip(c.logline, 140)}`,
       `1화 훅: ${clip(c.chapter_one_hook, 140)}`,
@@ -221,6 +214,7 @@ export function voiceCardLine(design: Design | undefined): string | undefined {
     text(v.emotional_anchor) ? `감정의 닻 ${text(v.emotional_anchor) ?? ''}` : undefined,
     list(v.habits).length ? `버릇 ${list(v.habits).join(', ')}` : undefined,
     list(v.never).length ? `하지 않는 말 ${list(v.never).join(', ')}` : undefined,
+    text(v.under_pressure) ? `몰릴 때 ${text(v.under_pressure)}` : undefined,
   ].filter(Boolean);
   return parts.length ? `속목소리: ${parts.join('; ')}` : undefined;
 }

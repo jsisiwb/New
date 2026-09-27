@@ -12,7 +12,12 @@ import {
   verifyEvidence,
   segmentParagraphs,
 } from '@yeonjae/prose';
-import { loadPolicies, loadSchemas, validatorFor } from '@yeonjae/domain';
+import {
+  DEFAULT_NEW_PROJECT_POLICY,
+  loadPolicies,
+  loadSchemas,
+  validatorFor,
+} from '@yeonjae/domain';
 import {
   type Pool,
   approveManuscriptVersion,
@@ -422,8 +427,10 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         // `--workspace=<id>` places the project in an existing workspace (the one `user:create` made), so
         // the web console's signed-in operator can see it; without it a fresh local workspace is created.
         // `--policy=<ref>` pins a shipped Production Policy, e.g. policy/standard@2 (ADR-0060 evaluation).
-        const policy = flags.find((f) => f.startsWith('--policy='))?.slice('--policy='.length);
-        if (policy !== undefined && !loadPolicies().has(policy as PolicyRef))
+        const policy =
+          flags.find((f) => f.startsWith('--policy='))?.slice('--policy='.length) ??
+          DEFAULT_NEW_PROJECT_POLICY;
+        if (!loadPolicies().has(policy as PolicyRef))
           return {
             ok: false,
             output: {
@@ -437,7 +444,7 @@ export async function runDb(argv: readonly string[]): Promise<AsyncCommandResult
         const p = await createProject(pool, {
           workspaceId: ws,
           title,
-          ...(policy !== undefined ? { policyVersion: policy } : {}),
+          policyVersion: policy,
         });
         return { ok: true, output: { workspace_id: ws, ...p } };
       }
@@ -1931,7 +1938,7 @@ Database commands (DATABASE_URL required):
   db:migrate                                   apply forward-only migrations
   project:create <title> [--workspace=<id>] [--policy=<ref>]
                                                create a project (+ main timeline) in a workspace (new one unless given);
-                                               --policy pins a shipped policy, e.g. policy/standard@2
+                                               defaults to ${DEFAULT_NEW_PROJECT_POLICY}; --policy pins another shipped policy
   series:audit <project> [--absent-after=<n>]  whole-serial audit: overdue promises, absent characters,
                                                story-time regressions, repeated openings (accepted canon only)
   quality:run-report <project> [--metrics-log=<file>] [--status-file=<file>] [--json]

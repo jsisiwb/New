@@ -127,5 +127,50 @@
 | [0118](0118-run-5-audit-knobs.md) | Run-5 audit: ADR-0117's code-level changes ran for every policy; they are gated behind `planning.plan_critic.recritique` and `revision.multi_patch.anchor_spanless` (`standard.v37`), the acceptance-time `create`→`assert` read stays for every pin (ADR-0102 class), and the committed copy of the Notion bridge is removed |
 | [0119](0119-rejected-arc-plan-asks-again.md) | A rejected arc plan is recorded and asked again on the next attempt (`arc_plan:<arc>:regeneration:<n>`), and auto-resume tries it; no policy version (G25-1) |
 
+| [0120](0120-reader-oriented-openings.md) | Reader-oriented openings |
+| [0121](0121-distinct-stories-and-inner-voices.md) | Distinct stories and inner voices |
+| [0122](0122-lived-settings-and-emotional-action.md) | Lived settings and emotional action |
+| [0123](0123-varied-devices-and-craft-evaluation.md) | Varied devices and craft evaluation |
+
+| [0124](0124-craft-identity-does-not-prescribe-personality.md) | Opt-in craft identity layers separate power level and narrative rhythm from protagonist personality |
+
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
+
+| [0125](0125-character-led-concept-angles.md) | Character-led concept angles |
+
+| [0126](0126-contextual-voice-rhythm-and-introductions.md) | Contextual voice rhythm and character introductions |
+
+| [0127](0127-causal-serial-architecture.md) | Causal serial architecture and arrival orientation |
+
+| [0128](0128-enforced-arrival-contract.md) | Enforced arrival requirements |
+
+| [0129](0129-invalid-contract-repair-budget.md) | Use the remaining contract repair budget |
+
+| [0130](0130-contract-critic-accepted-continuity.md) | Accepted continuity for the contract critic |
+
+| [0131](0131-serial-architecture-coherence-review.md) | Review serial architecture before bible assembly |
+
+| [0132](0132-bounded-serial-validation-repair.md) | Repair invalid serial schedules within the architecture budget |
+
+| [0133](0133-authored-serial-content.md) | Reject placeholder serial architecture deterministically |
+
+| [0134](0134-bible-context-for-architecture-review.md) | Give architecture review its bible design context |
+
+| [0135](0135-preserve-planning-repair-candidates.md) | Preserve candidates across chapter and scene repairs |
+
+| [0136](0136-causal-opening-rubric.md) | Grade causal openings without speed contradictions |
+
+| [0137](0137-relationship-extraction-preflight.md) | Repair overlapping relationship extraction and cached retries |
+
+| [0138](0138-structural-repetition-repair.md) | Route structural repetition to scene rewriting |
+
+| [0139](0139-causal-rhythm-through-planning.md) | Keep causal rhythm consistent across planning and writing |
+
+| [0140](0140-scene-rewrite-boundary-context.md) | Give scene rewrites the current text and continuation |
+
+| [0141](0141-lint-backed-score-repair.md) | Lint-backed score repair |
+
+| [0142](0142-contract-bounded-scene-redesign.md) | Contract-bounded scene redesign |
+
+| [0143](0143-resume-interrupted-pause.md) | Resume interrupted pause requests |

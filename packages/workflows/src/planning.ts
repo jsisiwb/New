@@ -1,3 +1,5 @@
+import { withArrivalRequirements, bindArrivalRequirements } from './arrival-contract.js';
+import { chapterCraftContext } from './craft-context.js';
 /**
  * Planning steps of the vertical slice: intake validation → `requirement_interpreter` → versioned Story Spec
  * (hard / soft / assumption kept distinct, assumptions explained) → Story Bible (entities, propositions,
@@ -57,6 +59,7 @@ export type ChapterContract = Generated.ChapterContractSchema.ChapterContract;
 /** The Story Bible as the slice needs it: registry entities, propositions, promises, seed facts/relations. */
 export interface StoryBible {
   readonly version: number;
+  readonly serial_plan?: Generated.SeriesBlueprintSchema.SeriesBlueprint['serial_plan'];
   readonly design?:
     | {
         readonly characters: Readonly<Record<string, unknown>>;
@@ -260,7 +263,12 @@ export async function interpretRequirements(
     const candidate: StorySpec = {
       project_id: ctx.projectId,
       version: specVersion,
-      items,
+      items: withArrivalRequirements(
+        items,
+        intake,
+        ctx.identity.outputLanguage.language === 'ko' &&
+          ctx.policy.planning?.serial_architecture?.arrival_contract === true,
+      ),
       ...(Array.isArray(raw.conflicts)
         ? { conflicts: raw.conflicts as NonNullable<StorySpec['conflicts']> }
         : {}),
@@ -592,6 +600,7 @@ export async function generateContract(
     async () => {
       const project = await getProject(ctx.pool, ctx.projectId);
       const block = compilePlannerBlock(ctx);
+      const craft = await chapterCraftContext(ctx, input.chapterNo, input.bible);
       const lang = langOf(ctx);
       const acsHard = compileActiveConstraintSet(
         input.spec,
@@ -623,6 +632,8 @@ export async function generateContract(
         (input.bible?.entities ?? []).map((e) => [e.id, e.display_name]),
       );
       const planFindings: PlanFinding[] = [];
+      const preserveRepairPlan =
+        lang === 'ko' && ctx.policy.planning?.serial_architecture?.max_repairs !== undefined;
       const planOnce = async (feedback: string | undefined, suffix: string) => {
         const call = await modelCall<ChapterContract>(ctx, {
           step: 'chapter_contract',
@@ -639,6 +650,7 @@ export async function generateContract(
                 }
               : {}),
             ...(feedback !== undefined ? { plan_feedback: feedback } : {}),
+            ...(craft !== undefined ? { craft_context: craft } : {}),
             arc_plan: JSON.stringify(input.arcPlan),
             chapter_number: String(input.chapterNo),
             previous_chapter_summary: input.previousSummary,
@@ -692,7 +704,12 @@ export async function generateContract(
           },
         );
         const envelope = (content: Partial<ChapterContract>): ChapterContract => ({
-          ...(content as ChapterContract),
+          ...(bindArrivalRequirements(
+            content,
+            input.spec.items,
+            input.chapterNo,
+            ctx.policy.planning?.serial_architecture?.arrival_contract === true,
+          ) as ChapterContract),
           // The prompt tells the model the workflow fills the version; a fresh contract is version 1.
           version: typeof content.version === 'number' ? content.version : 1,
           id: input.contractId,
@@ -752,7 +769,10 @@ export async function generateContract(
           message: '주인공과 말을 주고받을 인물이 지면에 없다',
           fix: '이번 화의 사건에 자연스럽게 있을 등록 인물 한 명 이상을 participants에 on_page true로 넣고, 그 인물과 말이 오가는 사건을 설계한다',
         };
-        const retry = await planOnce(renderPlanFeedback([finding]), ':repair');
+        const retry = await planOnce(
+          renderPlanFeedback([finding], preserveRepairPlan ? candidate : undefined),
+          ':repair',
+        );
         const repaired = retry.issues.length === 0 && contractHasPartner(retry.candidate);
         if (repaired) {
           ({ candidate, issues } = retry);
@@ -771,12 +791,21 @@ export async function generateContract(
       // scene plan can repair.
       if (issues.length === 0 && ctx.policy.planning?.plan_critic?.contract) {
         const criticPolicy = ctx.policy.planning.plan_critic;
+        const acceptedContinuity =
+          ctx.policy.planning.serial_architecture?.arrival_contract && input.chapterNo > 1
+            ? `\n\n${
+                lang === 'ko'
+                  ? '[확정된 직전 회차 — 초기 설정과 다르면 이 승인된 결과에서 이어 간다]'
+                  : '[Accepted previous chapter — continue from this result when initial bible state differs]'
+              }\n${input.previousSummary}${await renderCanonFacts(ctx, input.chapterNo)}`
+            : '';
         const runCritic = async (cand: ChapterContract, suffix: string) => {
           const critic = await modelCall<{ issues?: unknown }>(ctx, {
             step: 'chapter_contract',
             family: 'plan_critic',
             activityId: `plan_critic:${String(input.chapterNo)}:contract${suffix}`,
             variables: {
+              ...(craft !== undefined ? { craft_context: craft } : {}),
               chapter_contract: JSON.stringify(cand),
               scene_plans: '(장면 설계 전이다. 계약만 검수한다.)',
               reveal_schedule: schedule
@@ -785,10 +814,11 @@ export async function generateContract(
                     hintBudget: ctx.policy.planning?.reveal_schedule?.hint_budget,
                   }) ?? '(설정에 기록된 비밀 없음)')
                 : '(설정에 기록된 비밀 없음)',
-              canon_state: input.bible
-                ? renderBibleState(input.bible, ctx.bindings, lang)
-                : '(정사 상태 없음)',
+              canon_state: `${
+                input.bible ? renderBibleState(input.bible, ctx.bindings, lang) : '(정사 상태 없음)'
+              }${acceptedContinuity}`,
               structure_targets: structureTargets({
+                causalRhythm: ctx.policy.planning?.causal_rhythm,
                 chapterNo: input.chapterNo,
                 lineTargets: ctx.policy.planning?.dialogue_floor?.line_targets,
                 lengthTarget: input.lengthTarget.value,
@@ -805,18 +835,38 @@ export async function generateContract(
           // ADR-0117 decision 2, gated by ADR-0118: re-plan → re-critique up to max_repairs times, keeping the
           // candidate with the fewest serious findings.
           let best = { candidate, serious };
+          let current = candidate;
           let open = serious;
+          let repairErrors: string[] = [];
           for (let attempt = 1; attempt <= criticPolicy.max_repairs && open.length > 0; attempt++) {
             const retry = await planOnce(
               renderPlanFeedback(
-                open.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+                [
+                  ...open.map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
+                  ...repairErrors.map((message) => ({ target: 'contract', message, fix: message })),
+                ],
+                preserveRepairPlan ? current : undefined,
               ),
               attempt === 1 ? ':critic' : `:critic:repair${String(attempt)}`,
             );
-            if (retry.issues.length > 0 || !partnerKept(retry.candidate)) break;
+            repairErrors = [...retry.issues];
+            if (!partnerKept(retry.candidate))
+              repairErrors.push(
+                lang === 'ko'
+                  ? '필수 대화 상대를 삭제했다. 계약에 등록된 대화 상대를 지면에 등장하는 참여자로 유지한다.'
+                  : 'The required conversation partner was removed. Keep a registered conversation partner as an on-page participant.',
+              );
+            // An invalid repair uses one attempt, not the entire remaining policy budget (ADR-0129).
+            if (repairErrors.length > 0) continue;
             recordNormalization('contract_repair');
+            current = retry.candidate;
             open = await runCritic(retry.candidate, `:repair${String(attempt)}`);
-            if (open.length < best.serious.length)
+            const tiedWithoutMoreBlockers =
+              preserveRepairPlan &&
+              open.length === best.serious.length &&
+              open.filter((i) => i.severity === 'blocking').length <=
+                best.serious.filter((i) => i.severity === 'blocking').length;
+            if (open.length < best.serious.length || tiedWithoutMoreBlockers)
               best = { candidate: retry.candidate, serious: open };
           }
           candidate = best.candidate;
@@ -1122,15 +1172,25 @@ async function renderCanonFacts(ctx: WorkflowContext, chapterNo: number): Promis
     display_name: string;
     attribute: string;
     value_text: string | null;
+    value_json: unknown;
   }>(
-    `SELECT e.display_name, f.attribute, f.value_text FROM facts f JOIN entities e ON e.id = f.entity_id
+    `SELECT e.display_name, f.attribute, f.value_text, f.value AS value_json FROM facts f JOIN entities e ON e.id = f.entity_id
       WHERE f.project_id = $1 AND f.retracted_at_version IS NULL AND f.valid_to IS NULL
       ORDER BY f.id DESC LIMIT 120`,
     [ctx.projectId],
   );
   if (r.rows.length === 0) return '';
   return `\n\n${langOf(ctx) === 'ko' ? '확정된 사실 (이미 일어난 일)' : 'Accepted facts (what has happened)'}:\n${r.rows
-    .map((f) => `- ${f.display_name}: ${f.attribute} = ${f.value_text ?? ''}`)
+    .map((f) => {
+      const value =
+        f.value_text ??
+        (ctx.policy.planning?.serial_architecture?.arrival_contract && f.value_json != null
+          ? typeof f.value_json === 'string'
+            ? f.value_json
+            : JSON.stringify(f.value_json)
+          : '');
+      return `- ${f.display_name}: ${f.attribute} = ${value}`;
+    })
     .join('\n')}`;
 }
 

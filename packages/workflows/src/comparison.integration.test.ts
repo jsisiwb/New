@@ -146,12 +146,8 @@ run('candidate comparison on replay (B-6-4, ADR-0015)', () => {
     for (const c of calls.rows) {
       expect(c.status).toBe('succeeded');
       expect(c.provider).toBe('replay');
-      // The comparator is not style-sensitive and always runs the registry's active version; resolve
-      // it from the registry so a prompt release cannot stale this assertion.
-      const { PromptRegistry } = await import('@yeonjae/prompts');
-      expect(c.prompt_version_id).toBe(
-        PromptRegistry.fromDirectory().activeSet().mapping.chapter_comparator,
-      );
+      // Comparators use the workflow's immutable prompt pin, including its policy ceiling.
+      expect(c.prompt_version_id).toBe(prepared.ctx.promptSet.mapping.chapter_comparator);
       expect(c.production_policy_version).toBe('policy/standard@1');
       // The comparator is not style-sensitive: it carries no identity pin (role catalog, ADR-0027).
       expect(c.narrative_identity_version_id).toBeNull();

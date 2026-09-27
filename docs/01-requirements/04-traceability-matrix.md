@@ -125,3 +125,39 @@ authoritative; the complete design is planned artifact data, not realized canon.
 | 15 | Another agent can begin | `08-delivery/05`, `01`, `02`; `schemas/`, `examples/` |
 
 Full audit: `docs/08-delivery/07-plan-audit.md`. Correction log: `docs/08-delivery/08-correction-changelog.md`.
+
+## Reader craft
+
+READER-CRAFT-001: Reader orientation, differentiated concepts and inner voices, lived locations, emotionally grounded action and varied comedy are carried from planning through revision and evaluation. Design: ADR-0120, ADR-0121, ADR-0122, ADR-0123; `docs/05-generation/04-reader-craft.md`. Contracts: existing production-policy craft fields and chapter-contract.devices. Verification: reader-craft, craft-context, prompt registry and policy regression suites.
+
+READER-CRAFT-002: New projects may explicitly pin the tradition layer and revised genre/voice layers; older policies compose their prior defaults. ADR-0124; production-policy.identity.tradition_layer; identity-from-intake.test.ts.
+
+| Reader craft: concept angles | ADR-0125 | `planning.concept_angles`, `conceptAngleSeed`, 4.14.0 prompts | `story-plan.test.ts`, `policy.test.ts`, `novel-ko.integration.test.ts` |
+
+| Reader craft: contextual introductions and rhythm | ADR-0126 | `voice/operator@5`, `scene_writer@4.15.0`, `standard@42` | `voice.test.ts`, `registry.test.ts`, `novel-ko.integration.test.ts` |
+
+| Serial architecture: arrival, authored episodes, opening continuity | ADR-0127 | `serial-architecture.ts`, `story-plan.ts`, `craft-context.ts`, `standard@43` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |
+
+| Arrival requirement enforcement | ADR-0128 | `arrival-contract.ts`, `planning.ts`, `standard@44` | `arrival-contract.test.ts`, `novel-ko.integration.test.ts` |
+
+Contract recritique also follows ADR-0129: invalid attempts consume only their own repair budget and their validation failures reach the next attempt. `novel-ko.integration.test.ts` covers recovery and exhaustion without selecting an invalid contract.
+
+ADR-0130 extends accepted-history context to the contract critic under the arrival-contract policy. The two-chapter v44 integration compares the critic input against the accepted L1 summary and ending hook; earlier policy cases verify the boundary.
+
+| Serial architecture coherence gate | ADR-0131, ADR-0132, ADR-0133, ADR-0134, ADR-0135 | `serial_architecture.max_repairs`, `serial_architecture_critic@4.18.0`, `story-plan.ts`, `standard@45` | `serial-architecture.test.ts`, `novel-ko.integration.test.ts` |
+
+| Causal opening assessment | ADR-0136 | `structure_judge@4.19.0`, `tradition/kr-webnovel@5`, `standard@46` | Prompt registry, narrative compiler, policy and CLI default tests |
+
+| Relationship extraction preflight and recovery | ADR-0137 | `relationship-preflight.ts`, `acceptance.ts` | `relationship-preflight.test.ts`, `chapter-production.integration.test.ts` |
+
+| Structural repetition repair | ADR-0138 | `standard@47`, existing chapter revision ladder | Policy/default tests and Korean scene-rewrite integration |
+
+| Consequential chapter rhythm | ADR-0139 | `planning.causal_rhythm`, prompts4.20, voice6, standard48 | Policy, prompt, voice and runtime guidance tests; chapter production integration |
+
+| Scene rewrite boundary continuity | ADR-0140 | `sceneRewriteBoundaryContext`, `rewriteScene` | Drafting prose and Korean scene rewrite integration tests |
+
+| Lint-backed score repair | ADR-0141 | `scoreTargets`, existing revision clustering | Convergence and revision clustering tests |
+
+| Structural rewrite planning priority | ADR-0142 | `sceneRewriteBoundaryContext`, `rewriteScene` | Drafting helpers and Korean rewrite integration |
+
+| Interrupted pause recovery | ADR-0143 | `resumeNovelRun` | Novel lifecycle integration and workflow control chaos tests |

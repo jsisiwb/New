@@ -191,16 +191,23 @@ export function ensureCutBeat(
 }
 
 /** The writer's instruction for the final scene under cut design. */
-export function cutNote(contract: Pick<ChapterContract, 'hook'>): string {
+export function cutNote(contract: Pick<ChapterContract, 'hook'>, causalRhythm = false): string {
+  if (causalRhythm)
+    return `\n\n절단: 계약의 마지막 비트 — ${contract.hook.description} 구체적인 선택·발견·관계 질문을 그대로 살리고 같은 의미의 해설을 덧붙이지 않는다. 새 폭력이나 충격으로 바꾸지 않는다.`;
   return `\n\n절단: 이 장면은 회차의 마지막 장면이다. 원고의 마지막 한두 줄은 이 순간이다 — ${contract.hook.description} 그 뒤에 수습·걱정·정리·다짐·요약 문장을 한 줄도 붙이지 않는다.`;
 }
 
 /** Plan findings rendered for a planner's `plan_feedback`. */
 export function renderPlanFeedback(
   findings: readonly { target: string; message: string; fix?: string }[],
+  previousPlan?: unknown,
 ): string {
-  if (findings.length === 0) return '(없음)';
-  return findings.map((f) => `- ${f.target}: ${f.message}${f.fix ? ` → ${f.fix}` : ''}`).join('\n');
+  const feedback =
+    findings.length === 0
+      ? '(없음)'
+      : findings.map((f) => `- ${f.target}: ${f.message}${f.fix ? ` → ${f.fix}` : ''}`).join('\n');
+  if (previousPlan === undefined) return feedback;
+  return `${feedback}\n\n[PLANNED — 수정할 최신 유효 설계; 이미 일어난 정사가 아니다]\n${JSON.stringify(previousPlan)}\n위 설계에서 지적된 부분을 고치고 이미 맞는 인과와 이전 수정은 보존한다. 확정 정사와 필수 요구사항이 우선이다. 전체 수정 설계를 반환한다.`;
 }
 
 /** A scene plan rendered for the plan critic: one block per scene, beats in order, names resolved. */
@@ -225,12 +232,19 @@ export function structureTargets(input: {
   readonly lineTargets?: LineTargetPolicy | undefined;
   readonly lengthTarget: number;
   readonly plannerVoice?: readonly string[] | undefined;
+  readonly causalRhythm?: boolean | undefined;
 }): string {
-  const lines: string[] = [
-    '- 한 화에 핵심 사건 하나, 장면은 1~3개, 사이다·폭로·웃음 같은 보상이 지면에서 터진다.',
-    '- 절단은 결단·선언, 위협, 코믹한 한 방, 감정, 폭로, 등장, 반전, 아이러니 중 하나이고 원고의 마지막 비트다. 요약·교훈·하루 마무리로 끝나지 않는다.',
-    '- 도입은 소리·용어·대사·직전 절단의 이어받기로 연다. 회상 요약이나 풍경으로 열지 않는다.',
-  ];
+  const lines: string[] = input.causalRhythm
+    ? [
+        '- 한 화의 중심 상황에서 이해·반응·선택·결과가 이어지고 독자가 얻는 변화가 있다.',
+        '- 절단은 다음에 확인할 구체적인 결과·행동·관계 질문을 남기는 마지막 비트다. 조용한 발견과 실행 대상 및 대가가 명확한 결심도 유효하다. 새 폭력이나 등장을 강제하지 않는다.',
+        '- 도입은 직전의 상황을 이어받거나 현재 위치·처지·욕구를 알 수 있는 한 상황에서 시작한다. 필요한 서술과 반응을 첫 세 문장 제한으로 밀어내지 않는다.',
+      ]
+    : [
+        '- 한 화에 핵심 사건 하나, 장면은 1~3개, 사이다·폭로·웃음 같은 보상이 지면에서 터진다.',
+        '- 절단은 결단·선언, 위협, 코믹한 한 방, 감정, 폭로, 등장, 반전, 아이러니 중 하나이고 원고의 마지막 비트다. 요약·교훈·하루 마무리로 끝나지 않는다.',
+        '- 도입은 소리·용어·대사·직전 절단의 이어받기로 연다. 회상 요약이나 풍경으로 열지 않는다.',
+      ];
   if (input.lineTargets) {
     const k = input.lengthTarget / 1000;
     lines.push(

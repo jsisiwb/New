@@ -368,12 +368,28 @@ export interface ProductionPolicy {
      * ADR-0099 (live defect G15-1): a story spec's requirement categories are read as the schema knows them — an exact category stays, an interpreter's word (relationship, setting, theme) becomes its nearest category, anything else becomes other, the schema's catch-all — instead of failing the spec (SPEC_INVALID at novel:start, which a retry replays from the recorded answer). The requirement's text, kind and scope are untouched. Absent or false: the spec is validated as written.
      */
     normalize_spec_categories?: boolean;
+    serial_architecture?: {
+      opening_chapters: number;
+      arrival_contract?: boolean;
+      /**
+       * ADR-0131: presence enables serial architecture critique before bible assembly; unresolved serious findings stop planning.
+       */
+      max_repairs?: number;
+    };
     /**
      * ADR-0120 (operator reading, run 6): chapters 1..chapters are the opening. Their planners, scene planners, writers and plan critics read a code-rendered opening design (where the hero is, who he is, what he wants and what is at stake, one core world rule, one major event per chapter, the world explained briefly in the hero's voice), the first scene's role asks for that orientation instead of a hook within three sentences, and the brief of the series' first arc keeps its core events out of the opening. Absent: the opening follows the fast-start rules of every chapter.
      */
     opening?: {
       chapters: number;
     };
+    /**
+     * ADR-0139: assess scene and chapter hooks by consequential choices and unresolved questions rather than mandatory spectacle; absent preserves earlier guidance.
+     */
+    causal_rhythm?: boolean;
+    /**
+     * ADR-0125: Korean concept candidates vary personal objective and relationship instead of automatically escalating chapter-one stakes. Absent keeps historical angle seeds.
+     */
+    concept_angles?: 'character_first';
     /**
      * ADR-0121 (operator reading, run 6): the concept generator reads the approved concepts of up to max_others other projects in the same workspace, and chapter 1's planner and critic read their accepted chapter-1 skeletons, as templates not to reuse; both lists are stored as artifacts at first use so a replay reads the same list. Absent: a concept is generated from its own spec and angle seed only.
      */
@@ -443,6 +459,10 @@ export interface ProductionPolicy {
    * Identity choices a policy makes for projects composed under it (ADR-0073). Absent: a Korean project composes the newest Korean language layer up to lang/ko@5, as before.
    */
   identity?: {
+    /**
+     * ADR-0124: explicit Korean tradition version for new projects. Absent: automatic Korean composition is capped at v3; English retains v1.
+     */
+    tradition_layer?: string;
     /**
      * The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches.
      */

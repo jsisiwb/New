@@ -17,6 +17,21 @@ run('CLI: project:archive', () => {
     await pool.end();
   });
 
+  it('defaults new projects to the craft policy and honors an explicit older pin', async () => {
+    for (const [flags, expected] of [
+      [[], 'policy/standard@48'],
+      [['--policy=policy/standard@37'], 'policy/standard@37'],
+    ] as const) {
+      const created = await runDb(['project:create', 'policy probe', ...flags]);
+      expect(created.ok).toBe(true);
+      const row = await pool.query<{ production_policy_version: string }>(
+        'SELECT production_policy_version FROM projects WHERE id = $1',
+        [(created.output as { projectId: string }).projectId],
+      );
+      expect(row.rows[0]?.production_policy_version).toBe(expected);
+    }
+  });
+
   it('archives a project in place, with its reason, and refuses an unknown id', async () => {
     const created = await runDb(['project:create', 'probe']);
     expect(created.ok).toBe(true);

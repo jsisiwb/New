@@ -1,0 +1,40 @@
+{
+  "family": "story_architect",
+  "version": "4.18.0",
+  "role": "story_architect",
+  "purpose": "Reader craft: story_architect (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "bible_summary",
+    "target_chapters",
+    "opening_chapters",
+    "previous_blueprint",
+    "plan_feedback"
+  ],
+  "output_schema": "series-blueprint.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 24000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.18.0 — repair reviewed serial architecture (ADR-0131).",
+  "regression_cases": [
+    "story_architect.contiguous_seasons",
+    "story_architect.complete_ending",
+    "story_architect.planned_bible",
+    "story_architect.reader-craft"
+  ],
+  "content_hash": "sha256:916c451028927f71c5506a5da1c8f92598f2a8747e4e8f61499b5e3ace935c56"
+}

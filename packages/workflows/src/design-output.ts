@@ -8,11 +8,37 @@ type RecordValue = Record<string, unknown>;
 export function assertDesignOutput(
   kind: DesignOutputKind,
   value: unknown,
+  craft: { voiceCards?: boolean; settingNotes?: boolean } = {},
 ): asserts value is RecordValue {
   const root = record(value, kind);
   if (kind === 'cast') validateCast(root);
   else if (kind === 'world') validateWorld(root);
   else validatePower(root);
+  if (kind === 'cast' && craft.voiceCards) {
+    optionalArray(root, 'characters', (item, path) => {
+      const card = record(itemRecord(item, path).inner_voice, `${path}.inner_voice`);
+      for (const key of ['archetype', 'temperament', 'humor', 'emotional_anchor', 'under_pressure'])
+        requiredText(card, key, `${path}.inner_voice`);
+      for (const key of ['habits', 'never']) {
+        optionalStringArray(card, key, `${path}.inner_voice`);
+        requiredTextLike(card, key, `${path}.inner_voice`);
+      }
+    });
+  }
+  if (kind === 'world' && craft.settingNotes) {
+    optionalArray(root, 'locations', (item, path) => {
+      const location = itemRecord(item, path);
+      const senses = record(location.senses, `${path}.senses`);
+      if (
+        !['sight', 'sound', 'smell', 'touch'].some(
+          (key) => typeof senses[key] === 'string' && senses[key].trim(),
+        )
+      )
+        reject(`${path}.senses`, 'needs an observable sensory detail');
+      requiredText(location, 'life', path);
+      requiredText(location, 'detail', path);
+    });
+  }
 }
 
 function validateCast(root: RecordValue): void {

@@ -1,0 +1,34 @@
+{
+  "family": "structure_judge",
+  "version": "4.16.0",
+  "role": "structure_judge",
+  "purpose": "Reader craft: structure_judge (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_structure",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "structure_lint_report",
+    "contract_shape"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.16.0 — causal arrival and authored serial architecture (ADR-0127).",
+  "regression_cases": [
+    "structure_judge.fixture.smoke",
+    "structure_judge.reader-craft"
+  ],
+  "content_hash": "sha256:491193805f491166909ffcbdf37aeddeea7841d4802ca4d7de03d8660dbe37ed"
+}

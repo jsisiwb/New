@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { requirePolicy, validatorFor } from '@yeonjae/domain';
 import { changedRanges, patchRegression } from './comparison.js';
 import { scoreTargets, type Scorecard } from './evaluation.js';
+import { clusterIssueSpans } from './multi-patch.js';
 
 const V14 = requirePolicy('policy/standard@14');
 const V15 = requirePolicy('policy/standard@15');
@@ -492,6 +493,74 @@ describe('net improvement and the length band (ADR-0093, G10-2, G10-4)', () => {
 });
 
 describe('score-only targets (ADR-0086, G5-3e)', () => {
+  const U = (n: number) => `01930000-0000-7000-8000-${String(n).padStart(12, '0')}`;
+  const lintCard = (over: Partial<Scorecard['issues'][number]> = {}) => {
+    const sc = card({ prose: 46, structure: 88 });
+    const lint: Scorecard['issues'][number] = {
+      id: U(30),
+      source: 'lint:ko_style',
+      dimension: 'prose',
+      kind: 'translation_like_english',
+      severity: 'minor',
+      status: 'open',
+      confidence: 1,
+      claim: '불필요한 대명사를 줄인다.',
+      override_class: 'advisory',
+      chapter_span: {
+        manuscript_version_id: sc.manuscript_version_id,
+        start: 2,
+        end: 4,
+        quote: '그녀',
+        paragraph_ids: ['p1'],
+      },
+      ...over,
+    };
+    sc.issues.push(lint);
+    Object.assign(sc.sections.prose, { lint_composite: 20 });
+    return { sc, lint };
+  };
+
+  it('targets the actual lint evidence behind a failing score even without model passages', () => {
+    const text = '😀 그녀의 검';
+    const { sc, lint } = lintCard();
+    const targets = scoreTargets(sc, text);
+    expect(targets).toEqual([lint]);
+    expect(targets[0]).toBe(lint);
+    expect(clusterIssueSpans(targets, Array.from(text).length, 0, text)).toMatchObject([
+      { start: 2, end: 4, issues: [lint] },
+    ]);
+    expect(sc.issues[0]?.severity).toBe('minor');
+  });
+
+  it('retains lint targets alongside a major while leaving its existing repair path intact', () => {
+    const { sc, lint } = lintCard();
+    sc.issues.push({ ...lint, id: U(31), source: 'judge:prose_judge', severity: 'major' });
+    expect(scoreTargets(sc, '😀 그녀의 검')).toEqual([lint]);
+  });
+
+  it('does not target a passing dimension, a healthy lint composite or ungrounded evidence', () => {
+    const { sc, lint } = lintCard();
+    const text = '😀 그녀의 검';
+    Object.assign(sc.sections.prose, { lint_composite: 90 });
+    expect(scoreTargets(sc, text)).toEqual([]);
+    Object.assign(sc.sections.prose, { lint_composite: 20 });
+    const result = sc.acceptance.dimension_results.find((r) => r.dimension === 'prose');
+    if (!result) throw new Error('missing prose gate');
+    result.passed = true;
+    expect(scoreTargets(sc, text)).toEqual([]);
+    result.passed = false;
+    for (const over of [
+      { status: 'resolved' as const },
+      { severity: 'note' as const },
+      { source: 'judge:prose_judge' },
+      { chapter_span: { ...lint.chapter_span, manuscript_version_id: U(32) } },
+      { chapter_span: { ...lint.chapter_span, quote: '없는' } },
+      { chapter_span: { ...lint.chapter_span, start: 3, end: 5 } },
+    ]) {
+      expect(scoreTargets(lintCard(over).sc, text)).toEqual([]);
+    }
+  });
+
   it('turns a failing dimension with no major into its weakest passages, anchored in the text', () => {
     const text = '첫 줄이다.\n약한 문장이 여기에 있다.\n끝.';
     const sc = card({

@@ -12,6 +12,9 @@ import { type ProductionPolicy } from './generated/production-policy.js';
 export type QualityTier = 'economy' | 'standard' | 'premium';
 export type PolicyRef = `policy/${QualityTier}@${number}`;
 
+/** Entry-point default for newly created projects; persisted project pins remain authoritative. */
+export const DEFAULT_NEW_PROJECT_POLICY: PolicyRef = 'policy/standard@48';
+
 function policiesDir(): string {
   const here = dirname(fileURLToPath(import.meta.url));
   return resolve(here, '..', '..', '..', 'examples', 'production-policies');

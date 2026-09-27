@@ -1,0 +1,43 @@
+{
+  "family": "scene_writer",
+  "version": "4.20.0",
+  "role": "scene_writer",
+  "purpose": "Causal serial rhythm through planning and writing (ADR-0139).",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "writer_full",
+  "model_class": "P",
+  "input_variables": [
+    "chapter_contract",
+    "scene_plan",
+    "scene_no",
+    "scene_total",
+    "scene_role",
+    "previous_text",
+    "canon_state",
+    "knowledge_lists",
+    "register_digests",
+    "open_promises",
+    "length_target_words",
+    "craft_context"
+  ],
+  "output_schema": "scene-draft.schema.json",
+  "output_mode": "text",
+  "params": {
+    "temperature": 0.85,
+    "max_tokens": 6000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.20.0 — align consequential hooks and reflection with causal opening assessment (ADR-0139).",
+  "regression_cases": [
+    "scene_writer.fixture.smoke",
+    "scene_writer.reader-craft"
+  ],
+  "content_hash": "sha256:d89699c2c5ecbc02fd71dea3920ad5089c67651fceb33602e2ba2f1a85b748e4"
+}

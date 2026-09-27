@@ -1,3 +1,12 @@
+import {
+  validateSerialCoverage,
+  validateSerialContent,
+  renderEpisode,
+  parseArchitectureReview,
+  type SerialPlan,
+} from './serial-architecture.js';
+import { conceptCraftContext, craftEnabled } from './craft-context.js';
+import { arcOpeningBrief, renderOtherStories } from './reader-craft.js';
 /**
  * Story planning: the model-driven path from a user's intake to a COMPLETE Story Bible and series plan.
  *
@@ -281,6 +290,19 @@ export function angleSeeds(lang: 'en' | 'ko'): readonly string[] {
   return ANGLES[lang];
 }
 
+const CHARACTER_FIRST_ANGLES = [
+  '개인 목표 중심: 주인공이 지금 구체적으로 원하는 것과 그것을 원하는 사정에서 첫 장면을 만든다. 힘의 크기와 성격은 따로 정한다. 대리만족은 그 목표가 움직이는 결과에서 얻고, 처지를 알기 전에 최대 위기나 숭배를 먼저 터뜨리지 않는다.',
+  '관계 중심: 앞 후보와 다른 관심사·애착·약점을 가진 주인공을 고르고, 힘만으로 해결되지 않는 첫 관계의 문제를 연다. 같은 하드 요구를 지키면서 첫 선택과 그 결과를 앞 후보와 다르게 만든다. 더 큰 위기를 차별점으로 대신하지 않는다.',
+  '공간과 생활 중심: 이 세계 사람들의 일과 규칙에 주인공의 구체적인 목적이 부딪히는 상황에서 시작한다. 필요한 방향 감각을 주고, 낯선 사람과 첫 합의 또는 충돌을 만든다.',
+  '예상 밖 선택 중심: 앞 후보들의 공통 해결책을 피하고, 이 인물의 애착이나 잘못된 판단 때문에 생기는 납득 가능한 다른 선택과 그 값을 만든다.',
+];
+
+export function conceptAngleSeed(lang: 'en' | 'ko', i: number, characterFirst = false): string {
+  if (lang === 'ko' && characterFirst)
+    return CHARACTER_FIRST_ANGLES[i % CHARACTER_FIRST_ANGLES.length] ?? angleSeed(lang, i);
+  return angleSeed(lang, i);
+}
+
 function angleSeed(lang: 'en' | 'ko', i: number): string {
   return ANGLES[lang][i] ?? (lang === 'ko' ? `대안 앵글 ${i + 1}` : `alternative angle ${i + 1}`);
 }
@@ -309,8 +331,13 @@ export async function suggestConcepts(
   );
   const block = compileFor(ctx, 'planner_compact');
   const concepts: Concept[] = [];
+  const otherStories = await conceptCraftContext(ctx, specVersion);
   for (let i = 0; i < count; i++) {
-    const angle = angleSeed(lang, i);
+    const angle = conceptAngleSeed(
+      lang,
+      i,
+      ctx.policy.planning?.concept_angles === 'character_first',
+    );
     const result = await runStep(
       ctx,
       'concept',
@@ -322,6 +349,21 @@ export async function suggestConcepts(
           variables: {
             story_spec: renderSpec(spec.spec, lang),
             angle_seed: angle,
+            ...(otherStories !== undefined
+              ? {
+                  other_stories: [
+                    otherStories,
+                    renderOtherStories(
+                      concepts.map((concept) => ({
+                        title: concept.angle,
+                        concept: { ...concept },
+                      })),
+                    ),
+                  ]
+                    .filter(Boolean)
+                    .join('\n\n'),
+                }
+              : {}),
             spec_version: String(specVersion),
           },
           block,
@@ -741,7 +783,9 @@ export async function buildFullBible(
             variables: { story_spec: specText, concept: conceptText, cast_brief: castBrief },
             block,
           });
-          assertDesignOutput('cast', call.output);
+          assertDesignOutput('cast', call.output, {
+            voiceCards: craftEnabled(ctx) && ctx.policy.planning?.voice_cards === true,
+          });
           if (!Array.isArray(call.output.characters) || call.output.characters.length === 0)
             throw new WorkflowError('SPEC_INVALID', 'character_designer returned no characters', {
               step: 'cast',
@@ -765,7 +809,9 @@ export async function buildFullBible(
       variables: { story_spec: specText, concept: conceptText },
       block,
     });
-    assertDesignOutput('world', call.output);
+    assertDesignOutput('world', call.output, {
+      settingNotes: craftEnabled(ctx) && ctx.policy.drafting?.setting_notes === true,
+    });
     if (
       !Array.isArray(call.output.world_rules) ||
       !call.output.world_rules.length ||
@@ -1153,145 +1199,247 @@ export async function buildFullBible(
     'blueprint',
     `blueprint:${concept.id}`,
     async (activityId) => {
-      const call = await modelCall<(Partial<SeriesBlueprint> & { promises?: RawPromise[] }) | null>(
-        ctx,
-        {
+      const maxRepairs = craftEnabled(ctx)
+        ? ctx.policy.planning?.serial_architecture?.max_repairs
+        : undefined;
+      const recovery =
+        maxRepairs !== undefined
+          ? await loadRejectedArchitecture(
+              ctx,
+              `blueprint:${concept.id}`,
+              activityId,
+              spec.version,
+              maxRepairs,
+            )
+          : undefined;
+      let previousBlueprint = recovery ? JSON.stringify(recovery.blueprint) : '(없음)';
+      let planFeedback = recovery ? JSON.stringify(recovery.findings) : '(없음)';
+      for (let attempt = 0; ; attempt++) {
+        const call = await modelCall<
+          (Partial<SeriesBlueprint> & { promises?: RawPromise[] }) | null
+        >(ctx, {
           step: 'blueprint',
           family: 'story_architect',
-          activityId,
+          activityId: attempt === 0 ? activityId : `${activityId}:repair:${attempt}`,
           variables: {
+            previous_blueprint: previousBlueprint,
+            plan_feedback: planFeedback,
             story_spec: specText,
             concept: conceptText,
             bible_summary: renderBibleSummary(draftBible, lang),
             target_chapters: String(intake.target_chapters),
+            opening_chapters: String(
+              Math.min(
+                intake.target_chapters,
+                ctx.policy.planning?.serial_architecture?.opening_chapters ?? 10,
+              ),
+            ),
           },
           block,
-        },
-      );
-      const raw = call.output;
-      if (
-        !raw ||
-        !str(raw.ending?.summary) ||
-        !Array.isArray(raw.ending?.final_state_assertions) ||
-        !raw.ending.final_state_assertions.length ||
-        raw.ending.final_state_assertions.some((s) => !str(s))
-      )
-        incompletePlan(
-          'blueprint',
-          'The ending needs a summary and concrete final-state assertions.',
-        );
-      if (
-        !Array.isArray(raw.endgame_requirements) ||
-        !raw.endgame_requirements.length ||
-        raw.endgame_requirements.some((r) => !fieldText(r, 'statement'))
-      )
-        incompletePlan('blueprint', 'The complete series needs authored endgame requirements.');
-      const protagonistId =
-        resolve(intake.main_character?.name) ??
-        resolve(characters[0]?.display_name) ??
-        entities[0]?.id;
-      const seasons = normalizeSeasons(raw.seasons, intake.target_chapters, ctx.projectId);
-      const promises = normalizePromises(
-        raw.promises,
-        ctx.projectId,
-        resolve,
-        intake.target_chapters,
-      );
-      const candidate: SeriesBlueprint = {
-        project_id: ctx.projectId,
-        version: spec.version,
-        pinned: { spec_version: spec.version, bible_version: spec.version },
-        story_promise: str(raw.story_promise) ?? concept.story_promise,
-        reader_fantasy: str(raw.reader_fantasy) ?? concept.reader_fantasy,
-        main_conflict: str(raw.main_conflict) ?? concept.main_conflict,
-        ...(Array.isArray(raw.themes) ? { themes: raw.themes.filter(isString) } : {}),
-        protagonist_arc: normalizeArc(
-          raw.protagonist_arc,
-          protagonistId ?? '',
-          intake.target_chapters,
-        ),
-        ...(raw.character_arcs !== undefined
-          ? {
-              character_arcs: (assertRecordItems(raw.character_arcs, 'character_arcs') ?? [])
-                .map((a) => {
-                  const id =
-                    isUuidLike(a.entity_id) && entities.some((e) => e.id === a.entity_id)
-                      ? a.entity_id
-                      : resolve(str(a.entity_name) ?? str(a.entity_id));
-                  return id ? normalizeArc(a, id, intake.target_chapters) : undefined;
-                })
-                .filter(isDefined),
-            }
-          : {}),
-        ...(raw.progression_arc
-          ? {
-              progression_arc: {
-                ...(str(raw.progression_arc.system_summary)
-                  ? { system_summary: str(raw.progression_arc.system_summary) }
-                  : {}),
-                ...(raw.progression_arc.milestones !== undefined
-                  ? {
-                      milestones: (
-                        assertRecordItems(
-                          raw.progression_arc.milestones,
-                          'progression_arc.milestones',
-                        ) ?? []
-                      )
-                        .map((m) => normalizeMilestone(m, intake.target_chapters))
-                        .filter(isDefined),
-                    }
-                  : {}),
-                ...(typeof raw.progression_arc.cadence_chapters === 'number' &&
-                raw.progression_arc.cadence_chapters >= 1
-                  ? { cadence_chapters: Math.round(raw.progression_arc.cadence_chapters) }
-                  : {}),
-              },
-            }
-          : {}),
-        ending: {
-          type: endingType(raw.ending.type, intake.ending_preference),
-          ...(str(raw.ending.summary) ? { summary: str(raw.ending.summary) } : {}),
-          final_state_assertions:
-            Array.isArray(raw.ending.final_state_assertions) &&
-            raw.ending.final_state_assertions.filter(isString).length > 0
-              ? raw.ending.final_state_assertions.filter(isString)
-              : [concept.ending_direction],
-        },
-        endgame_requirements: (
-          assertRecordItems(raw.endgame_requirements, 'endgame_requirements') ?? []
+        });
+        const raw = call.output;
+        if (
+          !raw ||
+          !str(raw.ending?.summary) ||
+          !Array.isArray(raw.ending?.final_state_assertions) ||
+          !raw.ending.final_state_assertions.length ||
+          raw.ending.final_state_assertions.some((s) => !str(s))
         )
-          .map((r, i) => ({
-            id: str(r.id) ?? `EG-${i + 1}`,
-            statement: str(r.statement) ?? '',
-            kind:
-              typeof r.kind === 'string' &&
-              ['fact', 'knowledge', 'relationship', 'promise_paid', 'progression'].includes(r.kind)
-                ? r.kind
-                : 'fact',
-          }))
-          .filter((r) => r.statement.length > 0),
-        seasons,
-        foreshadowing_register: promises.map((p) => p.id),
-      } as SeriesBlueprint;
-      const v = validatorFor<SeriesBlueprint>('series-blueprint.schema.json')(candidate);
-      if (!v.ok)
-        throw new WorkflowError(
-          'ARC_PLAN_INVALID',
-          `series blueprint does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
-          { step: 'blueprint', recommendedActions: ['regenerate'] },
+          incompletePlan(
+            'blueprint',
+            'The ending needs a summary and concrete final-state assertions.',
+          );
+        if (
+          !Array.isArray(raw.endgame_requirements) ||
+          !raw.endgame_requirements.length ||
+          raw.endgame_requirements.some((r) => !fieldText(r, 'statement'))
+        )
+          incompletePlan('blueprint', 'The complete series needs authored endgame requirements.');
+        const protagonistId =
+          resolve(intake.main_character?.name) ??
+          resolve(characters[0]?.display_name) ??
+          entities[0]?.id;
+        const seasons = normalizeSeasons(raw.seasons, intake.target_chapters, ctx.projectId);
+        const promises = normalizePromises(
+          raw.promises,
+          ctx.projectId,
+          resolve,
+          intake.target_chapters,
         );
-      const ref = await saveArtifact(ctx, {
-        step: 'blueprint',
-        kind: 'series_blueprint',
-        key: `v${spec.version}`,
-        schema: 'series-blueprint.schema.json',
-        payload: v.value,
-      });
-      return { blueprint: v.value, promises, artifactId: ref.artifact_id };
+        const candidate: SeriesBlueprint = {
+          project_id: ctx.projectId,
+          version: spec.version,
+          pinned: { spec_version: spec.version, bible_version: spec.version },
+          story_promise: str(raw.story_promise) ?? concept.story_promise,
+          reader_fantasy: str(raw.reader_fantasy) ?? concept.reader_fantasy,
+          main_conflict: str(raw.main_conflict) ?? concept.main_conflict,
+          ...(Array.isArray(raw.themes) ? { themes: raw.themes.filter(isString) } : {}),
+          protagonist_arc: normalizeArc(
+            raw.protagonist_arc,
+            protagonistId ?? '',
+            intake.target_chapters,
+          ),
+          ...(raw.character_arcs !== undefined
+            ? {
+                character_arcs: (assertRecordItems(raw.character_arcs, 'character_arcs') ?? [])
+                  .map((a) => {
+                    const id =
+                      isUuidLike(a.entity_id) && entities.some((e) => e.id === a.entity_id)
+                        ? a.entity_id
+                        : resolve(str(a.entity_name) ?? str(a.entity_id));
+                    return id ? normalizeArc(a, id, intake.target_chapters) : undefined;
+                  })
+                  .filter(isDefined),
+              }
+            : {}),
+          ...(raw.progression_arc
+            ? {
+                progression_arc: {
+                  ...(str(raw.progression_arc.system_summary)
+                    ? { system_summary: str(raw.progression_arc.system_summary) }
+                    : {}),
+                  ...(raw.progression_arc.milestones !== undefined
+                    ? {
+                        milestones: (
+                          assertRecordItems(
+                            raw.progression_arc.milestones,
+                            'progression_arc.milestones',
+                          ) ?? []
+                        )
+                          .map((m) => normalizeMilestone(m, intake.target_chapters))
+                          .filter(isDefined),
+                      }
+                    : {}),
+                  ...(typeof raw.progression_arc.cadence_chapters === 'number' &&
+                  raw.progression_arc.cadence_chapters >= 1
+                    ? { cadence_chapters: Math.round(raw.progression_arc.cadence_chapters) }
+                    : {}),
+                },
+              }
+            : {}),
+          ending: {
+            type: endingType(raw.ending.type, intake.ending_preference),
+            ...(str(raw.ending.summary) ? { summary: str(raw.ending.summary) } : {}),
+            final_state_assertions:
+              Array.isArray(raw.ending.final_state_assertions) &&
+              raw.ending.final_state_assertions.filter(isString).length > 0
+                ? raw.ending.final_state_assertions.filter(isString)
+                : [concept.ending_direction],
+          },
+          endgame_requirements: (
+            assertRecordItems(raw.endgame_requirements, 'endgame_requirements') ?? []
+          )
+            .map((r, i) => ({
+              id: str(r.id) ?? `EG-${i + 1}`,
+              statement: str(r.statement) ?? '',
+              kind:
+                typeof r.kind === 'string' &&
+                ['fact', 'knowledge', 'relationship', 'promise_paid', 'progression'].includes(
+                  r.kind,
+                )
+                  ? r.kind
+                  : 'fact',
+            }))
+            .filter((r) => r.statement.length > 0),
+          seasons,
+          ...(craftEnabled(ctx) && ctx.policy.planning?.serial_architecture
+            ? { serial_plan: raw.serial_plan }
+            : {}),
+          foreshadowing_register: promises.map((p) => p.id),
+        } as SeriesBlueprint;
+        let blueprint: SeriesBlueprint;
+        try {
+          const v = validatorFor<SeriesBlueprint>('series-blueprint.schema.json')(candidate);
+          if (!v.ok)
+            throw new WorkflowError(
+              'ARC_PLAN_INVALID',
+              `series blueprint does not validate: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`,
+              { step: 'blueprint', recommendedActions: ['regenerate'] },
+            );
+          if (craftEnabled(ctx) && ctx.policy.planning?.serial_architecture)
+            validateSerialCoverage(
+              v.value,
+              intake.target_chapters,
+              ctx.policy.planning.serial_architecture.opening_chapters,
+            );
+          if (maxRepairs !== undefined) validateSerialContent(v.value);
+          blueprint = v.value;
+        } catch (error) {
+          if (
+            maxRepairs === undefined ||
+            !(error instanceof WorkflowError) ||
+            error.code !== 'ARC_PLAN_INVALID'
+          )
+            throw error;
+          const findings = architectureValidationFindings(error.detail);
+          await saveArtifact(ctx, {
+            step: 'blueprint',
+            kind: 'serial_architecture_validation',
+            key: `${activityId}:review:${attempt}`,
+            payload: { attempt, findings },
+          });
+          if (attempt >= maxRepairs) throw error;
+          previousBlueprint = JSON.stringify(raw);
+          planFeedback = JSON.stringify(findings);
+          continue;
+        }
+        if (maxRepairs !== undefined) {
+          const review = await modelCall(ctx, {
+            step: 'blueprint',
+            family: 'serial_architecture_critic',
+            activityId: `${activityId}:review:${attempt}`,
+            variables: {
+              story_spec: specText,
+              blueprint: JSON.stringify({
+                ...blueprint,
+                promises,
+                bible_context: renderBibleSummary(draftBible, lang),
+              }),
+            },
+          });
+          const findings = parseArchitectureReview(review.output);
+          await saveArtifact(ctx, {
+            step: 'blueprint',
+            kind: 'serial_architecture_review',
+            key: `${activityId}:review:${attempt}`,
+            payload: { attempt, blueprint, findings },
+          });
+          const serious = findings.filter((f) => f.severity !== 'minor');
+          if (serious.length > 0) {
+            if (attempt >= maxRepairs)
+              throw new WorkflowError(
+                'ARC_PLAN_INVALID',
+                'Serial architecture has unresolved serious findings.',
+                {
+                  step: 'blueprint',
+                  data: { findings: serious },
+                  recommendedActions: ['regenerate'],
+                },
+              );
+            previousBlueprint = JSON.stringify(raw);
+            planFeedback = JSON.stringify(serious);
+            continue;
+          }
+        }
+        const ref = await saveArtifact(ctx, {
+          step: 'blueprint',
+          kind: 'series_blueprint',
+          key: `v${spec.version}`,
+          schema: 'series-blueprint.schema.json',
+          payload: blueprint,
+        });
+        return { blueprint, promises, artifactId: ref.artifact_id };
+      }
     },
   );
 
-  const bible: StoryBible = { ...draftBible, promises: blueprintStep.promises };
+  const bible: StoryBible = {
+    ...draftBible,
+    promises: blueprintStep.promises,
+    ...(blueprintStep.blueprint.serial_plan
+      ? { serial_plan: blueprintStep.blueprint.serial_plan }
+      : {}),
+  };
   const bibleRef = await runStep(ctx, 'bible_assembly', async () => {
     const ref = await saveArtifact(ctx, {
       step: 'bible_assembly',
@@ -1335,6 +1483,7 @@ export interface ArcSchedule {
     ordinal: number;
     /** 1-based position of this arc inside its season. */
     arcInSeason: number;
+    episode?: SerialPlan['episodes'][number];
   }[];
 }
 
@@ -1348,6 +1497,26 @@ const SPLIT_SEASONS_LONGER_THAN = 15;
 
 /** Which arc a chapter belongs to, from the blueprint's season windows. */
 export function scheduleFromBlueprint(projectId: string, blueprint: SeriesBlueprint): ArcSchedule {
+  if (blueprint.serial_plan) {
+    const counts = new Map<number, number>();
+    return {
+      arcs: blueprint.serial_plan.episodes.map((episode) => {
+        const ordinal = episode.season_ordinal;
+        const arcInSeason = (counts.get(ordinal) ?? 0) + 1;
+        counts.set(ordinal, arcInSeason);
+        const season = blueprint.seasons.find((s) => s.ordinal === ordinal);
+        return {
+          id: planIds.arc(projectId, ordinal, arcInSeason),
+          seasonId: season?.id ?? planIds.season(projectId, ordinal),
+          from: episode.chapter_range.from,
+          to: episode.chapter_range.to,
+          ordinal,
+          arcInSeason,
+          episode,
+        };
+      }),
+    };
+  }
   const arcs = blueprint.seasons.flatMap((s) => {
     const seasonId = s.id ?? planIds.season(projectId, s.ordinal);
     const { from, to } = s.chapter_range_est;
@@ -1452,9 +1621,12 @@ export async function planArcFromBlueprint(
             : season
               ? `Season ${season.ordinal} "${season.title}" (id ${input.arc.seasonId}), chapters ${season.chapter_range_est.from}–${season.chapter_range_est.to}: ${season.objective}${season.thesis ? ` Thesis: ${season.thesis}` : ''}`
               : `Season ${input.arc.ordinal} (id ${input.arc.seasonId})`,
-          arc_brief: ko
-            ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.`
-            : `Arc ${input.arc.arcInSeason} of season ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
+          arc_brief:
+            input.arc.episode && input.blueprint.serial_plan && ko
+              ? `${renderEpisode(input.blueprint.serial_plan, input.arc.episode)}\n아크 id: ${input.arc.id}. 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 등록부 id만 쓴다.${input.previousArcExit ? ` 이전 아크의 실제 끝: ${input.previousArcExit}` : ''}${input.arc.from === 1 && ctx.policy.planning?.opening ? arcOpeningBrief(ctx.policy.planning.opening.chapters) : ''}`
+              : ko
+                ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.${craftEnabled(ctx) && ctx.policy.planning?.opening && input.arc.from === 1 ? arcOpeningBrief(ctx.policy.planning.opening.chapters) : ''}`
+                : `Arc ${input.arc.arcInSeason} of season ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
           canon_state: renderArcPlanningDigest(input.bible, lang, {
             from: input.arc.from,
             to: input.arc.to,
@@ -2064,6 +2236,78 @@ async function runDesignStep<T>(
   });
 }
 
+function architectureValidationFindings(
+  message: string,
+): ReturnType<typeof parseArchitectureReview> {
+  return [
+    {
+      severity: 'blocking',
+      target: 'serial_plan',
+      claim: message,
+      fix: 'Return the complete blueprint with the reported validation error corrected. Supply authored story content, align episode ranges with seasons, and preserve requested coverage and already-correct story decisions.',
+    },
+  ];
+}
+
+/** Resume the latest rejected design, including reviews written before generation-specific keys. */
+async function loadRejectedArchitecture(
+  ctx: WorkflowContext,
+  baseActivityId: string,
+  activityId: string,
+  specVersion: number,
+  maxRepairs: number,
+): Promise<
+  { blueprint: unknown; findings: ReturnType<typeof parseArchitectureReview> } | undefined
+> {
+  const generation = Number(
+    /^:regeneration:(\d+)$/.exec(activityId.slice(baseActivityId.length))?.[1] ?? 0,
+  );
+  if (generation < 1) return undefined;
+  const previous =
+    generation === 1 ? baseActivityId : `${baseActivityId}:regeneration:${generation - 1}`;
+  const keys = Array.from({ length: maxRepairs + 1 }, (_, i) => `${previous}:review:${i}`);
+  if (generation === 1)
+    keys.push(...Array.from({ length: maxRepairs + 1 }, (_, i) => `v${specVersion}:attempt${i}`));
+  const reviews = await ctx.pool.query<{ payload: { attempt: number; findings: unknown } }>(
+    `SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind IN ('serial_architecture_review','serial_architecture_validation') AND key=ANY($2::text[]) ORDER BY created_at DESC LIMIT 1`,
+    [ctx.projectId, keys],
+  );
+  let review = reviews.rows[0]?.payload;
+  if (!review) {
+    // Older validation failures stopped before review artifacts were written.
+    const rejected = await existingArtifact(ctx, {
+      step: 'blueprint',
+      kind: 'planning_rejection',
+      key: previous,
+    });
+    const message =
+      rejected?.payload && typeof rejected.payload === 'object'
+        ? (rejected.payload as { message?: unknown }).message
+        : undefined;
+    if (
+      typeof message === 'string' &&
+      (message.startsWith('Serial architecture:') ||
+        message.startsWith('series blueprint does not validate:'))
+    )
+      review = { attempt: 0, findings: architectureValidationFindings(message) };
+  }
+  if (!review) return undefined;
+  const candidateActivity =
+    review.attempt === 0 ? previous : `${previous}:repair:${review.attempt}`;
+  const outputs = await ctx.pool.query<{ payload: { json?: unknown } }>(
+    `SELECT a.payload FROM llm_calls c JOIN workflow_artifacts a ON a.id=(c.artifact_ref->>'artifact_id')::uuid AND a.project_id=c.project_id
+      WHERE c.project_id=$1 AND c.role='story_architect' AND c.activity_id=$2 AND c.status IN ('succeeded','fallback_succeeded')
+      ORDER BY c.created_at DESC LIMIT 1`,
+    [ctx.projectId, candidateActivity],
+  );
+  const blueprint = outputs.rows[0]?.payload.json;
+  if (!blueprint || typeof blueprint !== 'object') return undefined;
+  const findings = parseArchitectureReview({ issues: review.findings }).filter(
+    (f) => f.severity !== 'minor',
+  );
+  return findings.length ? { blueprint, findings } : undefined;
+}
+
 /**
  * The cast in three checkpointed batches under `planning.design_batches` (ADR-0072): protagonist, core
  * cast, supporting cast. Each batch is its own step and artifact, so a rerun replays the completed batches
@@ -2105,7 +2349,11 @@ async function designCastInBatches(
         const output: CastBatchOutput = call.output;
         // Register-only entries for characters designed earlier are not designs; only new characters
         // must carry the full design fields.
-        assertDesignOutput('cast', { ...call.output, characters: newCharacters(output, designed) });
+        assertDesignOutput(
+          'cast',
+          { ...call.output, characters: newCharacters(output, designed) },
+          { voiceCards: craftEnabled(ctx) && ctx.policy.planning?.voice_cards === true },
+        );
         if (newCharacters(output, designed).length === 0)
           throw new WorkflowError(
             'SPEC_INVALID',

@@ -18,13 +18,16 @@ describe('profile store and composition', () => {
       'genre/academy@1',
       'genre/academy@2',
       'genre/academy@3',
+      'genre/academy@4',
       'genre/harem@2',
+      'genre/harem@3',
       'genre/hunter-gate@1',
       'genre/hunter-gate@2',
       'genre/regression@1',
       'genre/regression@2',
       'genre/regression@3',
       'genre/regression@4',
+      'genre/regression@5',
       'genre/romance-fantasy@1',
       'genre/romance-fantasy@2',
       'lang/en@1',
@@ -41,6 +44,8 @@ describe('profile store and composition', () => {
       'tradition/kr-webnovel@1',
       'tradition/kr-webnovel@2',
       'tradition/kr-webnovel@3',
+      'tradition/kr-webnovel@4',
+      'tradition/kr-webnovel@5',
     ]);
     expect(identity.outputLanguage.language).toBe('en');
     expect(identity.genres.map((g) => g.genre_id)).toEqual(['hunter-gate', 'regression']);

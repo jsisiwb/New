@@ -13,6 +13,9 @@ describe('operator voice profiles', () => {
       'voice/operator@1',
       'voice/operator@2',
       'voice/operator@3',
+      'voice/operator@4',
+      'voice/operator@5',
+      'voice/operator@6',
     ]);
     const v = requireVoiceProfile('voice/operator@1', profiles);
     expect(v.language).toBe('ko');
@@ -47,6 +50,31 @@ describe('operator voice profiles', () => {
     expect(changed[0]).toContain('공개 일정이 독자에게 허락한 것만');
     expect(changed[0]).not.toContain('운명이나 비밀');
     for (const line of v3.planner) expect(line).not.toMatch(/[A-Za-z]/);
+  });
+
+  it('removes prescribed romantic initiative and alternating dialogue beats in v5', () => {
+    const old = requireVoiceProfile('voice/operator@4', profiles);
+    const current = requireVoiceProfile('voice/operator@5', profiles);
+    expect(old.planner.join('\n')).toContain('주인공은 쫓지 않는다');
+    expect(current.planner.join('\n')).not.toContain('주인공은 쫓지 않는다');
+    expect(current.planner.join('\n')).toContain('공개 일정과 실제 지식을 지킨다');
+    expect(current.writer.join('\n')).not.toContain('대사 한 줄 뒤에는 서술 비트 한 줄이 온다');
+    expect(current.judges).toEqual(old.judges);
+    for (const line of [...current.planner, ...current.writer])
+      expect(line).not.toMatch(/[A-Za-z]/);
+  });
+
+  it('v6 aligns planner, writer and judge guidance on consequential hooks', () => {
+    const current = requireVoiceProfile('voice/operator@6', profiles);
+    for (const lines of [current.planner, current.writer, current.judges]) {
+      expect(lines.some((line) => line.includes('실행 대상과 대가가 명확하면 유효하다'))).toBe(
+        true,
+      );
+      for (const line of lines) expect(line).not.toMatch(/[A-Za-z]/);
+    }
+    expect(requireVoiceProfile('voice/operator@5', profiles).writer.join(' ')).toContain(
+      '하루를 마무리하는 문장으로 끝내지 않는다',
+    );
   });
 
   it('rejects an unknown ref', () => {

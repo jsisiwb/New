@@ -1,3 +1,5 @@
+import { chapterCraftContext, sceneCraftContext, craftEnabled } from './craft-context.js';
+import { openingSceneRole } from './reader-craft.js';
 /**
  * Drafting steps: the scene_writer Context Pack (built by @yeonjae/context, persisted with its manifest and
  * hash), a validated Scene Plan, sequential scene drafts through the gateway (Guard + output-language check on
@@ -311,6 +313,7 @@ export async function planScenes(
           })
         : undefined;
       const critic = ctx.policy.planning?.plan_critic;
+      const craft = await chapterCraftContext(ctx, ch, input.bible);
       const planVars =
         schedule || critic
           ? {
@@ -325,6 +328,7 @@ export async function planScenes(
           activityId: `scene_plan:${ch}${suffix}`,
           variables: {
             ...planVars,
+            ...(craft !== undefined ? { craft_context: craft } : {}),
             ...(feedback !== undefined ? { plan_feedback: feedback } : {}),
             previous_chapter_tail:
               input.pack.variables.previous_text ??
@@ -462,7 +466,15 @@ export async function planScenes(
             .map((i) => ({ target: i.target, message: i.claim, fix: i.fix })),
         ];
         for (let attempt = 1; attempt <= critic.max_repairs && serious.length > 0; attempt++) {
-          const retry = await planOnce(renderPlanFeedback(serious), `:repair${String(attempt)}`);
+          const previousPlan =
+            ctx.identity.outputLanguage.language === 'ko' &&
+            ctx.policy.planning?.serial_architecture?.max_repairs !== undefined
+              ? scenes
+              : undefined;
+          const retry = await planOnce(
+            renderPlanFeedback(serious, previousPlan),
+            `:repair${String(attempt)}`,
+          );
           if (retry.issues.length > 0) break;
           repaired = repairDeterministic(retry.scenes);
           scenes = repaired.scenes;
@@ -533,14 +545,17 @@ async function runPlanCritic(
     activitySuffix?: string | undefined;
   },
 ): Promise<PlanCriticIssue[]> {
+  const craft = await chapterCraftContext(ctx, input.chapterNo);
   const call = await modelCall<{ issues?: unknown }>(ctx, {
     step: 'scene_plan',
     family: 'plan_critic',
     activityId: `plan_critic:${String(input.chapterNo)}${input.activitySuffix ?? ''}`,
     variables: {
+      ...(craft !== undefined ? { craft_context: craft } : {}),
       scene_plans: renderScenesForCritic(input.scenes, input.nameOf),
       reveal_schedule: input.scheduleText ?? '(설정에 기록된 비밀 없음)',
       structure_targets: structureTargets({
+        causalRhythm: ctx.policy.planning?.causal_rhythm,
         chapterNo: input.chapterNo,
         lineTargets: ctx.policy.planning?.dialogue_floor?.line_targets,
         lengthTarget: input.contract.length_target.value,
@@ -639,7 +654,7 @@ export async function draftScenes(
               chapterLines,
             );
     if (ctx.policy.planning?.cut_design && planned.scene_no === input.scenes.length)
-      note += cutNote(input.contract);
+      note += cutNote(input.contract, ctx.policy.planning.causal_rhythm);
     return note;
   };
   const renderPlan = (scene: ScenePlan, planned: ScenePlan) =>
@@ -678,18 +693,27 @@ export async function draftScenes(
       ctx,
       'scene_draft',
       async () => {
+        const craft = sceneCraftContext(ctx, ch, planned, input.bible);
         const variables = {
+          ...(craft !== undefined ? { craft_context: craft } : {}),
           scene_plan: renderPlan(scene, planned),
           scene_no: String(scene.scene_no),
           previous_text: previous,
           length_target_words: String(scene.length_target.value),
           // Where this scene sits in the episode curve (v4 writers close only the LAST scene on the 절단).
           scene_total: String(input.scenes.length),
-          scene_role: sceneRole(
-            scene.scene_no,
-            input.scenes.length,
-            ctx.identity.outputLanguage.language ?? 'en',
-          ),
+          scene_role:
+            (craftEnabled(ctx) &&
+            ctx.policy.planning?.opening &&
+            ch <= ctx.policy.planning.opening.chapters
+              ? openingSceneRole(scene.scene_no, input.scenes.length)
+              : undefined) ??
+            sceneRole(
+              scene.scene_no,
+              input.scenes.length,
+              ctx.identity.outputLanguage.language ?? 'en',
+              ctx.policy.planning?.causal_rhythm,
+            ),
         };
         const writeScene = (vars: typeof variables, activityId: string) =>
           modelCall<SceneDraft | string>(ctx, {
@@ -913,10 +937,26 @@ export async function draftScenes(
 
 /**
  * The scene's place in the episode curve, in the manuscript language. A Korean webnovel episode opens on a
- * hook, builds, and closes ONLY at its end on the 절단; a middle scene that wraps itself up with a reflective
- * closing line is the Western/AI habit the tradition contract forbids.
+ * hook, builds, and closes at its end on the contracted 절단. Causal rhythm permits reflection that changes
+ * the next choice; earlier policies retain their original scene guidance.
  */
-export function sceneRole(sceneNo: number, total: number, language: string): string {
+export function sceneRole(
+  sceneNo: number,
+  total: number,
+  language: string,
+  causalRhythm = false,
+): string {
+  if (causalRhythm && language === 'ko') {
+    const place =
+      total <= 1
+        ? '단독 장면'
+        : sceneNo === 1
+          ? '첫 장면'
+          : sceneNo === total
+            ? '마지막 장면'
+            : '중간 장면';
+    return `${place} — 현재 상황을 이해하고 반응·선택·결과를 따라간다. ${sceneNo === total || total <= 1 ? '계약의 절단을 마지막 비트로 살린다. 구체적인 선택이나 관계 질문도 당김이 되며 새 폭력을 강제하지 않는다.' : '짧은 지각과 감정 반응이 다음 선택을 바꾸게 하고 다음 장면과 인과로 잇는다.'}`;
+  }
   if (language !== 'ko') {
     if (total <= 1) return 'single scene: open on the hook, close on the chapter-ending hook';
     if (sceneNo === 1)
@@ -1242,11 +1282,32 @@ export function pronounRedraftNote(ratePer1k: number, warn: number): string {
   return `\n\n대명사 다시 쓰기: 직전 초고는 ‘그/그녀’가 1,000자에 ${String(ratePer1k)}번이었다(운영자 원고의 경고선 ${String(warn)}). 서술의 ‘그는·그녀는·그녀의’를 인물의 이름이나 호칭으로 바꾸거나 주어를 생략한다. 사건·비트·대사는 그대로 둔다.`;
 }
 
+/** ADR-0140: current replacement and untouched continuation are draft evidence, never accepted canon. */
+export function sceneRewriteBoundaryContext(old: string, after: string, language: string): string {
+  if (language !== 'ko')
+    return [
+      '[CURRENT DRAFT TO REPLACE — not accepted canon]',
+      old,
+      '[UNCHANGED FOLLOWING DRAFT — not accepted canon]',
+      after || '(End of chapter; no following prose.)',
+      'Return only the replacement scene. Continue from the preceding prose and join the unchanged following prose. Preserve correct earlier repairs and physical state; do not replay completed actions. If the original plan disagrees with the current draft boundaries, repair the transition while respecting accepted canon, reveal restrictions and the chapter contract.',
+      'The original scene plan is revisable planning. Keep required contract events and outcomes, but change local tactics, reaction order, humor or costs when those cause the reported defect. To repair repetition, change the causal interaction instead of swapping props or adjectives. Do not invent a new ability, reveal or event that violates canon or the contract.',
+    ].join('\n');
+  return [
+    '[교체할 현재 초안 — 확정 정사가 아니다]',
+    old,
+    '[교체 범위 뒤에 그대로 남는 초안 — 확정 정사가 아니다]',
+    after || '(회차 끝이다. 뒤에 남는 원고가 없다.)',
+    '교체할 장면만 반환한다. 앞선 원고의 현재 상태에서 이어 받아 뒤에 남는 원고에 연결한다. 이미 맞게 고친 내용과 물건·위치·행동 상태를 보존하고 끝난 행동을 다시 시작하지 않는다. 최초 장면 설계의 진입 상태가 현재 초안과 다르면 확정 정사·공개 제한·회차 계약을 지키며 연결을 고친다.',
+    '최초 장면 설계는 수정 가능한 계획이다. 회차 계약의 필수 사건과 결과는 지키되, 결함의 원인인 국지적 전술·반응 순서·유머 방식·대가는 바꿀 수 있다. 반복을 고칠 때는 소품이나 형용사만 교체하지 말고 선택과 상대 반응이 이어지는 인과를 바꾼다. 정사나 계약에 어긋나는 새 능력·공개·사건을 만들지 않는다.',
+  ].join('\n');
+}
+
 /**
  * ADR-0087 (STEP 3): the scene-rewrite rung of the escalation ladder. A finding kind that patches rarely repair
- * (the per-kind fix rates: pacing, exposition) is answered by drafting its scene again from the same scene plan,
- * with the findings and the scene's measured talk share, and the new scene replacing the old one in the current
- * version. The result is a revision of scope `scene` that the loop evaluates and regression-checks like a patch.
+ * (the per-kind fix rates: pacing, exposition) is answered by drafting its scene again with the original plan,
+ * findings and measured talk share. Checked rewrites may redesign local causality within the chapter contract
+ * (ADR-0142). The new scene replaces the old one and is evaluated and regression-checked like a patch.
  */
 export async function rewriteScene(
   ctx: WorkflowContext,
@@ -1298,7 +1359,14 @@ export async function rewriteScene(
       const note = [
         '',
         '',
-        '다시 쓰기: 이 장면의 앞선 원고는 아래 결함 때문에 통과하지 못했다. 같은 장면 설계로 장면 전체를 새로 쓴다.',
+        ctx.policy.revision.ladder?.rewrite_checks
+          ? ko
+            ? '다시 쓰기: 아래 결함을 고치도록 장면 전체를 새로 쓴다. 회차 계약과 현재 초안의 경계를 지킨다.'
+            : 'Rewrite the scene to repair the findings below, respecting the chapter contract and current draft boundaries.'
+          : '다시 쓰기: 이 장면의 앞선 원고는 아래 결함 때문에 통과하지 못했다. 같은 장면 설계로 장면 전체를 새로 쓴다.',
+        ...(ctx.policy.revision.ladder?.rewrite_checks
+          ? [sceneRewriteBoundaryContext(old, after, ko ? 'ko' : 'en')]
+          : []),
         ...input.findings.map((f) => `- ${ko ? claimForKoreanNote(f.claim) : f.claim}`),
         `앞선 원고의 대사·속마음 비중은 ${String(Math.round(measured * 100))}%였다.`,
         ...(input.rejected?.length
@@ -1326,9 +1394,11 @@ export async function rewriteScene(
         : '';
       const cut =
         ctx.policy.planning?.cut_design && input.scene.scene_no === input.sceneTotal
-          ? cutNote(input.contract)
+          ? cutNote(input.contract, ctx.policy.planning.causal_rhythm)
           : '';
+      const craft = sceneCraftContext(ctx, ch, input.scene, input.checks?.bible);
       const variables = {
+        ...(craft !== undefined ? { craft_context: craft } : {}),
         scene_plan: planText + targetsNote + cut + note,
         scene_no: String(input.scene.scene_no),
         previous_text:
@@ -1339,7 +1409,18 @@ export async function rewriteScene(
               : `(Chapter ${String(ch)} opens the series; nothing precedes it.)`)),
         length_target_words: String(input.scene.length_target.value),
         scene_total: String(input.sceneTotal),
-        scene_role: sceneRole(input.scene.scene_no, input.sceneTotal, ko ? 'ko' : 'en'),
+        scene_role:
+          (craftEnabled(ctx) &&
+          ctx.policy.planning?.opening &&
+          ch <= ctx.policy.planning.opening.chapters
+            ? openingSceneRole(input.scene.scene_no, input.sceneTotal)
+            : undefined) ??
+          sceneRole(
+            input.scene.scene_no,
+            input.sceneTotal,
+            ko ? 'ko' : 'en',
+            ctx.policy.planning?.causal_rhythm,
+          ),
       };
       const write = async (vars: typeof variables, activityId: string) => {
         const c = await modelCall<SceneDraft | string>(ctx, {

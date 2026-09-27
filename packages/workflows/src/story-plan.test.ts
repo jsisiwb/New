@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   angleSeeds,
+  conceptAngleSeed,
   arcBeatTypeOf,
   normalizeArcKnowledge,
   secretMeetingFloors,
@@ -81,5 +82,17 @@ describe('arc plan beat types (ADR-0096, G13-1)', () => {
     expect(arcBeatTypeOf('착각')).toBeUndefined();
     expect(arcBeatTypeOf(3)).toBeUndefined();
     expect(arcBeatTypeOf(undefined)).toBeUndefined();
+  });
+});
+
+describe('character-led concept angles', () => {
+  it('keeps historical and English seeds while varying Korean character objectives', () => {
+    for (let i = 0; i < 4; i++) {
+      expect(conceptAngleSeed('en', i, true)).toBe(angleSeeds('en')[i]);
+      expect(conceptAngleSeed('ko', i)).toBe(angleSeeds('ko')[i]);
+    }
+    expect(conceptAngleSeed('ko', 0, true)).toContain('개인 목표 중심');
+    expect(conceptAngleSeed('ko', 1, true)).toContain('관계 중심');
+    expect(conceptAngleSeed('ko', 4, true)).toBe(conceptAngleSeed('ko', 0, true));
   });
 });

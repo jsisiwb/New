@@ -334,6 +334,10 @@ export type StoryIntake = {
   operating_mode?: 'assisted' | 'semi_auto' | 'autopilot';
   quality_tier?: 'economy' | 'standard' | 'premium';
   /**
+   * Arrival: chapter one experiences the change and establishes the protagonist’s situation before routine action. Established: deliberately begin after adaptation. Under a policy with arrival_contract, Korean possession/regression/reincarnation defaults to arrival.
+   */
+  opening_mode?: 'arrival' | 'established';
+  /**
    * Narrative point of view for every chapter (ADR-0073): the contract's and scene plans' POV person are held to it, the writer's identity block states it, and the Korean lint checks narration against it (KO-POV-01).
    */
   pov?: 'first' | 'third_limited' | 'third_omniscient';

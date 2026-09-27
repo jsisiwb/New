@@ -1,0 +1,34 @@
+{
+  "family": "world_builder",
+  "version": "4.16.0",
+  "role": "world_builder",
+  "purpose": "Reader craft: world_builder (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.16.0 — causal arrival and authored serial architecture (ADR-0127).",
+  "regression_cases": [
+    "world_builder.authored_rules_locations",
+    "world_builder.raw_design",
+    "world_builder.reader-craft"
+  ],
+  "content_hash": "sha256:695ad79723b5367cebfa812c677bfcfa384cc96375145a0127d770e692d1d70f"
+}

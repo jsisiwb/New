@@ -1,0 +1,35 @@
+{
+  "family": "character_designer",
+  "version": "4.16.0",
+  "role": "character_designer",
+  "purpose": "Reader craft: character_designer (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "cast_brief"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.16.0 — causal arrival and authored serial architecture (ADR-0127).",
+  "regression_cases": [
+    "character_designer.full_bible_names",
+    "character_designer.full_bible_fields",
+    "character_designer.reader-craft"
+  ],
+  "content_hash": "sha256:93d25db0c8f25b10778798c94d37a6b0effe4ac7bda47a8c6a0f62557e098123"
+}

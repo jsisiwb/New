@@ -1,0 +1,36 @@
+{
+  "family": "voice_judge",
+  "version": "4.12.0",
+  "role": "voice_judge",
+  "purpose": "Reader craft: voice_judge (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_voice",
+  "model_class": "C",
+  "input_variables": [
+    "chapter_text",
+    "voice_cards",
+    "address_matrix",
+    "register_digests",
+    "register_check_report"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 1500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "voice_judge.fixture.smoke",
+    "voice_judge.reader-craft"
+  ],
+  "content_hash": "sha256:cf2dd0d771e2c8dadbf4dd070906b3e13742a6795a3c35fe9033e1877cb6152e"
+}

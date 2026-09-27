@@ -859,7 +859,7 @@ export async function evaluateVersion(
                   ? `문단 ${paragraphs.length}개; 잘림 검사 ${det.truncation.passed ? '통과' : '실패'}.${det.ko_style ? ` 대사 비중 ${String(Math.round(det.ko_style.metrics.dialogue_ratio * 100))}%, 긴 서술 문단 ${String(Math.round(det.ko_style.metrics.long_paragraph_ratio * 100))}%, 최장 문단 ${String(det.ko_style.metrics.max_paragraph_chars)}자.${det.ko_style.findings.some((f) => f.rule_id === 'KO-END-01') ? ' 마지막 문단이 요약·관조형으로 판정됨(KO-END-01).' : ''}` : ''}`
                   : `paragraphs ${paragraphs.length}; truncation check ${det.truncation.passed ? 'passed' : 'FAILED'}.`,
                 contract_shape: ko
-                  ? `도입 ${input.contract.opening.type}; 절단 ${input.contract.hook.type}; 로컬 보상 ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; 장면 ${input.contract.scene_count}개.`
+                  ? `도입 ${input.contract.opening.type}; 절단 ${input.contract.hook.type}; 로컬 보상 ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; 장면 ${input.contract.scene_count}개.${ctx.policy.planning?.serial_architecture?.arrival_contract ? `\n구체적인 도입: ${input.contract.opening.description}\n구체적인 절단: ${input.contract.hook.description}\n보상 내용: ${input.contract.local_satisfaction.map((s) => s.description).join('; ')}\n필수 사건과 독자 경험:\n${input.contract.must_happen.map((m) => `[${m.id}] ${m.description}`).join('\n')}` : ''}`
                   : `opening ${input.contract.opening.type}; hook ${input.contract.hook.type}; local satisfaction ${input.contract.local_satisfaction.map((s) => s.type).join(', ')}; scenes ${input.contract.scene_count}.`,
               },
               block: compileFor(ctx, 'judge_rubric_structure'),
@@ -891,7 +891,14 @@ export async function evaluateVersion(
               variables: voiceV2
                 ? {
                     chapter_text: chapterText,
-                    voice_cards: orNone(voiceCards(input.contract, input.bible, lang)),
+                    voice_cards: orNone(
+                      voiceCards(
+                        input.contract,
+                        input.bible,
+                        lang,
+                        ctx.policy.planning?.voice_cards === true,
+                      ),
+                    ),
                     address_matrix: orNone(
                       addressMatrix(input.contract, input.bible, lang, {
                         timeFramed: ctx.policy.planning?.register_time_frames === true,
@@ -1784,15 +1791,42 @@ export function revisionTargets(scorecard: Scorecard): Issue[] {
 }
 
 /**
- * ADR-0086 (G5-3e): minor revision targets for a gated dimension that fails by score with no open blocking or
- * major finding — its judge's weakest passages, anchored in the version's text. They never block approval.
+ * ADR-0086/0141: repair targets for a dimension failing its score gate. Grounded lint findings address a low
+ * lint composite; without a major finding, the judge's weakest passages also supply targets. Advisory targets
+ * retain their severity and never become approval blockers.
  */
 export function scoreTargets(scorecard: Scorecard, versionText: string): Issue[] {
   const text = toNfcText(versionText).text;
+  const points = Array.from(text);
   const out: Issue[] = [];
   for (const r of scorecard.acceptance.dimension_results) {
     if (r.passed) continue;
     const dim = r.dimension;
+    const section = (
+      scorecard.sections as Record<string, { weakest_passages?: unknown; lint_composite?: number }>
+    )[dim];
+    if (typeof section?.lint_composite === 'number' && section.lint_composite < r.threshold) {
+      out.push(
+        ...scorecard.issues.filter((i) => {
+          const span = i.chapter_span;
+          return (
+            i.dimension === dim &&
+            i.status === 'open' &&
+            i.severity === 'minor' &&
+            i.source.startsWith('lint:') &&
+            span?.manuscript_version_id === scorecard.manuscript_version_id &&
+            typeof span.start === 'number' &&
+            typeof span.end === 'number' &&
+            span.start >= 0 &&
+            span.end > span.start &&
+            span.end <= points.length &&
+            typeof span.quote === 'string' &&
+            span.quote.length > 0 &&
+            points.slice(span.start, span.end).join('') === span.quote
+          );
+        }),
+      );
+    }
     const hasMajor = scorecard.issues.some(
       (i) =>
         i.dimension === dim &&
@@ -1800,7 +1834,6 @@ export function scoreTargets(scorecard: Scorecard, versionText: string): Issue[]
         (i.severity === 'blocking' || i.severity === 'major'),
     );
     if (hasMajor) continue;
-    const section = (scorecard.sections as Record<string, { weakest_passages?: unknown }>)[dim];
     const passages = Array.isArray(section?.weakest_passages)
       ? (section.weakest_passages as { quote?: unknown; why?: unknown }[])
       : [];

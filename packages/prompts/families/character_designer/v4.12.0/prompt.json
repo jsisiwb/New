@@ -1,0 +1,35 @@
+{
+  "family": "character_designer",
+  "version": "4.12.0",
+  "role": "character_designer",
+  "purpose": "Reader craft: character_designer (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "cast_brief"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 7000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "character_designer.full_bible_names",
+    "character_designer.full_bible_fields",
+    "character_designer.reader-craft"
+  ],
+  "content_hash": "sha256:24cd7a975f276a10ce03382b103a29fc0bcb98ca49654fb0bd315c95a41d0fc2"
+}

@@ -118,6 +118,36 @@ describe('plan-level prevention (ADR-0086)', () => {
     expect(renderPlanFeedback([])).toBe('(없음)');
   });
 
+  it('causal rhythm preserves the contract cut and numeric targets without demanding spectacle', () => {
+    const old = structureTargets({ chapterNo: 3, lengthTarget: 5300, lineTargets: LT });
+    const current = structureTargets({
+      chapterNo: 3,
+      lengthTarget: 5300,
+      lineTargets: LT,
+      causalRhythm: true,
+    });
+    expect(old).toContain('하루 마무리로 끝나지 않는다');
+    expect(current).not.toContain('하루 마무리로 끝나지 않는다');
+    expect(current).toContain('대가가 명확한 결심도 유효하다');
+    expect(current).toContain('따옴표 대사 49줄 안팎(적어도 28줄)');
+    expect(cutNote(contract, true)).toContain(contract.hook.description);
+    expect(cutNote(contract, true)).not.toContain('다짐·요약 문장을 한 줄도');
+    expect(cutNote(contract)).toContain('다짐·요약 문장을 한 줄도');
+  });
+
+  it('labels the repair candidate as planned and preserves the legacy feedback without it', () => {
+    const findings = [{ target: '장면 1', message: '위치 확인', fix: '찾는 행동 추가' }];
+    const candidate = {
+      objective: '이전 수정 보존',
+      beats: [{ type: 'action', description: '상자를 살핀다' }],
+    };
+    const feedback = renderPlanFeedback(findings, candidate);
+    expect(feedback).toContain(JSON.stringify(candidate));
+    expect(feedback).toContain('[PLANNED');
+    expect(feedback).toContain('확정 정사와 필수 요구사항이 우선');
+    expect(renderPlanFeedback(findings)).toBe('- 장면 1: 위치 확인 → 찾는 행동 추가');
+  });
+
   it('drops a line repeated word for word right after itself, but keeps short sound lines', () => {
     const out = dedupeRepeatedLines(
       [

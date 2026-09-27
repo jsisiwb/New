@@ -1,3 +1,4 @@
+import { serialPlanFixture } from './serial-architecture.testkit.js';
 /**
  * The Korean-manuscript product loop end to end with the simulated model (ADR-0054/0055): a Korean intake
  * composes the Korean identity layers, the requirement interpreter returns Korean requirements with no
@@ -15,6 +16,7 @@ import {
   getNovelRun,
   insertArcSummaryOnce,
   PgAuditStore,
+  putArtifact,
   type Pool,
 } from '@yeonjae/db';
 import { loadPolicies, loadSchemas, requirePolicy } from '@yeonjae/domain';
@@ -2060,6 +2062,8 @@ run(
       const rewrites = seen.filter((r) => (r.trace?.activityId ?? '').startsWith('scene_rewrite:'));
       expect(rewrites.length).toBe(1);
       expect(rewrites[0]?.user).toContain('다시 쓰기: 이 장면의 앞선 원고는');
+      expect(rewrites[0]?.user).not.toContain('[교체할 현재 초안');
+      expect(rewrites[0]?.user).toContain('같은 장면 설계로 장면 전체를 새로 쓴다');
       const patches = await pool.query<{ payload: { scope: string } }>(
         "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'patch'",
         [projectId],
@@ -3058,6 +3062,31 @@ run(
       );
       expect(rewrites.length).toBe(1);
       expect(rewrites[0]?.user).toContain('첫 문장');
+      const boundary = await pool.query<{
+        text: string;
+        payload: { span: { start: number; end: number } };
+      }>(
+        `SELECT v.text,a.payload FROM workflow_artifacts a
+         JOIN manuscript_versions v ON v.id=(a.payload->>'from_version_id')::uuid
+         WHERE a.project_id=$1 AND a.kind='patch' AND a.payload->>'scope'='scene'
+         ORDER BY a.created_at`,
+        [projectId],
+      );
+      expect(boundary.rows).toHaveLength(1);
+      const source = boundary.rows[0];
+      if (!source) throw new Error('missing scene patch');
+      const points = Array.from(source.text);
+      const replaced = points.slice(source.payload.span.start, source.payload.span.end).join('');
+      const following = points.slice(source.payload.span.end).join('');
+      expect(replaced.length).toBeGreaterThan(0);
+      expect(following.length).toBeGreaterThan(0);
+      expect(rewrites[0]?.user).toContain(replaced);
+      expect(rewrites[0]?.user).toContain(following);
+      expect(rewrites[0]?.user).toContain('[교체 범위 뒤에 그대로 남는 초안');
+      expect(rewrites[0]?.user).toContain('필수 사건과 결과는 지키되');
+      expect(rewrites[0]?.user).toContain('선택과 상대 반응이 이어지는 인과를 바꾼다');
+      expect(rewrites[0]?.user).not.toContain('같은 장면 설계로 장면 전체를 새로 쓴다');
+
       // G9-1: no pack renders a secret with the bible's single reveal chapter any more.
       for (const r of seen) expect(`${r.system}\n${r.user}`).not.toMatch(/; \d+화 이전 공개 금지/);
       const leaks = seen.flatMap((r) =>
@@ -4050,9 +4079,11 @@ for (const [label, policyVersion, redrafts] of [
     );
   });
 
-for (const [label, policyVersion, knobs] of [
-  ['standard.v36', 'policy/standard@36', false],
-  ['standard.v37', 'policy/standard@37', true],
+for (const [label, policyVersion, knobs, invalidRepair] of [
+  ['standard.v36', 'policy/standard@36', false, 'none'],
+  ['standard.v37', 'policy/standard@37', true, 'none'],
+  ['standard.v37 invalid-first', 'policy/standard@37', true, 'first'],
+  ['standard.v37 invalid-all', 'policy/standard@37', true, 'all'],
 ] as const)
   run(
     `Korean novel run under ${label}: run 5's code-level changes follow the policy knobs (ADR-0118)`,
@@ -4092,7 +4123,28 @@ for (const [label, policyVersion, knobs] of [
       };
       const provider = new MockProvider((req) => {
         seen.push(req);
-        return createOp(req, critic(req, withMarker(req, batchedScript(req, script(req)))));
+        const out = createOp(req, critic(req, withMarker(req, batchedScript(req, script(req)))));
+        const id = req.trace?.activityId ?? '';
+        if (
+          invalidRepair !== 'none' &&
+          (id === 'chapter_contract:1:critic' ||
+            (invalidRepair === 'all' && id === 'chapter_contract:1:critic:repair2')) &&
+          out &&
+          'json' in out
+        ) {
+          const contract = out.json as {
+            participants: { role_in_chapter: string }[];
+          };
+          return {
+            json: {
+              ...contract,
+              participants: contract.participants.filter(
+                (p) => p.role_in_chapter === 'protagonist',
+              ),
+            },
+          };
+        }
+        return out;
       });
       const intake = { ...INTAKE, pov: 'first', protagonist_type: '먼치킨' };
 
@@ -4151,13 +4203,33 @@ for (const [label, policyVersion, knobs] of [
           const critics = ids.filter((id) => id.startsWith('plan_critic:1'));
           // The contract: one critique, one re-plan (`:critic`); under the knob the re-plan is critiqued (`:repair1`).
           expect(ids).toContain('chapter_contract:1:critic');
-          expect(critics.includes('plan_critic:1:contract:repair1')).toBe(knobs);
+          expect(critics.includes('plan_critic:1:contract:repair1')).toBe(
+            knobs && invalidRepair === 'none',
+          );
+          if (invalidRepair !== 'none') {
+            expect(ids).toContain('chapter_contract:1:critic:repair2');
+            expect(critics.includes('plan_critic:1:contract:repair2')).toBe(
+              invalidRepair === 'first',
+            );
+            const repair = seen.find(
+              (r) => r.trace?.activityId === 'chapter_contract:1:critic:repair2',
+            );
+            expect(repair?.user).toContain('필수 대화 상대를 삭제했다');
+            const stored = await pool.query<{ payload: { participants: { on_page: boolean }[] } }>(
+              "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='chapter_contract'",
+              [projectId],
+            );
+            expect(
+              stored.rows[0]?.payload.participants.filter((p) => p.on_page).length,
+            ).toBeGreaterThan(1);
+          }
           // The scene plan: one critique, one repair; under the knob the repaired plan is critiqued too.
           expect(ids).toContain('scene_plan:1:repair1');
           expect(critics.includes('plan_critic:1:repair1')).toBe(knobs);
           expect(
             critics.filter(
-              (id) => id !== 'plan_critic:1:contract:repair1' && id !== 'plan_critic:1:repair1',
+              (id) =>
+                !id.startsWith('plan_critic:1:contract:repair') && id !== 'plan_critic:1:repair1',
             ),
           ).toEqual(['plan_critic:1:contract', 'plan_critic:1']);
           // The create op is read as assert at acceptance under every pin (ADR-0102 class): no repair, no rejection.
@@ -4277,5 +4349,658 @@ run(
       );
       expect(chapter.rows[0]?.status).toBe('accepted');
     }, 300_000);
+  },
+);
+
+run.each([38, 39, 40, 41, 42, 43, 44, 45, 48])(
+  'Korean novel under standard.v%i: craft reaches every generation stage',
+  (version) => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const voice = '남이 놓고 간 빈 그릇부터 세는 사람';
+    const pressure = '몰리면 농담을 멈추고 부탁한다';
+    const sound = '옆방에서 주판알을 튕기는 소리';
+    let architectureReviews = 0;
+    let architectureMode: 'repair' | 'exhausted' | 'malformed' = 'repair';
+    let validationMode: 'none' | 'schema' | 'coverage' | 'placeholder' | 'exhausted' = 'none';
+    let architectureCalls = 0;
+    let repairContextMode: 'none' | 'tie' | 'invalid' | 'worse' = 'none';
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      if (
+        version >= 45 &&
+        req.trace?.role === 'plan_critic' &&
+        req.trace.activityId.startsWith('blueprint:')
+      ) {
+        architectureReviews++;
+        if (architectureMode === 'malformed') return { json: { unexpected: [] } };
+        return {
+          json: {
+            issues:
+              architectureMode === 'exhausted' || architectureReviews === 1
+                ? [
+                    {
+                      severity: 'major',
+                      target: 'opening_chapters[1]',
+                      claim: 'COHERENCE_CLASH',
+                      fix: 'Keep the later episode payoff in its own episode.',
+                    },
+                  ]
+                : [],
+          },
+        };
+      }
+      if (
+        repairContextMode !== 'none' &&
+        req.trace?.role === 'plan_critic' &&
+        req.trace.activityId.startsWith('plan_critic:')
+      ) {
+        const contract = req.trace.activityId.includes(':contract');
+        return {
+          json: {
+            issues:
+              contract || !req.trace.activityId.endsWith(':repair2')
+                ? [
+                    {
+                      severity:
+                        contract &&
+                        repairContextMode === 'worse' &&
+                        req.trace.activityId.endsWith(':repair2')
+                          ? 'blocking'
+                          : 'major',
+                      target: contract ? '계약' : '장면 1',
+                      kind: 'structure_off',
+                      claim: `REPAIR_CONTEXT_FINDING_${req.trace.activityId}`,
+                      fix: 'Preserve the last valid repair while addressing this finding.',
+                    },
+                  ]
+                : [],
+          },
+        };
+      }
+      const out = batchedScript(req, script(req));
+      if (!out || !('json' in out)) return out;
+      const value = structuredClone(out.json) as Record<string, unknown>;
+      if (
+        repairContextMode !== 'none' &&
+        req.trace?.role === 'chapter_planner' &&
+        req.trace.activityId.includes(':critic')
+      ) {
+        const second = req.trace.activityId.endsWith(':repair2');
+        value.purpose = second ? 'LATEST_VALID_CONTRACT_REPAIR' : 'FIRST_CONTRACT_REPAIR';
+        if (!second && repairContextMode === 'invalid') {
+          value.purpose = 'INVALID_CONTRACT_REPAIR';
+          value.participants = (value.participants as unknown[]).slice(0, 1);
+        }
+      }
+      if (
+        repairContextMode !== 'none' &&
+        req.trace?.role === 'scene_planner' &&
+        req.trace.activityId.includes(':repair')
+      ) {
+        const scene = (value.scenes as { objective: string }[])[0];
+        if (scene)
+          scene.objective = req.trace.activityId.endsWith(':repair2')
+            ? 'LATEST_SCENE_REPAIR'
+            : 'FIRST_SCENE_REPAIR';
+      }
+      if (req.trace?.role === 'character_designer') {
+        for (const c of (value.characters ?? []) as Record<string, unknown>[]) {
+          c.inner_voice = {
+            archetype: voice,
+            temperament: '남의 말을 끝까지 듣는다',
+            humor: '서툰 부탁에서 생기는 웃음',
+            habits: ['빈 그릇부터 센다'],
+            under_pressure: pressure,
+            emotional_anchor: '도움을 돌려주려는 마음',
+            never: ['계획대로'],
+          };
+        }
+      }
+      if (req.trace?.role === 'world_builder') {
+        for (const place of (value.locations ?? []) as Record<string, unknown>[]) {
+          place.senses = { sound };
+          place.life = '점심에도 장부를 놓지 않는 서기';
+          place.detail = '문턱에 닳은 홈';
+        }
+      }
+      if (version >= 44 && req.trace?.activityId === 'extract:1') {
+        const items = value.items as {
+          payload: { participants: { entity_id: string }[] };
+          story_clock: unknown;
+        }[];
+        const event = items[0];
+        if (event)
+          value.items = [
+            ...items,
+            {
+              ...event,
+              local_id: 'fact-observed-rota',
+              type: 'fact',
+              payload: {
+                entity_id: event.payload.participants[0]?.entity_id,
+                attribute: 'observation.rota_hunters',
+                value: '열한 명',
+                valid_from: event.story_clock,
+              },
+            },
+          ];
+      }
+      if (version >= 43 && req.trace?.role === 'story_architect') {
+        const serial = serialPlanFixture();
+        if (version >= 45 && req.trace.activityId.includes(':repair:'))
+          serial.opening_chapters[0].local_payoff = 'REPAIRED_EPISODE_ALIGNMENT';
+        architectureCalls++;
+        if (
+          validationMode !== 'none' &&
+          (architectureCalls === 1 || validationMode === 'exhausted')
+        ) {
+          if (validationMode === 'schema') serial.opening_chapters[0].chapter = 0;
+          else if (validationMode === 'placeholder')
+            serial.arrival.first_choice = 'Standard processing applied.';
+          else serial.episodes[0].season_ordinal = 99;
+          serial.episodes[0].title = 'INVALID_SCHEDULE_CANDIDATE';
+        }
+        value.serial_plan = serial;
+      }
+      if (req.trace?.role === 'chapter_planner') {
+        value.devices = {
+          comedy: 'character',
+          small_risk: { expected: '조롱 뒤 압승', chosen: '상대에게 도움을 청해 장부를 확인한다' },
+        };
+      }
+      if (req.trace?.role === 'scene_writer') {
+        return {
+          text: (typeof value.text === 'string' ? value.text : '').replace(
+            /([.!?])[ \t]+(?=\S)/g,
+            '$1\n\n',
+          ),
+        };
+      }
+      return { json: value };
+    });
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'craft-v38');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: `policy/standard@${version}`,
+      }));
+      // Real selected/rejected candidates in own/foreign workspaces exercise isolation in the snapshot SQL.
+      const otherWorkspace = await createWorkspace(pool, 'craft-foreign');
+      for (const [ws, title, status] of [
+        [workspaceId, 'APPROVED_REFERENCE', 'selected'],
+        [workspaceId, 'REJECTED_REFERENCE', 'rejected'],
+        [otherWorkspace, 'FOREIGN_REFERENCE', 'selected'],
+      ] as const) {
+        const p = await createProject(pool, { workspaceId: ws, title });
+        await pool.query(
+          `INSERT INTO concept_candidates (workspace_id, project_id, round, label, status, payload) VALUES ($1, $2, 1, $3, $4, $5::jsonb)`,
+          [
+            ws,
+            p.projectId,
+            title,
+            status,
+            JSON.stringify({
+              logline: title,
+              chapter_one_hook: '시험에서 수치가 영으로 나왔다',
+              differentiators: ['기대와 다른 대가'],
+            }),
+          ],
+        );
+      }
+    }, 120_000);
+    afterAll(async () => {
+      await pool.end();
+    });
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('freezes scoped references and carries opening, voice, setting and device context to live call boundaries', async () => {
+      const started = await startNovel(makeDeps(), {
+        projectId,
+        intake: version >= 44 ? { ...INTAKE, opening_mode: 'arrival' } : INTAKE,
+      });
+      const concepts = seen.filter((r) => r.trace?.role === 'concept_generator');
+      expect(concepts).toHaveLength(2);
+      if (version >= 40) {
+        expect(concepts[0]?.user).toContain('개인 목표 중심');
+        expect(concepts[1]?.user).toContain('관계 중심');
+      }
+      for (const req of concepts) {
+        const user = req.user;
+        expect(user).toContain('APPROVED_REFERENCE');
+        expect(user).not.toContain('REJECTED_REFERENCE');
+        expect(user).not.toContain('FOREIGN_REFERENCE');
+      }
+      expect(concepts[1]?.user).toContain(started.concepts[0]?.logline);
+      const snapshot = await pool.query<{ payload: unknown }>(
+        `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'craft_context' AND key = 'concepts:1'`,
+        [projectId],
+      );
+      expect(snapshot.rows).toHaveLength(1);
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 2,
+      });
+      const runner = new NovelRunner({ pool, makeDeps, runnerId: 'craft-v38', leaseSeconds: 30 });
+      while (await runner.tick()) {
+        /* bounded by stopAfterChapter */
+      }
+      expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+      if (version >= 45) {
+        const architects = seen.filter((r) => r.trace?.role === 'story_architect');
+        expect(architects).toHaveLength(2);
+        expect(architects[1]?.user).toContain('COHERENCE_CLASH');
+        expect(architects[1]?.user).toContain('독자발견1');
+        expect(architectureReviews).toBe(2);
+        const reviewCalls = seen.filter(
+          (r) => r.trace?.role === 'plan_critic' && r.trace.activityId.startsWith('blueprint:'),
+        );
+        expect(reviewCalls).toHaveLength(2);
+        for (const review of reviewCalls) {
+          expect(review.user).toContain('bible_context');
+          expect(review.user).toContain(voice);
+          expect(review.user).toContain(sound);
+        }
+        const reviews = await pool.query<{ payload: { findings: unknown[] } }>(
+          "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review' ORDER BY created_at",
+          [projectId],
+        );
+        expect(reviews.rows.map((r) => r.payload.findings.length)).toEqual([1, 0]);
+        const blueprints = await pool.query<{ payload: unknown }>(
+          "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='series_blueprint'",
+          [projectId],
+        );
+        expect(blueprints.rows).toHaveLength(1);
+        expect(JSON.stringify(blueprints.rows[0]?.payload)).toContain('REPAIRED_EPISODE_ALIGNMENT');
+      } else expect(architectureReviews).toBe(0);
+      const userText = (role: string) =>
+        seen
+          .filter((r) => r.trace?.role === role)
+          .map((r) => r.user)
+          .join('\n');
+      for (const role of ['chapter_planner', 'scene_planner', 'plan_critic', 'scene_writer'])
+        expect(userText(role), role).toContain('[도입부 설계 — 1화]');
+      expect(userText('arc_planner')).toContain('3화까지는 독자가');
+      expect(userText('scene_writer')).toContain(voice);
+      expect(userText('scene_writer')).toContain(pressure);
+      expect(userText('scene_writer')).toContain(sound);
+      expect(userText('voice_judge')).toContain(pressure);
+      if (version >= 42) {
+        expect(userText('plan_critic')).toContain('호감과 접근의 방향은 인물별 동기');
+        expect(userText('plan_critic')).not.toContain('주인공은 쫓지 않는다');
+      }
+      if (version >= 43) {
+        for (const role of [
+          'arc_planner',
+          'chapter_planner',
+          'scene_planner',
+          'plan_critic',
+          'scene_writer',
+        ])
+          expect(userText(role), role).toContain('현실인지 확인하는 행동과 증거');
+        const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+        expect(writers.some((r) => r.user.includes('독자발견1'))).toBe(true);
+        expect(writers.some((r) => r.user.includes('독자발견2'))).toBe(true);
+        expect(
+          writers.every((r) => !(r.user.includes('독자발견1') && r.user.includes('독자발견2'))),
+        ).toBe(true);
+      }
+      if (version < 44) expect(userText('plan_critic')).not.toContain('[확정된 직전 회차');
+      if (version >= 44) {
+        const previous = await pool.query<{ text: string; ending_hook: string | null }>(
+          "SELECT s.text,s.ending_hook FROM summaries s JOIN chapters c ON c.accepted_version_id=s.manuscript_version_id WHERE c.project_id=$1 AND c.number=1 AND s.tier='L1'",
+          [projectId],
+        );
+        const critic = seen.find((r) => r.trace?.activityId === 'plan_critic:2:contract');
+        expect(previous.rows).toHaveLength(1);
+        expect(critic?.user).toContain('[확정된 직전 회차');
+        expect(critic?.user).toContain(previous.rows[0]?.text);
+        expect(previous.rows[0]?.ending_hook).toBeTruthy();
+        expect(critic?.user).toContain(previous.rows[0]?.ending_hook);
+        expect(critic?.user).toContain('확정된 사실 (이미 일어난 일)');
+        expect(critic?.user).toContain('observation.rota_hunters = 열한 명');
+        expect(userText('concept_generator')).toContain('확인 행동');
+        for (const role of ['chapter_planner', 'plan_critic', 'scene_writer', 'structure_judge'])
+          expect(userText(role), role).toContain('첫 실질적 선택');
+        const contracts = await pool.query<{
+          payload: { chapter_number: number; must_happen: { id: string }[] };
+        }>(
+          "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='chapter_contract' ORDER BY created_at",
+          [projectId],
+        );
+        expect(
+          contracts.rows
+            .find((r) => r.payload.chapter_number === 1)
+            ?.payload.must_happen.filter((m) => m.id.startsWith('arrival-')),
+        ).toHaveLength(3);
+        expect(
+          contracts.rows
+            .find((r) => r.payload.chapter_number === 2)
+            ?.payload.must_happen.some((m) => m.id.startsWith('arrival-')),
+        ).toBe(false);
+      }
+      if (version === 48) {
+        for (const req of seen.filter(
+          (r) => r.trace?.role === 'plan_critic' && !r.trace.activityId.startsWith('blueprint:'),
+        )) {
+          expect(req.user).toContain('대가가 명확한 결심도 유효하다');
+          expect(req.user).not.toContain('하루 마무리로 끝나지 않는다');
+        }
+        const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+        expect(writers.some((r) => r.user.includes('새 폭력이나 충격으로 바꾸지 않는다'))).toBe(
+          true,
+        );
+        for (const req of writers) {
+          expect(req.user).not.toContain('하루 마무리 금지');
+          expect(req.system).not.toContain('다짐·요약 문장을 한 줄도');
+        }
+      }
+      expect(userText('chapter_planner')).toContain('1화: 웃음 성격에서 나오는 웃음');
+      const chapters = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 ORDER BY number',
+        [projectId],
+      );
+      expect(chapters.rows.map((r) => r.status)).toEqual(['accepted', 'accepted']);
+      // Resume/re-read uses the snapshot even after the comparison source changes.
+      const { makePlanContext } = await import('./story-plan.js');
+      const { conceptCraftContext, chapterCraftContext } = await import('./craft-context.js');
+      const { ctx } = await makePlanContext(makeDeps(), projectId);
+      await pool.query(
+        `UPDATE concept_candidates SET payload = '{"logline":"CHANGED_SOURCE"}'::jsonb WHERE workspace_id = $1 AND project_id <> $2`,
+        [workspaceId, projectId],
+      );
+      const frozen = await conceptCraftContext(ctx, 1);
+      expect(frozen).toContain('APPROVED_REFERENCE');
+      expect(frozen).not.toContain('CHANGED_SOURCE');
+      // A fresh project sees the accepted opening; its frozen chapter reference survives later edits.
+      const probe = await createProject(pool, {
+        workspaceId,
+        title: 'Opening comparison probe',
+        policyVersion: `policy/standard@${version}`,
+      });
+      const { ensureProjectIdentity } = await import('./identity-from-intake.js');
+      await ensureProjectIdentity(pool, {
+        workspaceId,
+        projectId: probe.projectId,
+        intake: INTAKE,
+      });
+      const { ctx: probeContext } = await makePlanContext(makeDeps(), probe.projectId);
+      const opening = await chapterCraftContext(probeContext, 1);
+      expect(opening).toContain('「재의 장부」');
+      expect(opening).not.toContain('REJECTED_REFERENCE');
+      expect(opening).not.toContain('FOREIGN_REFERENCE');
+      expect(opening).not.toContain('Opening comparison probe');
+      await pool.query('UPDATE projects SET title = $2 WHERE id = $1', [
+        projectId,
+        'CHANGED_TITLE',
+      ]);
+      expect(await chapterCraftContext(probeContext, 1)).toBe(opening);
+    }, 300_000);
+    if (version === 45)
+      it.each(['tie', 'invalid', 'worse'] as const)(
+        'carries valid repair candidates across chapter and scene calls (%s)',
+        async (mode) => {
+          ({ projectId } = await createProject(pool, {
+            workspaceId,
+            title: 'Repair continuity',
+            operatingMode: 'autopilot',
+            policyVersion: 'policy/standard@45',
+          }));
+          seen.length = 0;
+          architectureMode = 'repair';
+          architectureReviews = 1;
+          validationMode = 'none';
+          repairContextMode = mode;
+          const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: 'repair-context',
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            /* regular acceptance checks remain active */
+          }
+          expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+          const contractRepair = seen.find(
+            (r) => r.trace?.activityId === 'chapter_contract:1:critic:repair2',
+          );
+          expect(contractRepair?.user).toContain('[PLANNED — 수정할 최신 유효 설계');
+          if (mode !== 'invalid') expect(contractRepair?.user).toContain('FIRST_CONTRACT_REPAIR');
+          else {
+            expect(contractRepair?.user).not.toContain('INVALID_CONTRACT_REPAIR');
+            expect(contractRepair?.user).toContain('필수 대화 상대를 삭제했다');
+          }
+          const sceneRepair = seen.find((r) => r.trace?.activityId === 'scene_plan:1:repair2');
+          expect(sceneRepair?.user).toContain('FIRST_SCENE_REPAIR');
+          const contracts = await pool.query<{ payload: { purpose: string } }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='chapter_contract'",
+            [projectId],
+          );
+          expect(contracts.rows[0]?.payload.purpose).toBe(
+            mode === 'worse' ? 'FIRST_CONTRACT_REPAIR' : 'LATEST_VALID_CONTRACT_REPAIR',
+          );
+          const findings = await pool.query<{
+            payload: { findings: { rule: string; repaired: boolean }[] };
+          }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='plan_findings' AND payload->>'stage'='contract'",
+            [projectId],
+          );
+          expect(
+            findings.rows
+              .flatMap((r) => r.payload.findings)
+              .some((f) => f.rule === 'PLAN-CRITIC-CONTRACT' && !f.repaired),
+          ).toBe(true);
+          repairContextMode = 'none';
+        },
+        300_000,
+      );
+    if (version === 45)
+      it.each(['schema', 'coverage', 'placeholder', 'exhausted'] as const)(
+        'repairs %s serial validation failures without reviewing or assembling invalid candidates',
+        async (mode) => {
+          ({ projectId } = await createProject(pool, {
+            workspaceId,
+            title: 'Validation repair',
+            operatingMode: 'autopilot',
+            policyVersion: 'policy/standard@45',
+          }));
+          seen.length = 0;
+          architectureCalls = 0;
+          architectureReviews = 1;
+          architectureMode = 'repair';
+          validationMode = mode;
+          const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: 'validation-repair',
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            /* stop at the normal chapter boundary or validation failure */
+          }
+          const invalid = await pool.query<{ payload: { findings: { claim: string }[] } }>(
+            "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_validation' ORDER BY created_at",
+            [projectId],
+          );
+          expect(invalid.rows).toHaveLength(mode === 'exhausted' ? 3 : 1);
+          const message = invalid.rows[0]?.payload.findings[0]?.claim ?? '';
+          expect(message).toContain(
+            mode === 'schema'
+              ? 'series blueprint does not validate:'
+              : mode === 'placeholder'
+                ? 'contains placeholder text'
+                : 'crosses or references an unknown season',
+          );
+          const repair = seen.filter((r) => r.trace?.role === 'story_architect')[1];
+          expect(repair?.user).toContain(message);
+          expect(repair?.user).toContain('INVALID_SCHEDULE_CANDIDATE');
+          if (mode === 'exhausted') {
+            expect((await getNovelRun(pool, projectId))?.last_error).toMatchObject({
+              code: 'ARC_PLAN_INVALID',
+            });
+            expect(architectureReviews).toBe(1);
+            expect(architectureCalls).toBe(3);
+            expect(seen.some((r) => r.trace?.role === 'scene_writer')).toBe(false);
+            const bible = await pool.query(
+              "SELECT id FROM workflow_artifacts WHERE project_id=$1 AND kind='full_bible'",
+              [projectId],
+            );
+            expect(bible.rows).toHaveLength(0);
+            validationMode = 'none';
+            seen.length = 0;
+            await resumeNovelRun(pool, { projectId });
+            while (await runner.tick()) {
+              /* recover the last invalid schedule with its validation feedback */
+            }
+            const resumed = seen.find((r) => r.trace?.role === 'story_architect');
+            expect(resumed?.user).toContain(message);
+            expect(resumed?.user).toContain('INVALID_SCHEDULE_CANDIDATE');
+          } else {
+            expect(architectureCalls).toBe(2);
+            expect(architectureReviews).toBe(2);
+          }
+          validationMode = 'none';
+          expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+          const chapters = await pool.query(
+            "SELECT id FROM chapters WHERE project_id=$1 AND status='accepted'",
+            [projectId],
+          );
+          expect(chapters.rows).toHaveLength(1);
+        },
+        300_000,
+      );
+    if (version === 45)
+      it.each(['exhausted', 'legacy', 'malformed'] as const)(
+        'stops before bible assembly and prose on %s architecture review',
+        async (mode) => {
+          ({ projectId } = await createProject(pool, {
+            workspaceId,
+            title: 'Coherence rejection',
+            operatingMode: 'autopilot',
+            policyVersion: 'policy/standard@45',
+          }));
+          seen.length = 0;
+          architectureReviews = 0;
+          architectureMode = mode === 'legacy' ? 'exhausted' : mode;
+          const started = await startNovel(makeDeps(), {
+            projectId,
+            intake: { ...INTAKE, opening_mode: 'arrival' },
+          });
+          await approveConcept(pool, {
+            projectId,
+            conceptId: started.concepts[0]?.id ?? '',
+            autoContinue: true,
+            stopAfterChapter: 1,
+          });
+          const runner = new NovelRunner({
+            pool,
+            makeDeps,
+            runnerId: 'coherence-rejection',
+            leaseSeconds: 30,
+          });
+          while (await runner.tick()) {
+            /* ends at the failed planning step */
+          }
+          expect((await getNovelRun(pool, projectId))?.last_error).toMatchObject({
+            code: 'ARC_PLAN_INVALID',
+          });
+          expect(architectureReviews).toBe(mode !== 'malformed' ? 3 : 1);
+          expect(seen.filter((r) => r.trace?.role === 'story_architect')).toHaveLength(
+            mode !== 'malformed' ? 3 : 1,
+          );
+          expect(seen.some((r) => r.trace?.role === 'scene_writer')).toBe(false);
+          const bibles = await pool.query(
+            "SELECT id FROM workflow_artifacts WHERE project_id=$1 AND kind IN ('full_bible','series_blueprint')",
+            [projectId],
+          );
+          expect(bibles.rows).toHaveLength(0);
+          if (mode !== 'malformed') {
+            if (mode === 'legacy') {
+              const old = await pool.query<{
+                payload: { attempt: number; findings: { claim: string }[] };
+              }>(
+                "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review' ORDER BY created_at",
+                [projectId],
+              );
+              for (const { payload } of old.rows) {
+                const legacy = {
+                  ...payload,
+                  findings: payload.findings.map((f) => ({
+                    ...f,
+                    claim: 'LEGACY_REVIEW_FEEDBACK',
+                  })),
+                };
+                await putArtifact(pool, {
+                  workspaceId,
+                  projectId,
+                  step: 'blueprint',
+                  kind: 'serial_architecture_review',
+                  key: `v1:attempt${payload.attempt}`,
+                  payload: legacy,
+                });
+              }
+            }
+            architectureMode = 'repair';
+            architectureReviews = 0;
+            seen.length = 0;
+            await resumeNovelRun(pool, { projectId });
+            while (await runner.tick()) {
+              /* regenerate the rejected blueprint, then accept chapter1 */
+            }
+            expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+            const resumedArchitect = seen.find((r) => r.trace?.role === 'story_architect');
+            expect(resumedArchitect?.user).toContain(
+              mode === 'legacy' ? 'LEGACY_REVIEW_FEEDBACK' : 'COHERENCE_CLASH',
+            );
+            expect(resumedArchitect?.user).toContain('REPAIRED_EPISODE_ALIGNMENT');
+            const reviews = await pool.query<{ key: string }>(
+              "SELECT key FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review'",
+              [projectId],
+            );
+            expect(reviews.rows).toHaveLength(mode === 'legacy' ? 8 : 5);
+            expect(new Set(reviews.rows.map((r) => r.key)).size).toBe(mode === 'legacy' ? 8 : 5);
+            expect(reviews.rows.filter((r) => r.key.includes(':regeneration:1:'))).toHaveLength(2);
+            const accepted = await pool.query(
+              "SELECT id FROM chapters WHERE project_id=$1 AND status='accepted'",
+              [projectId],
+            );
+            expect(accepted.rows).toHaveLength(1);
+          }
+        },
+        300_000,
+      );
   },
 );

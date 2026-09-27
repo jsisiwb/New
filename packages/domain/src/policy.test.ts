@@ -39,7 +39,18 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@35',
       'policy/standard@36',
       'policy/standard@37',
+      'policy/standard@38',
+      'policy/standard@39',
       'policy/standard@4',
+      'policy/standard@40',
+      'policy/standard@41',
+      'policy/standard@42',
+      'policy/standard@43',
+      'policy/standard@44',
+      'policy/standard@45',
+      'policy/standard@46',
+      'policy/standard@47',
+      'policy/standard@48',
       'policy/standard@5',
       'policy/standard@6',
       'policy/standard@7',
@@ -47,6 +58,131 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v48 aligns causal rhythm pins while retaining operational limits', () => {
+    const old = requirePolicy('policy/standard@47', policies);
+    const current = requirePolicy('policy/standard@48', policies);
+    expect(current.planning).toEqual({ ...old.planning, causal_rhythm: true });
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.20.0' });
+    expect(current.identity).toEqual({ ...old.identity, voice_profile: 'voice/operator@6' });
+    const strip = (p: typeof old) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _l,
+        prompts: _p,
+        identity: _i,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v47 routes structural repetition to rewrites without changing budgets or gates', () => {
+    const old = requirePolicy('policy/standard@46', policies);
+    const current = requirePolicy('policy/standard@47', policies);
+    expect(current.revision.ladder?.scene_rewrite_kinds).toEqual([
+      ...(old.revision.ladder?.scene_rewrite_kinds ?? []),
+      'repeated_scene',
+      'repetitive_arc',
+    ]);
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, ...rest } = structuredClone(p);
+      if (rest.revision.ladder) rest.revision.ladder.scene_rewrite_kinds = [];
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v46 changes rubric pins while preserving operational limits and gates', () => {
+    const old = requirePolicy('policy/standard@45', policies);
+    const current = requirePolicy('policy/standard@46', policies);
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.19.0' });
+    expect(current.identity).toEqual({
+      ...old.identity,
+      tradition_layer: 'tradition/kr-webnovel@5',
+    });
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, prompts: _p, identity: _i, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v42 changes only contextual voice and writer pins', () => {
+    const old = requirePolicy('policy/standard@41', policies);
+    const current = requirePolicy('policy/standard@42', policies);
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.15.0' });
+    expect(current.identity).toEqual({ ...old.identity, voice_profile: 'voice/operator@5' });
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, prompts: _p, identity: _i, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v41 changes only the schema-corrected prompt ceiling', () => {
+    const old = requirePolicy('policy/standard@40', policies);
+    const current = requirePolicy('policy/standard@41', policies);
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.14.1' });
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, prompts: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v40 changes only concept angles and the craft prompt ceiling', () => {
+    const old = requirePolicy('policy/standard@39', policies);
+    const current = requirePolicy('policy/standard@40', policies);
+    expect(current.planning).toEqual({ ...old.planning, concept_angles: 'character_first' });
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.14.0' });
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _l, prompts: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v39 opts into reader craft identities and preserves v38 operational limits', () => {
+    const old = requirePolicy('policy/standard@38', policies);
+    const current = requirePolicy('policy/standard@39', policies);
+    expect(current.identity).toEqual({
+      ...old.identity,
+      tradition_layer: 'tradition/kr-webnovel@4',
+      genre_layers: ['genre/regression@5', 'genre/academy@4', 'genre/harem@3'],
+      voice_profile: 'voice/operator@4',
+    });
+    expect(current.prompts?.max_version).toBe('4.13.0');
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, identity: _i, prompts: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v38 enables craft context without changing older policies or quality gates', () => {
+    const old = requirePolicy('policy/standard@37', policies);
+    const current = requirePolicy('policy/standard@38', policies);
+    expect(current.prompts?.max_version).toBe('4.12.0');
+    expect(current.planning?.opening).toEqual({ chapters: 3 });
+    expect(current.planning?.distinct_stories).toEqual({ max_others: 6 });
+    expect(current.planning?.voice_cards).toBe(true);
+    expect(current.planning?.device_ledger).toEqual({ window: 2 });
+    expect(current.drafting?.setting_notes).toBe(true);
+    expect(current.evaluation).toEqual(old.evaluation);
+    expect(current.revision).toEqual(old.revision);
+    for (const p of policies.values()) {
+      if (p.id === 'policy/standard' && p.version >= 38) continue;
+      expect(p.planning?.opening).toBeUndefined();
+      expect(p.planning?.distinct_stories).toBeUndefined();
+      expect(p.planning?.voice_cards).toBeUndefined();
+      expect(p.planning?.device_ledger).toBeUndefined();
+      expect(p.drafting?.setting_notes).toBeUndefined();
+    }
   });
 
   it('standard.v37 is standard.v36 with the two knobs that carry ADR-0117 (ADR-0118)', () => {

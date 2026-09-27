@@ -141,3 +141,79 @@ describe('assertDesignOutput', () => {
     }).toThrow(WorkflowError);
   });
 });
+
+describe('policy-enabled craft card validation', () => {
+  const location = { display_name: '장부방', description: '일하는 방' };
+  it('keeps legacy designs valid but rejects silent omission of enabled setting cards', () => {
+    expect(() => {
+      assertDesignOutput('world', { locations: [location] });
+    }).not.toThrow();
+    expect(() => {
+      assertDesignOutput('world', { locations: [location] }, { settingNotes: true });
+    }).toThrow('senses');
+    expect(() => {
+      assertDesignOutput(
+        'world',
+        {
+          locations: [
+            {
+              ...location,
+              senses: { sound: '옆방 주판 소리' },
+              life: '서기가 일한다',
+              detail: '문턱의 홈',
+            },
+          ],
+        },
+        { settingNotes: true },
+      );
+    }).not.toThrow();
+  });
+  it('requires an actual inner voice under the new policy', () => {
+    const cast = {
+      characters: [
+        {
+          display_name: '지안',
+          role: 'protagonist',
+          background: '회계사',
+          goals: ['상환'],
+          flaws: ['불신'],
+          voice_notes: ['해요체'],
+          arc: '신뢰를 배운다',
+        },
+      ],
+    };
+    expect(() => {
+      assertDesignOutput('cast', cast);
+    }).not.toThrow();
+    expect(() => {
+      assertDesignOutput('cast', cast, { voiceCards: true });
+    }).toThrow('inner_voice');
+    const inner_voice = {
+      archetype: '성실한 약자',
+      temperament: '신중',
+      humor: '서투름',
+      emotional_anchor: '빚진 사람',
+      under_pressure: '도움을 청한다',
+      habits: ['손부터 본다'],
+      never: ['계획대로'],
+    };
+    expect(() => {
+      assertDesignOutput(
+        'cast',
+        { characters: [{ ...cast.characters[0], inner_voice }] },
+        { voiceCards: true },
+      );
+    }).not.toThrow();
+    expect(() => {
+      assertDesignOutput(
+        'cast',
+        {
+          characters: [
+            { ...cast.characters[0], inner_voice: { ...inner_voice, under_pressure: '' } },
+          ],
+        },
+        { voiceCards: true },
+      );
+    }).toThrow('under_pressure');
+  });
+});
