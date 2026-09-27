@@ -1363,7 +1363,7 @@ export async function buildFullBible(
           await saveArtifact(ctx, {
             step: 'blueprint',
             kind: 'serial_architecture_review',
-            key: `v${spec.version}:attempt${attempt}`,
+            key: `${activityId}:review:${attempt}`,
             payload: { attempt, blueprint: v.value, findings },
           });
           const serious = findings.filter((f) => f.severity !== 'minor');

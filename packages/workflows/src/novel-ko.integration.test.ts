@@ -4682,6 +4682,28 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
             [projectId],
           );
           expect(bibles.rows).toHaveLength(0);
+          if (mode === 'exhausted') {
+            architectureMode = 'repair';
+            architectureReviews = 0;
+            seen.length = 0;
+            await resumeNovelRun(pool, { projectId });
+            while (await runner.tick()) {
+              /* regenerate the rejected blueprint, then accept chapter1 */
+            }
+            expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+            const reviews = await pool.query<{ key: string }>(
+              "SELECT key FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review'",
+              [projectId],
+            );
+            expect(reviews.rows).toHaveLength(5);
+            expect(new Set(reviews.rows.map((r) => r.key)).size).toBe(5);
+            expect(reviews.rows.filter((r) => r.key.includes(':regeneration:1:'))).toHaveLength(2);
+            const accepted = await pool.query(
+              "SELECT id FROM chapters WHERE project_id=$1 AND status='accepted'",
+              [projectId],
+            );
+            expect(accepted.rows).toHaveLength(1);
+          }
         },
         300_000,
       );
