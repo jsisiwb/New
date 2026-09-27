@@ -150,3 +150,5 @@ matrix in the same change.
 | [0130](0130-contract-critic-accepted-continuity.md) | Accepted continuity for the contract critic |
 
 | [0131](0131-serial-architecture-coherence-review.md) | Review serial architecture before bible assembly |
+
+| [0132](0132-bounded-serial-validation-repair.md) | Repair invalid serial schedules within the architecture budget |
