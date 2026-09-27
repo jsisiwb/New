@@ -2063,6 +2063,7 @@ run(
       expect(rewrites.length).toBe(1);
       expect(rewrites[0]?.user).toContain('다시 쓰기: 이 장면의 앞선 원고는');
       expect(rewrites[0]?.user).not.toContain('[교체할 현재 초안');
+      expect(rewrites[0]?.user).toContain('같은 장면 설계로 장면 전체를 새로 쓴다');
       const patches = await pool.query<{ payload: { scope: string } }>(
         "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'patch'",
         [projectId],
@@ -3082,6 +3083,9 @@ run(
       expect(rewrites[0]?.user).toContain(replaced);
       expect(rewrites[0]?.user).toContain(following);
       expect(rewrites[0]?.user).toContain('[교체 범위 뒤에 그대로 남는 초안');
+      expect(rewrites[0]?.user).toContain('필수 사건과 결과는 지키되');
+      expect(rewrites[0]?.user).toContain('선택과 상대 반응이 이어지는 인과를 바꾼다');
+      expect(rewrites[0]?.user).not.toContain('같은 장면 설계로 장면 전체를 새로 쓴다');
 
       // G9-1: no pack renders a secret with the bible's single reveal chapter any more.
       for (const r of seen) expect(`${r.system}\n${r.user}`).not.toMatch(/; \d+화 이전 공개 금지/);

@@ -170,3 +170,5 @@ matrix in the same change.
 | [0140](0140-scene-rewrite-boundary-context.md) | Give scene rewrites the current text and continuation |
 
 | [0141](0141-lint-backed-score-repair.md) | Lint-backed score repair |
+
+| [0142](0142-contract-bounded-scene-redesign.md) | Contract-bounded scene redesign |

@@ -89,6 +89,13 @@ describe('prose-only scene writer output (ADR-0056)', () => {
       expect(note).toContain(after);
       expect(note.indexOf(old)).toBeLessThan(note.indexOf(after));
       expect(note).toContain(language === 'ko' ? '확정 정사가 아니다' : 'not accepted canon');
+      expect(note).toContain(language === 'ko' ? '수정 가능한 계획' : 'revisable planning');
+      expect(note).toContain(
+        language === 'ko'
+          ? '필수 사건과 결과는 지키되'
+          : 'Keep required contract events and outcomes',
+      );
+      expect(note).toContain(language === 'ko' ? '인과를 바꾼다' : 'change the causal interaction');
       expect(sceneRewriteBoundaryContext(old, '', language)).toContain(
         language === 'ko' ? '뒤에 남는 원고가 없다' : 'no following prose',
       );
