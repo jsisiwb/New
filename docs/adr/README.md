@@ -168,3 +168,5 @@ matrix in the same change.
 | [0139](0139-causal-rhythm-through-planning.md) | Keep causal rhythm consistent across planning and writing |
 
 | [0140](0140-scene-rewrite-boundary-context.md) | Give scene rewrites the current text and continuation |
+
+| [0141](0141-lint-backed-score-repair.md) | Lint-backed score repair |

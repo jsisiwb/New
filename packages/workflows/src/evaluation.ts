@@ -1791,15 +1791,42 @@ export function revisionTargets(scorecard: Scorecard): Issue[] {
 }
 
 /**
- * ADR-0086 (G5-3e): minor revision targets for a gated dimension that fails by score with no open blocking or
- * major finding — its judge's weakest passages, anchored in the version's text. They never block approval.
+ * ADR-0086/0141: repair targets for a dimension failing its score gate. Grounded lint findings address a low
+ * lint composite; without a major finding, the judge's weakest passages also supply targets. Advisory targets
+ * retain their severity and never become approval blockers.
  */
 export function scoreTargets(scorecard: Scorecard, versionText: string): Issue[] {
   const text = toNfcText(versionText).text;
+  const points = Array.from(text);
   const out: Issue[] = [];
   for (const r of scorecard.acceptance.dimension_results) {
     if (r.passed) continue;
     const dim = r.dimension;
+    const section = (
+      scorecard.sections as Record<string, { weakest_passages?: unknown; lint_composite?: number }>
+    )[dim];
+    if (typeof section?.lint_composite === 'number' && section.lint_composite < r.threshold) {
+      out.push(
+        ...scorecard.issues.filter((i) => {
+          const span = i.chapter_span;
+          return (
+            i.dimension === dim &&
+            i.status === 'open' &&
+            i.severity === 'minor' &&
+            i.source.startsWith('lint:') &&
+            span?.manuscript_version_id === scorecard.manuscript_version_id &&
+            typeof span.start === 'number' &&
+            typeof span.end === 'number' &&
+            span.start >= 0 &&
+            span.end > span.start &&
+            span.end <= points.length &&
+            typeof span.quote === 'string' &&
+            span.quote.length > 0 &&
+            points.slice(span.start, span.end).join('') === span.quote
+          );
+        }),
+      );
+    }
     const hasMajor = scorecard.issues.some(
       (i) =>
         i.dimension === dim &&
@@ -1807,7 +1834,6 @@ export function scoreTargets(scorecard: Scorecard, versionText: string): Issue[]
         (i.severity === 'blocking' || i.severity === 'major'),
     );
     if (hasMajor) continue;
-    const section = (scorecard.sections as Record<string, { weakest_passages?: unknown }>)[dim];
     const passages = Array.isArray(section?.weakest_passages)
       ? (section.weakest_passages as { quote?: unknown; why?: unknown }[])
       : [];
