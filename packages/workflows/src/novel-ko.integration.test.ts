@@ -16,6 +16,7 @@ import {
   getNovelRun,
   insertArcSummaryOnce,
   PgAuditStore,
+  putArtifact,
   type Pool,
 } from '@yeonjae/db';
 import { loadPolicies, loadSchemas, requirePolicy } from '@yeonjae/domain';
@@ -4638,7 +4639,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
       expect(await chapterCraftContext(probeContext, 1)).toBe(opening);
     }, 300_000);
     if (version === 45)
-      it.each(['exhausted', 'malformed'] as const)(
+      it.each(['exhausted', 'legacy', 'malformed'] as const)(
         'stops before bible assembly and prose on %s architecture review',
         async (mode) => {
           ({ projectId } = await createProject(pool, {
@@ -4649,7 +4650,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
           }));
           seen.length = 0;
           architectureReviews = 0;
-          architectureMode = mode;
+          architectureMode = mode === 'legacy' ? 'exhausted' : mode;
           const started = await startNovel(makeDeps(), {
             projectId,
             intake: { ...INTAKE, opening_mode: 'arrival' },
@@ -4672,9 +4673,9 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
           expect((await getNovelRun(pool, projectId))?.last_error).toMatchObject({
             code: 'ARC_PLAN_INVALID',
           });
-          expect(architectureReviews).toBe(mode === 'exhausted' ? 3 : 1);
+          expect(architectureReviews).toBe(mode !== 'malformed' ? 3 : 1);
           expect(seen.filter((r) => r.trace?.role === 'story_architect')).toHaveLength(
-            mode === 'exhausted' ? 3 : 1,
+            mode !== 'malformed' ? 3 : 1,
           );
           expect(seen.some((r) => r.trace?.role === 'scene_writer')).toBe(false);
           const bibles = await pool.query(
@@ -4682,7 +4683,32 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
             [projectId],
           );
           expect(bibles.rows).toHaveLength(0);
-          if (mode === 'exhausted') {
+          if (mode !== 'malformed') {
+            if (mode === 'legacy') {
+              const old = await pool.query<{
+                payload: { attempt: number; findings: { claim: string }[] };
+              }>(
+                "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review' ORDER BY created_at",
+                [projectId],
+              );
+              for (const { payload } of old.rows) {
+                const legacy = {
+                  ...payload,
+                  findings: payload.findings.map((f) => ({
+                    ...f,
+                    claim: 'LEGACY_REVIEW_FEEDBACK',
+                  })),
+                };
+                await putArtifact(pool, {
+                  workspaceId,
+                  projectId,
+                  step: 'blueprint',
+                  kind: 'serial_architecture_review',
+                  key: `v1:attempt${payload.attempt}`,
+                  payload: legacy,
+                });
+              }
+            }
             architectureMode = 'repair';
             architectureReviews = 0;
             seen.length = 0;
@@ -4691,12 +4717,17 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
               /* regenerate the rejected blueprint, then accept chapter1 */
             }
             expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
+            const resumedArchitect = seen.find((r) => r.trace?.role === 'story_architect');
+            expect(resumedArchitect?.user).toContain(
+              mode === 'legacy' ? 'LEGACY_REVIEW_FEEDBACK' : 'COHERENCE_CLASH',
+            );
+            expect(resumedArchitect?.user).toContain('REPAIRED_EPISODE_ALIGNMENT');
             const reviews = await pool.query<{ key: string }>(
               "SELECT key FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review'",
               [projectId],
             );
-            expect(reviews.rows).toHaveLength(5);
-            expect(new Set(reviews.rows.map((r) => r.key)).size).toBe(5);
+            expect(reviews.rows).toHaveLength(mode === 'legacy' ? 8 : 5);
+            expect(new Set(reviews.rows.map((r) => r.key)).size).toBe(mode === 'legacy' ? 8 : 5);
             expect(reviews.rows.filter((r) => r.key.includes(':regeneration:1:'))).toHaveLength(2);
             const accepted = await pool.query(
               "SELECT id FROM chapters WHERE project_id=$1 AND status='accepted'",

@@ -1201,8 +1201,18 @@ export async function buildFullBible(
       const maxRepairs = craftEnabled(ctx)
         ? ctx.policy.planning?.serial_architecture?.max_repairs
         : undefined;
-      let previousBlueprint = '(없음)';
-      let planFeedback = '(없음)';
+      const recovery =
+        maxRepairs !== undefined
+          ? await loadRejectedArchitecture(
+              ctx,
+              `blueprint:${concept.id}`,
+              activityId,
+              spec.version,
+              maxRepairs,
+            )
+          : undefined;
+      let previousBlueprint = recovery ? JSON.stringify(recovery.blueprint) : '(없음)';
+      let planFeedback = recovery ? JSON.stringify(recovery.findings) : '(없음)';
       for (let attempt = 0; ; attempt++) {
         const call = await modelCall<
           (Partial<SeriesBlueprint> & { promises?: RawPromise[] }) | null
@@ -2196,6 +2206,47 @@ async function runDesignStep<T>(
       throw err;
     }
   });
+}
+
+/** Resume the latest rejected design, including reviews written before generation-specific keys. */
+async function loadRejectedArchitecture(
+  ctx: WorkflowContext,
+  baseActivityId: string,
+  activityId: string,
+  specVersion: number,
+  maxRepairs: number,
+): Promise<
+  { blueprint: unknown; findings: ReturnType<typeof parseArchitectureReview> } | undefined
+> {
+  const generation = Number(
+    /^:regeneration:(\d+)$/.exec(activityId.slice(baseActivityId.length))?.[1] ?? 0,
+  );
+  if (generation < 1) return undefined;
+  const previous =
+    generation === 1 ? baseActivityId : `${baseActivityId}:regeneration:${generation - 1}`;
+  const keys = Array.from({ length: maxRepairs + 1 }, (_, i) => `${previous}:review:${i}`);
+  if (generation === 1)
+    keys.push(...Array.from({ length: maxRepairs + 1 }, (_, i) => `v${specVersion}:attempt${i}`));
+  const reviews = await ctx.pool.query<{ payload: { attempt: number; findings: unknown } }>(
+    `SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review' AND key=ANY($2::text[]) ORDER BY created_at DESC LIMIT 1`,
+    [ctx.projectId, keys],
+  );
+  const review = reviews.rows[0]?.payload;
+  if (!review) return undefined;
+  const candidateActivity =
+    review.attempt === 0 ? previous : `${previous}:repair:${review.attempt}`;
+  const outputs = await ctx.pool.query<{ payload: { json?: unknown } }>(
+    `SELECT a.payload FROM llm_calls c JOIN workflow_artifacts a ON a.id=(c.artifact_ref->>'artifact_id')::uuid AND a.project_id=c.project_id
+      WHERE c.project_id=$1 AND c.role='story_architect' AND c.activity_id=$2 AND c.status IN ('succeeded','fallback_succeeded')
+      ORDER BY c.created_at DESC LIMIT 1`,
+    [ctx.projectId, candidateActivity],
+  );
+  const blueprint = outputs.rows[0]?.payload.json;
+  if (!blueprint || typeof blueprint !== 'object') return undefined;
+  const findings = parseArchitectureReview({ issues: review.findings }).filter(
+    (f) => f.severity !== 'minor',
+  );
+  return findings.length ? { blueprint, findings } : undefined;
 }
 
 /**
