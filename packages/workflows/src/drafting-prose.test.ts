@@ -4,6 +4,7 @@ import {
   koQuoteMarks,
   proseEnvelope,
   sceneRole,
+  sceneRewriteBoundaryContext,
   stripProseChatter,
   validateSceneDraft,
 } from './drafting.js';
@@ -77,6 +78,21 @@ describe('prose-only scene writer output (ADR-0056)', () => {
     expect(sceneRole(2, 3, 'ko', true)).toContain('다음 선택을 바꾸게');
     expect(sceneRole(3, 3, 'ko', false)).toContain('하루 마무리 금지');
     expect(sceneRole(3, 3, 'en', true)).toBe(sceneRole(3, 3, 'en'));
+  });
+
+  it('gives rewrites both exact draft boundaries without treating either as accepted canon', () => {
+    const old = '낡은 천은 바닥에 떨어져 있었다.\n\n손을 비웠다.';
+    const after = '빈손으로 문을 열었다. 🗝';
+    for (const language of ['ko', 'en']) {
+      const note = sceneRewriteBoundaryContext(old, after, language);
+      expect(note).toContain(old);
+      expect(note).toContain(after);
+      expect(note.indexOf(old)).toBeLessThan(note.indexOf(after));
+      expect(note).toContain(language === 'ko' ? '확정 정사가 아니다' : 'not accepted canon');
+      expect(sceneRewriteBoundaryContext(old, '', language)).toContain(
+        language === 'ko' ? '뒤에 남는 원고가 없다' : 'no following prose',
+      );
+    }
   });
 
   it('tells each scene its place in the episode curve; only the last closes on the 절단', () => {

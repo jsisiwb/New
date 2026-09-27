@@ -153,3 +153,5 @@ ADR-0130 extends accepted-history context to the contract critic under the arriv
 | Structural repetition repair | ADR-0138 | `standard@47`, existing chapter revision ladder | Policy/default tests and Korean scene-rewrite integration |
 
 | Consequential chapter rhythm | ADR-0139 | `planning.causal_rhythm`, prompts4.20, voice6, standard48 | Policy, prompt, voice and runtime guidance tests; chapter production integration |
+
+| Scene rewrite boundary continuity | ADR-0140 | `sceneRewriteBoundaryContext`, `rewriteScene` | Drafting prose and Korean scene rewrite integration tests |

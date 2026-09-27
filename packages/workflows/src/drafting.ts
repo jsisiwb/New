@@ -1282,6 +1282,25 @@ export function pronounRedraftNote(ratePer1k: number, warn: number): string {
   return `\n\n대명사 다시 쓰기: 직전 초고는 ‘그/그녀’가 1,000자에 ${String(ratePer1k)}번이었다(운영자 원고의 경고선 ${String(warn)}). 서술의 ‘그는·그녀는·그녀의’를 인물의 이름이나 호칭으로 바꾸거나 주어를 생략한다. 사건·비트·대사는 그대로 둔다.`;
 }
 
+/** ADR-0140: current replacement and untouched continuation are draft evidence, never accepted canon. */
+export function sceneRewriteBoundaryContext(old: string, after: string, language: string): string {
+  if (language !== 'ko')
+    return [
+      '[CURRENT DRAFT TO REPLACE — not accepted canon]',
+      old,
+      '[UNCHANGED FOLLOWING DRAFT — not accepted canon]',
+      after || '(End of chapter; no following prose.)',
+      'Return only the replacement scene. Continue from the preceding prose and join the unchanged following prose. Preserve correct earlier repairs and physical state; do not replay completed actions. If the original plan disagrees with the current draft boundaries, repair the transition while respecting accepted canon, reveal restrictions and the chapter contract.',
+    ].join('\n');
+  return [
+    '[교체할 현재 초안 — 확정 정사가 아니다]',
+    old,
+    '[교체 범위 뒤에 그대로 남는 초안 — 확정 정사가 아니다]',
+    after || '(회차 끝이다. 뒤에 남는 원고가 없다.)',
+    '교체할 장면만 반환한다. 앞선 원고의 현재 상태에서 이어 받아 뒤에 남는 원고에 연결한다. 이미 맞게 고친 내용과 물건·위치·행동 상태를 보존하고 끝난 행동을 다시 시작하지 않는다. 최초 장면 설계의 진입 상태가 현재 초안과 다르면 확정 정사·공개 제한·회차 계약을 지키며 연결을 고친다.',
+  ].join('\n');
+}
+
 /**
  * ADR-0087 (STEP 3): the scene-rewrite rung of the escalation ladder. A finding kind that patches rarely repair
  * (the per-kind fix rates: pacing, exposition) is answered by drafting its scene again from the same scene plan,
@@ -1339,6 +1358,9 @@ export async function rewriteScene(
         '',
         '',
         '다시 쓰기: 이 장면의 앞선 원고는 아래 결함 때문에 통과하지 못했다. 같은 장면 설계로 장면 전체를 새로 쓴다.',
+        ...(ctx.policy.revision.ladder?.rewrite_checks
+          ? [sceneRewriteBoundaryContext(old, after, ko ? 'ko' : 'en')]
+          : []),
         ...input.findings.map((f) => `- ${ko ? claimForKoreanNote(f.claim) : f.claim}`),
         `앞선 원고의 대사·속마음 비중은 ${String(Math.round(measured * 100))}%였다.`,
         ...(input.rejected?.length

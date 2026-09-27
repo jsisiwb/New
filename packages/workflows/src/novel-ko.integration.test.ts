@@ -2062,6 +2062,7 @@ run(
       const rewrites = seen.filter((r) => (r.trace?.activityId ?? '').startsWith('scene_rewrite:'));
       expect(rewrites.length).toBe(1);
       expect(rewrites[0]?.user).toContain('다시 쓰기: 이 장면의 앞선 원고는');
+      expect(rewrites[0]?.user).not.toContain('[교체할 현재 초안');
       const patches = await pool.query<{ payload: { scope: string } }>(
         "SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'patch'",
         [projectId],
@@ -3060,6 +3061,28 @@ run(
       );
       expect(rewrites.length).toBe(1);
       expect(rewrites[0]?.user).toContain('첫 문장');
+      const boundary = await pool.query<{
+        text: string;
+        payload: { span: { start: number; end: number } };
+      }>(
+        `SELECT v.text,a.payload FROM workflow_artifacts a
+         JOIN manuscript_versions v ON v.id=(a.payload->>'from_version_id')::uuid
+         WHERE a.project_id=$1 AND a.kind='patch' AND a.payload->>'scope'='scene'
+         ORDER BY a.created_at`,
+        [projectId],
+      );
+      expect(boundary.rows).toHaveLength(1);
+      const source = boundary.rows[0];
+      if (!source) throw new Error('missing scene patch');
+      const points = Array.from(source.text);
+      const replaced = points.slice(source.payload.span.start, source.payload.span.end).join('');
+      const following = points.slice(source.payload.span.end).join('');
+      expect(replaced.length).toBeGreaterThan(0);
+      expect(following.length).toBeGreaterThan(0);
+      expect(rewrites[0]?.user).toContain(replaced);
+      expect(rewrites[0]?.user).toContain(following);
+      expect(rewrites[0]?.user).toContain('[교체 범위 뒤에 그대로 남는 초안');
+
       // G9-1: no pack renders a secret with the bible's single reveal chapter any more.
       for (const r of seen) expect(`${r.system}\n${r.user}`).not.toMatch(/; \d+화 이전 공개 금지/);
       const leaks = seen.flatMap((r) =>
