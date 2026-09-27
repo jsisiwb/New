@@ -35,7 +35,7 @@ const REQUIRED_FAMILIES = [
   // ADR-0086
   'plan_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 348;
+const TOTAL_PROMPT_VERSIONS = 349;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
@@ -486,7 +486,14 @@ describe('prompt registry (ADR-0016)', () => {
       'requirement_interpreter',
       'targeted_reviser',
     ]);
-    expect(reg.activeSet().mapping).toEqual(corrected);
+    const finalVoice = reg.activeSet('4.15.0').mapping;
+    expect(
+      Object.keys(finalVoice).filter((family) => finalVoice[family] !== corrected[family]),
+    ).toEqual(['scene_writer']);
+    expect(reg.activeSet().mapping).toEqual(finalVoice);
+    const finalWriter = reg.get(finalVoice.scene_writer ?? '').system_template;
+    expect(finalWriter).toContain('필요한 반추를 줄 수만으로 대사로 바꾸지 않는다');
+    expect(finalWriter).not.toContain('다섯 줄 넘게 이어지면');
     expect(reg.get(current.scene_writer ?? '').system_template).not.toContain(
       '서술 세 줄이 이어지면',
     );

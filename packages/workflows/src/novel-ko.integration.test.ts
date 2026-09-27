@@ -4280,7 +4280,7 @@ run(
   },
 );
 
-run.each([38, 39, 40, 41])(
+run.each([38, 39, 40, 41, 42])(
   'Korean novel under standard.v%i: craft reaches every generation stage',
   (version) => {
     let pool: Pool;
@@ -4423,6 +4423,10 @@ run.each([38, 39, 40, 41])(
       expect(userText('scene_writer')).toContain(pressure);
       expect(userText('scene_writer')).toContain(sound);
       expect(userText('voice_judge')).toContain(pressure);
+      if (version === 42) {
+        expect(userText('plan_critic')).toContain('호감과 접근의 방향은 인물별 동기');
+        expect(userText('plan_critic')).not.toContain('주인공은 쫓지 않는다');
+      }
       expect(userText('chapter_planner')).toContain('1화: 웃음 성격에서 나오는 웃음');
       const chapters = await pool.query<{ status: string }>(
         'SELECT status FROM chapters WHERE project_id = $1 ORDER BY number',

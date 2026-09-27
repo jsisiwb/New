@@ -19,7 +19,7 @@ run('CLI: project:archive', () => {
 
   it('defaults new projects to the craft policy and honors an explicit older pin', async () => {
     for (const [flags, expected] of [
-      [[], 'policy/standard@41'],
+      [[], 'policy/standard@42'],
       [['--policy=policy/standard@37'], 'policy/standard@37'],
     ] as const) {
       const created = await runDb(['project:create', 'policy probe', ...flags]);

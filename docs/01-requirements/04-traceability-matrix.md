@@ -133,3 +133,5 @@ READER-CRAFT-001: Reader orientation, differentiated concepts and inner voices, 
 READER-CRAFT-002: New projects may explicitly pin the tradition layer and revised genre/voice layers; older policies compose their prior defaults. ADR-0124; production-policy.identity.tradition_layer; identity-from-intake.test.ts.
 
 | Reader craft: concept angles | ADR-0125 | `planning.concept_angles`, `conceptAngleSeed`, 4.14.0 prompts | `story-plan.test.ts`, `policy.test.ts`, `novel-ko.integration.test.ts` |
+
+| Reader craft: contextual introductions and rhythm | ADR-0126 | `voice/operator@5`, `scene_writer@4.15.0`, `standard@42` | `voice.test.ts`, `registry.test.ts`, `novel-ko.integration.test.ts` |

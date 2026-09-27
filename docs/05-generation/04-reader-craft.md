@@ -1,6 +1,6 @@
 # Reader craft across the generation pipeline
 
-New projects created through the CLI or API default to `standard.v41`; existing pins remain unchanged. Korean projects on `standard.v41` (building on `standard.v38` and `standard.v39`) use the craft context described in ADR-0120 through ADR-0123. An opening gives readers enough context to understand a choice before escalating its consequences. A hook may create curiosity before danger; description and reflection have room when they establish the current situation. The configured opening window is not a fixed three-chapter syllabus.
+New projects created through the CLI or API default to `standard.v42`; existing pins remain unchanged. Korean projects on `standard.v42` (building on `standard.v38` and `standard.v39`) use the craft context described in ADR-0120 through ADR-0123. An opening gives readers enough context to understand a choice before escalating its consequences. A hook may create curiosity before danger; description and reflection have room when they establish the current situation. The configured opening window is not a fixed three-chapter syllabus.
 
 ## Reference observations
 
@@ -24,3 +24,5 @@ All new behavior is policy gated. Old runs retain their immutable pins; new defa
 ADR-0124 adds explicit tradition-layer selection and revised genre and voice layers. Power level does not prescribe personality. The first live concept test exposed conflicting inherited identity guidance; these revisions remove that conflict. Earlier projects keep their composed identities.
 
 ADR-0125 replaces the automatic higher-stakes second concept with distinct character and relationship approaches. Explicit intake requirements remain authoritative. Brief narration can orient readers, and reactions from onlookers are not the only form of payoff.
+
+ADR-0126 makes character introductions and romantic initiative follow the current encounter and individual motives. Dialogue and reflection can vary with the scene instead of alternating every spoken line with narration.

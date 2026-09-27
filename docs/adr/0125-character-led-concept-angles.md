@@ -17,6 +17,8 @@ Publish `concept_generator`, `chapter_planner` and `scene_writer` at `4.14.0`. R
 
 The schema fixed-point tests also require generated output examples in five newly versioned roles. Publish `arc_planner`, `chapter_comparator`, `concept_comparator`, `requirement_interpreter`, and `targeted_reviser` at `4.14.1`, using the existing schema renderer. This repairs omitted derived notes/labels and the non-canonical example array; output schemas and workflow behavior are unchanged. Preserve all prompts already pinned by live verification projects.
 
+The later default is advanced by ADR-0126; the v40/v41 definitions remain immutable.
+
 ## Consequences
 
 Additional live verification uses a fresh project. Prior candidates and pins remain intact. These qualitative directions cannot guarantee popular or memorable fiction. Integration checks prove propagation and compatibility; actual prose still requires reading.

@@ -138,3 +138,5 @@ New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and u
 matrix in the same change.
 
 | [0125](0125-character-led-concept-angles.md) | Character-led concept angles |
+
+| [0126](0126-contextual-voice-rhythm-and-introductions.md) | Contextual voice rhythm and character introductions |
