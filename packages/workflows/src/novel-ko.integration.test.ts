@@ -4532,6 +4532,15 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
         expect(architects[1]?.user).toContain('COHERENCE_CLASH');
         expect(architects[1]?.user).toContain('독자발견1');
         expect(architectureReviews).toBe(2);
+        const reviewCalls = seen.filter(
+          (r) => r.trace?.role === 'plan_critic' && r.trace.activityId.startsWith('blueprint:'),
+        );
+        expect(reviewCalls).toHaveLength(2);
+        for (const review of reviewCalls) {
+          expect(review.user).toContain('bible_context');
+          expect(review.user).toContain(voice);
+          expect(review.user).toContain(sound);
+        }
         const reviews = await pool.query<{ payload: { findings: unknown[] } }>(
           "SELECT payload FROM workflow_artifacts WHERE project_id=$1 AND kind='serial_architecture_review' ORDER BY created_at",
           [projectId],

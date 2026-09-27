@@ -35,6 +35,9 @@ The operator confirmed that the previous draft was readable but still skipped th
 **Fresh bible checkpoint.** On implementation40c8a893d201a892e3ca79b6f5acffdbe553c51c, the new project completed17 authored episodes covering chapters1–200 and ten opening briefs. Its initial review found a blocking schedule conflict and repeated immediate admiration; the next review found missing arrival verification and two remaining episode-boundary conflicts. After repair, the final review has no blocking/major findings and one minor note about the teacher's reaction in chapter10. Export identity, exact coverage and authored-content checks passed. Manual reading confirms concrete planning content, chapter-one hypothesis/reality-test actions and opening episode boundaries1–3,4–8,9–25. The plan still favors a dry, forceful MC and intimidation rewards; this is not evidence that every literary complaint is solved. Outputs are in `serial-pacing/authored-v45`. Chapter1 is in contract planning; five accepted chapters and final context verification remain outstanding.
 
 
+**Bible-review context (ADR-0134).** Live chapter-one criticism found that the world placed the protagonist's weapon in his starting warehouse while the blueprint sent him elsewhere for it. The architecture reviewer lacked the bible design available to the architect. It now receives the same rendered design, registry and propositions alongside the blueprint and promises. Current chapter planning is repairing the conflict through its normal critic path; the active live runner still uses40c8a893 and does not validate this later review-input amendment. Focused boundary/static checks are pending.
+
+
 ## Reader-craft core revision (2026-09-27)
 
 The operator requested slower, legible openings, lived settings, varied humor and Korean sentence rhythm, emotionally grounded action, distinct protagonist voices, and fewer repeated story templates (ADR-0120–0126).

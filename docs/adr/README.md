@@ -154,3 +154,5 @@ matrix in the same change.
 | [0132](0132-bounded-serial-validation-repair.md) | Repair invalid serial schedules within the architecture budget |
 
 | [0133](0133-authored-serial-content.md) | Reject placeholder serial architecture deterministically |
+
+| [0134](0134-bible-context-for-architecture-review.md) | Give architecture review its bible design context |

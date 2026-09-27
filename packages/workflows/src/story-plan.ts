@@ -1390,7 +1390,11 @@ export async function buildFullBible(
             activityId: `${activityId}:review:${attempt}`,
             variables: {
               story_spec: specText,
-              blueprint: JSON.stringify({ ...blueprint, promises }),
+              blueprint: JSON.stringify({
+                ...blueprint,
+                promises,
+                bible_context: renderBibleSummary(draftBible, lang),
+              }),
             },
           });
           const findings = parseArchitectureReview(review.output);
