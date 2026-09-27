@@ -50,6 +50,7 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@45',
       'policy/standard@46',
       'policy/standard@47',
+      'policy/standard@48',
       'policy/standard@5',
       'policy/standard@6',
       'policy/standard@7',
@@ -57,6 +58,27 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v48 aligns causal rhythm pins while retaining operational limits', () => {
+    const old = requirePolicy('policy/standard@47', policies);
+    const current = requirePolicy('policy/standard@48', policies);
+    expect(current.planning).toEqual({ ...old.planning, causal_rhythm: true });
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.20.0' });
+    expect(current.identity).toEqual({ ...old.identity, voice_profile: 'voice/operator@6' });
+    const strip = (p: typeof old) => {
+      const {
+        version: _v,
+        name: _n,
+        content_hash: _h,
+        planning: _l,
+        prompts: _p,
+        identity: _i,
+        ...rest
+      } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
   });
 
   it('standard.v47 routes structural repetition to rewrites without changing budgets or gates', () => {

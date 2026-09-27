@@ -383,6 +383,10 @@ export interface ProductionPolicy {
       chapters: number;
     };
     /**
+     * ADR-0139: assess scene and chapter hooks by consequential choices and unresolved questions rather than mandatory spectacle; absent preserves earlier guidance.
+     */
+    causal_rhythm?: boolean;
+    /**
      * ADR-0125: Korean concept candidates vary personal objective and relationship instead of automatically escalating chapter-one stakes. Absent keeps historical angle seeds.
      */
     concept_angles?: 'character_first';

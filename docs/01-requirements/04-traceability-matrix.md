@@ -151,3 +151,5 @@ ADR-0130 extends accepted-history context to the contract critic under the arriv
 | Relationship extraction preflight and recovery | ADR-0137 | `relationship-preflight.ts`, `acceptance.ts` | `relationship-preflight.test.ts`, `chapter-production.integration.test.ts` |
 
 | Structural repetition repair | ADR-0138 | `standard@47`, existing chapter revision ladder | Policy/default tests and Korean scene-rewrite integration |
+
+| Consequential chapter rhythm | ADR-0139 | `planning.causal_rhythm`, prompts4.20, voice6, standard48 | Policy, prompt, voice and runtime guidance tests; chapter production integration |

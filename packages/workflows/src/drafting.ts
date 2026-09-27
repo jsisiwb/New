@@ -555,6 +555,7 @@ async function runPlanCritic(
       scene_plans: renderScenesForCritic(input.scenes, input.nameOf),
       reveal_schedule: input.scheduleText ?? '(설정에 기록된 비밀 없음)',
       structure_targets: structureTargets({
+        causalRhythm: ctx.policy.planning?.causal_rhythm,
         chapterNo: input.chapterNo,
         lineTargets: ctx.policy.planning?.dialogue_floor?.line_targets,
         lengthTarget: input.contract.length_target.value,
@@ -653,7 +654,7 @@ export async function draftScenes(
               chapterLines,
             );
     if (ctx.policy.planning?.cut_design && planned.scene_no === input.scenes.length)
-      note += cutNote(input.contract);
+      note += cutNote(input.contract, ctx.policy.planning.causal_rhythm);
     return note;
   };
   const renderPlan = (scene: ScenePlan, planned: ScenePlan) =>
@@ -711,6 +712,7 @@ export async function draftScenes(
               scene.scene_no,
               input.scenes.length,
               ctx.identity.outputLanguage.language ?? 'en',
+              ctx.policy.planning?.causal_rhythm,
             ),
         };
         const writeScene = (vars: typeof variables, activityId: string) =>
@@ -935,10 +937,26 @@ export async function draftScenes(
 
 /**
  * The scene's place in the episode curve, in the manuscript language. A Korean webnovel episode opens on a
- * hook, builds, and closes ONLY at its end on the 절단; a middle scene that wraps itself up with a reflective
- * closing line is the Western/AI habit the tradition contract forbids.
+ * hook, builds, and closes at its end on the contracted 절단. Causal rhythm permits reflection that changes
+ * the next choice; earlier policies retain their original scene guidance.
  */
-export function sceneRole(sceneNo: number, total: number, language: string): string {
+export function sceneRole(
+  sceneNo: number,
+  total: number,
+  language: string,
+  causalRhythm = false,
+): string {
+  if (causalRhythm && language === 'ko') {
+    const place =
+      total <= 1
+        ? '단독 장면'
+        : sceneNo === 1
+          ? '첫 장면'
+          : sceneNo === total
+            ? '마지막 장면'
+            : '중간 장면';
+    return `${place} — 현재 상황을 이해하고 반응·선택·결과를 따라간다. ${sceneNo === total || total <= 1 ? '계약의 절단을 마지막 비트로 살린다. 구체적인 선택이나 관계 질문도 당김이 되며 새 폭력을 강제하지 않는다.' : '짧은 지각과 감정 반응이 다음 선택을 바꾸게 하고 다음 장면과 인과로 잇는다.'}`;
+  }
   if (language !== 'ko') {
     if (total <= 1) return 'single scene: open on the hook, close on the chapter-ending hook';
     if (sceneNo === 1)
@@ -1348,7 +1366,7 @@ export async function rewriteScene(
         : '';
       const cut =
         ctx.policy.planning?.cut_design && input.scene.scene_no === input.sceneTotal
-          ? cutNote(input.contract)
+          ? cutNote(input.contract, ctx.policy.planning.causal_rhythm)
           : '';
       const craft = sceneCraftContext(ctx, ch, input.scene, input.checks?.bible);
       const variables = {
@@ -1368,7 +1386,13 @@ export async function rewriteScene(
           ctx.policy.planning?.opening &&
           ch <= ctx.policy.planning.opening.chapters
             ? openingSceneRole(input.scene.scene_no, input.sceneTotal)
-            : undefined) ?? sceneRole(input.scene.scene_no, input.sceneTotal, ko ? 'ko' : 'en'),
+            : undefined) ??
+          sceneRole(
+            input.scene.scene_no,
+            input.sceneTotal,
+            ko ? 'ko' : 'en',
+            ctx.policy.planning?.causal_rhythm,
+          ),
       };
       const write = async (vars: typeof variables, activityId: string) => {
         const c = await modelCall<SceneDraft | string>(ctx, {

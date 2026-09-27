@@ -15,6 +15,7 @@ describe('operator voice profiles', () => {
       'voice/operator@3',
       'voice/operator@4',
       'voice/operator@5',
+      'voice/operator@6',
     ]);
     const v = requireVoiceProfile('voice/operator@1', profiles);
     expect(v.language).toBe('ko');
@@ -61,6 +62,19 @@ describe('operator voice profiles', () => {
     expect(current.judges).toEqual(old.judges);
     for (const line of [...current.planner, ...current.writer])
       expect(line).not.toMatch(/[A-Za-z]/);
+  });
+
+  it('v6 aligns planner, writer and judge guidance on consequential hooks', () => {
+    const current = requireVoiceProfile('voice/operator@6', profiles);
+    for (const lines of [current.planner, current.writer, current.judges]) {
+      expect(lines.some((line) => line.includes('실행 대상과 대가가 명확하면 유효하다'))).toBe(
+        true,
+      );
+      for (const line of lines) expect(line).not.toMatch(/[A-Za-z]/);
+    }
+    expect(requireVoiceProfile('voice/operator@5', profiles).writer.join(' ')).toContain(
+      '하루를 마무리하는 문장으로 끝내지 않는다',
+    );
   });
 
   it('rejects an unknown ref', () => {

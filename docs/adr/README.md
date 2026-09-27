@@ -164,3 +164,5 @@ matrix in the same change.
 | [0137](0137-relationship-extraction-preflight.md) | Repair overlapping relationship extraction and cached retries |
 
 | [0138](0138-structural-repetition-repair.md) | Route structural repetition to scene rewriting |
+
+| [0139](0139-causal-rhythm-through-planning.md) | Keep causal rhythm consistent across planning and writing |

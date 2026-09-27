@@ -1,0 +1,37 @@
+{
+  "family": "scene_planner",
+  "version": "4.20.0",
+  "role": "scene_planner",
+  "purpose": "Causal serial rhythm through planning and writing (ADR-0139).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_contract",
+    "register_digests",
+    "previous_chapter_tail",
+    "reveal_schedule",
+    "plan_feedback",
+    "craft_context"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.20.0 — align consequential hooks and reflection with causal opening assessment (ADR-0139).",
+  "regression_cases": [
+    "scene_planner.fixture.smoke",
+    "scene_planner.reader-craft"
+  ],
+  "content_hash": "sha256:3cf761598179bce96487d79a0d015529d9d40bd54595a4eed2b4b321d551f490"
+}

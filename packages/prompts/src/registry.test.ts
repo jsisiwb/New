@@ -36,7 +36,7 @@ const REQUIRED_FAMILIES = [
   'plan_critic',
   'serial_architecture_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 367;
+const TOTAL_PROMPT_VERSIONS = 371;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
@@ -351,6 +351,24 @@ describe('prompt registry (ADR-0016)', () => {
         example(reg.get(`${fam}@4.1.0`).user_template),
       );
     }
+  });
+
+  it('standard48 aligns hook guidance without changing prompt input contracts or earlier pins', () => {
+    const old = reg.activeSet('4.19.0').mapping;
+    const current = reg.activeSet('4.20.0').mapping;
+    const changed = Object.keys(current)
+      .filter((f) => current[f] !== old[f])
+      .sort();
+    expect(changed).toEqual(['chapter_planner', 'plan_critic', 'scene_planner', 'scene_writer']);
+    for (const family of changed) {
+      const next = reg.get(`${family}@4.20.0`);
+      const prior = reg.get(old[family] ?? 'missing');
+      expect(next.input_variables).toEqual(prior.input_variables);
+      expect(next.output_schema).toEqual(prior.output_schema);
+      expect(next.system_template).not.toContain('절단이 요약·다짐·걱정·하루 마무리다');
+      expect(next.system_template).not.toContain('절단은 판을 바꾸는 한 수에서 끊는다');
+    }
+    expect(reg.get('plan_critic@4.17.0').system_template).toContain('절단이 요약·다짐');
   });
 
   it('standard46 ceiling changes only the structure judge and preserves prior pins', () => {

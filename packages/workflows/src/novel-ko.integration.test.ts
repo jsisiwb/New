@@ -4325,7 +4325,7 @@ run(
   },
 );
 
-run.each([38, 39, 40, 41, 42, 43, 44, 45])(
+run.each([38, 39, 40, 41, 42, 43, 44, 45, 48])(
   'Korean novel under standard.v%i: craft reaches every generation stage',
   (version) => {
     let pool: Pool;
@@ -4343,7 +4343,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
     const provider = new MockProvider((req) => {
       seen.push(req);
       if (
-        version === 45 &&
+        version >= 45 &&
         req.trace?.role === 'plan_critic' &&
         req.trace.activityId.startsWith('blueprint:')
       ) {
@@ -4463,7 +4463,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
       }
       if (version >= 43 && req.trace?.role === 'story_architect') {
         const serial = serialPlanFixture();
-        if (version === 45 && req.trace.activityId.includes(':repair:'))
+        if (version >= 45 && req.trace.activityId.includes(':repair:'))
           serial.opening_chapters[0].local_payoff = 'REPAIRED_EPISODE_ALIGNMENT';
         architectureCalls++;
         if (
@@ -4578,7 +4578,7 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
         /* bounded by stopAfterChapter */
       }
       expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
-      if (version === 45) {
+      if (version >= 45) {
         const architects = seen.filter((r) => r.trace?.role === 'story_architect');
         expect(architects).toHaveLength(2);
         expect(architects[1]?.user).toContain('COHERENCE_CLASH');
@@ -4670,6 +4670,22 @@ run.each([38, 39, 40, 41, 42, 43, 44, 45])(
             .find((r) => r.payload.chapter_number === 2)
             ?.payload.must_happen.some((m) => m.id.startsWith('arrival-')),
         ).toBe(false);
+      }
+      if (version === 48) {
+        for (const req of seen.filter(
+          (r) => r.trace?.role === 'plan_critic' && !r.trace.activityId.startsWith('blueprint:'),
+        )) {
+          expect(req.user).toContain('대가가 명확한 결심도 유효하다');
+          expect(req.user).not.toContain('하루 마무리로 끝나지 않는다');
+        }
+        const writers = seen.filter((r) => r.trace?.role === 'scene_writer');
+        expect(writers.some((r) => r.user.includes('새 폭력이나 충격으로 바꾸지 않는다'))).toBe(
+          true,
+        );
+        for (const req of writers) {
+          expect(req.user).not.toContain('하루 마무리 금지');
+          expect(req.system).not.toContain('다짐·요약 문장을 한 줄도');
+        }
       }
       expect(userText('chapter_planner')).toContain('1화: 웃음 성격에서 나오는 웃음');
       const chapters = await pool.query<{ status: string }>(

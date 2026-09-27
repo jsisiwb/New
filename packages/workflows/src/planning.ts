@@ -818,6 +818,7 @@ export async function generateContract(
                 input.bible ? renderBibleState(input.bible, ctx.bindings, lang) : '(정사 상태 없음)'
               }${acceptedContinuity}`,
               structure_targets: structureTargets({
+                causalRhythm: ctx.policy.planning?.causal_rhythm,
                 chapterNo: input.chapterNo,
                 lineTargets: ctx.policy.planning?.dialogue_floor?.line_targets,
                 lengthTarget: input.lengthTarget.value,
