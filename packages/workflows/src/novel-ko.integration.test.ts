@@ -4359,6 +4359,28 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
           place.detail = '문턱에 닳은 홈';
         }
       }
+      if (version === 44 && req.trace?.activityId === 'extract:1') {
+        const items = value.items as {
+          payload: { participants: { entity_id: string }[] };
+          story_clock: unknown;
+        }[];
+        const event = items[0];
+        if (event)
+          value.items = [
+            ...items,
+            {
+              ...event,
+              local_id: 'fact-observed-rota',
+              type: 'fact',
+              payload: {
+                entity_id: event.payload.participants[0]?.entity_id,
+                attribute: 'observation.rota_hunters',
+                value: '열한 명',
+                valid_from: event.story_clock,
+              },
+            },
+          ];
+      }
       if (version >= 43 && req.trace?.role === 'story_architect')
         value.serial_plan = serialPlanFixture();
       if (req.trace?.role === 'chapter_planner') {
@@ -4460,6 +4482,7 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
       while (await runner.tick()) {
         /* bounded by stopAfterChapter */
       }
+      expect((await getNovelRun(pool, projectId))?.last_error).toBeNull();
       const userText = (role: string) =>
         seen
           .filter((r) => r.trace?.role === role)
@@ -4492,7 +4515,20 @@ run.each([38, 39, 40, 41, 42, 43, 44])(
           writers.every((r) => !(r.user.includes('독자발견1') && r.user.includes('독자발견2'))),
         ).toBe(true);
       }
+      if (version < 44) expect(userText('plan_critic')).not.toContain('[확정된 직전 회차');
       if (version === 44) {
+        const previous = await pool.query<{ text: string; ending_hook: string | null }>(
+          "SELECT s.text,s.ending_hook FROM summaries s JOIN chapters c ON c.accepted_version_id=s.manuscript_version_id WHERE c.project_id=$1 AND c.number=1 AND s.tier='L1'",
+          [projectId],
+        );
+        const critic = seen.find((r) => r.trace?.activityId === 'plan_critic:2:contract');
+        expect(previous.rows).toHaveLength(1);
+        expect(critic?.user).toContain('[확정된 직전 회차');
+        expect(critic?.user).toContain(previous.rows[0]?.text);
+        expect(previous.rows[0]?.ending_hook).toBeTruthy();
+        expect(critic?.user).toContain(previous.rows[0]?.ending_hook);
+        expect(critic?.user).toContain('확정된 사실 (이미 일어난 일)');
+        expect(critic?.user).toContain('observation.rota_hunters = 열한 명');
         expect(userText('concept_generator')).toContain('확인 행동');
         for (const role of ['chapter_planner', 'plan_critic', 'scene_writer', 'structure_judge'])
           expect(userText(role), role).toContain('첫 실질적 선택');

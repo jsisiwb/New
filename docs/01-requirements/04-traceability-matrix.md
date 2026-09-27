@@ -141,3 +141,5 @@ READER-CRAFT-002: New projects may explicitly pin the tradition layer and revise
 | Arrival requirement enforcement | ADR-0128 | `arrival-contract.ts`, `planning.ts`, `standard@44` | `arrival-contract.test.ts`, `novel-ko.integration.test.ts` |
 
 Contract recritique also follows ADR-0129: invalid attempts consume only their own repair budget and their validation failures reach the next attempt. `novel-ko.integration.test.ts` covers recovery and exhaustion without selecting an invalid contract.
+
+ADR-0130 extends accepted-history context to the contract critic under the arrival-contract policy. The two-chapter v44 integration compares the critic input against the accepted L1 summary and ending hook; earlier policy cases verify the boundary.

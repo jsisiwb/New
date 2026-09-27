@@ -786,6 +786,14 @@ export async function generateContract(
       // scene plan can repair.
       if (issues.length === 0 && ctx.policy.planning?.plan_critic?.contract) {
         const criticPolicy = ctx.policy.planning.plan_critic;
+        const acceptedContinuity =
+          ctx.policy.planning.serial_architecture?.arrival_contract && input.chapterNo > 1
+            ? `\n\n${
+                lang === 'ko'
+                  ? '[확정된 직전 회차 — 초기 설정과 다르면 이 승인된 결과에서 이어 간다]'
+                  : '[Accepted previous chapter — continue from this result when initial bible state differs]'
+              }\n${input.previousSummary}${await renderCanonFacts(ctx, input.chapterNo)}`
+            : '';
         const runCritic = async (cand: ChapterContract, suffix: string) => {
           const critic = await modelCall<{ issues?: unknown }>(ctx, {
             step: 'chapter_contract',
@@ -801,9 +809,9 @@ export async function generateContract(
                     hintBudget: ctx.policy.planning?.reveal_schedule?.hint_budget,
                   }) ?? '(설정에 기록된 비밀 없음)')
                 : '(설정에 기록된 비밀 없음)',
-              canon_state: input.bible
-                ? renderBibleState(input.bible, ctx.bindings, lang)
-                : '(정사 상태 없음)',
+              canon_state: `${
+                input.bible ? renderBibleState(input.bible, ctx.bindings, lang) : '(정사 상태 없음)'
+              }${acceptedContinuity}`,
               structure_targets: structureTargets({
                 chapterNo: input.chapterNo,
                 lineTargets: ctx.policy.planning?.dialogue_floor?.line_targets,
@@ -1148,15 +1156,25 @@ async function renderCanonFacts(ctx: WorkflowContext, chapterNo: number): Promis
     display_name: string;
     attribute: string;
     value_text: string | null;
+    value_json: unknown;
   }>(
-    `SELECT e.display_name, f.attribute, f.value_text FROM facts f JOIN entities e ON e.id = f.entity_id
+    `SELECT e.display_name, f.attribute, f.value_text, f.value AS value_json FROM facts f JOIN entities e ON e.id = f.entity_id
       WHERE f.project_id = $1 AND f.retracted_at_version IS NULL AND f.valid_to IS NULL
       ORDER BY f.id DESC LIMIT 120`,
     [ctx.projectId],
   );
   if (r.rows.length === 0) return '';
   return `\n\n${langOf(ctx) === 'ko' ? '확정된 사실 (이미 일어난 일)' : 'Accepted facts (what has happened)'}:\n${r.rows
-    .map((f) => `- ${f.display_name}: ${f.attribute} = ${f.value_text ?? ''}`)
+    .map((f) => {
+      const value =
+        f.value_text ??
+        (ctx.policy.planning?.serial_architecture?.arrival_contract && f.value_json != null
+          ? typeof f.value_json === 'string'
+            ? f.value_json
+            : JSON.stringify(f.value_json)
+          : '');
+      return `- ${f.display_name}: ${f.attribute} = ${value}`;
+    })
     .join('\n')}`;
 }
 
