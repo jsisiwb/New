@@ -80,7 +80,11 @@ import { registerResourceRoutes } from './resource-routes.js';
 import { registerProductRoutes } from './product-routes.js';
 import { registerNovelRoutes, type NovelRouteDeps } from './novel-routes.js';
 import { contentHashOf } from '@yeonjae/prose';
-import { processMetrics, type LifecycleCoordinator } from '@yeonjae/domain';
+import {
+  DEFAULT_NEW_PROJECT_POLICY,
+  processMetrics,
+  type LifecycleCoordinator,
+} from '@yeonjae/domain';
 import {
   correct as correctCanonOp,
   correctionView,
@@ -2063,9 +2067,15 @@ async function createProjectScoped(
   input: { workspaceId: string; title: string; qualityTier: string; operatingMode: string },
 ): Promise<{ projectId: string; mainTimelineId: string }> {
   const project = await c.query<{ id: string }>(
-    `INSERT INTO projects (workspace_id, title, quality_tier, operating_mode)
-     VALUES ($1, $2, $3, $4) RETURNING id`,
-    [input.workspaceId, input.title, input.qualityTier, input.operatingMode],
+    `INSERT INTO projects (workspace_id, title, quality_tier, operating_mode, production_policy_version)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [
+      input.workspaceId,
+      input.title,
+      input.qualityTier,
+      input.operatingMode,
+      DEFAULT_NEW_PROJECT_POLICY,
+    ],
   );
   const projectId = project.rows[0]?.id;
   if (!projectId) throw new ApiError('INTERNAL_ERROR', 'The project could not be created.');

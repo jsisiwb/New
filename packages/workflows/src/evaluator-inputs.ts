@@ -1,3 +1,4 @@
+import { voiceCardLine } from './reader-craft.js';
 /**
  * What each evaluator reads (ADR-0060). The Step 0 audit (§3.1) found evaluators fed the wrong slices of
  * the checker pack. These builders render the inputs the 4.4.0 evaluator prompts declare: voice cards and
@@ -40,6 +41,7 @@ export function voiceCards(
   contract: ChapterContract,
   bible: StoryBible | undefined,
   lang: Lang,
+  innerVoice = false,
 ): string | undefined {
   const lines: string[] = [];
   for (const e of participants(contract, bible)) {
@@ -51,6 +53,7 @@ export function voiceCards(
       lang === 'ko'
         ? [
             voice ? `말투: ${voice}` : undefined,
+            innerVoice ? voiceCardLine(d) : undefined,
             short ? `약칭: ${short}` : undefined,
             str(d.rank) ? `서열: ${str(d.rank) ?? ''}` : undefined,
           ]

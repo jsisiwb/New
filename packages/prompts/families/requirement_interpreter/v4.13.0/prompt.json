@@ -1,0 +1,32 @@
+{
+  "family": "requirement_interpreter",
+  "version": "4.13.0",
+  "role": "requirement_interpreter",
+  "purpose": "Korean webnovel craft prompt (ADR-0056): serialized-episode planning and anti-번역투 prose, 4.0.0.",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "M",
+  "input_variables": [
+    "intake_json",
+    "spelling_locale"
+  ],
+  "output_schema": "story-spec.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 4000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.13.0 — separate supplied power and genre from inferred personality; establish concrete personal motive before plotting (ADR-0124).",
+  "regression_cases": [
+    "requirement_interpreter.fixture.smoke"
+  ],
+  "content_hash": "sha256:a351db274c28f1e1a8a39762b166239f50682a8fc1078f7b071785ca5241fb0d"
+}

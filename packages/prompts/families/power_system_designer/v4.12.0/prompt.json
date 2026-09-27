@@ -1,0 +1,35 @@
+{
+  "family": "power_system_designer",
+  "version": "4.12.0",
+  "role": "power_system_designer",
+  "purpose": "Reader craft: power_system_designer (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "concept",
+    "world_rules"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.6,
+    "max_tokens": 6500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "power_system_designer.social_progression",
+    "power_system_designer.raw_design",
+    "power_system_designer.reader-craft"
+  ],
+  "content_hash": "sha256:40b06661480614429f1ca266a3a90d1fcb72d3a278eb264ff0724a9c146bec9c"
+}

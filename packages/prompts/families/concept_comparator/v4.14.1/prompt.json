@@ -1,0 +1,35 @@
+{
+  "family": "concept_comparator",
+  "version": "4.14.1",
+  "role": "concept_comparator",
+  "purpose": "Reader craft: concept_comparator (ADR-0120 through ADR-0123).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "candidate_a",
+    "candidate_b",
+    "presentation_order"
+  ],
+  "output_schema": "comparison-verdict.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.14.1 — schema-generated output example and derived notes (ADR-0057, ADR-0125).",
+  "regression_cases": [
+    "concept_comparator.fixture.smoke",
+    "concept_comparator.reader-craft"
+  ],
+  "content_hash": "sha256:983baa9a729045731a44f928b4c064041d17d51eca36b884c0ec73cb34d2608d"
+}

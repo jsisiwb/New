@@ -1,3 +1,4 @@
+import { chapterCraftContext } from './craft-context.js';
 /**
  * Planning steps of the vertical slice: intake validation → `requirement_interpreter` → versioned Story Spec
  * (hard / soft / assumption kept distinct, assumptions explained) → Story Bible (entities, propositions,
@@ -592,6 +593,7 @@ export async function generateContract(
     async () => {
       const project = await getProject(ctx.pool, ctx.projectId);
       const block = compilePlannerBlock(ctx);
+      const craft = await chapterCraftContext(ctx, input.chapterNo);
       const lang = langOf(ctx);
       const acsHard = compileActiveConstraintSet(
         input.spec,
@@ -639,6 +641,7 @@ export async function generateContract(
                 }
               : {}),
             ...(feedback !== undefined ? { plan_feedback: feedback } : {}),
+            ...(craft !== undefined ? { craft_context: craft } : {}),
             arc_plan: JSON.stringify(input.arcPlan),
             chapter_number: String(input.chapterNo),
             previous_chapter_summary: input.previousSummary,
@@ -777,6 +780,7 @@ export async function generateContract(
             family: 'plan_critic',
             activityId: `plan_critic:${String(input.chapterNo)}:contract${suffix}`,
             variables: {
+              ...(craft !== undefined ? { craft_context: craft } : {}),
               chapter_contract: JSON.stringify(cand),
               scene_plans: '(장면 설계 전이다. 계약만 검수한다.)',
               reveal_schedule: schedule

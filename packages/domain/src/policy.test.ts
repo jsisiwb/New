@@ -39,7 +39,11 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@35',
       'policy/standard@36',
       'policy/standard@37',
+      'policy/standard@38',
+      'policy/standard@39',
       'policy/standard@4',
+      'policy/standard@40',
+      'policy/standard@41',
       'policy/standard@5',
       'policy/standard@6',
       'policy/standard@7',
@@ -47,6 +51,67 @@ describe('Production Policy (ADR-0041 / ADR-0042)', () => {
       'policy/standard@9',
     ]);
     for (const p of policies.values()) expect(p.content_hash).toBe(canonicalPolicyHash(p));
+  });
+
+  it('standard.v41 changes only the schema-corrected prompt ceiling', () => {
+    const old = requirePolicy('policy/standard@40', policies);
+    const current = requirePolicy('policy/standard@41', policies);
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.14.1' });
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, prompts: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v40 changes only concept angles and the craft prompt ceiling', () => {
+    const old = requirePolicy('policy/standard@39', policies);
+    const current = requirePolicy('policy/standard@40', policies);
+    expect(current.planning).toEqual({ ...old.planning, concept_angles: 'character_first' });
+    expect(current.prompts).toEqual({ ...old.prompts, max_version: '4.14.0' });
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, planning: _l, prompts: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v39 opts into reader craft identities and preserves v38 operational limits', () => {
+    const old = requirePolicy('policy/standard@38', policies);
+    const current = requirePolicy('policy/standard@39', policies);
+    expect(current.identity).toEqual({
+      ...old.identity,
+      tradition_layer: 'tradition/kr-webnovel@4',
+      genre_layers: ['genre/regression@5', 'genre/academy@4', 'genre/harem@3'],
+      voice_profile: 'voice/operator@4',
+    });
+    expect(current.prompts?.max_version).toBe('4.13.0');
+    const strip = (p: typeof old) => {
+      const { version: _v, name: _n, content_hash: _h, identity: _i, prompts: _p, ...rest } = p;
+      return rest;
+    };
+    expect(strip(current)).toEqual(strip(old));
+  });
+
+  it('standard.v38 enables craft context without changing older policies or quality gates', () => {
+    const old = requirePolicy('policy/standard@37', policies);
+    const current = requirePolicy('policy/standard@38', policies);
+    expect(current.prompts?.max_version).toBe('4.12.0');
+    expect(current.planning?.opening).toEqual({ chapters: 3 });
+    expect(current.planning?.distinct_stories).toEqual({ max_others: 6 });
+    expect(current.planning?.voice_cards).toBe(true);
+    expect(current.planning?.device_ledger).toEqual({ window: 2 });
+    expect(current.drafting?.setting_notes).toBe(true);
+    expect(current.evaluation).toEqual(old.evaluation);
+    expect(current.revision).toEqual(old.revision);
+    for (const p of policies.values()) {
+      if (p.id === 'policy/standard' && p.version >= 38) continue;
+      expect(p.planning?.opening).toBeUndefined();
+      expect(p.planning?.distinct_stories).toBeUndefined();
+      expect(p.planning?.voice_cards).toBeUndefined();
+      expect(p.planning?.device_ledger).toBeUndefined();
+      expect(p.drafting?.setting_notes).toBeUndefined();
+    }
   });
 
   it('standard.v37 is standard.v36 with the two knobs that carry ADR-0117 (ADR-0118)', () => {

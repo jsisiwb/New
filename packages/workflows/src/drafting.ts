@@ -1,3 +1,5 @@
+import { chapterCraftContext, sceneCraftContext, craftEnabled } from './craft-context.js';
+import { openingSceneRole } from './reader-craft.js';
 /**
  * Drafting steps: the scene_writer Context Pack (built by @yeonjae/context, persisted with its manifest and
  * hash), a validated Scene Plan, sequential scene drafts through the gateway (Guard + output-language check on
@@ -311,6 +313,7 @@ export async function planScenes(
           })
         : undefined;
       const critic = ctx.policy.planning?.plan_critic;
+      const craft = await chapterCraftContext(ctx, ch);
       const planVars =
         schedule || critic
           ? {
@@ -325,6 +328,7 @@ export async function planScenes(
           activityId: `scene_plan:${ch}${suffix}`,
           variables: {
             ...planVars,
+            ...(craft !== undefined ? { craft_context: craft } : {}),
             ...(feedback !== undefined ? { plan_feedback: feedback } : {}),
             previous_chapter_tail:
               input.pack.variables.previous_text ??
@@ -533,11 +537,13 @@ async function runPlanCritic(
     activitySuffix?: string | undefined;
   },
 ): Promise<PlanCriticIssue[]> {
+  const craft = await chapterCraftContext(ctx, input.chapterNo);
   const call = await modelCall<{ issues?: unknown }>(ctx, {
     step: 'scene_plan',
     family: 'plan_critic',
     activityId: `plan_critic:${String(input.chapterNo)}${input.activitySuffix ?? ''}`,
     variables: {
+      ...(craft !== undefined ? { craft_context: craft } : {}),
       scene_plans: renderScenesForCritic(input.scenes, input.nameOf),
       reveal_schedule: input.scheduleText ?? '(설정에 기록된 비밀 없음)',
       structure_targets: structureTargets({
@@ -678,18 +684,26 @@ export async function draftScenes(
       ctx,
       'scene_draft',
       async () => {
+        const craft = sceneCraftContext(ctx, ch, planned, input.bible);
         const variables = {
+          ...(craft !== undefined ? { craft_context: craft } : {}),
           scene_plan: renderPlan(scene, planned),
           scene_no: String(scene.scene_no),
           previous_text: previous,
           length_target_words: String(scene.length_target.value),
           // Where this scene sits in the episode curve (v4 writers close only the LAST scene on the 절단).
           scene_total: String(input.scenes.length),
-          scene_role: sceneRole(
-            scene.scene_no,
-            input.scenes.length,
-            ctx.identity.outputLanguage.language ?? 'en',
-          ),
+          scene_role:
+            (craftEnabled(ctx) &&
+            ctx.policy.planning?.opening &&
+            ch <= ctx.policy.planning.opening.chapters
+              ? openingSceneRole(scene.scene_no, input.scenes.length)
+              : undefined) ??
+            sceneRole(
+              scene.scene_no,
+              input.scenes.length,
+              ctx.identity.outputLanguage.language ?? 'en',
+            ),
         };
         const writeScene = (vars: typeof variables, activityId: string) =>
           modelCall<SceneDraft | string>(ctx, {
@@ -1328,7 +1342,9 @@ export async function rewriteScene(
         ctx.policy.planning?.cut_design && input.scene.scene_no === input.sceneTotal
           ? cutNote(input.contract)
           : '';
+      const craft = sceneCraftContext(ctx, ch, input.scene, input.checks?.bible);
       const variables = {
+        ...(craft !== undefined ? { craft_context: craft } : {}),
         scene_plan: planText + targetsNote + cut + note,
         scene_no: String(input.scene.scene_no),
         previous_text:
@@ -1339,7 +1355,12 @@ export async function rewriteScene(
               : `(Chapter ${String(ch)} opens the series; nothing precedes it.)`)),
         length_target_words: String(input.scene.length_target.value),
         scene_total: String(input.sceneTotal),
-        scene_role: sceneRole(input.scene.scene_no, input.sceneTotal, ko ? 'ko' : 'en'),
+        scene_role:
+          (craftEnabled(ctx) &&
+          ctx.policy.planning?.opening &&
+          ch <= ctx.policy.planning.opening.chapters
+            ? openingSceneRole(input.scene.scene_no, input.sceneTotal)
+            : undefined) ?? sceneRole(input.scene.scene_no, input.sceneTotal, ko ? 'ko' : 'en'),
       };
       const write = async (vars: typeof variables, activityId: string) => {
         const c = await modelCall<SceneDraft | string>(ctx, {

@@ -35,7 +35,7 @@ const REQUIRED_FAMILIES = [
   // ADR-0086
   'plan_critic',
 ];
-const TOTAL_PROMPT_VERSIONS = 319;
+const TOTAL_PROMPT_VERSIONS = 348;
 /** Families that first appear after the v3/v4.0.0 families (ADR-0060). */
 const ADDED_AFTER_V4: ReadonlySet<string> = new Set([
   'promise_checker',
@@ -441,7 +441,56 @@ describe('prompt registry (ADR-0016)', () => {
       '주인공이 ‘회귀 전 기억’이나 ‘원작 지식’으로 판단하고 움직이는 비트만 예외',
     );
     // 4.11.0 sorts after 4.10.0 numerically, and without a ceiling it is the newest active set.
-    expect(reg.activeSet().mapping).toEqual(v411);
+    expect(reg.activeSet('4.11.0').mapping).toEqual(v411);
+  });
+
+  it('releases the complete craft chain under a new ceiling while preserving schemas and old pins', () => {
+    const old = reg.activeSet('4.11.0').mapping;
+    const current = reg.activeSet('4.12.0').mapping;
+    const changed = Object.keys(current).filter((f) => current[f] !== old[f]);
+    expect(changed).toHaveLength(19);
+    for (const family of changed) {
+      const before = reg.get(old[family] ?? '');
+      const after = reg.get(current[family] ?? '');
+      expect(after.version).toBe('4.12.0');
+      expect(after.output_schema).toBe(before.output_schema);
+      expect(after.output_mode).toBe(before.output_mode);
+      const vars = Object.fromEntries(
+        [...after.input_variables, 'narrative_identity_block', 'identity_tail'].map((v) => [
+          v,
+          `INPUT:${v}`,
+        ]),
+      );
+      const rendered = renderPrompt(after, vars);
+      expect(rendered.user).not.toMatch(/\{\{/);
+      if (after.input_variables.includes('craft_context'))
+        expect(rendered.user).toContain('INPUT:craft_context');
+    }
+    expect(reg.activeSet('4.12.0').mapping).toEqual(current);
+    const latest = reg.activeSet('4.13.0').mapping;
+    expect(Object.keys(latest).filter((family) => latest[family] !== current[family])).toEqual([
+      'concept_generator',
+      'requirement_interpreter',
+    ]);
+    const final = reg.activeSet('4.14.0').mapping;
+    expect(Object.keys(final).filter((family) => final[family] !== latest[family])).toEqual([
+      'chapter_planner',
+      'concept_generator',
+      'scene_writer',
+    ]);
+    const corrected = reg.activeSet('4.14.1').mapping;
+    expect(Object.keys(corrected).filter((family) => corrected[family] !== final[family])).toEqual([
+      'arc_planner',
+      'chapter_comparator',
+      'concept_comparator',
+      'requirement_interpreter',
+      'targeted_reviser',
+    ]);
+    expect(reg.activeSet().mapping).toEqual(corrected);
+    expect(reg.get(current.scene_writer ?? '').system_template).not.toContain(
+      '서술 세 줄이 이어지면',
+    );
+    expect(reg.get(current.scene_writer ?? '').system_template).not.toContain('문장 끝을 섞는다:');
   });
 
   it('pins the full-bible contracts in the revised planning prompts', () => {

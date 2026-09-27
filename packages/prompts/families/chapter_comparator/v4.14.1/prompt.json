@@ -1,0 +1,38 @@
+{
+  "family": "chapter_comparator",
+  "version": "4.14.1",
+  "role": "chapter_comparator",
+  "purpose": "Reader craft: chapter_comparator (ADR-0120 through ADR-0123).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "contract_shape",
+    "candidate_a",
+    "candidate_b",
+    "scorecard_a",
+    "scorecard_b",
+    "presentation_order",
+    "rubric_order"
+  ],
+  "output_schema": "comparison-verdict.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.14.1 — schema-generated output example and derived notes (ADR-0057, ADR-0125).",
+  "regression_cases": [
+    "chapter_comparator.fixture.smoke",
+    "chapter_comparator.reader-craft"
+  ],
+  "content_hash": "sha256:125584f062ebd6fd5190a2389f0fc86926f8ea169a0b220ae5070d0c6292033b"
+}

@@ -3,6 +3,18 @@
 The single place that records implementation status (ADR-0043). Update it in every checkpoint commit.
 Everything else in `docs/` describes design; only this file claims what exists and what has run.
 
+## Reader-craft core revision (2026-09-27)
+
+The operator requested slower, legible openings, lived settings, varied humor and Korean sentence rhythm, emotionally grounded action, distinct protagonist voices, and fewer repeated story templates (ADR-0120–0125).
+
+**Implementation.** New-project creation in both CLI and API pins `standard@41`. Explicit earlier pins remain available. Versions 38–40 are preserved because live verification projects pinned them. New Korean behavior carries frozen same-workspace comparison references, accepted-chapter device history, an opening window, and validated inner-voice and setting cards through planning, drafting, rewriting and evaluation. Tradition/genre/operator-voice revisions separate power level from personality; concept angles no longer automatically raise chapter-one stakes. Twenty-nine immutable prompt versions carry these directions and generated answer examples. Canon, knowledge/reveal rules, acceptance gates, and existing numerical quality thresholds retain their prior behavior.
+
+**Environment.** The operator's supplied provider and Oracle database variables are stored only in the ignored local `.env`. Live CLI commands load it with `node --env-file=.env --import tsx apps/cli/src/main.ts`. A read-only SSL database check found all 25 migration hashes matching, with none pending. Destructive automated tests use local disposable Postgres16 databases and never load this `.env`.
+
+**Verification in progress.** Focused craft/identity checks passed (145 tests); generated prompt shapes/registry checks passed (135 tests). TypeScript build and lint passed, and all changed TypeScript files passed formatting before the final inventory edits. Policies38–40 each produced two accepted synthetic chapters, including frozen comparison-context checks. A broad suite passed 2,361 tests but had 38 failures; it overlapped later edits and is not a final-tree pass. Cached pre-edit modules/schema, new-policy hash construction, inventories, historical-prompt selection, and generated prompt examples accounted for the failures. Current-tree affected reruns and the explicit security suite are in progress. The workspace validation record contains commands, tree fingerprints and results. Full-repository formatting has pre-existing failures outside this patch.
+
+**Live reading.** Isolated test projects on 38 and 39 returned generic detached/overpowered opening concepts and were left unapproved. Policy40 returned different personal motives but still leaned heavily on the supplied misunderstanding premise. Its financial-survival candidate is running a bounded one-chapter test. No prose-quality improvement or hit-serial quality is claimed from these concepts or simulated chapters. CodeRabbit review is disabled by the task runtime, so no review result is available.
+
 ## Next session — handoff (2026-09-26 21:55 UTC, operator-voice run 6)
 
 **Repository.** `hundas4/New` (moved from `sigma1web1/New`; the PR history did not move). Default branch

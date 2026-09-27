@@ -127,5 +127,14 @@
 | [0118](0118-run-5-audit-knobs.md) | Run-5 audit: ADR-0117's code-level changes ran for every policy; they are gated behind `planning.plan_critic.recritique` and `revision.multi_patch.anchor_spanless` (`standard.v37`), the acceptance-time `create`→`assert` read stays for every pin (ADR-0102 class), and the committed copy of the Notion bridge is removed |
 | [0119](0119-rejected-arc-plan-asks-again.md) | A rejected arc plan is recorded and asked again on the next attempt (`arc_plan:<arc>:regeneration:<n>`), and auto-resume tries it; no policy version (G25-1) |
 
+| [0120](0120-reader-oriented-openings.md) | Reader-oriented openings |
+| [0121](0121-distinct-stories-and-inner-voices.md) | Distinct stories and inner voices |
+| [0122](0122-lived-settings-and-emotional-action.md) | Lived settings and emotional action |
+| [0123](0123-varied-devices-and-craft-evaluation.md) | Varied devices and craft evaluation |
+
+| [0124](0124-craft-identity-does-not-prescribe-personality.md) | Opt-in craft identity layers separate power level and narrative rhythm from protagonist personality |
+
 New ADRs: copy `0000-adr-template.md`, take the next number, link it here, and update the traceability
 matrix in the same change.
+
+| [0125](0125-character-led-concept-angles.md) | Character-led concept angles |

@@ -1,0 +1,35 @@
+{
+  "family": "concept_comparator",
+  "version": "4.12.0",
+  "role": "concept_comparator",
+  "purpose": "Reader craft: concept_comparator (ADR-0120 through ADR-0123).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "candidate_a",
+    "candidate_b",
+    "presentation_order"
+  ],
+  "output_schema": "comparison-verdict.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "concept_comparator.fixture.smoke",
+    "concept_comparator.reader-craft"
+  ],
+  "content_hash": "sha256:a6533cfdec0b4b79ae1ead923ce7fb57b8f95c197efb7eab35e79e138c2a520c"
+}

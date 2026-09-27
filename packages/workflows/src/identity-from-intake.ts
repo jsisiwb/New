@@ -63,6 +63,9 @@ function latestKoreanRef(store: ProfileStore, id: string): string | undefined {
  */
 const AUTO_LAYER_CAP: Readonly<Record<string, number>> = {
   'lang/ko': 5,
+  'tradition/kr-webnovel': 3,
+  'genre/academy': 3,
+  'genre/harem': 2,
   // ADR-0089: v4 adds device variants; a policy names it in identity.genre_layers.
   'genre/regression': 3,
 };
@@ -70,6 +73,7 @@ const AUTO_LAYER_CAP: Readonly<Record<string, number>> = {
 export interface IdentityCompositionOptions {
   /** `policy.identity.language_layer` of the project's pinned policy, when it names one. */
   readonly languageLayer?: string | undefined;
+  readonly traditionLayer?: string | undefined;
   /** `policy.identity.genre_layers` (ADR-0089): overlay versions taken instead of the newest uncapped one. */
   readonly genreLayers?: readonly string[] | undefined;
   /** The voice profile `policy.identity.voice_profile` names (ADR-0083, C3); used when its language matches. */
@@ -145,7 +149,9 @@ export function identityProfileFromIntake(
       ? (latestKoreanRef(store, 'lang/ko') ?? 'lang/ko@2')
       : 'lang/en@1';
   const tradRef = isKo
-    ? (latestKoreanRef(store, 'tradition/kr-webnovel') ?? 'tradition/kr-webnovel@2')
+    ? opts.traditionLayer?.startsWith('tradition/kr-webnovel@') && known.has(opts.traditionLayer)
+      ? opts.traditionLayer
+      : (latestKoreanRef(store, 'tradition/kr-webnovel') ?? 'tradition/kr-webnovel@2')
     : 'tradition/kr-webnovel@1';
   const lang = store.get(langRef).output_language;
   const trad = store.get(tradRef).tradition;
@@ -266,6 +272,7 @@ export async function ensureProjectIdentity(
     intake: StoryIntake;
     store?: ProfileStore | undefined;
     languageLayer?: string | undefined;
+    traditionLayer?: string | undefined;
     genreLayers?: readonly string[] | undefined;
     voice?: VoiceProfile | undefined;
     deviceLexicon?: boolean | undefined;
@@ -297,6 +304,7 @@ export async function ensureProjectIdentity(
   if (!doc) {
     const profile = identityProfileFromIntake(input.projectId, input.intake, store, {
       languageLayer: input.languageLayer,
+      traditionLayer: input.traditionLayer,
       genreLayers: input.genreLayers,
       voice: input.voice,
       operatorExemplars: input.operatorExemplars ? await input.operatorExemplars() : undefined,

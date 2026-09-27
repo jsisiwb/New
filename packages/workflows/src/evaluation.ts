@@ -891,7 +891,14 @@ export async function evaluateVersion(
               variables: voiceV2
                 ? {
                     chapter_text: chapterText,
-                    voice_cards: orNone(voiceCards(input.contract, input.bible, lang)),
+                    voice_cards: orNone(
+                      voiceCards(
+                        input.contract,
+                        input.bible,
+                        lang,
+                        ctx.policy.planning?.voice_cards === true,
+                      ),
+                    ),
                     address_matrix: orNone(
                       addressMatrix(input.contract, input.bible, lang, {
                         timeFramed: ctx.policy.planning?.register_time_frames === true,

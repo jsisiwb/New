@@ -13,6 +13,7 @@ describe('operator voice profiles', () => {
       'voice/operator@1',
       'voice/operator@2',
       'voice/operator@3',
+      'voice/operator@4',
     ]);
     const v = requireVoiceProfile('voice/operator@1', profiles);
     expect(v.language).toBe('ko');

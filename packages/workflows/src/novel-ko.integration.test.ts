@@ -4279,3 +4279,190 @@ run(
     }, 300_000);
   },
 );
+
+run.each([38, 39, 40, 41])(
+  'Korean novel under standard.v%i: craft reaches every generation stage',
+  (version) => {
+    let pool: Pool;
+    let workspaceId: string;
+    let projectId: string;
+    const seen: ProviderRequest[] = [];
+    const voice = '남이 놓고 간 빈 그릇부터 세는 사람';
+    const pressure = '몰리면 농담을 멈추고 부탁한다';
+    const sound = '옆방에서 주판알을 튕기는 소리';
+    const provider = new MockProvider((req) => {
+      seen.push(req);
+      const out = batchedScript(req, script(req));
+      if (!out || !('json' in out)) return out;
+      const value = structuredClone(out.json) as Record<string, unknown>;
+      if (req.trace?.role === 'character_designer') {
+        for (const c of (value.characters ?? []) as Record<string, unknown>[]) {
+          c.inner_voice = {
+            archetype: voice,
+            temperament: '남의 말을 끝까지 듣는다',
+            humor: '서툰 부탁에서 생기는 웃음',
+            habits: ['빈 그릇부터 센다'],
+            under_pressure: pressure,
+            emotional_anchor: '도움을 돌려주려는 마음',
+            never: ['계획대로'],
+          };
+        }
+      }
+      if (req.trace?.role === 'world_builder') {
+        for (const place of (value.locations ?? []) as Record<string, unknown>[]) {
+          place.senses = { sound };
+          place.life = '점심에도 장부를 놓지 않는 서기';
+          place.detail = '문턱에 닳은 홈';
+        }
+      }
+      if (req.trace?.role === 'chapter_planner') {
+        value.devices = {
+          comedy: 'character',
+          small_risk: { expected: '조롱 뒤 압승', chosen: '상대에게 도움을 청해 장부를 확인한다' },
+        };
+      }
+      if (req.trace?.role === 'scene_writer') {
+        return {
+          text: (typeof value.text === 'string' ? value.text : '').replace(
+            /([.!?])[ \t]+(?=\S)/g,
+            '$1\n\n',
+          ),
+        };
+      }
+      return { json: value };
+    });
+    beforeAll(async () => {
+      pool = await freshDatabase();
+      workspaceId = await createWorkspace(pool, 'craft-v38');
+      ({ projectId } = await createProject(pool, {
+        workspaceId,
+        title: '재의 장부',
+        operatingMode: 'autopilot',
+        policyVersion: `policy/standard@${version}`,
+      }));
+      // Real selected/rejected candidates in own/foreign workspaces exercise isolation in the snapshot SQL.
+      const otherWorkspace = await createWorkspace(pool, 'craft-foreign');
+      for (const [ws, title, status] of [
+        [workspaceId, 'APPROVED_REFERENCE', 'selected'],
+        [workspaceId, 'REJECTED_REFERENCE', 'rejected'],
+        [otherWorkspace, 'FOREIGN_REFERENCE', 'selected'],
+      ] as const) {
+        const p = await createProject(pool, { workspaceId: ws, title });
+        await pool.query(
+          `INSERT INTO concept_candidates (workspace_id, project_id, round, label, status, payload) VALUES ($1, $2, 1, $3, $4, $5::jsonb)`,
+          [
+            ws,
+            p.projectId,
+            title,
+            status,
+            JSON.stringify({
+              logline: title,
+              chapter_one_hook: '시험에서 수치가 영으로 나왔다',
+              differentiators: ['기대와 다른 대가'],
+            }),
+          ],
+        );
+      }
+    }, 120_000);
+    afterAll(async () => {
+      await pool.end();
+    });
+    const makeDeps = () => ({
+      pool,
+      gateway: new Gateway({
+        providers: new Map([['mock', provider]]),
+        routing,
+        budget: new MemoryBudget(10_000_000),
+        audit: new PgAuditStore(
+          pool,
+          { workspaceId, projectId },
+          new ArtifactLlmOutputStore(pool, { workspaceId, projectId }),
+        ),
+      }),
+    });
+
+    it('freezes scoped references and carries opening, voice, setting and device context to live call boundaries', async () => {
+      const started = await startNovel(makeDeps(), { projectId, intake: INTAKE });
+      const concepts = seen.filter((r) => r.trace?.role === 'concept_generator');
+      expect(concepts).toHaveLength(2);
+      if (version >= 40) {
+        expect(concepts[0]?.user).toContain('개인 목표 중심');
+        expect(concepts[1]?.user).toContain('관계 중심');
+      }
+      for (const req of concepts) {
+        const user = req.user;
+        expect(user).toContain('APPROVED_REFERENCE');
+        expect(user).not.toContain('REJECTED_REFERENCE');
+        expect(user).not.toContain('FOREIGN_REFERENCE');
+      }
+      expect(concepts[1]?.user).toContain(started.concepts[0]?.logline);
+      const snapshot = await pool.query<{ payload: unknown }>(
+        `SELECT payload FROM workflow_artifacts WHERE project_id = $1 AND kind = 'craft_context' AND key = 'concepts:1'`,
+        [projectId],
+      );
+      expect(snapshot.rows).toHaveLength(1);
+      await approveConcept(pool, {
+        projectId,
+        conceptId: started.concepts[0]?.id ?? '',
+        autoContinue: true,
+        stopAfterChapter: 2,
+      });
+      const runner = new NovelRunner({ pool, makeDeps, runnerId: 'craft-v38', leaseSeconds: 30 });
+      while (await runner.tick()) {
+        /* bounded by stopAfterChapter */
+      }
+      const userText = (role: string) =>
+        seen
+          .filter((r) => r.trace?.role === role)
+          .map((r) => r.user)
+          .join('\n');
+      for (const role of ['chapter_planner', 'scene_planner', 'plan_critic', 'scene_writer'])
+        expect(userText(role), role).toContain('[도입부 설계 — 1화]');
+      expect(userText('arc_planner')).toContain('3화까지는 독자가');
+      expect(userText('scene_writer')).toContain(voice);
+      expect(userText('scene_writer')).toContain(pressure);
+      expect(userText('scene_writer')).toContain(sound);
+      expect(userText('voice_judge')).toContain(pressure);
+      expect(userText('chapter_planner')).toContain('1화: 웃음 성격에서 나오는 웃음');
+      const chapters = await pool.query<{ status: string }>(
+        'SELECT status FROM chapters WHERE project_id = $1 ORDER BY number',
+        [projectId],
+      );
+      expect(chapters.rows.map((r) => r.status)).toEqual(['accepted', 'accepted']);
+      // Resume/re-read uses the snapshot even after the comparison source changes.
+      const { makePlanContext } = await import('./story-plan.js');
+      const { conceptCraftContext, chapterCraftContext } = await import('./craft-context.js');
+      const { ctx } = await makePlanContext(makeDeps(), projectId);
+      await pool.query(
+        `UPDATE concept_candidates SET payload = '{"logline":"CHANGED_SOURCE"}'::jsonb WHERE workspace_id = $1 AND project_id <> $2`,
+        [workspaceId, projectId],
+      );
+      const frozen = await conceptCraftContext(ctx, 1);
+      expect(frozen).toContain('APPROVED_REFERENCE');
+      expect(frozen).not.toContain('CHANGED_SOURCE');
+      // A fresh project sees the accepted opening; its frozen chapter reference survives later edits.
+      const probe = await createProject(pool, {
+        workspaceId,
+        title: 'Opening comparison probe',
+        policyVersion: `policy/standard@${version}`,
+      });
+      const { ensureProjectIdentity } = await import('./identity-from-intake.js');
+      await ensureProjectIdentity(pool, {
+        workspaceId,
+        projectId: probe.projectId,
+        intake: INTAKE,
+      });
+      const { ctx: probeContext } = await makePlanContext(makeDeps(), probe.projectId);
+      const opening = await chapterCraftContext(probeContext, 1);
+      expect(opening).toContain('「재의 장부」');
+      expect(opening).not.toContain('REJECTED_REFERENCE');
+      expect(opening).not.toContain('FOREIGN_REFERENCE');
+      expect(opening).not.toContain('Opening comparison probe');
+      await pool.query('UPDATE projects SET title = $2 WHERE id = $1', [
+        projectId,
+        'CHANGED_TITLE',
+      ]);
+      expect(await chapterCraftContext(probeContext, 1)).toBe(opening);
+    }, 300_000);
+  },
+);

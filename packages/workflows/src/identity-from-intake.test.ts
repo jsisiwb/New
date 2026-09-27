@@ -522,3 +522,46 @@ describe('the device rule as the operator writes it, and the protagonist type (A
     expect(block(on, 'judge_rubric_prose')).not.toContain('주인공 유형');
   });
 });
+
+describe('reader craft identity opt-in (ADR-0124)', () => {
+  const options = {
+    traditionLayer: 'tradition/kr-webnovel@4',
+    genreLayers: ['genre/academy@4', 'genre/regression@5', 'genre/harem@3'],
+    voice: requireVoiceProfile('voice/operator@4'),
+  };
+  const intake: StoryIntake = {
+    ...BASE,
+    manuscript_language: 'ko',
+    genre: { primary: 'academy', secondary: ['possession', 'harem'] },
+  };
+
+  it('compiles the explicitly pinned craft layers through the identity guard', () => {
+    const craftStore = ProfileStore.fromDirectory();
+    const profile = identityProfileFromIntake('craft39', intake, craftStore, options);
+    expect(profile.lineage?.tradition).toBe(options.traditionLayer);
+    expect(profile.lineage?.genres).toEqual(options.genreLayers);
+    craftStore.add(profile);
+    const identity = composeIdentity(craftStore, 'project/craft39@1', 'v1');
+    for (const role of ['writer_full', 'planner_compact', 'judge_rubric_genre'] as const) {
+      const block = compileBlock(identity, { role, budgetTokens: 20000 });
+      expect(block.text).toContain('모든 주인공을 냉소적인 강자로 통일하지 않는다');
+    }
+  });
+
+  it('leaves unpinned Korean projects and English identities on their original layers', () => {
+    const legacy = identityProfileFromIntake('legacy', intake, store);
+    expect(legacy.lineage?.tradition).toBe('tradition/kr-webnovel@3');
+    expect(legacy.lineage?.genres).toEqual([
+      'genre/academy@3',
+      'genre/regression@3',
+      'genre/harem@2',
+    ]);
+    const english = identityProfileFromIntake('english', BASE, store, options);
+    expect(english.lineage?.tradition).toBe('tradition/kr-webnovel@1');
+    expect(english.lineage?.genres).toEqual(['genre/academy@1']);
+    const unknown = identityProfileFromIntake('unknown', intake, store, {
+      traditionLayer: 'tradition/kr-webnovel@999',
+    });
+    expect(unknown.lineage?.tradition).toBe('tradition/kr-webnovel@3');
+  });
+});

@@ -1,0 +1,34 @@
+{
+  "family": "structure_judge",
+  "version": "4.12.0",
+  "role": "structure_judge",
+  "purpose": "Reader craft: structure_judge (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "judge_rubric_structure",
+  "model_class": "M",
+  "input_variables": [
+    "chapter_text",
+    "structure_lint_report",
+    "contract_shape"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2500,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "structure_judge.fixture.smoke",
+    "structure_judge.reader-craft"
+  ],
+  "content_hash": "sha256:b882b45f218f377bf67983c30d65c0c54a7dfa89099bbc13ff83253423d486b2"
+}

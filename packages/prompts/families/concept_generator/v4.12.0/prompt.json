@@ -1,0 +1,35 @@
+{
+  "family": "concept_generator",
+  "version": "4.12.0",
+  "role": "concept_generator",
+  "purpose": "Reader craft: concept_generator (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": false,
+  "identity_variant": "planner_compact",
+  "model_class": "R",
+  "input_variables": [
+    "story_spec",
+    "angle_seed",
+    "spec_version",
+    "other_stories"
+  ],
+  "output_schema": "concept.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.8,
+    "max_tokens": 3000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "concept_generator.fixture.smoke",
+    "concept_generator.reader-craft"
+  ],
+  "content_hash": "sha256:1159eba09f197b91c0d2931a4dbd9d1bb9480a73fba5c881e47b3e42b5797a66"
+}

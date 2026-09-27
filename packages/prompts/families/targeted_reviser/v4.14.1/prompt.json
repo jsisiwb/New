@@ -1,0 +1,39 @@
+{
+  "family": "targeted_reviser",
+  "version": "4.14.1",
+  "role": "targeted_reviser",
+  "purpose": "Reader craft: targeted_reviser (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "editor_full",
+  "model_class": "P",
+  "input_variables": [
+    "dimension",
+    "issues",
+    "span_text",
+    "context_before",
+    "context_after",
+    "must_preserve",
+    "register_digests",
+    "length_budget_words"
+  ],
+  "output_schema": "patch.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 9000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.14.1 — schema-generated output example and derived notes (ADR-0057, ADR-0125).",
+  "regression_cases": [
+    "targeted_reviser.fixture.smoke",
+    "targeted_reviser.reader-craft"
+  ],
+  "content_hash": "sha256:e7ec139595b0396bc8181e63373da4d17b55b00e55281b5e778e6ff97479b7a5"
+}

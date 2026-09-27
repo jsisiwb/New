@@ -375,6 +375,10 @@ export interface ProductionPolicy {
       chapters: number;
     };
     /**
+     * ADR-0125: Korean concept candidates vary personal objective and relationship instead of automatically escalating chapter-one stakes. Absent keeps historical angle seeds.
+     */
+    concept_angles?: 'character_first';
+    /**
      * ADR-0121 (operator reading, run 6): the concept generator reads the approved concepts of up to max_others other projects in the same workspace, and chapter 1's planner and critic read their accepted chapter-1 skeletons, as templates not to reuse; both lists are stored as artifacts at first use so a replay reads the same list. Absent: a concept is generated from its own spec and angle seed only.
      */
     distinct_stories?: {
@@ -443,6 +447,10 @@ export interface ProductionPolicy {
    * Identity choices a policy makes for projects composed under it (ADR-0073). Absent: a Korean project composes the newest Korean language layer up to lang/ko@5, as before.
    */
   identity?: {
+    /**
+     * ADR-0124: explicit Korean tradition version for new projects. Absent: automatic Korean composition is capped at v3; English retains v1.
+     */
+    tradition_layer?: string;
     /**
      * The language layer a new project composes, e.g. lang/ko@6. Used only for projects whose manuscript language matches.
      */

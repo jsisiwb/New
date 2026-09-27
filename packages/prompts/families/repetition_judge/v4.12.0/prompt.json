@@ -1,0 +1,34 @@
+{
+  "family": "repetition_judge",
+  "version": "4.12.0",
+  "role": "repetition_judge",
+  "purpose": "Reader craft: repetition_judge (ADR-0120 through ADR-0123).",
+  "style_sensitive": false,
+  "manuscript_producing": false,
+  "identity_variant": null,
+  "model_class": "C",
+  "input_variables": [
+    "chapter_text",
+    "repetition_report",
+    "recent_chapters"
+  ],
+  "output_schema": null,
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.1,
+    "max_tokens": 2000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "fail",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "repetition_judge.fixture.smoke",
+    "repetition_judge.reader-craft"
+  ],
+  "content_hash": "sha256:bd3224fe32c8991df77190e8e923933465e91f6e56fb54b3b5455ef29d5d28f4"
+}

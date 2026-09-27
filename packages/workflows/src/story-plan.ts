@@ -1,3 +1,5 @@
+import { conceptCraftContext, craftEnabled } from './craft-context.js';
+import { arcOpeningBrief, renderOtherStories } from './reader-craft.js';
 /**
  * Story planning: the model-driven path from a user's intake to a COMPLETE Story Bible and series plan.
  *
@@ -281,6 +283,19 @@ export function angleSeeds(lang: 'en' | 'ko'): readonly string[] {
   return ANGLES[lang];
 }
 
+const CHARACTER_FIRST_ANGLES = [
+  '개인 목표 중심: 주인공이 지금 구체적으로 원하는 것과 그것을 원하는 사정에서 첫 장면을 만든다. 힘의 크기와 성격은 따로 정한다. 대리만족은 그 목표가 움직이는 결과에서 얻고, 처지를 알기 전에 최대 위기나 숭배를 먼저 터뜨리지 않는다.',
+  '관계 중심: 앞 후보와 다른 관심사·애착·약점을 가진 주인공을 고르고, 힘만으로 해결되지 않는 첫 관계의 문제를 연다. 같은 하드 요구를 지키면서 첫 선택과 그 결과를 앞 후보와 다르게 만든다. 더 큰 위기를 차별점으로 대신하지 않는다.',
+  '공간과 생활 중심: 이 세계 사람들의 일과 규칙에 주인공의 구체적인 목적이 부딪히는 상황에서 시작한다. 필요한 방향 감각을 주고, 낯선 사람과 첫 합의 또는 충돌을 만든다.',
+  '예상 밖 선택 중심: 앞 후보들의 공통 해결책을 피하고, 이 인물의 애착이나 잘못된 판단 때문에 생기는 납득 가능한 다른 선택과 그 값을 만든다.',
+];
+
+export function conceptAngleSeed(lang: 'en' | 'ko', i: number, characterFirst = false): string {
+  if (lang === 'ko' && characterFirst)
+    return CHARACTER_FIRST_ANGLES[i % CHARACTER_FIRST_ANGLES.length] ?? angleSeed(lang, i);
+  return angleSeed(lang, i);
+}
+
 function angleSeed(lang: 'en' | 'ko', i: number): string {
   return ANGLES[lang][i] ?? (lang === 'ko' ? `대안 앵글 ${i + 1}` : `alternative angle ${i + 1}`);
 }
@@ -309,8 +324,13 @@ export async function suggestConcepts(
   );
   const block = compileFor(ctx, 'planner_compact');
   const concepts: Concept[] = [];
+  const otherStories = await conceptCraftContext(ctx, specVersion);
   for (let i = 0; i < count; i++) {
-    const angle = angleSeed(lang, i);
+    const angle = conceptAngleSeed(
+      lang,
+      i,
+      ctx.policy.planning?.concept_angles === 'character_first',
+    );
     const result = await runStep(
       ctx,
       'concept',
@@ -322,6 +342,21 @@ export async function suggestConcepts(
           variables: {
             story_spec: renderSpec(spec.spec, lang),
             angle_seed: angle,
+            ...(otherStories !== undefined
+              ? {
+                  other_stories: [
+                    otherStories,
+                    renderOtherStories(
+                      concepts.map((concept) => ({
+                        title: concept.angle,
+                        concept: { ...concept },
+                      })),
+                    ),
+                  ]
+                    .filter(Boolean)
+                    .join('\n\n'),
+                }
+              : {}),
             spec_version: String(specVersion),
           },
           block,
@@ -741,7 +776,9 @@ export async function buildFullBible(
             variables: { story_spec: specText, concept: conceptText, cast_brief: castBrief },
             block,
           });
-          assertDesignOutput('cast', call.output);
+          assertDesignOutput('cast', call.output, {
+            voiceCards: craftEnabled(ctx) && ctx.policy.planning?.voice_cards === true,
+          });
           if (!Array.isArray(call.output.characters) || call.output.characters.length === 0)
             throw new WorkflowError('SPEC_INVALID', 'character_designer returned no characters', {
               step: 'cast',
@@ -765,7 +802,9 @@ export async function buildFullBible(
       variables: { story_spec: specText, concept: conceptText },
       block,
     });
-    assertDesignOutput('world', call.output);
+    assertDesignOutput('world', call.output, {
+      settingNotes: craftEnabled(ctx) && ctx.policy.drafting?.setting_notes === true,
+    });
     if (
       !Array.isArray(call.output.world_rules) ||
       !call.output.world_rules.length ||
@@ -1453,7 +1492,7 @@ export async function planArcFromBlueprint(
               ? `Season ${season.ordinal} "${season.title}" (id ${input.arc.seasonId}), chapters ${season.chapter_range_est.from}–${season.chapter_range_est.to}: ${season.objective}${season.thesis ? ` Thesis: ${season.thesis}` : ''}`
               : `Season ${input.arc.ordinal} (id ${input.arc.seasonId})`,
           arc_brief: ko
-            ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.`
+            ? `시즌 ${input.arc.ordinal}의 아크 ${input.arc.arcInSeason} (id ${input.arc.id})는 ${input.arc.from}~${input.arc.to}화(${input.arc.to - input.arc.from + 1}화 분량)를 덮는다. 이 아크 안에서 시즌 목표를 향해 한 단계 전진하고, 아크의 끝에 사이다 하나와 다음 아크로 넘어가는 절단을 둔다. ${season?.entry_state ? `진입 상태: ${season.entry_state}. ` : ''}${season?.exit_state ? `도달할 이탈 상태: ${season.exit_state}.` : ''}${input.previousArcExit ? ` 이전 아크의 끝: ${input.previousArcExit}` : ''} 비트의 target_chapter_offset은 0(${input.arc.from}화)부터 ${input.arc.to - input.arc.from}까지다. 참여자와 장소는 아래 정사 상태의 등록부 id만 쓴다.${craftEnabled(ctx) && ctx.policy.planning?.opening && input.arc.from === 1 ? arcOpeningBrief(ctx.policy.planning.opening.chapters) : ''}`
             : `Arc ${input.arc.arcInSeason} of season ${input.arc.ordinal} (id ${input.arc.id}) covers chapters ${input.arc.from}–${input.arc.to}. ${season?.entry_state ? `Entry state: ${season.entry_state}. ` : ''}${season?.exit_state ? `Exit state to reach: ${season.exit_state}.` : ''}${input.previousArcExit ? ` Previous arc ended: ${input.previousArcExit}` : ''} Beats must carry target_chapter_offset from 0 (chapter ${input.arc.from}) to ${input.arc.to - input.arc.from}. Participants and locations must be registry ids from the canon state below.`,
           canon_state: renderArcPlanningDigest(input.bible, lang, {
             from: input.arc.from,
@@ -2105,7 +2144,11 @@ async function designCastInBatches(
         const output: CastBatchOutput = call.output;
         // Register-only entries for characters designed earlier are not designs; only new characters
         // must carry the full design fields.
-        assertDesignOutput('cast', { ...call.output, characters: newCharacters(output, designed) });
+        assertDesignOutput(
+          'cast',
+          { ...call.output, characters: newCharacters(output, designed) },
+          { voiceCards: craftEnabled(ctx) && ctx.policy.planning?.voice_cards === true },
+        );
         if (newCharacters(output, designed).length === 0)
           throw new WorkflowError(
             'SPEC_INVALID',

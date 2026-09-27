@@ -125,3 +125,11 @@ authoritative; the complete design is planned artifact data, not realized canon.
 | 15 | Another agent can begin | `08-delivery/05`, `01`, `02`; `schemas/`, `examples/` |
 
 Full audit: `docs/08-delivery/07-plan-audit.md`. Correction log: `docs/08-delivery/08-correction-changelog.md`.
+
+## Reader craft
+
+READER-CRAFT-001: Reader orientation, differentiated concepts and inner voices, lived locations, emotionally grounded action and varied comedy are carried from planning through revision and evaluation. Design: ADR-0120, ADR-0121, ADR-0122, ADR-0123; `docs/05-generation/04-reader-craft.md`. Contracts: existing production-policy craft fields and chapter-contract.devices. Verification: reader-craft, craft-context, prompt registry and policy regression suites.
+
+READER-CRAFT-002: New projects may explicitly pin the tradition layer and revised genre/voice layers; older policies compose their prior defaults. ADR-0124; production-policy.identity.tradition_layer; identity-from-intake.test.ts.
+
+| Reader craft: concept angles | ADR-0125 | `planning.concept_angles`, `conceptAngleSeed`, 4.14.0 prompts | `story-plan.test.ts`, `policy.test.ts`, `novel-ko.integration.test.ts` |

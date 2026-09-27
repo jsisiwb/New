@@ -25,7 +25,7 @@ function upgradedRegistry(
   for (const version of source.list()) {
     if (
       version.id === 'scene_writer@1.0.0' ||
-      version.id === source.activeSet().mapping.world_builder
+      version.id === source.activeSet(LEGACY_PROMPT_CEILING).mapping.world_builder
     ) {
       const meta = { ...version, content_hash: undefined };
       registry.add(

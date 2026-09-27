@@ -1,0 +1,39 @@
+{
+  "family": "targeted_reviser",
+  "version": "4.12.0",
+  "role": "targeted_reviser",
+  "purpose": "Reader craft: targeted_reviser (ADR-0120 through ADR-0123).",
+  "style_sensitive": true,
+  "manuscript_producing": true,
+  "identity_variant": "editor_full",
+  "model_class": "P",
+  "input_variables": [
+    "dimension",
+    "issues",
+    "span_text",
+    "context_before",
+    "context_after",
+    "must_preserve",
+    "register_digests",
+    "length_budget_words"
+  ],
+  "output_schema": "patch.schema.json",
+  "output_mode": "json",
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 9000,
+    "top_p": 1
+  },
+  "failure_behavior": {
+    "on_schema_invalid": "repair_then_regenerate",
+    "on_truncation": "regenerate",
+    "max_attempts": 2
+  },
+  "status": "active",
+  "changelog": "4.12.0 — reader orientation, story-specific voice and causality, lived settings, emotional action and evidence-based craft evaluation (ADR-0120 through ADR-0123).",
+  "regression_cases": [
+    "targeted_reviser.fixture.smoke",
+    "targeted_reviser.reader-craft"
+  ],
+  "content_hash": "sha256:9e19e9a597c17fc8bf8116adabfa5e2caa3ed231e65295afb89adb4d56aa92c7"
+}

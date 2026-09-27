@@ -823,6 +823,7 @@ function pinnedVoiceOptions(
   | 'operatorExemplars'
   | 'deviceLexicon'
   | 'genreLayers'
+  | 'traditionLayer'
   | 'deviceRules'
   | 'protagonistType'
 > {
@@ -834,6 +835,7 @@ function pinnedVoiceOptions(
   }
   const pick = identity?.operator_exemplars;
   return {
+    ...(identity?.tradition_layer ? { traditionLayer: identity.tradition_layer } : {}),
     ...(identity?.device_lexicon ? { deviceLexicon: true } : {}),
     ...(identity?.genre_layers?.length ? { genreLayers: identity.genre_layers } : {}),
     ...(identity?.device_rules ? { deviceRules: identity.device_rules } : {}),
